@@ -10,6 +10,8 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
 use App\Models\Unit;
+use App\Models\Warehouse;
+use App\Models\WarehouseType;
 use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
@@ -79,16 +81,34 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         return ['variant' => $variant, 'sku' => $sku];
     }
 
-    private function createStock(ProductVariant $variant, int $unitId, int $qty): void
+    private function createStock(ProductVariant $variant, int $unitId, int $qty, ?int $warehouseId = null): void
     {
         \App\Models\ProductStock::withoutGlobalScope('active_warehouse')->create([
             'product_id' => $variant->product_id,
             'product_variant_id' => $variant->product_variant_id,
             'unit_id' => $unitId,
-            'warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'warehouse_id' => $warehouseId ?? self::MAIN_WAREHOUSE_ID,
             'ps_stock' => $qty,
             'status' => 1,
         ]);
+    }
+
+    /** A second, freshly created, active warehouse — deliberately NOT the seeded main one. */
+    private function createSecondWarehouse(): Warehouse
+    {
+        $type = WarehouseType::create([
+            'warehouse_type_name' => 'Shipment Test Type '.uniqid(),
+            'is_main_warehouse' => 0,
+            'status' => 1,
+        ]);
+
+        $warehouse = new Warehouse();
+        $warehouse->warehouse_name = 'Shipment Test Warehouse '.uniqid();
+        $warehouse->warehouse_type_id = $type->id;
+        $warehouse->status = 1;
+        $warehouse->save();
+
+        return $warehouse;
     }
 
     public function test_a_request_without_an_api_key_is_rejected(): void
@@ -324,5 +344,124 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $response->assertStatus(201);
         $soId = $response->json('data.shipment_internal_id');
         $this->assertSame(2, SalesOrderDetail::where('so_id', $soId)->count());
+    }
+
+    /**
+     * gudang_id (2026-08-31, fase 2 multi-gudang): sent explicitly, both the stock check and
+     * every sales_order_details.warehouse_id row must use THAT warehouse, not the main one.
+     */
+    public function test_scheduled_with_gudang_id_uses_that_warehouse_for_stock_and_details(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $secondWarehouse = $this->createSecondWarehouse();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        // Stock sits ONLY in the second warehouse — if the endpoint still defaulted to main,
+        // this would show up as a full shortage instead of a clean 201.
+        $this->createStock($fx['variant'], $unit->unit_id, 100, (int) $secondWarehouse->id);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => (int) $secondWarehouse->id,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame((int) $secondWarehouse->id, (int) $detail->warehouse_id);
+    }
+
+    /** Omitting gudang_id must still behave exactly as it always did: gudang utama. */
+    public function test_scheduled_without_gudang_id_still_defaults_to_the_main_warehouse(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => 'SHP-'.uniqid(),
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame(self::MAIN_WAREHOUSE_ID, (int) $detail->warehouse_id);
+    }
+
+    public function test_scheduled_rejects_an_unknown_gudang_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => 'SHP-'.uniqid(),
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => 999999999,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
+    /**
+     * The bulk counterpart of gudang_id (2026-08-31, KNOWN_ISSUES.md): the STOCK CHECK
+     * (checkStockAvailability(), shared with /stock/check) must be resolved with the same
+     * bulk/retail rule App\Support\SalesOrderStock::buildPlan() uses at actual deduction time —
+     * a bulk item's gudang_id pointing at a non-main warehouse must be checked against gudang
+     * utama, not the requested warehouse. This is what makes the number scheduled() reports
+     * (via auto_create_shortage_doc) agree with what shipped() will actually be able to deduct
+     * later. Stock is deliberately placed ONLY in the second (non-main) warehouse, none in main —
+     * if the check still used the raw gudang_id (the pre-fix behavior), this would report no
+     * shortage; with the fix, it must report a full shortage instead.
+     */
+    public function test_scheduled_bulk_item_stock_check_ignores_a_non_main_gudang_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $secondWarehouse = $this->createSecondWarehouse();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit); // no retail_unit -> bulk item
+        $this->createStock($fx['variant'], $unit->unit_id, 100, (int) $secondWarehouse->id);
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => 'SHP-'.uniqid(),
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => (int) $secondWarehouse->id,
+            'auto_create_shortage_doc' => true,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $this->assertTrue(
+            (bool) $response->json('data.shortage_doc_created'),
+            'the bulk item must be checked against gudang utama (which has zero stock here), not the requested non-main warehouse'
+        );
     }
 }

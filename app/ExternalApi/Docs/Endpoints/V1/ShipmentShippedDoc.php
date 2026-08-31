@@ -53,6 +53,8 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                 'description' => 'customers.customer_code — id universal Armada. Harus armada aktif.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas, disimpan sebagai sales_orders.notes.'],
+            ['name' => 'gudang_id', 'type' => 'integer', 'required' => false,
+                'description' => 'Merujuk warehouses.id (sama seperti pada POST /stock/check dan POST /shipments/scheduled). Tidak dikirim -> gudang utama. Untuk item satuan ECERAN, ikut menentukan gudang mana yang benar-benar dipotong. Untuk item satuan LAIN (bulk), TETAP disimpan di sales_order_details.warehouse_id, tapi stok yang benar-benar dipotong selalu gudang utama, tidak peduli gudang_id apa yang dikirim (lihat catatan). Dianggap field substantif oleh detail_handler — lihat catatan.'],
             ['name' => 'detail_handler', 'type' => 'string', 'required' => false,
                 'description' => '"force" (bawaan) = timpa data tersimpan dengan permintaan ini bila berbeda. "validate" = tolak dengan galat SHIPMENT_DETAIL_MISMATCH bila berbeda, tidak ada yang berubah. Hanya berlaku saat ref_shipment_id sudah ada DAN belum ipm_status "Berjalan" — lihat catatan.'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
@@ -79,6 +81,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'shipment_date' => '2026-07-25',
             'armada_code' => 'L8533N',
             'notes' => 'Pengiriman PMO SHP-7788',
+            'gudang_id' => 1,
             'detail_handler' => 'force',
             'items' => [
                 [
@@ -112,8 +115,12 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                 'message' => 'items.0.variant_sku tidak ditemukan sebagai varian produk aktif.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'gudang_id tidak ditemukan atau tidak aktif.'],
             ['code' => 'SHIPMENT_DETAIL_MISMATCH', 'http_status' => 409,
                 'message' => 'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini (items). Kirim detail_handler: "force" untuk menimpa, atau samakan data permintaan dengan yang sudah tersimpan.'],
+            ['code' => 'SHIPMENT_DETAIL_MISMATCH', 'http_status' => 409,
+                'message' => 'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini (gudang_id). Kirim detail_handler: "force" untuk menimpa, atau samakan data permintaan dengan yang sudah tersimpan.'],
             ['code' => 'INSUFFICIENT_STOCK', 'http_status' => 409,
                 'message' => 'Stok tidak mencukupi untuk satu atau lebih item.'],
         ];
@@ -129,7 +136,8 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'items[].variant_sku (BUKAN "sku") di-resolve ke produk yang sama seperti /stock/check dan /shipments/scheduled — sekadar nama field bodinya beda di endpoint ini, mengikuti kontrak yang diminta.',
             'items[].product_name/variant_name dipakai APA ADANYA dari permintaan (tidak di-lookup ke tabel products/product_variants) untuk mengisi sales_order_details.sod_nama/sod_variant — sama seperti field yang diterima form admin Pengiriman.',
             'notes disimpan di sales_orders.notes (kolom baru, terpisah dari so_ref_number yang sudah ada — so_ref_number adalah field "Ref Number" bebas yang bisa diedit staf lewat halaman admin, tidak dipakai kontrak Shipment ini).',
-            'Gudang yang dipakai tiap item, maupun perhitungan stoknya, selalu gudang utama — endpoint ini tidak menerima parameter gudang, sama seperti /shipments/scheduled.',
+            'gudang_id opsional, sama seperti POST /stock/check dan /shipments/scheduled — merujuk warehouses.id langsung, tidak dikirim berarti gudang utama. Satu gudang berlaku untuk sales_order_details.warehouse_id seluruh item permintaan ini (bukan per-item). Diikutkan sebagai field substantif dalam pembandingan detail_handler: mengirim ulang ref_shipment_id yang sama dengan gudang_id berbeda pada dokumen yang belum "Berjalan" ditolak SHIPMENT_DETAIL_MISMATCH ("force" menimpa ke gudang baru, "validate" menolak).',
+            'gudang_id hanya benar-benar memindahkan gudang PEMOTONGAN STOK untuk item satuan ECERAN. Untuk item satuan bulk, stok Pegasus hanya pernah dikelola di gudang utama — gudang_id non-utama TETAP tersimpan di sales_order_details.warehouse_id (dan tetap ikut dibandingkan detail_handler di atas), tapi potongan stok sesungguhnya selalu terjadi di gudang utama lewat App\Support\SalesOrderStock::buildPlan(), tidak peduli gudang_id yang dikirim.',
         ];
     }
 }

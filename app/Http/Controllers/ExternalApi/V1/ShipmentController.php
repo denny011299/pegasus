@@ -38,6 +38,23 @@ use Illuminate\Validation\ValidationException;
  *
  * ipm_status pada respons SELALU lewat App\ExternalApi\Support\ShipmentStatusMap — bukan
  * sales_orders.status apa adanya, kosakatanya beda (lihat docblock kelas itu).
+ *
+ * gudang_id (2026-08-31, konsisten dengan modul Gudang/Stock Transfer fase 2): scheduled() dan
+ * shipped() menerima field opsional gudang_id, sama bentuk & aturannya dengan POST /stock/check
+ * dan POST /shipments/returns — merujuk warehouses.id langsung, tidak dikirim -> gudang utama
+ * (ProductStock::resolveWarehouseId(null)). Ditambahkan sebagai field OPSIONAL, bukan versi baru
+ * — tidak dikirim berarti perilaku persis sama seperti sebelum multi-gudang ada, jadi pemanggil
+ * (PMO/IPM) yang belum mengirimkannya tidak perlu berubah apa pun.
+ *
+ * gudang_id hanya benar-benar memindahkan gudang untuk item satuan ECERAN
+ * (product_variants.retail_unit) — App\Support\SalesOrderStock, dipakai bersama halaman admin
+ * Pengiriman, sengaja hanya pernah menyimpan stok BULK (satuan lain) di SATU gudang utama.
+ * gudang_id non-utama pada item bulk tidak ditolak, tapi diam-diam tidak berpengaruh: cek stok
+ * (checkStockAvailability(), lewat App\Support\SalesOrderStock::resolveLineWarehouseId()) MAUPUN
+ * pemotongan sungguhan (buildPlan()) sama-sama tetap jatuh ke gudang utama. Ini bukan bug — cek
+ * stok DULU (sebelum 2026-08-31) tidak menyadari perbedaan bulk/retail ini sama sekali, sehingga
+ * angka yang dicek scheduled() bisa berbeda dari yang benar-benar dipotong shipped(); sudah
+ * disamakan. Lihat KNOWN_ISSUES.md untuk detail penemuan & perbaikannya.
  */
 class ShipmentController extends Controller
 {
@@ -92,9 +109,19 @@ class ShipmentController extends Controller
      * ditolak duplicate_ref_id (dikonfirmasi pemilik produk: BUKAN idempotent replay seperti
      * /payments/cash — pemanggil wajib pakai ref_shipment_id baru per percobaan).
      *
-     * Endpoint ini tidak menerima gudang_id — cek stok maupun sales_order_details.warehouse_id
-     * selalu memakai gudang utama lewat ProductStock::resolveWarehouseId(null), sama seperti
-     * default POST /stock/check ketika gudang_id tidak dikirim.
+     * gudang_id opsional, bentuk & aturan SAMA PERSIS dengan POST /stock/check (merujuk
+     * warehouses.id langsung, bukan kolom rujukan eksternal seperti ref_unit_id/ref_product_id —
+     * gudang tidak disinkronkan PMO). Tidak dikirim -> ProductStock::resolveWarehouseId(null):
+     * gudang utama (is_main_warehouse = 1). Nilai yang sama disimpan ke sales_order_details.
+     * warehouse_id setiap item — satu gudang untuk satu permintaan penjadwalan, tidak per-item
+     * seperti POST /shipments/returns.
+     *
+     * Cek stok (checkStockAvailability()) MENGHORMATI gudang_id apa adanya HANYA untuk item
+     * satuan eceran — untuk item satuan bulk, cek stok ikut aturan
+     * App\Support\SalesOrderStock::resolveLineWarehouseId() (lihat docblock kelas), sehingga
+     * gudang_id non-utama pada item bulk diam-diam dicek terhadap gudang utama, bukan gudang yang
+     * diminta — supaya angka yang dicek di sini konsisten dengan yang benar-benar akan dipotong
+     * shipped(). Lihat docblock kelas dan KNOWN_ISSUES.md.
      *
      * Tidak ada informasi harga pada kontrak permintaan ini (murni penjadwalan logistik) —
      * sod_harga/sod_subtotal/so_total seluruhnya disimpan 0, bukan mengarang harga.
@@ -108,6 +135,7 @@ class ShipmentController extends Controller
                 'required', 'string',
                 Rule::exists('customers', 'customer_code')->where('status', 1),
             ],
+            'gudang_id' => ['nullable', 'integer', Rule::exists('warehouses', 'id')->where('status', 1)],
             'auto_create_shortage_doc' => ['nullable', 'boolean'],
         ], $this->stockItemValidationRules()));
 
@@ -115,7 +143,7 @@ class ShipmentController extends Controller
             return $this->duplicateRefShipmentError($data['ref_shipment_id']);
         }
 
-        $warehouseId = ProductStock::resolveWarehouseId(null);
+        $warehouseId = ProductStock::resolveWarehouseId($data['gudang_id'] ?? null);
         $check = $this->checkStockAvailability($warehouseId, $data['items']);
 
         $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
@@ -235,11 +263,25 @@ class ShipmentController extends Controller
      * data URI base64 lewat JSON murni — lihat App\ExternalApi\Support\ShipmentPhotoStore.
      * Disimpan ke sales_orders.so_img (kolom yang sama dipakai halaman admin), folder
      * public/issue/ (sama persis dengan CustomerController::insertSalesOrder()).
+     *
+     * gudang_id opsional, bentuk & aturan SAMA dengan POST /stock/check dan
+     * POST /shipments/scheduled: merujuk warehouses.id langsung, tidak dikirim -> gudang utama
+     * (ProductStock::resolveWarehouseId(null)). Satu gudang berlaku untuk SELURUH item permintaan
+     * ini (bukan per-item), disimpan apa adanya ke sales_order_details.warehouse_id. Dianggap
+     * field substantif sama seperti items — mengirim ulang ref_shipment_id yang sama dengan
+     * gudang_id berbeda pada dokumen yang belum Confirmed ditolak shipment_detail_mismatch (lihat
+     * diffAgainstExisting()), bukan diam-diam dipindah.
+     *
+     * Pemotongan stok sesungguhnya (SalesOrderApproval::confirm() -> SalesOrderStock::buildPlan())
+     * HANYA menghormati gudang_id untuk item satuan eceran — item satuan bulk selalu dipotong dari
+     * gudang utama, tidak peduli gudang_id yang tersimpan di detail. Lihat docblock kelas ini dan
+     * KNOWN_ISSUES.md.
      */
     public function shipped(Request $request): JsonResponse
     {
         $data = $this->validateShippedPayload($request);
         $detailHandler = $data['detail_handler'] ?? 'force';
+        $warehouseId = ProductStock::resolveWarehouseId($data['gudang_id'] ?? null);
 
         [$variantsBySku, $unitsByRef] = $this->resolveVariantsAndUnits(
             array_column($data['items'], 'variant_sku'),
@@ -284,10 +326,10 @@ class ShipmentController extends Controller
             }
 
             if ($so === null) {
-                $so = DB::transaction(fn () => $this->createShippedSo($data, $customer, $resolvedItems, $photos));
+                $so = DB::transaction(fn () => $this->createShippedSo($data, $customer, $resolvedItems, $photos, $warehouseId));
                 $httpStatus = 201;
             } else {
-                $mismatch = $this->diffAgainstExisting($so, $data, $customer, $resolvedItems);
+                $mismatch = $this->diffAgainstExisting($so, $data, $customer, $resolvedItems, $warehouseId);
                 if ($mismatch !== []) {
                     if ($detailHandler === 'validate') {
                         $photos->cleanup();
@@ -295,7 +337,7 @@ class ShipmentController extends Controller
                         return $this->mismatchError($mismatch);
                     }
 
-                    $so = DB::transaction(fn () => $this->upsertShippedSo($so, $data, $customer, $resolvedItems, $photos));
+                    $so = DB::transaction(fn () => $this->upsertShippedSo($so, $data, $customer, $resolvedItems, $photos, $warehouseId));
                 }
             }
         } catch (\InvalidArgumentException $e) {
@@ -591,6 +633,7 @@ class ShipmentController extends Controller
                 Rule::exists('customers', 'customer_code')->where('status', 1),
             ],
             'notes' => ['nullable', 'string', 'max:2000'],
+            'gudang_id' => ['nullable', 'integer', Rule::exists('warehouses', 'id')->where('status', 1)],
             'detail_handler' => ['nullable', 'string', Rule::in(['force', 'validate'])],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_sku' => [
@@ -609,7 +652,7 @@ class ShipmentController extends Controller
         ]);
     }
 
-    private function createShippedSo(array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos): SalesOrder
+    private function createShippedSo(array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos, int $warehouseId): SalesOrder
     {
         $photoNames = ! empty($data['photos']) ? $photos->store($data['photos']) : [];
 
@@ -624,12 +667,12 @@ class ShipmentController extends Controller
         $so->status = self::STATUS_SCHEDULED;
         $so->save();
 
-        $this->replaceDetails($so, $resolvedItems);
+        $this->replaceDetails($so, $resolvedItems, $warehouseId);
 
         return $so;
     }
 
-    private function upsertShippedSo(SalesOrder $so, array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos): SalesOrder
+    private function upsertShippedSo(SalesOrder $so, array $data, Customer $customer, array $resolvedItems, ShipmentPhotoStore $photos, int $warehouseId): SalesOrder
     {
         if (array_key_exists('photos', $data) && $data['photos'] !== null) {
             $so->so_img = json_encode($photos->store($data['photos']));
@@ -640,7 +683,7 @@ class ShipmentController extends Controller
         $so->notes = $data['notes'] ?? null;
         $so->save();
 
-        $this->replaceDetails($so, $resolvedItems);
+        $this->replaceDetails($so, $resolvedItems, $warehouseId);
 
         return $so->fresh();
     }
@@ -648,14 +691,14 @@ class ShipmentController extends Controller
     /**
      * Ganti seluruh sales_order_details milik $so dengan $resolvedItems — baris lama yang tidak
      * ada lagi di daftar baru dinonaktifkan (status = 0), sama persis pola
-     * CustomerController::updateSalesOrder(). warehouse_id selalu gudang utama, sama seperti
-     * scheduled().
+     * CustomerController::updateSalesOrder(). $warehouseId sudah diresolusi pemanggil (gudang_id
+     * permintaan, atau gudang utama bila tidak dikirim — lihat docblock shipped()) dan berlaku
+     * untuk SELURUH baris, sama seperti scheduled().
      *
      * @param  array<int, array<string, mixed>>  $resolvedItems
      */
-    private function replaceDetails(SalesOrder $so, array $resolvedItems): void
+    private function replaceDetails(SalesOrder $so, array $resolvedItems, int $warehouseId): void
     {
-        $warehouseId = ProductStock::resolveWarehouseId(null);
         $keptIds = [];
 
         foreach ($resolvedItems as $item) {
@@ -679,16 +722,21 @@ class ShipmentController extends Controller
     /**
      * Bandingkan data tersimpan vs permintaan ini — dipanggil hanya saat SO sudah ada dan BELUM
      * Confirmed (lihat shipped()). Hanya field substantif yang dibandingkan (armada_code/
-     * shipment_date/notes/items — identitas + qty + unit_id); product_name/variant_name (label
-     * dekoratif) TIDAK dibandingkan, supaya perbedaan penulisan nama produk saja tidak memicu
-     * shipment_detail_mismatch. photos juga tidak dibandingkan (tidak ada cara membandingkan
-     * berkas baru vs nama berkas tersimpan secara berarti) — force selalu menimpanya kalau
-     * dikirim, validate mengabaikannya sama sekali.
+     * shipment_date/notes/items/gudang_id — identitas + qty + unit_id + warehouse_id);
+     * product_name/variant_name (label dekoratif) TIDAK dibandingkan, supaya perbedaan penulisan
+     * nama produk saja tidak memicu shipment_detail_mismatch. photos juga tidak dibandingkan
+     * (tidak ada cara membandingkan berkas baru vs nama berkas tersimpan secara berarti) — force
+     * selalu menimpanya kalau dikirim, validate mengabaikannya sama sekali.
+     *
+     * gudang_id diikutkan sejak fase 2 (multi-gudang): warehouse_id menentukan stok mana yang
+     * akhirnya dipotong saat dikonfirmasi, jadi permintaan kedua yang diam-diam pindah gudang
+     * (tanpa mengubah item apa pun) HARUS tetap terlihat sebagai mismatch, bukan lolos begitu
+     * saja karena hanya items yang dibandingkan.
      *
      * @param  array<int, array<string, mixed>>  $resolvedItems
      * @return array<int, string> nama field yang berbeda, kosong kalau sama persis
      */
-    private function diffAgainstExisting(SalesOrder $so, array $data, Customer $customer, array $resolvedItems): array
+    private function diffAgainstExisting(SalesOrder $so, array $data, Customer $customer, array $resolvedItems, int $warehouseId): array
     {
         $diffs = [];
 
@@ -713,6 +761,15 @@ class ShipmentController extends Controller
 
         if ($existingItems !== $incomingItems) {
             $diffs[] = 'items';
+        }
+
+        // Semua baris satu SO berbagi satu warehouse_id (lihat replaceDetails()) — baris lama
+        // dengan status=0 sengaja tidak ikut dibandingkan, sudah bukan bagian dari dokumen ini.
+        $existingWarehouseIds = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)
+            ->distinct()->pluck('warehouse_id')->map(fn ($id) => (int) $id)->values()->all();
+
+        if ($existingWarehouseIds !== [] && $existingWarehouseIds !== [$warehouseId]) {
+            $diffs[] = 'gudang_id';
         }
 
         return $diffs;

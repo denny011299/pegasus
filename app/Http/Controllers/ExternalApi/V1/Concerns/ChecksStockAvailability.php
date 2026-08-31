@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ExternalApi\V1\Concerns;
 use App\Models\ProductVariant;
 use App\Models\Unit;
 use App\Support\ProductUnitStock;
+use App\Support\SalesOrderStock;
 use Illuminate\Validation\Rule;
 
 /**
@@ -17,6 +18,15 @@ use Illuminate\Validation\Rule;
  * sama seperti dijelaskan di StockController. Pemanggil yang butuh id internal (mis. untuk
  * membuat sales_order_details) memakai product_variant_id/internal_unit_id/product_id yang ikut
  * dikembalikan di setiap baris hasil, bukan mem-parsing ulang sendiri.
+ *
+ * gudang_id/$warehouseId (2026-08-31): checkStockAvailability() TIDAK memakai $warehouseId apa
+ * adanya untuk setiap item lagi — setiap baris diresolusi ulang lewat
+ * App\Support\SalesOrderStock::resolveLineWarehouseId(), aturan bulk/retail yang SAMA PERSIS
+ * dengan SalesOrderStock::buildPlan() (dipakai App\Support\SalesOrderApproval::confirm() saat
+ * benar-benar memotong stok). Sebelum ini, item bulk yang gudang_id-nya menunjuk gudang eceran
+ * bisa lolos cek stok di gudang itu padahal potongannya nanti tetap jatuh ke gudang utama —
+ * angka yang DICEK dan gudang yang benar-benar DIPOTONG bisa berbeda. Lihat KNOWN_ISSUES.md,
+ * temuan 2026-08-31 dan keputusan perbaikannya.
  */
 trait ChecksStockAvailability
 {
@@ -44,6 +54,11 @@ trait ChecksStockAvailability
     }
 
     /**
+     * $warehouseId is the REQUESTED warehouse (gudang_id, already defaulted to gudang utama when
+     * omitted) — the warehouse actually consulted per item is resolved via
+     * SalesOrderStock::resolveLineWarehouseId(), which can differ from $warehouseId for a bulk
+     * item whose requested warehouse isn't main-type. See the class docblock.
+     *
      * @param  array<int, array{sku:string, qty:int, unit_id:int}>  $items  sudah lolos
      *   stockItemValidationRules() — sku/unit_id di sini dijamin ada di database, jadi variant/
      *   unit null di bawah cuma mungkin lewat race condition (baris dinonaktifkan tepat setelah
@@ -72,7 +87,7 @@ trait ChecksStockAvailability
 
             $available = ($variant && $unit)
                 ? (int) round(ProductUnitStock::totalAvailable(
-                    $warehouseId,
+                    SalesOrderStock::resolveLineWarehouseId($warehouseId, (int) $variant->product_variant_id, (int) $unit->unit_id),
                     (int) $variant->product_variant_id,
                     (int) $unit->unit_id,
                 ))

@@ -42,7 +42,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
     }
 
     /** @return array{variant: ProductVariant, sku: string} */
-    private function createProductFixture(Unit $unit): array
+    private function createProductFixture(Unit $unit, ?int $retailUnitId = null): array
     {
         $category = new Category();
         $category->category_name = 'Stock Check Test Category';
@@ -63,6 +63,7 @@ class ExternalApiStockCheckFlowTest extends TestCase
         $variant->product_variant_name = 'Stock Check Test Variant';
         $variant->product_variant_sku = $sku;
         $variant->product_variant_price = 0;
+        $variant->retail_unit = $retailUnitId;
         $variant->status = 1;
         $variant->save();
 
@@ -272,7 +273,13 @@ class ExternalApiStockCheckFlowTest extends TestCase
         $this->assertSame(7, $response->json('data.items.0.available'), 'omitting gudang_id must resolve to the main warehouse, not the retail one');
     }
 
-    public function test_check_uses_the_explicit_gudang_id_when_given(): void
+    /**
+     * gudang_id genuinely routes to any active warehouse — but only for a RETAIL-unit item
+     * (App\Support\SalesOrderStock::resolveLineWarehouseId()). See the bulk-item counterpart
+     * right below, and KNOWN_ISSUES.md's 2026-08-31 entry for why the two must be tested
+     * separately rather than assumed to behave the same way.
+     */
+    public function test_check_uses_the_explicit_gudang_id_when_given_for_a_retail_unit_item(): void
     {
         // gudang_id is validated as a real, ACTIVE warehouse (Rule::exists(...)->where('status',1)
         // in StockController::check()) -- self::RETAIL_WAREHOUSE_ID is only valid against the
@@ -283,7 +290,9 @@ class ExternalApiStockCheckFlowTest extends TestCase
         $headers = $this->externalApiHeaders();
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createUnit($refUnitId);
-        $fx = $this->createProductFixture($unit);
+        // The unit REQUESTED is the variant's own retail_unit, so resolveLineWarehouseId()
+        // takes the "isRetail" branch and passes gudang_id through unchanged.
+        $fx = $this->createProductFixture($unit, retailUnitId: $unit->unit_id);
         $this->createStock($fx['variant'], self::MAIN_WAREHOUSE_ID, $unit->unit_id, 7);
         $this->createStock($fx['variant'], $retailWarehouseId, $unit->unit_id, 42);
 
@@ -297,6 +306,42 @@ class ExternalApiStockCheckFlowTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSame(42, $response->json('data.items.0.available'));
+    }
+
+    /**
+     * The bulk counterpart, fixed 2026-08-31: a BULK (non-retail-unit) item's gudang_id pointing
+     * at a non-main warehouse must NOT be honored for the stock check either — it must resolve to
+     * gudang utama, exactly matching what App\Support\SalesOrderStock::buildPlan() will actually
+     * deduct from once a real shipment reaches confirmation. Before this fix,
+     * checkStockAvailability() used gudang_id as a flat pass-through regardless of item type, so
+     * this assertion would have returned 42 (the retail warehouse's stock) instead of 7 — the
+     * exact inconsistency documented in KNOWN_ISSUES.md.
+     */
+    public function test_check_ignores_a_non_main_gudang_id_for_a_bulk_item(): void
+    {
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+
+        $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit); // no retail_unit -> bulk item
+        $this->createStock($fx['variant'], self::MAIN_WAREHOUSE_ID, $unit->unit_id, 7);
+        $this->createStock($fx['variant'], $retailWarehouseId, $unit->unit_id, 42);
+
+        $response = $this->postJson('/api/external/v1/stock/check', [
+            'ref_shipment_id' => 'SHP-BULK-IGNORES-RETAIL-WH',
+            'gudang_id' => $retailWarehouseId,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(200);
+        $this->assertSame(
+            7,
+            $response->json('data.items.0.available'),
+            'a bulk item must be checked against gudang utama, matching where buildPlan() will actually deduct from — not the requested retail warehouse'
+        );
     }
 
     public function test_check_rejects_an_unknown_gudang_id(): void

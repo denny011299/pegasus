@@ -10,6 +10,8 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
 use App\Models\Unit;
+use App\Models\Warehouse;
+use App\Models\WarehouseType;
 use Illuminate\Http\UploadedFile;
 use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
@@ -95,16 +97,34 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         return ['variant' => $variant, 'sku' => $sku];
     }
 
-    private function createStock(ProductVariant $variant, int $unitId, int $qty): ProductStock
+    private function createStock(ProductVariant $variant, int $unitId, int $qty, ?int $warehouseId = null): ProductStock
     {
         return ProductStock::withoutGlobalScope('active_warehouse')->create([
             'product_id' => $variant->product_id,
             'product_variant_id' => $variant->product_variant_id,
             'unit_id' => $unitId,
-            'warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'warehouse_id' => $warehouseId ?? self::MAIN_WAREHOUSE_ID,
             'ps_stock' => $qty,
             'status' => 1,
         ]);
+    }
+
+    /** A second, freshly created, active warehouse — deliberately NOT the seeded main one. */
+    private function createSecondWarehouse(): Warehouse
+    {
+        $type = WarehouseType::create([
+            'warehouse_type_name' => 'Shipped Test Type '.uniqid(),
+            'is_main_warehouse' => 0,
+            'status' => 1,
+        ]);
+
+        $warehouse = new Warehouse();
+        $warehouse->warehouse_name = 'Shipped Test Warehouse '.uniqid();
+        $warehouse->warehouse_type_id = $type->id;
+        $warehouse->status = 1;
+        $warehouse->save();
+
+        return $warehouse;
     }
 
     private function itemPayload(string $sku, int $refUnitId, int $qty = 24): array
@@ -495,5 +515,183 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $path = public_path('issue/'.$storedPhotos[0]);
         $this->assertFileExists($path);
         $this->writtenPhotoPaths[] = $path;
+    }
+
+    /**
+     * gudang_id (2026-08-31, fase 2 multi-gudang) on a BULK (non-retail-unit) item, brand-new
+     * shipment: the detail row is stored with the requested warehouse (scheduled()'s behaviour,
+     * unaffected here), but the actual stock deduction goes through the SAME
+     * App\Support\SalesOrderStock::buildPlan() the admin Pengiriman ACC uses — and that class's
+     * documented design (its own docblock: "satuan lain -> gudang utama aktif ... atau
+     * warehouse_id pada detail", `inferBulkWarehouseFromLines()`) routes every non-retail-unit
+     * line to a MAIN-type warehouse ONLY, silently ignoring a detail row's warehouse_id when it
+     * is not itself main-type. Confirmed on FIRST attempt against real code (not a test mistake —
+     * traced buildPlan()'s isMainWarehouse() branch directly): this is not something this session
+     * introduced, it is the same centralize-bulk-stock-at-gudang-utama design already governing
+     * the admin flow, now reachable through the new gudang_id field. See KNOWN_ISSUES.md.
+     */
+    public function test_shipped_with_gudang_id_on_a_bulk_item_still_deducts_from_the_main_warehouse(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $secondWarehouse = $this->createSecondWarehouse();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $mainStock = $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $secondStock = $this->createStock($fx['variant'], $unit->unit_id, 100, (int) $secondWarehouse->id);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => (int) $secondWarehouse->id,
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true]);
+
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
+        $this->assertSame(
+            (int) $secondWarehouse->id,
+            (int) $detail->warehouse_id,
+            'the detail row itself still records the requested warehouse...'
+        );
+
+        $mainStock->refresh();
+        $secondStock->refresh();
+        $this->assertSame(
+            76,
+            (int) $mainStock->ps_stock,
+            '...but buildPlan() deducts the actual stock from gudang utama regardless, per its documented bulk-routing rule'
+        );
+        $this->assertSame(100, (int) $secondStock->ps_stock, 'the requested non-main warehouse is never touched for a bulk-unit item');
+    }
+
+    /** Omitting gudang_id must still behave exactly as it always did: gudang utama. */
+    public function test_shipped_without_gudang_id_still_defaults_to_the_main_warehouse(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
+        ], $headers)->assertStatus(201);
+
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
+        $this->assertSame(self::MAIN_WAREHOUSE_ID, (int) $detail->warehouse_id);
+    }
+
+    public function test_shipped_rejects_an_unknown_gudang_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+
+        $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => 'SHP-'.uniqid(),
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => 999999999,
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
+    /**
+     * A scheduled-but-not-yet-confirmed shipment resubmitted with a DIFFERENT gudang_id (same
+     * items otherwise) must be treated as a substantive mismatch, not silently moved — this is
+     * the diffAgainstExisting() addition, distinct from the 'items' mismatch already covered
+     * above.
+     */
+    public function test_shipped_treats_a_changed_gudang_id_as_a_mismatch_under_validate(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $secondWarehouse = $this->createSecondWarehouse();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $this->createStock($fx['variant'], $unit->unit_id, 100, (int) $secondWarehouse->id);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers)->assertStatus(201);
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => (int) $secondWarehouse->id,
+            'detail_handler' => 'validate',
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+        ], $headers);
+
+        $response->assertStatus(409)->assertJson([
+            'success' => false,
+            'error' => ['code' => 'SHIPMENT_DETAIL_MISMATCH'],
+        ]);
+        $this->assertContains('gudang_id', $response->json('error.details.mismatched_fields'));
+        $this->assertNotContains('items', $response->json('error.details.mismatched_fields'), 'items themselves are identical — only the warehouse changed');
+
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
+        $this->assertSame(self::MAIN_WAREHOUSE_ID, (int) $detail->warehouse_id, 'validate must never change stored data');
+    }
+
+    /** The "force" counterpart: a changed gudang_id IS applied, moving the detail row's warehouse. */
+    public function test_shipped_force_moves_the_warehouse_when_gudang_id_changes(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $secondWarehouse = $this->createSecondWarehouse();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $this->createStock($fx['variant'], $unit->unit_id, 100, (int) $secondWarehouse->id);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers)->assertStatus(201);
+
+        $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'gudang_id' => (int) $secondWarehouse->id,
+            'detail_handler' => 'force',
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+        ], $headers)->assertStatus(200)->assertJson(['success' => true]);
+
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
+        $this->assertSame((int) $secondWarehouse->id, (int) $detail->warehouse_id);
     }
 }

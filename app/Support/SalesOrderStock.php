@@ -59,6 +59,40 @@ class SalesOrderStock
     }
 
     /**
+     * Warehouse efektif untuk SATU baris (product_variant_id + unit_id) dengan aturan bulk/retail
+     * yang SAMA PERSIS dengan buildPlan() di bawah — dipakai
+     * App\Http\Controllers\ExternalApi\V1\Concerns\ChecksStockAvailability::checkStockAvailability()
+     * supaya angka stok yang DICEK (POST /stock/check, POST /shipments/scheduled) konsisten
+     * dengan gudang yang benar-benar akan DIPOTONG nanti lewat buildPlan() (POST
+     * /shipments/shipped). Sebelum helper ini ada, checkStockAvailability() memakai
+     * $requestedWarehouseId apa adanya untuk SEMUA item — bulk maupun eceran — sehingga item
+     * bulk yang gudang_id-nya menunjuk gudang eceran bisa lolos cek stok di gudang itu padahal
+     * potongannya nanti tetap jatuh ke gudang utama. Lihat KNOWN_ISSUES.md, temuan 2026-08-31.
+     *
+     * - Satuan eceran (retail_unit produk): $requestedWarehouseId dipakai apa adanya. Validasi
+     *   "harus gudang eceran aktif" tetap hanya di buildPlan() — di sini murni pembacaan.
+     * - Satuan lain (bulk): $requestedWarehouseId dipakai HANYA kalau memang gudang utama;
+     *   selain itu jatuh ke resolveBulkWarehouseId(null) (sesi aktif kalau gudang utama, atau
+     *   gudang utama sistem) — persis logika `else` pada buildPlan().
+     */
+    public static function resolveLineWarehouseId(int $requestedWarehouseId, int $productVariantId, int $unitId): int
+    {
+        $retailUnit = 0;
+        if (Schema::hasColumn('product_variants', 'retail_unit')) {
+            $retailUnit = (int) (ProductVariant::where('product_variant_id', $productVariantId)->value('retail_unit') ?? 0);
+        }
+
+        $isRetail = $retailUnit > 0 && $unitId === $retailUnit;
+        if ($isRetail) {
+            return $requestedWarehouseId;
+        }
+
+        return self::resolveBulkWarehouseId(
+            ($requestedWarehouseId > 0 && self::isMainWarehouse($requestedWarehouseId)) ? $requestedWarehouseId : null
+        );
+    }
+
+    /**
      * Isi warehouse_id pada item non-eceran dari gudang utama aktif (untuk disimpan ke detail).
      *
      * @param  array<int, array<string, mixed>>  $products
