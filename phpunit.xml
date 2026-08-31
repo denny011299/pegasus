@@ -33,6 +33,14 @@
         </include>
     </source>
     <php>
+        <!--
+            The full unfiltered suite peaks around 206 MB (817 tests sharing one
+            booted app across seven suites), so PHP's default 128M limit kills
+            the run partway through with a bare "Allowed memory size exhausted"
+            and no PHPUnit summary. Filtered/per-suite runs stay well under it,
+            which is why this only bites the full run.
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
