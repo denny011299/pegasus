@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web(append: [
             \App\Http\Middleware\LogDashboardActivity::class,
+            \App\Http\Middleware\EnforceAppMaintenance::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
