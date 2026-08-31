@@ -18,8 +18,10 @@ use Illuminate\Support\Carbon;
  * header kunci. Dua jalur ini tidak boleh saling meminjam: kunci API tidak
  * pernah membuka halaman admin, dan sesi admin tidak pernah membuka API.
  *
- * Aplikasi & kunci yang lolos diselipkan ke atribut Request supaya endpoint
- * bisnis di fase berikutnya bisa mengambilnya lewat helper di kelas ini.
+ * Aplikasi & kunci yang identitasnya terbukti diselipkan ke atribut Request
+ * supaya endpoint bisnis bisa mengambilnya lewat helper di kelas ini, dan
+ * supaya RequestLogger bisa mencatat identitas itu pada permintaan yang
+ * DITOLAK karena status juga, bukan cuma yang berhasil.
  */
 class ExternalApiAuthenticator
 {
@@ -62,6 +64,39 @@ class ExternalApiAuthenticator
             return $this->invalidKey();
         }
 
+        // Mulai titik ini identitas kunci SUDAH TERBUKTI: prefix-nya ketemu
+        // dan rahasianya cocok. Atribut dipasang sekarang, bukan nanti di
+        // jalur sukses saja, supaya permintaan yang ditolak karena status
+        // (dicabut/kedaluwarsa/aplikasi dinonaktifkan) tetap tercatat lengkap
+        // di External API Log — dulu seluruh kolom identitasnya null, jadi
+        // memfilter halaman log per aplikasi/kunci diam-diam cuma memunculkan
+        // permintaan yang berhasil, justru bukan yang sedang ditelusuri.
+        //
+        // Aman dipasang sebelum keputusan terima/tolak: AuthenticateExternalApi
+        // mengembalikan respons error tanpa memanggil $next(), jadi tidak ada
+        // controller yang pernah jalan untuk permintaan yang ditolak — satu-
+        // satunya pembaca atribut ini pada jalur gagal adalah RequestLogger.
+        //
+        // Jalur invalidKey() di ATAS sengaja tidak ikut: di sana tidak ada
+        // identitas yang terbukti (prefix tak dikenal / rahasia tidak cocok),
+        // dan membiarkannya kosong menjaga sifat anti-penebakan kunci.
+        $request->attributes->set(self::REQUEST_KEY, $key);
+
+        // Dimuat lebih awal dari sebelumnya supaya nama aplikasi ikut tercatat
+        // pada penolakan "dicabut"/"kedaluwarsa" juga. URUTAN PEMERIKSAAN DI
+        // BAWAH TIDAK BERUBAH — hanya query-nya yang naik — sehingga kode
+        // error yang diterima klien persis sama seperti sebelumnya (kunci
+        // dicabut milik aplikasi terhapus tetap dijawab API_KEY_REVOKED, bukan
+        // INVALID_API_KEY).
+        /** @var ExternalApplication|null $application */
+        $application = ExternalApplication::where('external_application_id', '=', $key->external_application_id)
+            ->where('status', '=', 1)
+            ->first();
+
+        if ($application) {
+            $request->attributes->set(self::REQUEST_APPLICATION, $application);
+        }
+
         $status = (new ExternalApiKey())->effectiveStatus($key);
 
         if ($status === ExternalApiKey::STATUS_REVOKED) {
@@ -78,13 +113,11 @@ class ExternalApiAuthenticator
             );
         }
 
-        /** @var ExternalApplication|null $application */
-        $application = ExternalApplication::where('external_application_id', '=', $key->external_application_id)
-            ->where('status', '=', 1)
-            ->first();
-
         // Aplikasi terhapus diperlakukan sama dengan kunci tidak dikenal: dari
-        // sisi klien, kunci itu memang sudah tidak berlaku.
+        // sisi klien, kunci itu memang sudah tidak berlaku. Identitas kuncinya
+        // sendiri tetap tercatat di log (atribut sudah dipasang di atas) —
+        // yang tidak tercatat cuma aplikasinya, karena baris itu memang sudah
+        // tidak ada lagi.
         if (!$application) {
             return $this->invalidKey();
         }
@@ -99,19 +132,24 @@ class ExternalApiAuthenticator
 
         $this->touchLastUsed($key);
 
-        $request->attributes->set(self::REQUEST_APPLICATION, $application);
-        $request->attributes->set(self::REQUEST_KEY, $key);
-
         return AuthenticationResult::success($application, $key);
     }
 
-    /** Aplikasi pemilik kunci pada request yang sudah lolos autentikasi. */
+    /**
+     * Aplikasi pemilik kunci pada request ini, kalau identitasnya sudah
+     * terbukti — TIDAK selalu berarti request-nya lolos autentikasi: pada
+     * permintaan yang ditolak karena status (kunci dicabut/kedaluwarsa,
+     * aplikasi dinonaktifkan) nilainya juga terisi, supaya RequestLogger bisa
+     * mencatat siapa yang mencoba. Endpoint bisnis tidak perlu peduli beda ini
+     * — AuthenticateExternalApi tidak pernah meneruskan permintaan yang gagal,
+     * jadi di dalam controller nilai ini selalu berarti "sudah lolos".
+     */
     public static function application(Request $request): ?ExternalApplication
     {
         return $request->attributes->get(self::REQUEST_APPLICATION);
     }
 
-    /** Kunci yang dipakai pada request yang sudah lolos autentikasi. */
+    /** Kunci yang dipakai pada request ini — lihat catatan di application(). */
     public static function key(Request $request): ?ExternalApiKey
     {
         return $request->attributes->get(self::REQUEST_KEY);
