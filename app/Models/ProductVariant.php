@@ -72,6 +72,20 @@ class ProductVariant extends Model
 
         $variants = $result->get();
 
+        // Gudang eceran cuma boleh menghitung/menerima satuan eceran varian ini -- kembaran
+        // persis aturan StockController::getStock() (list Stok Produk), supaya konsumen endpoint
+        // ini (a.l. CreateStockOpname.js lewat /getProductVariant) tidak menawarkan satuan gudang
+        // utama (mis. DOS) di gudang yang memang hanya menyimpan eceran (mis. Piece).
+        $warehouseId = ProductStock::resolveWarehouseId(null);
+        $isMainWarehouse = true;
+        if ($warehouseId) {
+            $warehouse = Warehouse::query()
+                ->with(['type' => fn ($q) => $q->select('id', 'warehouse_type_name', 'is_main_warehouse')])
+                ->find($warehouseId);
+            $isMainWarehouse = ! $warehouse || ! $warehouse->type || (int) $warehouse->type->is_main_warehouse === 1;
+        }
+        $hasRetailUnitColumn = Schema::hasColumn('product_variants', 'retail_unit');
+
         // Menambahkan nama produk dari relasi
         foreach ($variants as $variant) {
             $p = Product::find($variant->product_id);
@@ -87,6 +101,13 @@ class ProductVariant extends Model
                 "product_variant_id" => $variant->product_variant_id,
                 "relations" => $variant->relasi,
             ]);
+
+            if (! $isMainWarehouse) {
+                $retailUnitId = $hasRetailUnitColumn ? (int) ($variant->retail_unit ?? 0) : 0;
+                $variant->stock = $retailUnitId > 0
+                    ? $variant->stock->filter(fn ($s) => (int) $s->unit_id === $retailUnitId)->values()
+                    : collect();
+            }
 
             // Get nama unit default
 
