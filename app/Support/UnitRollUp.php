@@ -110,14 +110,27 @@ class UnitRollUp
      * Satuan yang diisi tapi sama sekali tidak terhubung ke $chain (relasi tidak dikenal untuk
      * satuan itu) TIDAK ikut dihitung/ditulis di sini -- tetap seperti aslinya.
      *
+     * $existingByUnitId (perbaikan bug dilaporkan user, multi-gudang): stok LIVE yang sudah ada di
+     * satuan yang TIDAK diisi, dipakai sebagai bawaan default saat carry naik melewati satuan itu.
+     * Tanpa ini, "84 DOS (sudah benar) + isi Piece 1000 sendirian (1 DOS = 12 pcs)" tergulung jadi
+     * 83 DOS + 4 Piece -- DOS yang sudah ada 84 lenyap diam-diam digantikan angka yang cuma berasal
+     * dari perhitungan Piece, dan angka itu ikut tertulis ke ps_stock saat ACC karena tidak lagi
+     * NULL. Dengan bawaan ini, satuan yang tidak diisi menyumbang stok live-nya sendiri ke carry
+     * (84 + 83 = 167 DOS), match kekekalan jumlah fisik (84*12 + 1000 = 167*12 + 4). Kalau satuan
+     * itu MEMANG diisi eksplisit oleh staf, bawaan itu diabaikan (dianggap koreksi baru, bukan
+     * ditambah ke yang lama) -- lihat pemakaian `??` di bawah, entered selalu menang lebih dulu.
+     * Default [] mereproduksi perilaku lama persis (satuan pemanggil yang tidak pernah memberi ini).
+     *
      * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
      * @param  array<int, int|null>  $qtyByUnitId  null = satuan ini TIDAK diisi
      * @param  array<int, int>  $allowedUnitIds
+     * @param  array<int, int>  $existingByUnitId  stok live per satuan, dipakai HANYA untuk satuan
+     *         yang tidak diisi di $qtyByUnitId (lihat penjelasan di atas)
      * @return array<int, array{unit_id: int, qty: int}>  hanya satuan yang benar-benar
      *         disentuh/dihasilkan gulungan ini -- satuan yang tidak diisi dan tidak ikut tergulung
      *         TIDAK muncul di sini sama sekali (biarkan tetap NULL, jangan ditulis ulang).
      */
-    public static function collapse(array $chain, array $qtyByUnitId, array $allowedUnitIds): array
+    public static function collapse(array $chain, array $qtyByUnitId, array $allowedUnitIds, array $existingByUnitId = []): array
     {
         $entered = array_filter($qtyByUnitId, fn ($q) => $q !== null);
         if ($entered === [] || $chain === []) {
@@ -165,8 +178,10 @@ class UnitRollUp
             $credits[] = ['unit_id' => $current, 'qty' => $carry % $rel['ratio']];
             // Lipat nilai yang staf isi SENDIRI di tingkat ini (kalau ada) ke dalam bawaan naik --
             // inilah yang membuat "DOS diisi 1 DAN pcs diisi 15" digabung benar (bukan cuma
-            // menggulung salah satu lalu mengabaikan yang lain).
-            $carry = (int) floor($carry / $rel['ratio']) + (int) ($enteredInChain[$rel['big']] ?? 0);
+            // menggulung salah satu lalu mengabaikan yang lain). Kalau TIDAK diisi, lipat stok
+            // LIVE yang sudah ada di satuan itu (bukan 0) -- lihat docblock $existingByUnitId di
+            // atas untuk alasan lengkap (satuan yang tidak disentuh tidak boleh lenyap).
+            $carry = (int) floor($carry / $rel['ratio']) + (int) ($enteredInChain[$rel['big']] ?? $existingByUnitId[$rel['big']] ?? 0);
             $current = $rel['big'];
             $visited[$current] = true;
         }
@@ -206,7 +221,8 @@ class UnitRollUp
         return self::collapse(
             self::productChain($productVariantId),
             $qtyByUnitId,
-            self::allowedProductUnitIds($productVariantId, $warehouseId)
+            self::allowedProductUnitIds($productVariantId, $warehouseId),
+            self::existingProductStockByUnit($productVariantId, $warehouseId)
         );
     }
 
@@ -223,8 +239,46 @@ class UnitRollUp
         return self::collapse(
             self::suppliesChain($suppliesId),
             $qtyByUnitId,
-            self::allowedSuppliesUnitIds($suppliesId, $warehouseId)
+            self::allowedSuppliesUnitIds($suppliesId, $warehouseId),
+            self::existingSuppliesStockByUnit($suppliesId, $warehouseId)
         );
+    }
+
+    /**
+     * Stok live saat ini per satuan -- dipakai collapseProduct() untuk melipat satuan yang TIDAK
+     * diisi ke dalam carry gulungan (lihat docblock collapse()'s $existingByUnitId). $warehouseId
+     * berperilaku persis seperti allowedProductUnitIds() -- dipin ke SATU gudang, bukan scope
+     * gudang aktif sesi, karena di multi-gudang (product_stocks, unit) bukan lagi baris tunggal.
+     *
+     * @return array<int, int> unit_id => ps_stock
+     */
+    public static function existingProductStockByUnit(int $productVariantId, ?int $warehouseId = null): array
+    {
+        return (($warehouseId !== null)
+                ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : ProductStock::query())
+            ->where('product_variant_id', $productVariantId)
+            ->where('status', 1)
+            ->pluck('ps_stock', 'unit_id')
+            ->map(fn ($q) => (int) $q)
+            ->all();
+    }
+
+    /**
+     * Kembaran existingProductStockByUnit() untuk Bahan/Supplies -- lihat docblock itu.
+     *
+     * @return array<int, int> unit_id => ss_stock
+     */
+    public static function existingSuppliesStockByUnit(int $suppliesId, ?int $warehouseId = null): array
+    {
+        return (($warehouseId !== null)
+                ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : SuppliesStock::query())
+            ->where('supplies_id', $suppliesId)
+            ->where('status', 1)
+            ->pluck('ss_stock', 'unit_id')
+            ->map(fn ($q) => (int) $q)
+            ->all();
     }
 
     /**

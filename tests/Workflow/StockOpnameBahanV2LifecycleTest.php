@@ -342,10 +342,14 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         return [$supplies, $dos, $pcs, $dosUnit, $pcsUnit];
     }
 
-    /** Contoh persis dari PM: 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs. */
+    /**
+     * Contoh persis dari PM: 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs. DOS live
+     * sengaja 0 di sini -- lihat kembaran Produknya di StockOpnameV2LifecycleTest untuk kasus DOS
+     * yang sudah punya stok live.
+     */
     public function test_roll_up_converts_a_filled_small_unit_into_an_untouched_big_one(): void
     {
-        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder();
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
         $stob = $this->makeDocument(isDraft: false);
         $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
@@ -360,7 +364,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     public function test_roll_up_applies_equally_to_draft_and_pending_documents(): void
     {
         foreach ([true, false] as $isDraft) {
-            [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder();
+            [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
             $stob = $this->makeDocument(isDraft: $isDraft);
             $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
@@ -415,6 +419,22 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
         $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
         $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty);
+    }
+
+    /** Kembaran persis Produk -- lihat StockOpnameV2LifecycleTest untuk alasan lengkap. */
+    public function test_roll_up_folds_existing_live_stock_of_an_untouched_unit_instead_of_erasing_it(): void
+    {
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 84, pcsStock: 0, ratio: 12);
+        $stob = $this->makeDocument(isDraft: false);
+        $stob->warehouse_id = 1;
+        $stob->save();
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 1000, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(4, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
+        $this->assertSame(167, (int) $lines[$dos->unit_id]->sobl_counted_qty, '84 DOS lama harus ikut terbawa, bukan digantikan angka dari Piece saja');
     }
 
     public function test_roll_up_does_nothing_on_a_legacy_document(): void

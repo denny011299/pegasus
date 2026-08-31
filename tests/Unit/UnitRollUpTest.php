@@ -313,4 +313,71 @@ class UnitRollUpTest extends TestCase
 
         $this->assertSame(100, $total);
     }
+
+    // ---------------------------------------------------------- collapse() $existingByUnitId
+
+    /**
+     * Bug dilaporkan user (multi-gudang, 2026-08-31): stok live sudah 84 DOS + 0 Piece (sudah
+     * kanonik, 1 DOS = 12 Piece). Staf isi HANYA Piece = 1000, DOS dibiarkan kosong. Tanpa melipat
+     * stok live yang sudah ada di DOS ke dalam carry, hasilnya 83 DOS + 4 Piece -- 84 DOS yang
+     * sudah ada lenyap diam-diam DIGANTIKAN angka yang cuma berasal dari perhitungan Piece
+     * sendirian, dan angka itu ikut tertulis ke ps_stock saat ACC karena tidak lagi NULL.
+     */
+    public function test_collapse_folds_existing_live_stock_of_an_untouched_unit_into_the_carry(): void
+    {
+        $result = UnitRollUp::collapse(
+            $this->ladder(),
+            [self::PIECE => 1000, self::DOS => null, self::SAK => null],
+            $this->allUnits(),
+            [self::DOS => 84] // stok live yang sudah ada, DOS tidak disentuh dokumen ini
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => 4],
+            // 84 lama + 83 hasil gulungan 1000 pcs = 167, lalu ikut naik lagi ke SAK (1 Sak = 2 DOS)
+            ['unit_id' => self::DOS, 'qty' => 1],
+            ['unit_id' => self::SAK, 'qty' => 83],
+        ], $result);
+
+        // Kekekalan fisik: 84 DOS lama (1008 pcs) + 1000 pcs baru = 2008, harus sama dengan hasil.
+        $pieceEquivalent = [self::PIECE => 1, self::DOS => 12, self::SAK => 24];
+        $total = 0;
+        foreach ($result as $credit) {
+            $total += $credit['qty'] * $pieceEquivalent[$credit['unit_id']];
+        }
+        $this->assertSame(84 * 12 + 1000, $total);
+    }
+
+    /** Default [] (pemanggil lama yang tidak memberi existingByUnitId) tidak boleh berubah perilakunya. */
+    public function test_collapse_without_existing_by_unit_id_reproduces_the_old_behaviour(): void
+    {
+        $result = UnitRollUp::collapse(
+            $this->ladder(),
+            [self::PIECE => 1000, self::DOS => null, self::SAK => null],
+            $this->allUnits()
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => 4],
+            ['unit_id' => self::DOS, 'qty' => 1],
+            ['unit_id' => self::SAK, 'qty' => 41],
+        ], $result);
+    }
+
+    /** Satuan yang DIISI EKSPLISIT oleh staf tidak boleh ikut dilipat dengan stok lamanya -- itu koreksi baru, bukan tambahan. */
+    public function test_collapse_ignores_existing_stock_for_a_unit_the_staff_explicitly_filled(): void
+    {
+        $result = UnitRollUp::collapse(
+            $this->ladder(),
+            [self::PIECE => 15, self::DOS => 1, self::SAK => null],
+            $this->allUnits(),
+            [self::DOS => 84] // harus diabaikan -- DOS diisi eksplisit oleh staf jadi 1
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => 3],
+            ['unit_id' => self::DOS, 'qty' => 0],
+            ['unit_id' => self::SAK, 'qty' => 1], // (15 pcs -> 1 DOS + 3 pcs) + DOS diisi 1 = 2 DOS = 1 SAK, BUKAN + 84
+        ], $result);
+    }
 }
