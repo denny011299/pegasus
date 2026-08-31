@@ -231,12 +231,9 @@ function inisialisasi() {
                     var iconBg = isUtama ? "#eff6ff" : "#f8fafc";
                     var iconColor = isUtama ? "#2563eb" : "#64748b";
                     var iconBorder = isUtama ? "#bfdbfe" : "#e2e8f0";
-                    var badgeBg = isUtama ? "#dbeafe" : "#e0f2fe";
-                    var badgeColor = isUtama ? "#1e40af" : "#0369a1";
-                    var badgeBorder = isUtama ? "#bfdbfe" : "#bae6fd";
                     return (
-                        '<div style="display:flex;align-items:center;justify-content:flex-start;gap:12px;">' +
-                        '<div style="width:36px;height:36px;border-radius:10px;background:' +
+                        '<div style="display:flex;align-items:center;justify-content:flex-start;gap:10px;min-width:0;">' +
+                        '<div style="width:34px;height:34px;border-radius:8px;background:' +
                         iconBg +
                         ";border:1px solid " +
                         iconBorder +
@@ -244,15 +241,9 @@ function inisialisasi() {
                         iconColor +
                         ';flex-shrink:0;"><i class="' +
                         iconClass +
-                        '"></i></div>' +
-                        '<span class="badge" style="background-color:' +
-                        badgeBg +
-                        ";color:" +
-                        badgeColor +
-                        ";border:1px solid " +
-                        badgeBorder +
-                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
-                        data +
+                        '" style="font-size:13px;"></i></div>' +
+                        '<span class="fw-semibold text-dark" style="max-width:170px;white-space:normal;line-height:1.35;font-size:13px;word-break:break-word;display:inline-block;">' +
+                        (data || "-") +
                         "</span></div>"
                     );
                 },
@@ -278,7 +269,7 @@ function inisialisasi() {
                         color +
                         ";border:1px solid " +
                         border +
-                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
+                        ';padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;white-space:nowrap;">' +
                         data +
                         "</span>"
                     );
@@ -344,12 +335,12 @@ function inisialisasi() {
                     if (type !== "display") return data;
                     if (data == 1) {
                         return (
-                            '<span class="badge" style="background-color:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
+                            '<span class="badge" style="background-color:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;white-space:nowrap;">' +
                             '<i class="fas fa-circle me-1" style="font-size:8px;"></i> Aktif</span>'
                         );
                     }
                     return (
-                        '<span class="badge" style="background-color:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;">' +
+                        '<span class="badge" style="background-color:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:6px 14px;border-radius:20px;font-weight:600;font-size:12px;white-space:nowrap;">' +
                         '<i class="fas fa-circle me-1" style="font-size:8px;"></i> Non Aktif</span>'
                     );
                 },

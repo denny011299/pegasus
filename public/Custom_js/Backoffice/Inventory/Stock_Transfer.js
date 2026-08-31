@@ -602,27 +602,29 @@ function inisialisasi() {
             },
             {
                 data: "from_warehouse_name",
-                width: "12%",
+                width: "14%",
+                className: "st-col-warehouse",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                    return `<div style="display:flex;align-items:center;gap:10px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
                                     <i class="fe fe-arrow-up-right"></i>
                                 </div>
-                                <span class="text-dark text-nowrap">${data}</span>
+                                <span class="text-dark st-warehouse-name">${data}</span>
                             </div>`;
                 }
             },
             {
                 data: "to_warehouse_name",
-                width: "12%",
+                width: "14%",
+                className: "st-col-warehouse",
                 render: function(data) {
                     if(!data || data === "-") return "-";
-                    return `<div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                    return `<div style="display:flex;align-items:center;gap:10px;">
                                 <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
                                     <i class="fe fe-arrow-down-left"></i>
                                 </div>
-                                <span class="text-dark text-nowrap">${data}</span>
+                                <span class="text-dark st-warehouse-name">${data}</span>
                             </div>`;
                 }
             },
@@ -2520,7 +2522,13 @@ function syncTransferModalChrome() {
         $transfer.addClass("d-none").removeClass("d-inline-flex");
         hideApprovals();
     } else if (isViewing) {
-        setTransferModalMode("form");
+        // Ada aksi ACC (Kirim / Tolak / Approve) → chrome hijau confirm; view-only → biru form
+        var hasAccAction =
+            transferCanShip ||
+            transferCanReject ||
+            transferCanApproveQc ||
+            transferCanApproveOps;
+        setTransferModalMode(hasAccAction ? "confirm" : "form");
         $title.text("Detail Stock Transfer");
         $sub.text(
             (transferCanEdit
@@ -3503,7 +3511,10 @@ function approveStockTransfer(type) {
         success: function (res) {
             $confirmBtn.data("busy", false);
             if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton($confirmBtn, "Konfirmasi");
+                ResetLoadingButton(
+                    $confirmBtn,
+                    '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                );
             }
             if (!res || res.status != 1) {
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
@@ -3541,7 +3552,10 @@ function approveStockTransfer(type) {
         error: function (xhr) {
             $confirmBtn.data("busy", false);
             if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton($confirmBtn, "Konfirmasi");
+                ResetLoadingButton(
+                    $confirmBtn,
+                    '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                );
             }
             if (typeof closeModalConfirm === "function") closeModalConfirm();
             var msg =
@@ -4039,7 +4053,7 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         return;
     }
     $confirmBtn.data("busy", true);
-    LoadingButton(this);
+    LoadingButton($confirmBtn);
     $.ajax({
         url: "/shipStockTransfer",
         method: "post",
@@ -4049,7 +4063,10 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         },
         success: function (res) {
             $confirmBtn.data("busy", false);
-            ResetLoadingButton("#btn-ship-stock-transfer", "Konfirmasi");
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             if (!res || res.status != 1) {
                 closeModalConfirm();
                 if (typeof toastr !== "undefined") {
@@ -4065,7 +4082,10 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         },
         error: function (xhr) {
             $confirmBtn.data("busy", false);
-            ResetLoadingButton("#btn-ship-stock-transfer", "Konfirmasi");
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             closeModalConfirm();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
@@ -4093,9 +4113,12 @@ $(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", func
 });
 
 $(document).on("click", "#btn-reject-stock-transfer", function () {
-    var id = $(this).attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
+    var $confirmBtn = $(this);
+    if ($confirmBtn.data("busy")) return;
+    var id = $confirmBtn.attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
     if (!id) return;
-    LoadingButton(this);
+    $confirmBtn.data("busy", true);
+    LoadingButton($confirmBtn);
     $.ajax({
         url: "/rejectStockTransfer",
         method: "post",
@@ -4104,7 +4127,11 @@ $(document).on("click", "#btn-reject-stock-transfer", function () {
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
+            $confirmBtn.data("busy", false);
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             if (!res || res.status != 1) {
                 closeModalConfirm();
                 if (typeof toastr !== "undefined") {
@@ -4119,7 +4146,11 @@ $(document).on("click", "#btn-reject-stock-transfer", function () {
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
-            ResetLoadingButton("#btn-reject-stock-transfer", "Konfirmasi");
+            $confirmBtn.data("busy", false);
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             closeModalConfirm();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
@@ -4153,9 +4184,12 @@ $(document).on("click", ".btn-reject-accept-transfer", function () {
 });
 
 $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
-    var id = $(this).attr("data-id");
+    var $confirmBtn = $(this);
+    if ($confirmBtn.data("busy")) return;
+    var id = $confirmBtn.attr("data-id");
     if (!id) return;
-    LoadingButton(this);
+    $confirmBtn.data("busy", true);
+    LoadingButton($confirmBtn);
     $.ajax({
         url: "/cancelKirimStockTransfer",
         method: "post",
@@ -4164,7 +4198,11 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            ResetLoadingButton("#btn-cancel-kirim-stock-transfer", "Konfirmasi");
+            $confirmBtn.data("busy", false);
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             if (typeof closeModalDanger === "function") closeModalDanger();
             if (!res || res.status != 1) {
                 if (typeof toastr !== "undefined") {
@@ -4178,7 +4216,11 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
             if (table) table.ajax.reload(null, false);
         },
         error: function (xhr) {
-            ResetLoadingButton("#btn-cancel-kirim-stock-transfer", "Konfirmasi");
+            $confirmBtn.data("busy", false);
+            ResetLoadingButton(
+                $confirmBtn,
+                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+            );
             if (typeof closeModalDanger === "function") closeModalDanger();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
@@ -4354,12 +4396,12 @@ $(document).on("click", "#btn-confirm-accept-stock-transfer", function () {
     var id =
         $confirmBtn.attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
     if (!id) return;
-    markTransferOverlayDone();
-    if (typeof closeModalConfirm === "function") closeModalConfirm();
-    submitAcceptStockTransfer(id);
+    $confirmBtn.data("busy", true);
+    LoadingButton($confirmBtn);
+    submitAcceptStockTransfer(id, $confirmBtn);
 });
 
-function submitAcceptStockTransfer(id) {
+function submitAcceptStockTransfer(id, $loadingBtn) {
     if (!id) {
         if (typeof toastr !== "undefined") toastr.error("", "ID transfer tidak ditemukan");
         return;
@@ -4367,6 +4409,15 @@ function submitAcceptStockTransfer(id) {
     var staff = window.currentStaff || {};
     var receiverId = staff.id || $("#accept_receiver_id").val();
     if (!receiverId) {
+        if ($loadingBtn && $loadingBtn.length) {
+            $loadingBtn.data("busy", false);
+            if (typeof ResetLoadingButton === "function") {
+                ResetLoadingButton(
+                    $loadingBtn,
+                    '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                );
+            }
+        }
         if (typeof toastr !== "undefined") toastr.warning("", "User login tidak ditemukan");
         return;
     }
@@ -4392,10 +4443,19 @@ function submitAcceptStockTransfer(id) {
         });
     }
 
-    var $btn = $("#accept_stock_transfer .btn-accept-transfer");
-    if ($btn.data("busy")) return;
-    $btn.data("busy", true);
-    if (typeof LoadingButton === "function") LoadingButton($btn);
+    var fromConfirm = !!($loadingBtn && $loadingBtn.length);
+    var $btn = fromConfirm
+        ? $loadingBtn
+        : $("#accept_stock_transfer .btn-accept-transfer");
+    if (!fromConfirm) {
+        if ($btn.data("busy")) return;
+        $btn.data("busy", true);
+        if (typeof LoadingButton === "function") LoadingButton($btn);
+    }
+    var idleLabel = fromConfirm
+        ? '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+        : '<i class="fe fe-check-circle me-1"></i>Terima';
+
     $.ajax({
         url: "/accStockTransfer",
         method: "post",
@@ -4407,23 +4467,27 @@ function submitAcceptStockTransfer(id) {
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            ResetLoadingButton(".btn-accept-transfer", '<i class="fe fe-check-circle me-1"></i>Terima');
             $btn.data("busy", false);
+            if (typeof ResetLoadingButton === "function") {
+                ResetLoadingButton($btn, idleLabel);
+            }
             if (!res || res.status != 1) {
-                $("#accept_stock_transfer").modal("show");
                 if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal ACC");
                 }
                 return;
             }
+            markTransferOverlayDone();
+            if (typeof closeModalConfirm === "function") closeModalConfirm();
             if (typeof toastr !== "undefined") toastr.success("", res.message || "Berhasil ACC");
             $("#accept_stock_transfer").modal("hide");
             if (table) table.ajax.reload(null, false);
         },
         error: function () {
-            ResetLoadingButton(".btn-accept-transfer", '<i class="fe fe-check-circle me-1"></i>Terima');
             $btn.data("busy", false);
-            $("#accept_stock_transfer").modal("show");
+            if (typeof ResetLoadingButton === "function") {
+                ResetLoadingButton($btn, idleLabel);
+            }
             if (typeof toastr !== "undefined") toastr.error("", "Gagal ACC stock transfer");
         },
     });

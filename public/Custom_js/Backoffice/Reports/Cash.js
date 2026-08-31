@@ -61,6 +61,7 @@
                     width: "1%"
                 },
                 { data: "date", width: "9%"},
+                { data: "status_text", className: "text-center", width: "14%"},
                 { data: "cash_description", width: "18%"},
                 { data: "debit_text", className: "text-end", width: "12%"},
                 { data: "credit_text1", className: "text-end", width: "12%"},
@@ -68,7 +69,6 @@
                 { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name", defaultContent: "-" },
                 { data: "updated_at_text", defaultContent: "-" },
-                { data: "status_text", className: "text-center", width: "18%"},
                 { data: "action", className: "text-center align-middle", width: "15%"},
             ],
             initComplete: (settings, json) => {
