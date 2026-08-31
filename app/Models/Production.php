@@ -59,11 +59,14 @@ class Production extends Model
             if ($activeWh <= 0) {
                 return collect();
             }
-            if (Schema::hasColumn('production_details', 'destination_warehouse_id')) {
-                $result->whereIn('production_id', function ($query) use ($activeWh) {
-                    $query->select('production_id')
-                        ->from('production_details')
-                        ->where('destination_warehouse_id', $activeWh);
+            // Produksi hanya dari gudang utama — gudang eceran tidak punya data produksi.
+            if (ProductStock::warehouseIsMain($activeWh) === false) {
+                return collect();
+            }
+            if (Schema::hasColumn('productions', 'warehouse_id')) {
+                $result->where(function ($q) use ($activeWh) {
+                    $q->where('warehouse_id', $activeWh)
+                        ->orWhereNull('warehouse_id');
                 });
             }
         }
@@ -153,6 +156,13 @@ class Production extends Model
         $t->production_desc = $data["production_desc"];
         $t->production_code = $this->generateProductionID();
         $t->production_created_by = Session::get('user') ? Session::get('user')->staff_id : 0;
+        if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
+            $warehouseId = (int) (Session::get('active_warehouse_id') ?? 0);
+            if ($warehouseId <= 0) {
+                $warehouseId = (int) (ProductStock::resolveWarehouseId() ?? 0);
+            }
+            $t->warehouse_id = $warehouseId > 0 ? $warehouseId : 1;
+        }
         $t->save();
         return $t;
     }
