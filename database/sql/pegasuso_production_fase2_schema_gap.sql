@@ -238,6 +238,61 @@ CREATE TABLE IF NOT EXISTS `customer_supply_return_details` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
+-- 12) Sales orders — status 4–7 (scheduled, belum/sudah terkirim, dibatalkan)
+-- -----------------------------------------------------------------------------
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'sales_orders') = 1,
+  'ALTER TABLE `sales_orders` MODIFY `status` TINYINT NOT NULL DEFAULT 1 COMMENT ''1 = Created, 2 = Confirmed, 3 = Completed, 4 = Dijadwalkan (dibuat lewat External API /shipments/scheduled, stok belum dipotong), 5 = Belum Terkirim (API, dipaksa lewat PATCH /shipments/{ref}/change-status), 6 = Sudah Terkirim (API, dipaksa lewat PATCH /shipments/{ref}/change-status)''',
+  'SELECT ''skip sales_orders.status 4-6'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'sales_orders' AND COLUMN_NAME = 'cancel_reason') = 0
+  AND (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'sales_orders') = 1,
+  'ALTER TABLE `sales_orders` ADD COLUMN `cancel_reason` TEXT NULL COMMENT ''Alasan pembatalan (PUT /shipments/{ref}/cancel, body.reason)'' AFTER `notes`',
+  'SELECT ''skip sales_orders.cancel_reason v2'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'sales_orders') = 1,
+  'ALTER TABLE `sales_orders` MODIFY `status` TINYINT NOT NULL DEFAULT 1 COMMENT ''1 = Created, 2 = Confirmed, 3 = Completed, 4 = Dijadwalkan (dibuat lewat External API /shipments/scheduled, stok belum dipotong), 5 = Belum Terkirim (API, belum ada endpoint yang menghasilkan ini), 6 = Sudah Terkirim (API, lewat PATCH /shipments/{ref}/change-status dari status 4 — MEMOTONG STOK sungguhan), 7 = Dibatalkan (API, lewat PUT /shipments/{ref}/cancel, stok dikembalikan kalau sebelumnya Confirmed atau Sudah Terkirim)''',
+  'SELECT ''skip sales_orders.status 7 final'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
+-- 13) Stock Transfer — approval QC/Ops + received_unit_id
+-- -----------------------------------------------------------------------------
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'stock_transfers' AND COLUMN_NAME = 'qc_approved_by') = 0
+  AND (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'stock_transfers') = 1,
+  'ALTER TABLE `stock_transfers`
+     ADD COLUMN `qc_approved_by` INT UNSIGNED NULL AFTER `acc_by`,
+     ADD COLUMN `qc_approved_at` TIMESTAMP NULL AFTER `qc_approved_by`,
+     ADD COLUMN `ops_approved_by` INT UNSIGNED NULL AFTER `qc_approved_at`,
+     ADD COLUMN `ops_approved_at` TIMESTAMP NULL AFTER `ops_approved_by`',
+  'SELECT ''skip stock_transfers approval columns'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'stock_transfer_details' AND COLUMN_NAME = 'received_unit_id') = 0
+  AND (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'stock_transfer_details') = 1,
+  'ALTER TABLE `stock_transfer_details` ADD COLUMN `received_unit_id` INT UNSIGNED NULL AFTER `unit_id`',
+  'SELECT ''skip stock_transfer_details.received_unit_id'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+  (SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'stock_transfers') = 1,
+  'ALTER TABLE `stock_transfers` MODIFY `status` TINYINT NOT NULL DEFAULT 1 COMMENT ''0=deleted,1=pending,2=kirim,3=ditolak,4=diterima''',
+  'SELECT ''skip stock_transfers.status comment'' AS info'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- -----------------------------------------------------------------------------
 -- 11) Catat migrations penting
 -- -----------------------------------------------------------------------------
 INSERT INTO `migrations` (`migration`, `batch`)
@@ -274,5 +329,40 @@ INSERT INTO `migrations` (`migration`, `batch`)
 SELECT '2026_08_03_010000_add_qty_per_pallet_to_product_variants_table', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
 WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
   AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_03_010000_add_qty_per_pallet_to_product_variants_table');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_11_130000_add_ref_shipment_id_and_scheduled_status_to_sales_orders', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_11_130000_add_ref_shipment_id_and_scheduled_status_to_sales_orders');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_12_100000_add_notes_to_sales_orders_table', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_12_100000_add_notes_to_sales_orders_table');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_12_110000_add_not_delivered_and_delivered_statuses_to_sales_orders', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_12_110000_add_not_delivered_and_delivered_statuses_to_sales_orders');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_12_120000_add_cancel_reason_and_cancelled_status_to_sales_orders', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_12_120000_add_cancel_reason_and_cancelled_status_to_sales_orders');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_13_090000_update_sales_orders_status_comment_for_delivered_deduction', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_13_090000_update_sales_orders_status_comment_for_delivered_deduction');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_07_29_160000_add_received_unit_id_to_stock_transfer_details_table', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_07_29_160000_add_received_unit_id_to_stock_transfer_details_table');
+
+INSERT INTO `migrations` (`migration`, `batch`)
+SELECT '2026_08_24_003700_add_approval_columns_to_stock_transfers_table', (SELECT IFNULL(MAX(batch), 0) + 1 FROM migrations AS m)
+WHERE EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = @db AND TABLE_NAME = 'migrations')
+  AND NOT EXISTS (SELECT 1 FROM `migrations` WHERE `migration` = '2026_08_24_003700_add_approval_columns_to_stock_transfers_table');
 
 SELECT 'pegasuso_production_fase2_schema_gap OK' AS result;
