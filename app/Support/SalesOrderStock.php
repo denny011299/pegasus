@@ -467,7 +467,12 @@ class SalesOrderStock
     }
 
     /**
-     * Cek stok saat buat/update pengiriman (belum ACC).
+     * TIDAK DIPAKAI LAGI sejak GitHub #99 (2026-09-01) — sengaja dibiarkan, jangan dipasang ulang
+     * di jalur pra-ACC. Dulu dipanggil insertSalesOrder()/updateSalesOrder() (cabang status != 2)
+     * dan memblokir pembuatan dokumen pengiriman kalau stok saat itu kurang. Itu salah waktunya:
+     * membuat pengiriman hanya mengajukan dokumen, stok baru dicek + dipotong di accSO()
+     * (SalesOrderApproval::confirm() -> buildPlan() -> executeDeduct(), satu transaksi).
+     * Kalau butuh pratinjau ketersediaan stok yang TIDAK memblokir, pakai buildPlan() langsung.
      *
      * @param  array<int, array<string, mixed>>  $products
      * @return array<string, mixed>|null  response error, atau null jika OK

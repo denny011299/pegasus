@@ -85,10 +85,15 @@ class CustomerController extends Controller
             ]);
         }
 
-        $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
-        if ($stockErr) {
-            return response()->json($stockErr);
-        }
+        // GitHub #99 (2026-09-01): JANGAN tambahkan lagi pengecekan ketersediaan stok di sini.
+        // Membuat Pengiriman = mengajukan dokumen (status 1 = "Sedang Diajukan"), stok BELUM
+        // dipotong sama sekali — pemotongan + pengecekan stok baru terjadi di accSO()
+        // (SalesOrderApproval::confirm(), yang memanggil SalesOrderStock::buildPlan() sendiri di
+        // dalam satu DB::transaction()). Memblokir pembuatan dokumen dengan stok SAAT INI salah
+        // waktunya: stok bisa bertambah (produksi selesai, PO diterima, transfer masuk) antara
+        // pengajuan dan ACC, jadi pengiriman yang terjadwal untuk besok jadi tidak bisa dibuat
+        // hari ini. Validasi struktural (satuan eceran + gudang eceran wajib) di atas tetap
+        // dipertahankan karena itu tentang bentuk data, bukan jumlah stok.
 
         $img = [];
         foreach (json_decode($data["so_img"]) as $key => $value) {
@@ -155,10 +160,9 @@ class CustomerController extends Controller
                     'message' => $retailErr,
                 ]);
             }
-            $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
-            if ($stockErr) {
-                return response()->json($stockErr);
-            }
+            // GitHub #99 (2026-09-01): sama seperti insertSalesOrder() — cabang ini hanya jalan
+            // saat status != 2 (belum ACC), jadi stok memang belum dipotong dan tidak boleh
+            // dicek/diblokir di sini. Pengecekan stok yang sesungguhnya ada di accSO().
             $so = (new SalesOrder())->updateSalesOrder($data);
             $list_id_detail = [];
             foreach ($productsData as $val) {
