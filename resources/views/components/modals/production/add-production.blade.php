@@ -15,7 +15,7 @@
   }
   #addProduction .modal-content {
     height: auto !important;
-    max-height: 100% !important;
+    max-height: calc(100dvh - 2rem) !important;
     min-height: 0 !important;
     display: flex !important;
     flex-direction: column !important;
