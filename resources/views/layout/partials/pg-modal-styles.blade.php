@@ -318,4 +318,58 @@
         background: #fee2e2 !important;
         border-color: #fca5a5 !important;
     }
+
+    /* ═══ PG Popup Table — tabel input di dalam modal (GitHub #111) ═══
+       Pola standar: kartu input di ATAS, lalu tabel daftar item yang scroll
+       sendiri setinggi PG_POPUP_TABLE.MAX_VISIBLE_ROWS baris.
+       Konstanta + perhitungan tinggi ada di public/Custom_js/Shared/popup-table.js —
+       nilai --pg-popup-table-max-height di bawah hanya fallback sebelum JS jalan. */
+    .pg-popup-table-scroll {
+        --pg-popup-table-max-height: 260px;
+        max-height: var(--pg-popup-table-max-height);
+        overflow-y: auto;
+        overflow-x: auto;
+    }
+    /* Header & footer total tetap terlihat saat baris di-scroll. */
+    .pg-popup-table-scroll > table > thead > tr > th {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: #f1f5f9;
+    }
+    .pg-popup-table-scroll > table > tfoot > tr > td {
+        position: sticky;
+        bottom: 0;
+        z-index: 3;
+        background: #f8fafc;
+    }
+    .pg-popup-table-scroll::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    .pg-popup-table-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+    }
+    .pg-popup-table-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Kartu input: padding disamakan dengan sel tabel (12px 16px) + jarak ke tabel. */
+    .pg-popup-table-input {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    /* Baris placeholder saat daftar masih kosong. */
+    .pg-popup-table-empty td {
+        padding: 24px 16px !important;
+        text-align: center;
+        color: #94a3b8;
+        font-size: 13px;
+    }
 </style>

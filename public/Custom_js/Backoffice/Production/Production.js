@@ -988,6 +988,22 @@ function resolveProductionInputQtyUnit(tempBom) {
     };
 }
 
+/**
+ * Reset tombol "+" (btn-add-product) ke state semula setelah loading.
+ * Tidak bisa pakai ResetLoadingButton(".btn-add-product", "+") polos:
+ * - ResetLoadingButton mengosongkan inline height (`css({height:''})`), yang
+ *   MENGHAPUS `height:42px` bawaan tombol (bukan mengembalikannya) begitu
+ *   LoadingButton sempat menimpanya - tombol jadi lebih pendek dari input di
+ *   sebelahnya (GitHub #111 follow-up).
+ * - Teks "+" polos juga menghapus ikon feather (fe-plus), diganti karakter
+ *   biasa.
+ * Jadi kembalikan ikon + paksa lagi height 42px eksplisit di sini.
+ */
+function resetAddProductButton() {
+    ResetLoadingButton(".btn-add-product", '<i class="fe fe-plus"></i>');
+    $(".btn-add-product").css("height", "42px");
+}
+
 function continueAddProduct(tempBom) {
     var satuanResep = validateBomActiveUnits(tempBom);
     if (!satuanResep.valid) {
@@ -1114,8 +1130,11 @@ function continueAddProduct(tempBom) {
                     : productionNonRetailDestinationName()),
             bom_id: temp.bom_id,
         };
-        candidateItems.push(data);
+        // Posisi baris baru (atas/bawah) ikut konstanta bersama PG_POPUP_TABLE
+        // di public/Custom_js/Shared/popup-table.js (GitHub #111).
+        pgPopupTableInsert(candidateItems, data);
     }
+    var addedNewRow = idx == -1;
 
     // Cek stok bahan mentah agregat (termasuk baris ini) SEBELUM baris masuk ke
     // daftar - dulu cek ini cuma jalan pas klik "Tambah Produksi" di akhir, jadi
@@ -1132,14 +1151,29 @@ function continueAddProduct(tempBom) {
             "X-CSRF-TOKEN": token,
         },
         success: function (e) {
-            ResetLoadingButton(".btn-add-product", "+");
+            resetAddProductButton();
             if (!e || e.status != 1) {
                 handleProductionValidationError(e, temp.bom_id);
                 return;
             }
 
+            // list_bahan sejajar index dengan items — kalau baris baru masuk di
+            // paling atas, geser juga isinya supaya getBom() tidak memakai daftar
+            // bahan milik baris lain.
+            if (addedNewRow && pgPopupTableInsertsAtTop()) {
+                list_bahan.unshift(undefined);
+            }
             items = candidateItems;
             addRow(items);
+            // Baris baru langsung terlihat tanpa harus scroll manual, ikut
+            // arah ROW_INSERT_POSITION (GitHub #111 follow-up). Cuma di sini,
+            // bukan di titik addRow() lain (reset/delete/view) - lihat catatan
+            // di pgPopupTableScrollToEdge().
+            if (addedNewRow) {
+                pgPopupTableScrollToEdge(
+                    $("#tableProduct").closest(".pg-popup-table-scroll"),
+                );
+            }
 
             $("#product_id").empty();
             $("#unit_id").empty();
@@ -1153,7 +1187,7 @@ function continueAddProduct(tempBom) {
             clearPendingProductionAdd();
         },
         error: function (a) {
-            ResetLoadingButton(".btn-add-product", "+");
+            resetAddProductButton();
             if (handlePermissionError(a)) return;
             console.log(a);
             notifikasi(
@@ -1183,7 +1217,7 @@ $(document).on("click", ".btnAdd", function () {
     $("#addProduction input").val("");
     $("#product_id").empty();
     $("#production_qty").val(1);
-    $("#tableProduct tr.row-product").remove();
+    addRow([]);
     $(".is-invalid").removeClass("is-invalid");
     $(".prod-detail-field").hide();
     $("#row-production-acc-by").hide();
@@ -1632,7 +1666,7 @@ function openProductionRevisionFromDashboardLink() {
         $("#addProduction input").val("");
         $("#product_id").empty();
         $("#production_qty").val(1);
-        $("#tableProduct tr.row-product").remove();
+        addRow([]);
         $(".is-invalid").removeClass("is-invalid");
         $(".prod-detail-field").hide();
         $("#row-production-acc-by").hide();
@@ -1884,7 +1918,13 @@ function afterInsert() {
 }
 
 function addRow(e) {
+    if (!Array.isArray(e)) e = [];
     $("#tableProduct tbody").html("");
+    if (e.length === 0) {
+        $("#tableProduct tbody").html(
+            '<tr class="pg-popup-table-empty"><td colspan="5">Belum ada produk. Tambahkan lewat form di atas.</td></tr>',
+        );
+    }
     e.forEach((element, index) => {
         console.log(element);
 
@@ -1910,6 +1950,7 @@ function addRow(e) {
     if (mode == 3) {
         $("#tableProduct [data-bs-toggle='tooltip']").tooltip();
     }
+    pgPopupTableRefresh($("#tableProduct").closest(".pg-popup-table-scroll"));
 }
 
 /**
@@ -2024,7 +2065,7 @@ function attemptAddProductionProduct(options) {
 
     LoadingButton(".btn-add-product");
     loadBomForValidation(bomId, function (fullBom) {
-        ResetLoadingButton(".btn-add-product", "+");
+        resetAddProductButton();
         if (!fullBom) {
             notifikasi(
                 "error",
@@ -2074,7 +2115,7 @@ $(document).on("click", ".btn_view", function () {
     $("#addProduction input").val("");
     $("#product_id").empty();
     $("#production_qty").val(1);
-    $("#tableProduct tr.row-product").remove();
+    addRow([]);
     $(".is-invalid").removeClass("is-invalid");
     $("#unit_id").html("");
     $("#production_date").val(data.production_date);

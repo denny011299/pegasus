@@ -170,6 +170,9 @@
 <!-- multiselect JS -->
 <script src="{{ URL::asset('/assets/js/jquery-ui.min.js') }}"></script>
 
+<!-- PG Popup Table: konstanta + perilaku standar tabel input di dalam modal -->
+<script src="{{ URL::asset('/Custom_js/Shared/popup-table.js') }}"></script>
+
 @if (Route::is(['lightbox', 'template-invoice']))
   <!-- lightbox JS -->
   <script src="{{ URL::asset('/assets/plugins/lightbox/glightbox.min.js') }}"></script>
