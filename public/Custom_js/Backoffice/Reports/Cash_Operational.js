@@ -1453,15 +1453,15 @@
             return false;
         }
 
-        let total = 0;
-        items.forEach(element => {
-            total += element.cad_nominal;
-        });
-        if (total > sisa_kas){
-            notifikasi('error', "Gagal Insert", 'Sisa kas tidak mencukupi');
-            ResetLoadingButton('.btn-save-admin', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
-            return false;
-        }
+        // GitHub #99 (2026-09-01): blokir "Sisa kas tidak mencukupi" DIHAPUS. Aktivitas
+        // operasional di sini cuma PENGAJUAN (status 1 = "Sedang Diajukan"); kas baru benar-benar
+        // keluar saat ACC (acceptCashAdmin/acceptCashGudang). Selain salah waktu, `sisa_kas` yang
+        // dipakai di sini adalah total SELURUH staff/gudang sepanjang waktu (lihat
+        // CashAdmin::getCashAdmin()/CashGudang::getCashGudang()), bukan angka milik staff yang
+        // sedang difilter di tabel — jadi kelebihan pakai di satu gudang ikut mengunci gudang
+        // lain. Blokir ini juga cuma ada di sisi JS (tidak ada guard server), dan PM sudah
+        // memutuskan 2026-08-05 saldo minus memang diizinkan (guard kembar di Kas Sales sudah
+        // dimatikan lebih dulu, lihat blok komentar di handler .btn-save-sales).
 
         if (type == "admin"){
             param = {
@@ -1667,15 +1667,15 @@
             return false;
         }
 
-        let total = 0;
-        items.forEach(element => {
-            total += element.cgd_nominal;
-        });
-        if (total > sisa_kas){
-            notifikasi('error', "Gagal Insert", 'Sisa kas tidak mencukupi');
-            ResetLoadingButton('.btn-save-gudang', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
-            return false;
-        }
+        // GitHub #99 (2026-09-01): blokir "Sisa kas tidak mencukupi" DIHAPUS. Aktivitas
+        // operasional di sini cuma PENGAJUAN (status 1 = "Sedang Diajukan"); kas baru benar-benar
+        // keluar saat ACC (acceptCashAdmin/acceptCashGudang). Selain salah waktu, `sisa_kas` yang
+        // dipakai di sini adalah total SELURUH staff/gudang sepanjang waktu (lihat
+        // CashAdmin::getCashAdmin()/CashGudang::getCashGudang()), bukan angka milik staff yang
+        // sedang difilter di tabel — jadi kelebihan pakai di satu gudang ikut mengunci gudang
+        // lain. Blokir ini juga cuma ada di sisi JS (tidak ada guard server), dan PM sudah
+        // memutuskan 2026-08-05 saldo minus memang diizinkan (guard kembar di Kas Sales sudah
+        // dimatikan lebih dulu, lihat blok komentar di handler .btn-save-sales).
 
         param = {
             cg_date: $('#oc_date_gudang').val(),

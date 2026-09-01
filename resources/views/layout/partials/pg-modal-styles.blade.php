@@ -1,4 +1,13 @@
 <style>
+    /* ═══ SweetAlert2 di atas modal PG ═══ */
+    /* pg-modal--confirm/--danger sengaja dipasang z-index:1065 (di atas modal-photo/nested
+       modal lain) — lebih tinggi dari z-index default SweetAlert2 (1060), jadi popup notifikasi()
+       yang muncul SETELAH modal konfirmasi/danger masih terbuka (mis. hasil ACC gagal) tampil
+       tertutup DI BELAKANG modal itu. SweetAlert2 selalu harus jadi layer paling atas. */
+    .swal2-container {
+        z-index: 2000 !important;
+    }
+
     /* ═══ PG Modal — Form (biru: edit / view / simpan) ═══ */
     .pg-modal--form .modal-content {
         border: none;
