@@ -67,11 +67,15 @@ class SalesOrderCancellation
             DB::transaction(function () use ($so, $lines, $shouldRestoreStock, $reason) {
                 if ($shouldRestoreStock && $lines !== []) {
                     $retailWh = (int) ($so->retail_warehouse_id ?? 0);
+                    // rollUp: true -- cancellation is final, no re-deduction follows in this
+                    // request, so the returned stock should roll up its unit ladder like any other
+                    // final stock-in (see SalesOrderStock::executeRestore()'s $rollUp doc).
                     $restore = SalesOrderStock::executeRestore(
                         $lines,
                         $retailWh > 0 ? $retailWh : null,
                         $so->so_invoice_no ?: $so->so_number,
-                        'Pembatalan Pengiriman'
+                        'Pembatalan Pengiriman',
+                        true
                     );
                     if (! ($restore['ok'] ?? false)) {
                         throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok');

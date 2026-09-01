@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\UnitRollUp;
 use Illuminate\Database\Eloquent\Model;
 
 class ProductIssuesDetail extends Model
@@ -167,9 +168,59 @@ class ProductIssuesDetail extends Model
         
         if($pi->tipe_return == 1){
             $m = SuppliesVariant::find($t->item_id);
-            $s = SuppliesStock::where('supplies_id',$m->supplies_id)->where('unit_id',$t->unit_id)->first();
-            $s->ss_stock += $t->pid_qty;
+            // Ditambahkan (2026-08-25): dulu pengembalian stok ini flat (`ss_stock += pid_qty`)
+            // tanpa konversi satuan sama sekali -- 24 Piece yang dikembalikan tetap menumpuk sebagai
+            // 24 Piece walaupun 1 DOS = 12 Piece. Sekarang dinaikkan berjenjang lewat UnitRollUp,
+            // konsisten dengan hasil produksi (accProduction). UnitRollUp hanya menaikkan ke satuan
+            // yang SUDAH punya baris stok aktif, jadi tidak ada baris stok baru yang dibuat diam-diam.
+            $rollUp = UnitRollUp::planSupplies((int) $m->supplies_id, (int) $t->unit_id, (int) $t->pid_qty);
+            $base = $rollUp[0];           // selalu satuan asal
+            $naikLevel = array_slice($rollUp, 1); // level-level di atasnya (kosong kalau tidak naik)
+
+            // Baris stok satuan asal SENGAJA tidak di-null-guard: kalau kombinasi supplies_id +
+            // unit_id tidak ketemu, itu unit_id yang salah dan harus meledak seperti perilaku lama,
+            // bukan gagal senyap (stok tidak pernah kembali tanpa ada yang tahu).
+            $s = SuppliesStock::where('supplies_id',$m->supplies_id)->where('unit_id',$base['unit_id'])->first();
+            $s->ss_stock += $base['qty'];
             $s->save();
+
+            // Level di atasnya dijamin punya baris stok aktif — UnitRollUp hanya menaikkan ke
+            // satuan yang sudah punya baris (lihat allowedSuppliesUnitIds()).
+            foreach ($naikLevel as $credit) {
+                if ($credit['qty'] <= 0) continue;
+
+                $row = SuppliesStock::where('supplies_id', $m->supplies_id)
+                    ->where('unit_id', $credit['unit_id'])
+                    ->where('status', 1)
+                    ->first();
+                if (!$row) continue;
+
+                $row->ss_stock += $credit['qty'];
+                $row->save();
+            }
+
+            // Catat jejak konversinya kalau memang naik satuan, supaya ledger tidak menunjukkan
+            // stok "pindah" satuan tanpa penjelasan. Pola log-nya sama dengan bongkar di
+            // stockCheck(): satuan asal keluar (cat 2), satuan hasil masuk (cat 1). Caller tetap
+            // menulis log utamanya sendiri.
+            if ($naikLevel !== []) {
+                $naik = (int) $t->pid_qty - (int) $base['qty'];
+                if ($naik > 0) {
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
+                        'log_item_id' => $m->supplies_id, 'log_notes' => 'Konversi unit (Naik satuan)',
+                        'log_jumlah' => $naik, 'unit_id' => (int) $t->unit_id,
+                    ]);
+                }
+                foreach ($naikLevel as $credit) {
+                    if ($credit['qty'] <= 0) continue;
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
+                        'log_item_id' => $m->supplies_id, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
+                        'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
+                    ]);
+                }
+            }
 
             // Cek dari retur pembelian, apakah ada barang yang dibeli dari invoice ini
             if ($pi['ref_num'] != 0){

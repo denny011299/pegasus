@@ -300,9 +300,17 @@ class SalesOrderStock
     /**
      * Kembalikan stok (update ACC / batal) — routing sama, tanpa cek kecukupan.
      *
+     * $rollUp (merged from main's PR #75, 2026-08-28): kalau true, tiap baris yang dikembalikan
+     * dinaikkan berjenjang lewat ProductUnitStock::addQty()'s $rollUp -- dipakai saat
+     * pengembaliannya FINAL (pembatalan penuh lewat SalesOrderCancellation, atau baris yang
+     * dihapus dari SO saat edit). Default false: dipakai saat baris yang sama akan langsung
+     * dipotong lagi dalam request yang sama (edit SO yang mempertahankan baris itu) -- roll-up di
+     * situ cuma churn (naik lalu langsung dibongkar lagi) plus sepasang log konversi yang
+     * menyesatkan.
+     *
      * @param  array<int, array<string, mixed>>  $lines
      */
-    public static function executeRestore(array $lines, ?int $retailWarehouseId, string $logCode, string $logNotes = 'Update Pengiriman'): array
+    public static function executeRestore(array $lines, ?int $retailWarehouseId, string $logCode, string $logNotes = 'Update Pengiriman', bool $rollUp = false): array
     {
         $plan = self::routeLinesOnly($lines, $retailWarehouseId);
         if ($plan === []) {
@@ -311,7 +319,7 @@ class SalesOrderStock
 
         ProductUnitStock::clearCache();
 
-        return DB::transaction(function () use ($plan, $logCode, $logNotes) {
+        return DB::transaction(function () use ($plan, $logCode, $logNotes, $rollUp) {
             foreach ($plan as $item) {
                 $variant = ProductVariant::find($item['product_variant_id']);
                 $productId = (int) ($variant->product_id ?? 0);
@@ -322,7 +330,8 @@ class SalesOrderStock
                     (int) $item['unit_id'],
                     (float) $item['qty'],
                     $logCode,
-                    $logNotes
+                    $logNotes,
+                    $rollUp
                 );
                 if (! ($res['ok'] ?? false)) {
                     throw new \RuntimeException($res['message'] ?? 'Gagal kembalikan stok');
@@ -458,7 +467,12 @@ class SalesOrderStock
     }
 
     /**
-     * Cek stok saat buat/update pengiriman (belum ACC).
+     * TIDAK DIPAKAI LAGI sejak GitHub #99 (2026-09-01) — sengaja dibiarkan, jangan dipasang ulang
+     * di jalur pra-ACC. Dulu dipanggil insertSalesOrder()/updateSalesOrder() (cabang status != 2)
+     * dan memblokir pembuatan dokumen pengiriman kalau stok saat itu kurang. Itu salah waktunya:
+     * membuat pengiriman hanya mengajukan dokumen, stok baru dicek + dipotong di accSO()
+     * (SalesOrderApproval::confirm() -> buildPlan() -> executeDeduct(), satu transaksi).
+     * Kalau butuh pratinjau ketersediaan stok yang TIDAK memblokir, pakai buildPlan() langsung.
      *
      * @param  array<int, array<string, mixed>>  $products
      * @return array<string, mixed>|null  response error, atau null jika OK

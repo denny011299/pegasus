@@ -21,7 +21,9 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Warehouse;
+use App\Support\ProductionPendingStockRestorer;
 use App\Support\ProductUnitStock;
+use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -167,6 +169,96 @@ class ProductionController extends Controller
                 'message' => $destinationValidation['message'],
             ]);
         }
+        $validation = $this->validateProductionItems($item);
+        if ($validation) {
+            return response()->json($validation);
+        }
+
+        $p = (new Production())->insertProduction($data);
+        foreach ($item as $key => $value) {
+            $value['production_id'] = $p->production_id;
+            $value['list_bahan'] = json_encode($bahan[$key]);
+            (new ProductionDetails())->insertProductionDetail($value);
+        }
+
+        if ($isRevisionResubmit) {
+            $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
+            if ($sourceId > 0) {
+                $staffId = (int) (session('user')->staff_id ?? 0);
+                DB::table('dashboard_queue_dismissals')->updateOrInsert(
+                    [
+                        'staff_id' => $staffId,
+                        'queue_section' => 'revision',
+                        'queue_key' => 'pr:' . $sourceId,
+                    ],
+                    [
+                        'status' => 1,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
+        }
+
+        // Jangan auto-ACC di sini. Simpan = Pending di list Produksi.
+        // Stock Transfer (tujuan eceran) baru dibuat saat Acc produksi manual
+        // (atau lewat production:resolve-overdue).
+
+        return response()->json([
+            "status" => 1,
+            "message" => "Berhasil"
+        ]);
+    }
+
+    /**
+     * Endpoint dipanggil dari JS setiap kali user menambah baris produk ke
+     * "Daftar Produk" pada modal Tambah/Konfirmasi Produksi (bukan cuma saat
+     * klik Tambah Produksi) - lihat GitHub #101. Menerima daftar produk yang
+     * SUDAH termasuk baris yang baru mau ditambahkan (client kirim seluruh
+     * `items` setelah merge/push), supaya validasi & simulasi stok agregat
+     * (dos/pack, dsb.) tetap dihitung dari kondisi akhir yang benar.
+     *
+     * Read-only, tidak memutasi apa pun - dipakai juga oleh insertProduction()
+     * lewat validateProductionItems() supaya keduanya konsisten.
+     */
+    function checkProductionStock(Request $req)
+    {
+        $item = json_decode($req->input('detail'), true) ?: [];
+        if (empty($item)) {
+            return response()->json(['status' => 1]);
+        }
+
+        $destinationValidation = $this->normalizeProductionDestinations($item);
+        if (! $destinationValidation['ok']) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Tujuan Hasil Produksi Tidak Valid',
+                'message' => $destinationValidation['message'],
+            ]);
+        }
+
+        $validation = $this->validateProductionItems($item);
+        if ($validation) {
+            return response()->json($validation);
+        }
+
+        return response()->json(['status' => 1]);
+    }
+
+    /**
+     * Validasi konsistensi resep (satuan aktif, satuan terkecil, relasi
+     * produk, qty kelipatan resep) + simulasi ketersediaan stok bahan mentah
+     * agregat (termasuk konversi unit "bongkar" & perlakuan khusus dos/pack)
+     * untuk sekumpulan baris produksi. Read-only - tidak memutasi stok/DB.
+     *
+     * Dipakai baik oleh checkProductionStock() (tiap kali user menambah baris
+     * ke daftar produk) maupun insertProduction() (submit akhir), supaya
+     * pesan error & aturan validasinya selalu identik di kedua titik.
+     *
+     * @return array|null null kalau valid; array response (status/header/message/...) kalau tidak.
+     */
+    protected function validateProductionItems(array $item): ?array
+    {
         $cek = -1;
         $bahan_kurang = [];
         $produk_tanpa_relasi = [];
@@ -175,38 +267,38 @@ class ProductionController extends Controller
 
         $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item);
         if (count($bahan_satuan_tidak_aktif) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Satuan Resep Tidak Aktif',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithInactiveUnits($item),
                 'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_satuan_tidak_aktif),
-            ]);
+            ];
         }
 
         $bahan_bukan_satuan_terkecil = $this->validateBomSuppliesSmallestUnit($item);
         if (count($bahan_bukan_satuan_terkecil) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithNonSmallestSupplyUnit($item),
                 'message' => 'Satuan bahan mentah pada resep bukan satuan terkecil sesuai relasi. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_bukan_satuan_terkecil),
-            ]);
+            ];
         }
 
         $bom_satuan_produk_bukan_terkecil = $this->validateBomProductSmallestUnit($item);
         if (count($bom_satuan_produk_bukan_terkecil) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithNonSmallestProductUnit($item),
                 'message' => 'Satuan produk pada resep bukan satuan terkecil sesuai relasi produk. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bom_satuan_produk_bukan_terkecil),
-            ]);
+            ];
         }
 
         foreach ($item as $value) {
@@ -244,11 +336,11 @@ class ProductionController extends Controller
         }
 
         if (count($produk_qty_tidak_kelipatan) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'message' => 'Qty produksi harus kelipatan resep bahan mentah untuk produk: ' . implode(', ', $produk_qty_tidak_kelipatan),
-            ]);
+            ];
         }
 
         // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
@@ -256,11 +348,11 @@ class ProductionController extends Controller
         foreach ($item as $key => $value) {
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
             if (!isset($bom)) {
-                return response()->json([
+                return [
                     "status" => 0,
                     "header" => "Gagal Insert",
                     "message" => "Mohon cek kembali resep bahan mentah"
-                ]);
+                ];
             }
 
             // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
@@ -360,11 +452,11 @@ class ProductionController extends Controller
         }
 
         if (count($produk_tanpa_relasi) > 0) {
-            return response()->json([
+            return [
                 "status" => 0,
                 "header" => "Gagal Insert",
                 "message" => "Mohon masukkan relasi produk: " . implode(", ", $produk_tanpa_relasi)
-            ]);
+            ];
         }
 
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
@@ -490,46 +582,13 @@ class ProductionController extends Controller
         }
 
         if ($cek == 1) {
-            return response()->json([
+            return [
                 "status"  => -1,
                 "message" => "Bahan baku tidak mencukupi untuk : " . implode(", ", $bahan_kurang)
-            ]);
+            ];
         }
 
-        $p = (new Production())->insertProduction($data);
-        foreach ($item as $key => $value) {
-            $value['production_id'] = $p->production_id;
-            $value['list_bahan'] = json_encode($bahan[$key]);
-            (new ProductionDetails())->insertProductionDetail($value);
-        }
-
-        if ($isRevisionResubmit) {
-            $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
-            if ($sourceId > 0) {
-                $staffId = (int) (session('user')->staff_id ?? 0);
-                DB::table('dashboard_queue_dismissals')->updateOrInsert(
-                    [
-                        'staff_id' => $staffId,
-                        'queue_section' => 'revision',
-                        'queue_key' => 'pr:' . $sourceId,
-                    ],
-                    [
-                        'status' => 1,
-                        'updated_at' => now(),
-                        'created_at' => now(),
-                    ]
-                );
-            }
-        }
-
-        // Jangan auto-ACC di sini. Simpan = Pending di list Produksi.
-        // Stock Transfer (tujuan eceran) baru dibuat saat Acc produksi manual
-        // (atau lewat production:resolve-overdue).
-
-        return response()->json([
-            "status" => 1,
-            "message" => "Berhasil"
-        ]);
+        return null;
     }
 
     function updateProduction(Request $req) {}
@@ -544,14 +603,18 @@ class ProductionController extends Controller
      * ACC produksi (pending → approved).
      *
      * Alur keamanan stok (wajib dijaga):
-     * 1) pre-check SEMUA bahan tanpa mutasi
-     * 2) potong bahan + tambah produk + update status dalam 1 DB transaction
+     * 1) self-heal log/stok orphan dari ACC gagal sebelumnya — HANYA kalau belum ada Stock
+     *    Opname yang disetujui sejak orphan itu ditulis (lihat findLockingOpnameCode()); kalau
+     *    sudah dikunci opname, ACC ditolak (status -4) dan minta review manual, TIDAK dipaksa
+     *    auto-restore. Lihat docs/laporan-opname-vs-pending-production-2026-08-01.md — insiden
+     *    PR0258 yang jadi alasan awal fitur ini dimatikan dari ACC.
+     * 2) pre-check SEMUA bahan tanpa mutasi
+     * 3) potong bahan + tambah produk + update status dalam 1 DB transaction
      *
-     * Self-heal orphan TIDAK dijalankan otomatis di ACC (opname bisa sudah
-     * mengunci angka stok setelah potongan salah). Perbaikan massal hanya via:
+     * Perbaikan massal manual (tanpa cek opname, dipakai admin yang sudah meninjau sendiri):
      * php artisan production:restore-pending-stock
      *
-     * Detail: docs/production-acc-stock-safety.md
+     * Detail: docs/production-acc-stock-safety.md, GitHub #83
      */
     function accProduction(Request $req)
     {
@@ -583,6 +646,33 @@ class ProductionController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        // Self-heal (GitHub #83): produksi ini masih "Menunggu", tapi kalau sebuah ACC
+        // sebelumnya sempat memotong bahan lalu gagal sebelum status berubah (mis. proses PHP
+        // mati mendadak, bukan exception biasa -- kasus normal sudah aman lewat DB transaction
+        // di bawah), log_stocks-nya masih aktif menggantung. Balikkan dulu supaya retry ini
+        // tidak memotong bahan untuk kedua kalinya.
+        $stockRestorer = new ProductionPendingStockRestorer();
+        $orphanLogs = $stockRestorer->activeLogsFor($p->production_code);
+        if ($orphanLogs->isNotEmpty()) {
+            $lockingOpnameCode = $stockRestorer->findLockingOpnameCode($orphanLogs);
+            if ($lockingOpnameCode !== null) {
+                return response()->json([
+                    'status' => -4,
+                    'header' => 'Perlu Peninjauan Manual',
+                    'message' => "Produksi ini punya potongan stok menggantung dari percobaan ACC "
+                        . "sebelumnya, tapi Stock Opname {$lockingOpnameCode} sudah terlanjur "
+                        . "disetujui setelah potongan itu terjadi. Tidak bisa dikembalikan otomatis "
+                        . "supaya tidak merusak angka opname tersebut -- hubungi admin untuk "
+                        . "peninjauan manual (php artisan production:restore-pending-stock).",
+                ]);
+            }
+
+            $staffId = (int) (session('user')->staff_id ?? 0);
+            DB::transaction(function () use ($stockRestorer, $p, $staffId) {
+                $stockRestorer->revertProductionCode($p->production_code, true, $staffId > 0 ? $staffId : null);
+            });
         }
 
         $item = ProductionDetails::where('production_id', $data['production_id'])->where('status', 1)->get();
@@ -841,41 +931,73 @@ class ProductionController extends Controller
         // (stok awal 0) kalau belum ada untuk kombinasi varian+satuan itu — TANPA mutasi
         // apa pun di sini. Kalau ada baris yang bakal dibuat baru, minta konfirmasi user dulu
         // (lewat confirm_create_stock), supaya user sadar ada baris stok baru yang akan dibuat.
+        // NB (merged from main's ebadabf/GH #19, 2026-08-28): main's version of this pre-check
+        // walked the whole product_relations ladder via creditProductOutputUpChain(), because
+        // main's accProduction() still credited finished goods itself via ProductRelation/
+        // ensureProductStockRow(). fase2's accProduction() has since been rearchitected around
+        // buildProductionTransferPlan() + ProductUnitStock::addQty(), so that ladder-walking code
+        // doesn't transplant -- the GH #19 fix lives in addQty()'s $rollUp instead.
+        //
+        // This block must therefore ask addQty() what it will ACTUALLY do rather than assume the
+        // credit lands flat on the produced unit: with $rollUp on, a qty that divides evenly into a
+        // higher unit is credited THERE instead, so (a) warning about the produced unit would be
+        // wrong when its remainder rolls up to 0 -- no row gets created for it, addQty() skips
+        // qty <= 0 credits -- and (b) a higher unit could be the one needing a row. Same planner,
+        // same warehouse, so this preview can't drift from the real thing.
+        //
+        // Produksi meneruskan SELURUH tangga satuan (ladderUnitIds()), bukan cuma satuan yang sudah
+        // punya baris stok: justru blok inilah mekanisme "provisioning yang disetujui user" yang
+        // membuat itu aman -- satuan yang belum punya baris dilaporkan di sini, dan barulah setelah
+        // user menekan konfirmasi (confirm_create_stock) addQty() membuatnya. Caller lain yang
+        // TIDAK punya langkah konfirmasi tetap memakai kebijakan ketat bawaan addQty().
         $missingProductStockRows = [];
         foreach ($transferPlan['groups'] as $group) {
             foreach ($group['items'] as $output) {
-                $key = (int) $output['product_variant_id'] . '_' . (int) $output['unit_id'];
-                if (isset($missingProductStockRows[$key])) {
-                    continue;
-                }
+                $credits = UnitRollUp::plan(
+                    UnitRollUp::productChain((int) $output['product_variant_id']),
+                    (int) $output['unit_id'],
+                    (int) $output['qty'],
+                    UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
+                );
 
-                $exists = ProductStock::withoutGlobalScope('active_warehouse')
-                    ->where('warehouse_id', (int) $mainWarehouse->id)
-                    ->where('product_variant_id', $output['product_variant_id'])
-                    ->where('unit_id', $output['unit_id'])
-                    ->where('status', 1)
-                    ->exists();
-
-                if ($exists) {
-                    continue;
-                }
-
-                $pv = ProductVariant::find($output['product_variant_id']);
-                $productName = '-';
-                if ($pv) {
-                    $prName = Product::find($pv->product_id);
-                    $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
-                    if ($productName === '') {
-                        $productName = $pv->product_variant_name ?? '-';
+                foreach ($credits as $credit) {
+                    if ($credit['qty'] <= 0) {
+                        continue; // addQty() tidak menyentuh satuan ini, jadi tidak ada baris baru
                     }
+
+                    $key = (int) $output['product_variant_id'] . '_' . (int) $credit['unit_id'];
+                    if (isset($missingProductStockRows[$key])) {
+                        continue;
+                    }
+
+                    $exists = ProductStock::withoutGlobalScope('active_warehouse')
+                        ->where('warehouse_id', (int) $mainWarehouse->id)
+                        ->where('product_variant_id', $output['product_variant_id'])
+                        ->where('unit_id', $credit['unit_id'])
+                        ->where('status', 1)
+                        ->exists();
+
+                    if ($exists) {
+                        continue;
+                    }
+
+                    $pv = ProductVariant::find($output['product_variant_id']);
+                    $productName = '-';
+                    if ($pv) {
+                        $prName = Product::find($pv->product_id);
+                        $productName = trim(($prName->product_name ?? '') . ' ' . ($pv->product_variant_name ?? ''));
+                        if ($productName === '') {
+                            $productName = $pv->product_variant_name ?? '-';
+                        }
+                    }
+                    $unit = Unit::find($credit['unit_id']);
+                    $missingProductStockRows[$key] = [
+                        'product_variant_id' => (int) $output['product_variant_id'],
+                        'unit_id' => (int) $credit['unit_id'],
+                        'product_name' => $productName,
+                        'unit_name' => $unit->unit_name ?? '-',
+                    ];
                 }
-                $unit = Unit::find($output['unit_id']);
-                $missingProductStockRows[$key] = [
-                    'product_variant_id' => (int) $output['product_variant_id'],
-                    'unit_id' => (int) $output['unit_id'],
-                    'product_name' => $productName,
-                    'unit_name' => $unit->unit_name ?? '-',
-                ];
             }
         }
 
@@ -1110,6 +1232,14 @@ class ProductionController extends Controller
             }
             ProductUnitStock::clearCache();
             foreach ($inventoryBuckets as $output) {
+                // rollUp: true (GH #19, merged from main's ebadabf/51684f3, 2026-08-28) -- an exact
+                // multiple of a higher product_relations unit (e.g. 24 Piece = 2 DOS) is credited as
+                // that higher unit, mirroring physical packing, instead of always staying flat at
+                // the produced unit. See ProductUnitStock::addQty()'s $rollUp doc.
+                //
+                // Allow-list = SELURUH tangga satuan, sama persis dengan yang dipakai pre-check di
+                // atas -- kalau keduanya tidak sama, user bisa dimintai konfirmasi untuk baris yang
+                // ternyata tidak dibuat (atau lebih buruk: baris dibuat tanpa pernah dikonfirmasi).
                 $add = ProductUnitStock::addQty(
                     (int) $mainWarehouse->id,
                     (int) $output['product_id'],
@@ -1117,7 +1247,9 @@ class ProductionController extends Controller
                     (int) $output['unit_id'],
                     (float) $output['qty'],
                     $p->production_code,
-                    'Hasil produksi ' . $p->production_code
+                    'Hasil produksi ' . $p->production_code,
+                    true,
+                    UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
                 );
                 if (! $add['ok']) {
                     throw new \RuntimeException(
@@ -1163,6 +1295,11 @@ class ProductionController extends Controller
         } catch (Throwable $e) {
             DB::rollBack();
             return response()->json([
+                // NB (merged from main's ebadabf/GH #19, 2026-08-28): this conflict was mostly
+                // main's old ProductRelation/ensureProductStockRow ladder-crediting block (already
+                // replaced on fase2 by buildProductionTransferPlan() + ProductUnitStock::addQty(),
+                // see the pre-check above) misaligned by diff onto this catch{} block. Nothing to
+                // port here -- see that pre-check's comment for where the actual GH #19 fix went.
                 'status' => -1,
                 'header' => 'Gagal ACC',
                 'message' => $e->getMessage() ?: 'Gagal membuat Stock Transfer hasil produksi.',

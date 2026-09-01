@@ -28,15 +28,23 @@ use Tests\TestCase;
  * pegasus_testing outside DatabaseTransactions' rollback safety net — TRUNCATE causes an implicit
  * commit, so a transaction rollback would not undo it anyway). A mock would prove the right command
  * was *requested*, not that its output survives the nested-call round trip, which is the actual bug.
- * So this restores the "default" snapshot for real, then explicitly reseeds pegasus_testing back to
- * its baseline in tearDown() regardless of pass/fail, exactly like the documented `php artisan
- * db:seed --env=testing --force` reset step (cdocs/testing/README.md).
+ * So this restores the "default" snapshot for real, then explicitly restores pegasus_testing back to
+ * ITS OWN standing baseline in tearDown() regardless of pass/fail.
+ *
+ * That baseline is the `okeh8644` snapshot (real production-shaped data), not the bare `db:seed`
+ * default — see memory pegasus-testing-db-okeh8644-switch. Restoring plain `db:seed --force` here
+ * used to leave `pegasus_testing` sitting on the old, much smaller default snapshot for every test
+ * that ran later in the same process (this test has no filter pinning it last), silently
+ * reintroducing everything the okeh8644 switch fixed — e.g. the MRP300P/SOHP duplicate-SKU
+ * collision the default snapshot's source data still has (see pegasus-duplicate-sku-data-issue) —
+ * for the rest of that run. Confirmed as the actual root cause 2026-08-29 after that exact
+ * regression recurred three times in one session.
  */
 class SnapshotRestoreOutputWasSwallowedByNestedArtisanCallTest extends TestCase
 {
     protected function tearDown(): void
     {
-        Artisan::call('db:seed', ['--force' => true]);
+        Artisan::call('snapshot:restore', ['name' => 'okeh8644']);
         parent::tearDown();
     }
 

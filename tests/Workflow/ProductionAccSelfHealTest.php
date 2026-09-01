@@ -17,20 +17,25 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Covers the self-heal mechanism added in main commit `2d73633` (merged into this branch),
- * `ProductionController::revertPendingProductionStockMutations()` — see
- * `docs/production-acc-stock-safety.md` and `cdocs/testing/KNOWN_ISSUES.md`'s finished-goods
- * null-guard entry for the real incident this was built to recover from (`PR0258`: an ACC attempt
- * crashed partway through, leaving `supplies_stocks` already decremented and `log_stocks` already
- * written while `productions.status` stayed at `1`/pending).
+ * Covers the self-heal guard wired into `ProductionController::accProduction()` for GitHub #83
+ * (`App\Support\ProductionPendingStockRestorer::activeLogsFor()`/`findLockingOpnameCode()`) — see
+ * `docs/production-acc-stock-safety.md` for the current ACC flow and
+ * `docs/laporan-opname-vs-pending-production-2026-08-01.md` for the real incident this recovers
+ * from (`PR0258`: an ACC attempt crashed partway through, leaving `supplies_stocks` already
+ * decremented and `log_stocks` already written while `productions.status` stayed at `1`/pending).
  *
  * Before this fix, retrying ACC on such a stuck production would apply ANOTHER full ingredient
  * deduction on top of the orphaned one already sitting in stock — silently doubling the loss and,
  * per the real incident report, making the "bahan baku tidak mencukupi" shortfall message grow
  * worse on every retry rather than resolving it. This test reproduces that exact stuck state by
- * hand (bypassing the now-fixed crash path entirely) and confirms a plain retry recovers cleanly:
- * self-heal reverts the orphaned mutation BEFORE the pre-check runs, then the real ACC applies the
- * correct deduction exactly once.
+ * hand (the original crash path is already closed by PR #74's transaction wrapping — reproducing
+ * it isn't the point here) and confirms a plain retry recovers cleanly: self-heal reverts the
+ * orphaned mutation BEFORE the pre-check runs, then the real ACC applies the correct deduction
+ * exactly once.
+ *
+ * The companion test below covers the guard itself: self-heal must NOT run if a Stock Opname has
+ * already been approved for the same item+warehouse since the orphan was cut — see
+ * `ProductionAccSelfHealBlockedByOpnameTest`.
  */
 class ProductionAccSelfHealTest extends TestCase
 {
@@ -110,6 +115,11 @@ class ProductionAccSelfHealTest extends TestCase
     public function test_retrying_acc_on_a_stuck_pending_production_self_heals_before_reapplying(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;

@@ -30,7 +30,12 @@ class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
         return (int) DB::table('staffs')->where('status', 1)->value('staff_id');
     }
 
-    private function insertStockOpnameBahan(SuppliesStock $stock): int
+    /**
+     * Rancang ulang 2026-08-27: hasil hitung ikut DOKUMEN, bukan body request saat ACC -- jadi
+     * $realQty dititipkan di insert (sp_units[]), seperti yang memang dikirim
+     * CreateStockOpnameSupplies.js.
+     */
+    private function insertStockOpnameBahan(SuppliesStock $stock, ?int $realQty = null): int
     {
         $response = $this->post('/insertStockOpnameBahan', [
             'stob_date' => now()->toDateString(),
@@ -39,9 +44,11 @@ class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
             'is_draft' => 0,
             'item' => json_encode([[
                 'supplies_id' => $stock->supplies_id,
-                'stobd_system' => $stock->ss_stock.' pcs',
-                'stobd_real' => $stock->ss_stock.' pcs',
-                'stobd_selisih' => '0 pcs',
+                'sp_units' => [[
+                    'unit_id' => $stock->unit_id,
+                    'system_qty' => $stock->ss_stock,
+                    'real_qty' => $realQty ?? $stock->ss_stock,
+                ]],
                 'stobd_notes' => null,
             ]]),
         ]);
@@ -70,7 +77,7 @@ class StockOpnameBahanRepeatApprovalIsNotIdempotentTest extends TestCase
 
         $stock = $this->pickFixtureStock();
         $startingStock = $stock->ss_stock;
-        $stobId = $this->insertStockOpnameBahan($stock);
+        $stobId = $this->insertStockOpnameBahan($stock, realQty: $startingStock - 5);
 
         $this->approve($stock, $stobId, $startingStock - 5);
 

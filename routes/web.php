@@ -703,6 +703,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Produksi|create')->group(function () {
         Route::post('/insertProduction', [ProductionController::class, 'insertProduction'])->name('insertProduction');
+        Route::post('/checkProductionStock', [ProductionController::class, 'checkProductionStock'])->name('checkProductionStock');
     });
     Route::middleware('check.access:Produksi|edit')->group(function () {
         Route::post('/updateProduction', [ProductionController::class, 'updateProduction'])->name('updateProduction');

@@ -21,6 +21,7 @@ use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -564,6 +565,14 @@ class SupplierController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
+        // Ditambahkan (2026-08-24): dulu penerimaan barang ini TIDAK transaksional sama sekali,
+        // padahal insertPoDeliveryDetail() di dalam loop menambah ss_stock per item. Gagal di tengah
+        // (item ke-3 dari 5 error) meninggalkan stok bahan bertambah sebagian, PurchaseOrderDelivery
+        // header sudah terlanjur dibuat, invoice belum, dan po->status masih 1 -- user meng-ACC ulang
+        // lalu item yang tadi sudah masuk ditambahkan LAGI. Guard status di atas sengaja tetap di
+        // luar transaksi (murni baca, sama seperti accProduction()/accStockOpname()).
+        DB::beginTransaction();
+        try {
         $pod_id = (new PurchaseOrderDelivery())->insertPoDelivery(["po_id"=>$data["po_id"],"pdo_receiver"=>"Auto Generated","status"=>2]);
 
         foreach ($data['items'] as $key => $value) {
@@ -594,7 +603,108 @@ class SupplierController extends Controller
         $po->status = 2; // Lunas
         $po->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $po->save();
+        DB::commit();
         return $due;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Apakah TOTAL stok satu bahan (dijumlahkan lintas seluruh ladder satuan, dikonversi ke
+     * satuan-terkecil-setara) cukup untuk memenuhi $qty pada $unitId?
+     *
+     * Dipakai tolakPO() sebagai pengganti "cek stok di satuan yang dipesan saja" — sejak
+     * penerimaan PO menaikkan satuan (UnitRollUp), stok bisa berada di satuan yang lebih besar.
+     */
+    private function suppliesLadderHasEnough(int $suppliesId, int $unitId, int $qty): bool
+    {
+        $chain = UnitRollUp::suppliesChain($suppliesId);
+
+        // Faktor konversi tiap satuan ke satuan target ($unitId). Satuan target = 1.
+        $faktor = [$unitId => 1];
+        $current = $unitId;
+        $hops = 0;
+        while ($hops < 20) {
+            $hops++;
+            $rel = null;
+            foreach ($chain as $link) {
+                if ($link['small'] === $current) { $rel = $link; break; }
+            }
+            if ($rel === null || $rel['ratio'] <= 0) break;
+            $faktor[$rel['big']] = $faktor[$current] * $rel['ratio'];
+            $current = $rel['big'];
+        }
+
+        $total = 0;
+        $rows = SuppliesStock::where('supplies_id', $suppliesId)->where('status', 1)->get();
+        foreach ($rows as $row) {
+            $u = (int) $row->unit_id;
+            if (isset($faktor[$u])) {
+                $total += ((int) $row->ss_stock) * $faktor[$u];
+            }
+        }
+
+        return $total >= $qty;
+    }
+
+    /**
+     * Pecah satuan yang lebih besar turun ke $unitId sampai baris stok $unitId cukup untuk $qty.
+     * Menyimpan langsung ke DB dan mencatat log konversinya (pola sama dengan bongkar di
+     * ProductIssuesDetail::stockCheck(): satuan atas keluar/cat 2, satuan bawah masuk/cat 1).
+     *
+     * Unit atas dicari lewat RELASI (su_id_1), bukan posisi array — pelajaran dari
+     * ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.
+     */
+    private function bongkarSuppliesUntilEnough(int $suppliesId, int $unitId, int $qty, $sv, &$p): void
+    {
+        $chain = UnitRollUp::suppliesChain($suppliesId);
+        $safety = 0;
+
+        while ($safety < 500) {
+            $safety++;
+
+            $target = SuppliesStock::where('supplies_id', $suppliesId)
+                ->where('unit_id', $unitId)->where('status', 1)->first();
+            if (! $target || $target->ss_stock >= $qty) {
+                return; // sudah cukup (atau tidak ada baris sama sekali — biarkan guard di atas yang bicara)
+            }
+
+            // Cari satuan tepat di atas $unitId lewat relasi.
+            $rel = null;
+            foreach ($chain as $link) {
+                if ($link['small'] === $unitId) { $rel = $link; break; }
+            }
+            if ($rel === null || $rel['ratio'] <= 0) return;
+
+            $atas = SuppliesStock::where('supplies_id', $suppliesId)
+                ->where('unit_id', $rel['big'])->where('status', 1)->first();
+
+            // Satuan atas kosong → coba isi dulu dari satuan di atasnya lagi (rekursif satu tingkat).
+            if (! $atas || $atas->ss_stock <= 0) {
+                if ($atas === null) return;
+                $this->bongkarSuppliesUntilEnough($suppliesId, (int) $rel['big'], 1, $sv, $p);
+                $atas->refresh();
+                if ($atas->ss_stock <= 0) return;
+            }
+
+            $atas->ss_stock -= 1;
+            $atas->save();
+            $target->ss_stock += $rel['ratio'];
+            $target->save();
+
+            (new LogStock())->insertLog([
+                'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
+                'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Bongkar) pembatalan PO',
+                'log_jumlah' => 1, 'unit_id' => (int) $rel['big'],
+            ]);
+            (new LogStock())->insertLog([
+                'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
+                'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Hasil) pembatalan PO',
+                'log_jumlah' => (int) $rel['ratio'], 'unit_id' => $unitId,
+            ]);
+        }
     }
 
     function tolakPO(Request $req) {
@@ -617,6 +727,13 @@ class SupplierController extends Controller
                 $details = PurchaseOrderDetail::where('po_id', '=', $data["po_id"])->get();
                 $kurang = [];
 
+                // Diperbaiki (2026-08-25): dulu ini cuma melihat stok di satuan yang DIPESAN dan
+                // menolak pembatalan kalau satuan itu saja tidak cukup. Sejak penerimaan barang PO
+                // menaikkan satuan berjenjang (lihat PurchaseOrderDeliveryDetail::insertPoDeliveryDetail()),
+                // stok hasil penerimaan bisa saja sudah tidak berada di satuan yang dipesan lagi --
+                // 24 Piece yang diterima jadi 2 DOS. Tanpa perubahan ini, membatalkan PO yang sudah
+                // di-ACC akan SELALU gagal "Stok bahan tidak mencukupi" untuk bahan yang punya ladder.
+                // Sekarang yang dibandingkan adalah TOTAL stok dalam satuan terkecil-setara.
                 foreach ($details as $value) {
                     $sv = SuppliesVariant::find($value->supplies_variant_id);
                     if (!$sv) {
@@ -625,12 +742,7 @@ class SupplierController extends Controller
                         continue;
                     }
 
-                    $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
-                        ->where("unit_id", "=", $value->unit_id)
-                        ->where("status", "=", 1)
-                        ->first();
-
-                    if (!$s || ($s->ss_stock - $value->pod_qty) < 0) {
+                    if (!$this->suppliesLadderHasEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty)) {
                         $name = trim(($value->pod_nama ?? '') . ' ' . ($value->pod_variant ?? ''));
                         if ($name === '' && $sv) {
                             $name = $sv->supplies_variant_name ?? 'Bahan';
@@ -649,6 +761,11 @@ class SupplierController extends Controller
 
                 foreach ($details as $value) {
                     $sv = SuppliesVariant::find($value->supplies_variant_id);
+
+                    // Bongkar satuan besar dulu kalau satuan yang dipesan tidak cukup sendirian
+                    // (lihat komentar di blok validasi di atas). Kalau sudah cukup, ini no-op.
+                    $this->bongkarSuppliesUntilEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty, $sv, $p);
+
                     $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
                         ->where("unit_id", "=", $value->unit_id)
                         ->where("status", "=", 1)
@@ -721,10 +838,14 @@ class SupplierController extends Controller
                 ->where('unit_id', $value['unit_id'])
                 ->where('status', 1)
                 ->first();
-            
-            if (($ss->ss_stock - $value['rsd_qty'] < 0)){
+
+            // Ditambahkan (2026-08-24): dulu langsung $ss->ss_stock tanpa null-check -- baris stok
+            // yang tidak ada (kombinasi supplies_id + unit_id yang tidak match) meledak jadi
+            // "Attempt to read property on null" di tengah pre-check. Diperlakukan sama dengan stok
+            // tidak mencukupi, karena memang tidak ada stok yang bisa diretur.
+            if (!$ss || ($ss->ss_stock - $value['rsd_qty'] < 0)){
                 $svr = SuppliesVariant::find($value['supplies_variant_id']);
-                array_push($kurang, $svr->supplies_variant_name);
+                array_push($kurang, $svr->supplies_variant_name ?? ('id '.$value['supplies_variant_id']));
             }
         }
         if (count($bermasalah) > 0) {
@@ -740,6 +861,14 @@ class SupplierController extends Controller
             ];
         }
 
+        // Ditambahkan (2026-08-24): mulai dari sini semuanya menulis ke DB (po_total, ProductIssues,
+        // ReturnSupplies, lalu pengurangan ss_stock per item di loop bawah) dan dulu TIDAK ada
+        // transaksi sama sekali. Paling parah: `return -1` di dalam loop bawah (stok tidak cukup)
+        // keluar begitu saja padahal po_total sudah dikurangi, ProductIssues/ReturnSupplies sudah
+        // dibuat, dan item-item sebelumnya sudah dipotong stoknya -- dan itu jalur bisnis normal,
+        // bukan cuma skenario crash. Semua pre-check yang murni baca tetap di luar transaksi.
+        DB::beginTransaction();
+        try {
         $po->po_total -= $total;
         $po->save();
 
@@ -775,12 +904,15 @@ class SupplierController extends Controller
             $s = SuppliesStock::where('supplies_id','=',$value['supplies_id'])->where('unit_id','=',$value["unit_id"])->where('status', 1)->first();
 
             // pengurangan qty stok
+            // Ditambahkan (2026-08-24): null-check eksplisit untuk $s -- dulu `$s->ss_stock ?? 0`
+            // aman saat MEMBACA, tapi `$s->ss_stock = ...` di bawah tetap meledak kalau $s null
+            // (mis. rsd_qty = 0 sehingga cek di bawah lolos). Sekarang rollback + pesan jelas.
             $stocks = $s->ss_stock ?? 0;
-            if ($stocks - $value["rsd_qty"] >= 0) {
-                $stocks -= $value["rsd_qty"];
-            } else {
+            if (!$s || $stocks - $value["rsd_qty"] < 0) {
+                DB::rollBack();
                 return -1;
             }
+            $stocks -= $value["rsd_qty"];
 
             $s->ss_stock = $stocks;
             $s->save();
@@ -803,9 +935,14 @@ class SupplierController extends Controller
             $value['pid_id'] = $pid_id;
             (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
         }
-        
 
+
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     function updateReturnSupplies(Request $req){
@@ -825,6 +962,12 @@ class SupplierController extends Controller
             $total += ($value['rsd_price'] * $value['rsd_qty']);
         }
 
+        // Ditambahkan (2026-08-24): kebalikan dari insertReturnSupplies() di atas -- method ini
+        // MENGEMBALIKAN stok bahan (lewat deleteProductIssuesDetail() di loop bawah) sekaligus
+        // mengembalikan po_total. Dulu tanpa transaksi: gagal di tengah meninggalkan po_total sudah
+        // bertambah tapi stok baru sebagian yang dikembalikan, atau sebaliknya.
+        DB::beginTransaction();
+        try {
         $po = PurchaseOrder::find($data['po_id']);
         $po->po_total += $total;
         $po->save();
@@ -865,6 +1008,11 @@ class SupplierController extends Controller
             (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($value);
         }
 
+        DB::commit();
         return 1;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 }

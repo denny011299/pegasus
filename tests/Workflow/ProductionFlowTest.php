@@ -103,6 +103,11 @@ class ProductionFlowTest extends TestCase
     public function test_insert_then_approve_moves_stock_and_writes_log(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;
@@ -175,6 +180,11 @@ class ProductionFlowTest extends TestCase
     public function test_approve_is_rejected_cleanly_when_ingredient_stock_is_insufficient(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;
@@ -216,6 +226,11 @@ class ProductionFlowTest extends TestCase
     public function test_decline_a_pending_production_leaves_stock_untouched(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
         $pdQty = 10;
@@ -254,6 +269,11 @@ class ProductionFlowTest extends TestCase
     public function test_declining_an_already_decided_production_is_rejected(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib: insertProduction()/accProduction() menolak kalau gudang aktif sesi bukan gudang
+        // utama, dan menolaknya sebagai HTTP 200 + body error -- tanpa pin ini insert-nya gagal
+        // diam-diam lalu test mengambil produksi lama yang sudah di-ACC (gagal "-2 sudah
+        // diterma/ditolak"). Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $fx = $this->createFixture();
 

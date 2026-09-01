@@ -1,0 +1,1742 @@
+[
+    {
+        "bom_id": 1,
+        "product_id": 1,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-20 04:16:43",
+        "updated_at": "2026-07-06 07:32:59",
+        "created_by": 9
+    },
+    {
+        "bom_id": 2,
+        "product_id": 2,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-25 09:24:42",
+        "updated_at": "2026-07-07 08:00:12",
+        "created_by": 9
+    },
+    {
+        "bom_id": 3,
+        "product_id": 3,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-25 09:26:09",
+        "updated_at": "2026-07-06 06:04:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 4,
+        "product_id": 8,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-28 02:05:22",
+        "updated_at": "2026-07-07 08:00:23",
+        "created_by": 9
+    },
+    {
+        "bom_id": 5,
+        "product_id": 28,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-28 02:08:06",
+        "updated_at": "2026-07-06 06:03:34",
+        "created_by": 9
+    },
+    {
+        "bom_id": 6,
+        "product_id": 79,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-02-28 02:09:55",
+        "updated_at": "2026-07-06 06:04:58",
+        "created_by": 9
+    },
+    {
+        "bom_id": 7,
+        "product_id": 6,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:30:44",
+        "updated_at": "2026-07-07 08:00:32",
+        "created_by": 9
+    },
+    {
+        "bom_id": 8,
+        "product_id": 5,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-03-02 06:31:53",
+        "updated_at": "2026-07-30 02:39:23",
+        "created_by": 9
+    },
+    {
+        "bom_id": 9,
+        "product_id": 7,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:34:04",
+        "updated_at": "2026-07-07 08:00:52",
+        "created_by": 9
+    },
+    {
+        "bom_id": 10,
+        "product_id": 71,
+        "bom_qty": 1,
+        "unit_id": 2,
+        "status": 0,
+        "created_at": "2026-03-02 06:36:30",
+        "updated_at": "2026-07-30 03:39:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 11,
+        "product_id": 15,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:40:06",
+        "updated_at": "2026-07-06 07:34:16",
+        "created_by": 9
+    },
+    {
+        "bom_id": 12,
+        "product_id": 19,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:41:34",
+        "updated_at": "2026-07-07 08:01:13",
+        "created_by": 9
+    },
+    {
+        "bom_id": 13,
+        "product_id": 22,
+        "bom_qty": 1,
+        "unit_id": 7,
+        "status": 0,
+        "created_at": "2026-03-02 06:45:13",
+        "updated_at": "2026-04-20 09:08:59",
+        "created_by": 13
+    },
+    {
+        "bom_id": 14,
+        "product_id": 24,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:47:28",
+        "updated_at": "2026-07-06 06:05:24",
+        "created_by": 9
+    },
+    {
+        "bom_id": 15,
+        "product_id": 25,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 06:54:14",
+        "updated_at": "2026-07-06 06:03:58",
+        "created_by": 9
+    },
+    {
+        "bom_id": 16,
+        "product_id": 26,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:10:40",
+        "updated_at": "2026-08-15 10:24:36",
+        "created_by": 9
+    },
+    {
+        "bom_id": 17,
+        "product_id": 29,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:11:51",
+        "updated_at": "2026-07-28 01:12:03",
+        "created_by": 27
+    },
+    {
+        "bom_id": 18,
+        "product_id": 31,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:15:23",
+        "updated_at": "2026-07-20 13:50:09",
+        "created_by": 27
+    },
+    {
+        "bom_id": 19,
+        "product_id": 30,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:17:36",
+        "updated_at": "2026-08-10 10:01:52",
+        "created_by": 9
+    },
+    {
+        "bom_id": 20,
+        "product_id": 32,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:26:45",
+        "updated_at": "2026-08-11 09:51:47",
+        "created_by": 9
+    },
+    {
+        "bom_id": 21,
+        "product_id": 23,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:28:51",
+        "updated_at": "2026-07-07 02:00:55",
+        "created_by": 9
+    },
+    {
+        "bom_id": 22,
+        "product_id": 4,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:31:15",
+        "updated_at": "2026-08-06 02:41:22",
+        "created_by": 9
+    },
+    {
+        "bom_id": 23,
+        "product_id": 9,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:32:36",
+        "updated_at": "2026-07-14 01:03:48",
+        "created_by": 27
+    },
+    {
+        "bom_id": 24,
+        "product_id": 70,
+        "bom_qty": 1,
+        "unit_id": 2,
+        "status": 0,
+        "created_at": "2026-03-02 07:33:51",
+        "updated_at": "2026-07-30 03:39:42",
+        "created_by": 9
+    },
+    {
+        "bom_id": 25,
+        "product_id": 14,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:35:36",
+        "updated_at": "2026-07-06 06:05:47",
+        "created_by": 9
+    },
+    {
+        "bom_id": 26,
+        "product_id": 12,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:36:21",
+        "updated_at": "2026-07-07 07:59:51",
+        "created_by": 9
+    },
+    {
+        "bom_id": 27,
+        "product_id": 13,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:37:44",
+        "updated_at": "2026-07-07 08:00:01",
+        "created_by": 9
+    },
+    {
+        "bom_id": 28,
+        "product_id": 18,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:47:17",
+        "updated_at": "2026-07-17 03:26:28",
+        "created_by": 14
+    },
+    {
+        "bom_id": 29,
+        "product_id": 16,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:48:30",
+        "updated_at": "2026-07-06 07:33:39",
+        "created_by": 9
+    },
+    {
+        "bom_id": 30,
+        "product_id": 17,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-02 07:49:21",
+        "updated_at": "2026-07-17 03:27:54",
+        "created_by": 14
+    },
+    {
+        "bom_id": 31,
+        "product_id": 20,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-03-02 07:50:47",
+        "updated_at": "2026-03-05 03:33:55",
+        "created_by": null
+    },
+    {
+        "bom_id": 32,
+        "product_id": 33,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 02:55:17",
+        "updated_at": "2026-08-24 10:07:29",
+        "created_by": 9
+    },
+    {
+        "bom_id": 33,
+        "product_id": 37,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:18:50",
+        "updated_at": "2026-08-26 09:35:23",
+        "created_by": 9
+    },
+    {
+        "bom_id": 34,
+        "product_id": 36,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:21:04",
+        "updated_at": "2026-07-27 02:44:41",
+        "created_by": 9
+    },
+    {
+        "bom_id": 35,
+        "product_id": 74,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:22:55",
+        "updated_at": "2026-07-20 13:51:16",
+        "created_by": 27
+    },
+    {
+        "bom_id": 36,
+        "product_id": 46,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:25:03",
+        "updated_at": "2026-07-27 02:42:20",
+        "created_by": 9
+    },
+    {
+        "bom_id": 37,
+        "product_id": 42,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:26:48",
+        "updated_at": "2026-03-03 04:26:48",
+        "created_by": null
+    },
+    {
+        "bom_id": 38,
+        "product_id": 41,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-03 04:28:21",
+        "updated_at": "2026-03-03 04:28:21",
+        "created_by": null
+    },
+    {
+        "bom_id": 39,
+        "product_id": 65,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 01:25:36",
+        "updated_at": "2026-03-12 01:25:36",
+        "created_by": null
+    },
+    {
+        "bom_id": 40,
+        "product_id": 66,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 01:35:26",
+        "updated_at": "2026-03-12 01:35:26",
+        "created_by": null
+    },
+    {
+        "bom_id": 41,
+        "product_id": 67,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 02:23:04",
+        "updated_at": "2026-03-12 02:23:04",
+        "created_by": null
+    },
+    {
+        "bom_id": 42,
+        "product_id": 148,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:16:55",
+        "updated_at": "2026-03-12 03:16:55",
+        "created_by": null
+    },
+    {
+        "bom_id": 43,
+        "product_id": 75,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:33:26",
+        "updated_at": "2026-07-27 07:19:10",
+        "created_by": 15
+    },
+    {
+        "bom_id": 44,
+        "product_id": 76,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:43:48",
+        "updated_at": "2026-07-16 11:42:11",
+        "created_by": 9
+    },
+    {
+        "bom_id": 45,
+        "product_id": 77,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-03-12 03:44:18",
+        "updated_at": "2026-06-22 08:16:48",
+        "created_by": 15
+    },
+    {
+        "bom_id": 46,
+        "product_id": 78,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:44:49",
+        "updated_at": "2026-03-12 03:44:49",
+        "created_by": null
+    },
+    {
+        "bom_id": 47,
+        "product_id": 136,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:50:48",
+        "updated_at": "2026-03-12 03:50:48",
+        "created_by": null
+    },
+    {
+        "bom_id": 48,
+        "product_id": 137,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 03:51:11",
+        "updated_at": "2026-03-12 03:51:11",
+        "created_by": null
+    },
+    {
+        "bom_id": 49,
+        "product_id": 153,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 04:03:48",
+        "updated_at": "2026-03-12 04:03:48",
+        "created_by": null
+    },
+    {
+        "bom_id": 50,
+        "product_id": 154,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 04:04:20",
+        "updated_at": "2026-03-12 04:04:20",
+        "created_by": null
+    },
+    {
+        "bom_id": 51,
+        "product_id": 155,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 04:04:53",
+        "updated_at": "2026-03-12 04:04:53",
+        "created_by": null
+    },
+    {
+        "bom_id": 52,
+        "product_id": 132,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:19:23",
+        "updated_at": "2026-08-01 08:48:28",
+        "created_by": 9
+    },
+    {
+        "bom_id": 53,
+        "product_id": 39,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:20:27",
+        "updated_at": "2026-07-27 02:43:18",
+        "created_by": 9
+    },
+    {
+        "bom_id": 54,
+        "product_id": 38,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:22:27",
+        "updated_at": "2026-07-16 07:41:47",
+        "created_by": 9
+    },
+    {
+        "bom_id": 55,
+        "product_id": 44,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:23:42",
+        "updated_at": "2026-03-12 07:23:42",
+        "created_by": null
+    },
+    {
+        "bom_id": 56,
+        "product_id": 133,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:24:52",
+        "updated_at": "2026-08-01 08:32:13",
+        "created_by": 15
+    },
+    {
+        "bom_id": 57,
+        "product_id": 43,
+        "bom_qty": 1,
+        "unit_id": 7,
+        "status": 1,
+        "created_at": "2026-03-12 07:25:25",
+        "updated_at": "2026-03-12 07:25:25",
+        "created_by": null
+    },
+    {
+        "bom_id": 58,
+        "product_id": 73,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:26:06",
+        "updated_at": "2026-07-20 13:50:29",
+        "created_by": 27
+    },
+    {
+        "bom_id": 59,
+        "product_id": 35,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:31:48",
+        "updated_at": "2026-07-20 03:06:53",
+        "created_by": 9
+    },
+    {
+        "bom_id": 60,
+        "product_id": 52,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:36:22",
+        "updated_at": "2026-08-03 02:15:32",
+        "created_by": 27
+    },
+    {
+        "bom_id": 61,
+        "product_id": 156,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:36:58",
+        "updated_at": "2026-08-01 08:48:07",
+        "created_by": 9
+    },
+    {
+        "bom_id": 62,
+        "product_id": 157,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:37:23",
+        "updated_at": "2026-08-01 08:31:53",
+        "created_by": 15
+    },
+    {
+        "bom_id": 63,
+        "product_id": 48,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:44:56",
+        "updated_at": "2026-08-11 01:04:18",
+        "created_by": 9
+    },
+    {
+        "bom_id": 64,
+        "product_id": 47,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-12 07:45:37",
+        "updated_at": "2026-07-06 06:03:12",
+        "created_by": 9
+    },
+    {
+        "bom_id": 65,
+        "product_id": 72,
+        "bom_qty": 1,
+        "unit_id": 2,
+        "status": 1,
+        "created_at": "2026-03-12 07:46:50",
+        "updated_at": "2026-03-12 07:46:50",
+        "created_by": null
+    },
+    {
+        "bom_id": 66,
+        "product_id": 61,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-13 11:05:03",
+        "updated_at": "2026-07-07 02:01:17",
+        "created_by": 9
+    },
+    {
+        "bom_id": 67,
+        "product_id": 62,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-13 11:05:55",
+        "updated_at": "2026-07-29 05:58:49",
+        "created_by": 15
+    },
+    {
+        "bom_id": 68,
+        "product_id": 63,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-13 11:06:43",
+        "updated_at": "2026-08-03 01:48:49",
+        "created_by": 27
+    },
+    {
+        "bom_id": 69,
+        "product_id": 84,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-13 11:10:39",
+        "updated_at": "2026-08-01 07:32:07",
+        "created_by": 9
+    },
+    {
+        "bom_id": 70,
+        "product_id": 54,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:31:59",
+        "updated_at": "2026-07-20 03:07:20",
+        "created_by": 9
+    },
+    {
+        "bom_id": 71,
+        "product_id": 53,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:32:53",
+        "updated_at": "2026-07-06 06:04:31",
+        "created_by": 9
+    },
+    {
+        "bom_id": 72,
+        "product_id": 64,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:43:29",
+        "updated_at": "2026-03-14 01:43:29",
+        "created_by": null
+    },
+    {
+        "bom_id": 73,
+        "product_id": 68,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:45:11",
+        "updated_at": "2026-07-24 02:41:58",
+        "created_by": 27
+    },
+    {
+        "bom_id": 74,
+        "product_id": 85,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:48:20",
+        "updated_at": "2026-07-16 07:42:55",
+        "created_by": 9
+    },
+    {
+        "bom_id": 75,
+        "product_id": 86,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 01:57:57",
+        "updated_at": "2026-08-03 01:53:40",
+        "created_by": 27
+    },
+    {
+        "bom_id": 76,
+        "product_id": 91,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 02:03:10",
+        "updated_at": "2026-07-17 03:23:03",
+        "created_by": 14
+    },
+    {
+        "bom_id": 77,
+        "product_id": 92,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 02:04:25",
+        "updated_at": "2026-07-20 03:05:33",
+        "created_by": 9
+    },
+    {
+        "bom_id": 78,
+        "product_id": 87,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 02:18:01",
+        "updated_at": "2026-07-16 07:42:30",
+        "created_by": 9
+    },
+    {
+        "bom_id": 79,
+        "product_id": 83,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 02:20:23",
+        "updated_at": "2026-07-15 08:11:11",
+        "created_by": 15
+    },
+    {
+        "bom_id": 80,
+        "product_id": 58,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 02:26:36",
+        "updated_at": "2026-07-07 01:59:41",
+        "created_by": 9
+    },
+    {
+        "bom_id": 81,
+        "product_id": 49,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 03:58:20",
+        "updated_at": "2026-03-14 03:58:20",
+        "created_by": null
+    },
+    {
+        "bom_id": 82,
+        "product_id": 55,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 03:59:10",
+        "updated_at": "2026-07-16 07:41:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 83,
+        "product_id": 158,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 03:59:57",
+        "updated_at": "2026-08-07 00:37:22",
+        "created_by": 9
+    },
+    {
+        "bom_id": 84,
+        "product_id": 80,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:01:46",
+        "updated_at": "2026-07-23 02:01:15",
+        "created_by": 27
+    },
+    {
+        "bom_id": 85,
+        "product_id": 81,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:03:06",
+        "updated_at": "2026-08-03 02:14:51",
+        "created_by": 27
+    },
+    {
+        "bom_id": 86,
+        "product_id": 82,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:04:35",
+        "updated_at": "2026-07-20 03:06:24",
+        "created_by": 9
+    },
+    {
+        "bom_id": 87,
+        "product_id": 98,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:38:58",
+        "updated_at": "2026-04-17 07:43:42",
+        "created_by": 9
+    },
+    {
+        "bom_id": 88,
+        "product_id": 99,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:39:36",
+        "updated_at": "2026-06-22 08:10:53",
+        "created_by": 15
+    },
+    {
+        "bom_id": 89,
+        "product_id": 100,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:40:27",
+        "updated_at": "2026-06-22 08:12:36",
+        "created_by": 15
+    },
+    {
+        "bom_id": 90,
+        "product_id": 101,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:43:11",
+        "updated_at": "2026-06-22 08:11:21",
+        "created_by": 15
+    },
+    {
+        "bom_id": 91,
+        "product_id": 102,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:47:40",
+        "updated_at": "2026-08-01 01:44:30",
+        "created_by": 15
+    },
+    {
+        "bom_id": 92,
+        "product_id": 106,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:48:26",
+        "updated_at": "2026-08-13 10:25:19",
+        "created_by": 9
+    },
+    {
+        "bom_id": 93,
+        "product_id": 107,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:49:37",
+        "updated_at": "2026-06-25 02:39:35",
+        "created_by": 15
+    },
+    {
+        "bom_id": 94,
+        "product_id": 159,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-03-14 04:50:50",
+        "updated_at": "2026-03-14 04:50:50",
+        "created_by": null
+    },
+    {
+        "bom_id": 95,
+        "product_id": 160,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-03-14 04:51:10",
+        "updated_at": "2026-05-29 10:19:52",
+        "created_by": 9
+    },
+    {
+        "bom_id": 96,
+        "product_id": 161,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:51:30",
+        "updated_at": "2026-07-22 07:15:23",
+        "created_by": 9
+    },
+    {
+        "bom_id": 97,
+        "product_id": 162,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-03-14 04:51:51",
+        "updated_at": "2026-03-14 04:51:51",
+        "created_by": null
+    },
+    {
+        "bom_id": 98,
+        "product_id": 163,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:54:33",
+        "updated_at": "2026-08-14 10:52:44",
+        "created_by": 9
+    },
+    {
+        "bom_id": 99,
+        "product_id": 164,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-14 04:55:00",
+        "updated_at": "2026-08-12 06:22:24",
+        "created_by": 15
+    },
+    {
+        "bom_id": 100,
+        "product_id": 27,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-17 03:18:00",
+        "updated_at": "2026-07-06 06:03:44",
+        "created_by": 9
+    },
+    {
+        "bom_id": 101,
+        "product_id": 56,
+        "bom_qty": 1,
+        "unit_id": 7,
+        "status": 0,
+        "created_at": "2026-03-26 10:16:40",
+        "updated_at": "2026-04-20 09:16:11",
+        "created_by": 13
+    },
+    {
+        "bom_id": 102,
+        "product_id": 176,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 00:38:16",
+        "updated_at": "2026-07-25 02:12:07",
+        "created_by": 27
+    },
+    {
+        "bom_id": 103,
+        "product_id": 177,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 00:39:00",
+        "updated_at": "2026-07-25 02:12:17",
+        "created_by": 27
+    },
+    {
+        "bom_id": 104,
+        "product_id": 167,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:30:48",
+        "updated_at": "2026-07-27 02:44:01",
+        "created_by": 9
+    },
+    {
+        "bom_id": 105,
+        "product_id": 168,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:31:48",
+        "updated_at": "2026-07-25 02:01:36",
+        "created_by": 27
+    },
+    {
+        "bom_id": 106,
+        "product_id": 171,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:35:06",
+        "updated_at": "2026-07-25 02:02:44",
+        "created_by": 27
+    },
+    {
+        "bom_id": 107,
+        "product_id": 172,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:36:26",
+        "updated_at": "2026-07-25 02:02:02",
+        "created_by": 27
+    },
+    {
+        "bom_id": 108,
+        "product_id": 173,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:37:13",
+        "updated_at": "2026-07-25 02:02:55",
+        "created_by": 27
+    },
+    {
+        "bom_id": 109,
+        "product_id": 174,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 01:55:32",
+        "updated_at": "2026-07-25 02:02:24",
+        "created_by": 27
+    },
+    {
+        "bom_id": 110,
+        "product_id": 169,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:15:35",
+        "updated_at": "2026-07-25 02:13:55",
+        "created_by": 27
+    },
+    {
+        "bom_id": 111,
+        "product_id": 170,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:16:55",
+        "updated_at": "2026-07-25 02:13:47",
+        "created_by": 27
+    },
+    {
+        "bom_id": 112,
+        "product_id": 181,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-03-28 02:19:20",
+        "updated_at": "2026-03-28 02:24:18",
+        "created_by": null
+    },
+    {
+        "bom_id": 113,
+        "product_id": 183,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:25:45",
+        "updated_at": "2026-03-28 02:25:45",
+        "created_by": null
+    },
+    {
+        "bom_id": 114,
+        "product_id": 184,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:26:34",
+        "updated_at": "2026-03-28 02:26:34",
+        "created_by": null
+    },
+    {
+        "bom_id": 115,
+        "product_id": 194,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:30:06",
+        "updated_at": "2026-07-27 03:39:51",
+        "created_by": 15
+    },
+    {
+        "bom_id": 116,
+        "product_id": 185,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:33:03",
+        "updated_at": "2026-03-28 02:33:03",
+        "created_by": null
+    },
+    {
+        "bom_id": 117,
+        "product_id": 186,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 02:33:44",
+        "updated_at": "2026-07-07 01:59:06",
+        "created_by": 9
+    },
+    {
+        "bom_id": 118,
+        "product_id": 187,
+        "bom_qty": 1,
+        "unit_id": 7,
+        "status": 0,
+        "created_at": "2026-03-28 02:34:21",
+        "updated_at": "2026-04-21 03:35:05",
+        "created_by": 9
+    },
+    {
+        "bom_id": 119,
+        "product_id": 181,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 03:18:34",
+        "updated_at": "2026-07-20 13:43:34",
+        "created_by": 27
+    },
+    {
+        "bom_id": 120,
+        "product_id": 182,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 03:19:08",
+        "updated_at": "2026-07-20 13:44:00",
+        "created_by": 27
+    },
+    {
+        "bom_id": 121,
+        "product_id": 93,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-03-28 04:11:43",
+        "updated_at": "2026-04-17 07:32:10",
+        "created_by": 9
+    },
+    {
+        "bom_id": 122,
+        "product_id": 165,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-03-28 04:23:08",
+        "updated_at": "2026-06-30 08:19:29",
+        "created_by": 9
+    },
+    {
+        "bom_id": 123,
+        "product_id": 50,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-01 10:17:27",
+        "updated_at": "2026-04-01 10:17:27",
+        "created_by": null
+    },
+    {
+        "bom_id": 124,
+        "product_id": 59,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-07 06:03:58",
+        "updated_at": "2026-04-07 06:03:58",
+        "created_by": null
+    },
+    {
+        "bom_id": 125,
+        "product_id": 178,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-10 09:33:48",
+        "updated_at": "2026-04-10 09:33:48",
+        "created_by": null
+    },
+    {
+        "bom_id": 126,
+        "product_id": 179,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-10 09:35:15",
+        "updated_at": "2026-04-10 09:35:15",
+        "created_by": null
+    },
+    {
+        "bom_id": 127,
+        "product_id": 90,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-14 09:26:24",
+        "updated_at": "2026-04-14 09:26:24",
+        "created_by": null
+    },
+    {
+        "bom_id": 128,
+        "product_id": 94,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-16 02:38:29",
+        "updated_at": "2026-08-01 01:43:58",
+        "created_by": 15
+    },
+    {
+        "bom_id": 129,
+        "product_id": 199,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-20 01:32:52",
+        "updated_at": "2026-04-20 01:32:52",
+        "created_by": 16
+    },
+    {
+        "bom_id": 130,
+        "product_id": 22,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-20 09:09:04",
+        "updated_at": "2026-04-20 09:09:04",
+        "created_by": 13
+    },
+    {
+        "bom_id": 131,
+        "product_id": 56,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-20 09:16:14",
+        "updated_at": "2026-04-20 09:16:14",
+        "created_by": 13
+    },
+    {
+        "bom_id": 132,
+        "product_id": 202,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-21 00:56:09",
+        "updated_at": "2026-04-21 00:56:09",
+        "created_by": 9
+    },
+    {
+        "bom_id": 133,
+        "product_id": 187,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-21 03:37:46",
+        "updated_at": "2026-04-21 03:37:46",
+        "created_by": 9
+    },
+    {
+        "bom_id": 134,
+        "product_id": 205,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-04-23 04:34:32",
+        "updated_at": "2026-04-23 04:35:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 135,
+        "product_id": 208,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-23 04:42:20",
+        "updated_at": "2026-04-23 04:42:20",
+        "created_by": 9
+    },
+    {
+        "bom_id": 136,
+        "product_id": 209,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-25 06:44:51",
+        "updated_at": "2026-04-25 06:44:51",
+        "created_by": 9
+    },
+    {
+        "bom_id": 137,
+        "product_id": 212,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-27 08:30:38",
+        "updated_at": "2026-04-27 08:30:38",
+        "created_by": 9
+    },
+    {
+        "bom_id": 138,
+        "product_id": 215,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-04-27 08:48:36",
+        "updated_at": "2026-04-27 08:48:36",
+        "created_by": 9
+    },
+    {
+        "bom_id": 139,
+        "product_id": 224,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-05-09 01:58:42",
+        "updated_at": "2026-05-09 01:58:42",
+        "created_by": 9
+    },
+    {
+        "bom_id": 140,
+        "product_id": 225,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-05-09 02:00:41",
+        "updated_at": "2026-05-09 02:00:41",
+        "created_by": 9
+    },
+    {
+        "bom_id": 141,
+        "product_id": 226,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-05-09 02:00:59",
+        "updated_at": "2026-05-09 02:00:59",
+        "created_by": 9
+    },
+    {
+        "bom_id": 142,
+        "product_id": 34,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-05-18 02:41:08",
+        "updated_at": "2026-05-18 02:41:08",
+        "created_by": 16
+    },
+    {
+        "bom_id": 143,
+        "product_id": 227,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-05-21 06:28:13",
+        "updated_at": "2026-05-21 06:28:13",
+        "created_by": 9
+    },
+    {
+        "bom_id": 144,
+        "product_id": 114,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-06-03 00:21:39",
+        "updated_at": "2026-06-03 00:23:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 145,
+        "product_id": 119,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-03 00:26:11",
+        "updated_at": "2026-06-03 00:26:11",
+        "created_by": 9
+    },
+    {
+        "bom_id": 146,
+        "product_id": 129,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-06 08:13:20",
+        "updated_at": "2026-06-06 08:13:20",
+        "created_by": 15
+    },
+    {
+        "bom_id": 147,
+        "product_id": 230,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-11 01:19:10",
+        "updated_at": "2026-06-11 01:19:10",
+        "created_by": 9
+    },
+    {
+        "bom_id": 148,
+        "product_id": 124,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-16 00:14:43",
+        "updated_at": "2026-06-16 00:14:43",
+        "created_by": 15
+    },
+    {
+        "bom_id": 149,
+        "product_id": 231,
+        "bom_qty": 1,
+        "unit_id": 3,
+        "status": 1,
+        "created_at": "2026-06-18 11:18:45",
+        "updated_at": "2026-06-18 11:39:13",
+        "created_by": 9
+    },
+    {
+        "bom_id": 150,
+        "product_id": 234,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-06-20 01:13:14",
+        "updated_at": "2026-06-20 01:13:14",
+        "created_by": 9
+    },
+    {
+        "bom_id": 151,
+        "product_id": 235,
+        "bom_qty": 1,
+        "unit_id": 21,
+        "status": 1,
+        "created_at": "2026-06-23 12:22:52",
+        "updated_at": "2026-06-23 12:22:52",
+        "created_by": 9
+    },
+    {
+        "bom_id": 152,
+        "product_id": 236,
+        "bom_qty": 1,
+        "unit_id": 5,
+        "status": 1,
+        "created_at": "2026-07-02 08:02:51",
+        "updated_at": "2026-07-02 08:02:51",
+        "created_by": 15
+    },
+    {
+        "bom_id": 153,
+        "product_id": 144,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-13 07:24:09",
+        "updated_at": "2026-07-13 07:24:09",
+        "created_by": 15
+    },
+    {
+        "bom_id": 154,
+        "product_id": 147,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-13 07:32:55",
+        "updated_at": "2026-07-13 07:32:55",
+        "created_by": 15
+    },
+    {
+        "bom_id": 155,
+        "product_id": 145,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-13 07:33:39",
+        "updated_at": "2026-07-13 07:33:39",
+        "created_by": 15
+    },
+    {
+        "bom_id": 156,
+        "product_id": 69,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 0,
+        "created_at": "2026-07-15 08:45:55",
+        "updated_at": "2026-07-30 03:38:57",
+        "created_by": 9
+    },
+    {
+        "bom_id": 157,
+        "product_id": 244,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-15 08:48:28",
+        "updated_at": "2026-07-17 03:31:57",
+        "created_by": 14
+    },
+    {
+        "bom_id": 158,
+        "product_id": 140,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-15 08:52:56",
+        "updated_at": "2026-07-30 02:34:11",
+        "created_by": 27
+    },
+    {
+        "bom_id": 159,
+        "product_id": 249,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-27 02:51:16",
+        "updated_at": "2026-07-27 02:51:16",
+        "created_by": 9
+    },
+    {
+        "bom_id": 160,
+        "product_id": 252,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-27 02:52:34",
+        "updated_at": "2026-07-27 02:52:34",
+        "created_by": 9
+    },
+    {
+        "bom_id": 161,
+        "product_id": 255,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-27 07:29:58",
+        "updated_at": "2026-07-27 07:29:58",
+        "created_by": 9
+    },
+    {
+        "bom_id": 162,
+        "product_id": 256,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-07-30 02:44:38",
+        "updated_at": "2026-07-30 02:44:38",
+        "created_by": 9
+    },
+    {
+        "bom_id": 163,
+        "product_id": 134,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-07 03:32:33",
+        "updated_at": "2026-08-14 08:37:40",
+        "created_by": 9
+    },
+    {
+        "bom_id": 164,
+        "product_id": 135,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-07 03:33:10",
+        "updated_at": "2026-08-07 03:33:10",
+        "created_by": 15
+    },
+    {
+        "bom_id": 165,
+        "product_id": 259,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-07 04:23:39",
+        "updated_at": "2026-08-07 04:23:39",
+        "created_by": 9
+    },
+    {
+        "bom_id": 166,
+        "product_id": 128,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-20 01:08:41",
+        "updated_at": "2026-08-20 01:08:41",
+        "created_by": 15
+    },
+    {
+        "bom_id": 167,
+        "product_id": 123,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-20 01:09:52",
+        "updated_at": "2026-08-20 01:44:26",
+        "created_by": 9
+    },
+    {
+        "bom_id": 168,
+        "product_id": 267,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-20 01:37:02",
+        "updated_at": "2026-08-20 01:37:02",
+        "created_by": 9
+    },
+    {
+        "bom_id": 169,
+        "product_id": 264,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-20 01:37:38",
+        "updated_at": "2026-08-20 01:37:38",
+        "created_by": 9
+    },
+    {
+        "bom_id": 170,
+        "product_id": 260,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-20 01:39:15",
+        "updated_at": "2026-08-20 01:39:15",
+        "created_by": 9
+    },
+    {
+        "bom_id": 171,
+        "product_id": 118,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-24 11:26:32",
+        "updated_at": "2026-08-24 11:26:32",
+        "created_by": 15
+    },
+    {
+        "bom_id": 172,
+        "product_id": 268,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-29 09:20:16",
+        "updated_at": "2026-08-29 09:20:16",
+        "created_by": 9
+    },
+    {
+        "bom_id": 173,
+        "product_id": 269,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-29 09:20:36",
+        "updated_at": "2026-08-29 09:20:36",
+        "created_by": 9
+    },
+    {
+        "bom_id": 174,
+        "product_id": 272,
+        "bom_qty": 1,
+        "unit_id": 9,
+        "status": 1,
+        "created_at": "2026-08-31 18:54:26",
+        "updated_at": "2026-08-31 18:54:26",
+        "created_by": 9
+    }
+]

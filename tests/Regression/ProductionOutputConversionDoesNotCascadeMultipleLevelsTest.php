@@ -17,29 +17,34 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Bug: `ProductionController::accProduction()`'s finished-goods "ladder split"
- * (`ProductionController.php:956-1004`) only ever rolls a produced quantity up ONE level of a
- * product's `product_relations` ladder, even when a second level exists above that.
+ * ✅ FIXED (2026-08-24, GitHub #19): `ProductionController::accProduction()`'s finished-goods
+ * "ladder split" used to roll a produced quantity up ONE level of a product's `product_relations`
+ * ladder only, even when a second level existed above that.
  *
- * The code visibly checks for a further level right after doing the first split:
+ * The old code visibly checked for a further level right after doing the first split:
  *
  *   $cek = $r = ProductRelation::where('pr_unit_id_2', '=', $r->pr_unit_id_1)
  *       ->where('product_variant_id', '=', $value["product_variant_id"]);
  *   if ($cek->count() <= 0) { $ada = -1; }
  *
- * ...but `$ada` is never read anywhere else in the method, and `$r` is reassigned to a Builder
- * (not `->first()`'d) that's never used either — this lookup is dead code. Whatever the second
- * level's count is, nothing further happens: the credited quantity stays stranded at the
- * first-level unit, never rolling up into the second level even when the quantity is an exact
+ * ...but `$ada` was never read anywhere else in the method, and `$r` was reassigned to a Builder
+ * (not `->first()`'d) that was never used either — that lookup was dead code. Whatever the second
+ * level's count was, nothing further happened: the credited quantity stayed stranded at the
+ * first-level unit, never rolling up into the second level even when the quantity was an exact
  * multiple of it.
  *
+ * Fixed by `ProductionController::creditProductOutputUpChain()` — a pure helper that walks the
+ * WHOLE `product_relations` chain (guarded at 20 hops), mirroring the already-correct
+ * ingredient-side "bongkar" direction (`$siapkanStok`/`convertQtyToSmallestUnit()`), just upward
+ * instead of downward. The pre-check block right before `accProduction()`'s DB transaction (which
+ * warns the user before silently creating a new zero-stock `ProductStock` row) now also walks the
+ * full chain via the same helper, so a second/third-level row gets the same "confirm creation"
+ * prompt a first-level row already got.
+ *
  * Worked example this test reproduces: a 3-level ladder (1 Sak = 2 DOS = 24 Piece). Producing 24
- * Piece should, if the ladder were followed all the way, land as 1 full Sak with 0 left at the DOS
- * or Piece level. Instead: `floor(24/12)=2` lands on the DOS-level `ProductStock` row and stays
- * there — the Sak-level row is never touched, even though 2 DOS is an EXACT multiple of the
- * Sak ratio (2). This mirrors the same "one level only" shape as the ingredient-side "bongkar"
- * mechanism, which — unlike this one — recurses correctly via `$siapkanStok`'s own recursive call
- * (see `ProductionUnitConversionFlowTest`). See `workflows/PRODUCTION_FLOW.md`.
+ * Piece, following the ladder all the way, lands as 1 full Sak with 0 left at the DOS or Piece
+ * level — `floor(24/12)=2` DOS is itself an exact multiple of the Sak ratio (2), so it keeps
+ * rolling up instead of stopping at the DOS-level `ProductStock` row. See `workflows/PRODUCTION_FLOW.md`.
  */
 class ProductionOutputConversionDoesNotCascadeMultipleLevelsTest extends TestCase
 {
@@ -50,9 +55,15 @@ class ProductionOutputConversionDoesNotCascadeMultipleLevelsTest extends TestCas
     private const SAK_UNIT_ID = 25;
     private const WAREHOUSE_ID = 1;
 
-    public function test_producing_an_exact_multiple_of_the_second_ladder_level_still_stalls_at_the_first_level(): void
+    public function test_producing_an_exact_multiple_of_the_second_ladder_level_now_rolls_all_the_way_up(): void
     {
         $this->actingAsSuperAdminStaff();
+        // pegasus_testing has more than one active main-type warehouse (see memory
+        // pegasus-testing-db-multiwarehouse-drift) -- without this, accProduction()'s implicit
+        // default-warehouse pick could land on a DIFFERENT one than self::WAREHOUSE_ID below,
+        // leaving this test's own fixture rows untouched and silently "passing" the 0-remainder
+        // assertions for the wrong reason.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Output Cascade Regression Category';
@@ -188,32 +199,34 @@ class ProductionOutputConversionDoesNotCascadeMultipleLevelsTest extends TestCas
 
         $this->assertSame(0, $pieceStock->ps_stock, 'no remainder at the Piece level — 24 is an exact multiple of 12');
         $this->assertSame(
-            2,
+            0,
             $dosStock->ps_stock,
-            'BUG: stops at the first ladder level — floor(24/12)=2 lands here and stays, even though 2 DOS is itself an exact multiple of the Sak ratio'
+            'FIXED: 2 DOS is itself an exact multiple of the Sak ratio, so it keeps rolling up instead of stalling here'
         );
         $this->assertSame(
-            0,
+            1,
             $sakStock->ps_stock,
-            'BUG: the second ladder level is never credited at all — the dead $cek/$ada check never actually rolls anything up into it'
+            'FIXED: the second ladder level is now credited — the chain walk reaches Sak and lands the full 1 Sak there'
         );
 
-        // Only one "Hasil Produksi" log is written (DOS level) — no Sak-level log exists at all,
-        // confirming the cascade genuinely never runs rather than running and rounding to zero.
+        // Only one "Hasil Produksi" log is written (Sak level, qty 1) — the DOS/Piece levels ended
+        // up with a 0 remainder at every hop, so creditProductOutputUpChain()'s caller skips
+        // logging (and touching) them entirely; confirms the cascade genuinely reaches the top
+        // rather than stopping partway and rounding to zero.
         $this->assertDatabaseHas('log_stocks', [
             'log_type' => 1,
             'log_category' => 1,
             'log_item_id' => $variant->product_variant_id,
-            'unit_id' => self::DOS_UNIT_ID,
-            'log_jumlah' => 2,
+            'unit_id' => self::SAK_UNIT_ID,
+            'log_jumlah' => 1,
         ]);
         $this->assertSame(
             0,
             DB::table('log_stocks')
                 ->where('log_item_id', $variant->product_variant_id)
-                ->where('unit_id', self::SAK_UNIT_ID)
+                ->where('unit_id', self::DOS_UNIT_ID)
                 ->count(),
-            'no log_stocks row was ever written for the Sak level'
+            'no log_stocks row is written for the DOS level — it never actually gained any stock (0 remainder)'
         );
     }
 }

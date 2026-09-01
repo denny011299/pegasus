@@ -13,6 +13,8 @@ use App\Models\Staff;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use App\Support\UnitRollUp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -83,10 +85,15 @@ class CustomerController extends Controller
             ]);
         }
 
-        $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
-        if ($stockErr) {
-            return response()->json($stockErr);
-        }
+        // GitHub #99 (2026-09-01): JANGAN tambahkan lagi pengecekan ketersediaan stok di sini.
+        // Membuat Pengiriman = mengajukan dokumen (status 1 = "Sedang Diajukan"), stok BELUM
+        // dipotong sama sekali — pemotongan + pengecekan stok baru terjadi di accSO()
+        // (SalesOrderApproval::confirm(), yang memanggil SalesOrderStock::buildPlan() sendiri di
+        // dalam satu DB::transaction()). Memblokir pembuatan dokumen dengan stok SAAT INI salah
+        // waktunya: stok bisa bertambah (produksi selesai, PO diterima, transfer masuk) antara
+        // pengajuan dan ACC, jadi pengiriman yang terjadwal untuk besok jadi tidak bisa dibuat
+        // hari ini. Validasi struktural (satuan eceran + gudang eceran wajib) di atas tetap
+        // dipertahankan karena itu tentang bentuk data, bukan jumlah stok.
 
         $img = [];
         foreach (json_decode($data["so_img"]) as $key => $value) {
@@ -153,10 +160,9 @@ class CustomerController extends Controller
                     'message' => $retailErr,
                 ]);
             }
-            $stockErr = SalesOrderStock::assertStockAvailable($productsData, $data['retail_warehouse_id'] ?? null);
-            if ($stockErr) {
-                return response()->json($stockErr);
-            }
+            // GitHub #99 (2026-09-01): sama seperti insertSalesOrder() — cabang ini hanya jalan
+            // saat status != 2 (belum ACC), jadi stok memang belum dipotong dan tidak boleh
+            // dicek/diblokir di sini. Pengecekan stok yang sesungguhnya ada di accSO().
             $so = (new SalesOrder())->updateSalesOrder($data);
             $list_id_detail = [];
             foreach ($productsData as $val) {
@@ -188,6 +194,15 @@ class CustomerController extends Controller
             ]);
         }
 
+        // NB (merged from main's 51684f3/PR #75, 2026-08-28): main's version of this conflict was
+        // its OWN inline revert-then-deduct loop (ProductStock reads/writes directly in this
+        // method), including a fix making a deleted line's stock revert roll up the unit ladder.
+        // fase2's updateSalesOrder() delegates all of that to SalesOrderStock::executeRestore()/
+        // buildPlan()/executeDeduct() below -- the equivalent roll-up-on-restore fix has been
+        // ported there instead (see SalesOrderStock::executeRestore()'s $rollUp param), since
+        // that's what actually writes the revert. $oldLines is split below into kept-vs-removed so
+        // only removed lines' revert rolls up (a kept line is re-deducted by executeDeduct() in
+        // this same transaction, so rolling it up first is pure churn).
         $oldRetailWh = (int) ($soBefore->retail_warehouse_id ?? 0);
         $newRetailWh = (int) ($data['retail_warehouse_id'] ?? $oldRetailWh);
 
@@ -211,6 +226,21 @@ class CustomerController extends Controller
             ];
         }
 
+        $newLineKeys = [];
+        foreach ($newLines as $newLine) {
+            $newLineKeys[$newLine['product_variant_id'] . '_' . $newLine['unit_id']] = true;
+        }
+        $oldLinesKept = [];
+        $oldLinesRemoved = [];
+        foreach ($oldLines as $oldLine) {
+            $key = $oldLine['product_variant_id'] . '_' . $oldLine['unit_id'];
+            if (isset($newLineKeys[$key])) {
+                $oldLinesKept[] = $oldLine;
+            } else {
+                $oldLinesRemoved[] = $oldLine;
+            }
+        }
+
         // Diperbaiki (2026-08-08): buildPlan() (cek kecukupan stok untuk item BARU) dulu dijalankan
         // di sini, SEBELUM executeRestore() di bawah mengembalikan stok item LAMA — jadi SO yang
         // stoknya sudah habis terpakai (kasus normal: menjual persis sisa stok) ditolak "Stok tidak
@@ -221,10 +251,10 @@ class CustomerController extends Controller
         // catch kalau gagal.
         $plan = null;
         try {
-            DB::transaction(function () use ($data, $productsData, $oldLines, $oldRetailWh, $newLines, $newRetailWh, $soBefore, &$plan) {
-                if ($oldLines !== []) {
+            DB::transaction(function () use ($data, $productsData, $oldLinesKept, $oldLinesRemoved, $oldRetailWh, $newLines, $newRetailWh, $soBefore, &$plan) {
+                if ($oldLinesKept !== []) {
                     $restore = SalesOrderStock::executeRestore(
-                        $oldLines,
+                        $oldLinesKept,
                         $oldRetailWh > 0 ? $oldRetailWh : null,
                         $data['so_number'] ?? ($soBefore->so_number ?? '-'),
                         'Update Pengiriman (kembalikan stok)'
@@ -233,7 +263,30 @@ class CustomerController extends Controller
                         throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
                     }
                 }
+                if ($oldLinesRemoved !== []) {
+                    // rollUp: true -- these lines were deleted from the SO, so this revert is
+                    // final (nothing re-deducts them later in this same request).
+                    $restore = SalesOrderStock::executeRestore(
+                        $oldLinesRemoved,
+                        $oldRetailWh > 0 ? $oldRetailWh : null,
+                        $data['so_number'] ?? ($soBefore->so_number ?? '-'),
+                        'Update Pengiriman (kembalikan stok)',
+                        true
+                    );
+                    if (! ($restore['ok'] ?? false)) {
+                        throw new \RuntimeException($restore['message'] ?? 'Gagal kembalikan stok lama');
+                    }
+                }
 
+                // NB (merged from main's 51684f3/PR #75, 2026-08-28): main's version of this
+                // conflict was its OWN inline "bongkar" closure (same position-vs-relation unit
+                // bug already fixed elsewhere on 2026-08-05/08-06 -- see
+                // ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.php). fase2's
+                // updateSalesOrder() has no such inline closure -- deduction runs entirely through
+                // SalesOrderStock::executeDeduct() below, so this doesn't transplant. Confirmed
+                // the actual bongkar logic executeDeduct() delegates to,
+                // ProductUnitStock::deductQty()'s ensure() closure, already resolves the parent
+                // unit via the ProductRelation lookup (`pr_unit_id_1`), not array position.
                 $plan = SalesOrderStock::buildPlan($newLines, $newRetailWh > 0 ? $newRetailWh : null);
                 if (! ($plan['ok'] ?? false)) {
                     throw new \RuntimeException($plan['message'] ?? 'Stok tidak mencukupi');

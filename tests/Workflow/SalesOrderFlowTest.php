@@ -10,9 +10,15 @@ use Tests\TestCase;
 
 /**
  * See cdocs/testing/workflows/SALES_ORDER_FLOW.md for the fully-traced flow this asserts against.
- * Unlike Purchase Order, this flow wraps its stock mutation in a real DB::transaction() end to
- * end — the pilot deliberately picks a plain, non-retail, non-unit-converted line item to keep
- * scope to Insert -> Approve -> Reject, matching the Purchase Order pilot's shape.
+ * The pilot deliberately picks a plain, non-retail, non-unit-converted line item to keep scope to
+ * Insert -> Approve -> Reject, matching the Purchase Order pilot's shape.
+ *
+ * Corrected 2026-08-24: this docblock used to claim "unlike Purchase Order, this flow wraps its
+ * stock mutation in a real DB::transaction() end to end". That was false — `CustomerController`
+ * had no transactions at all, and the same false claim in
+ * `cdocs/testing/guides/DATABASE_TRANSACTION_GUIDE.md` is likely why the gap went unprioritised.
+ * `accSO()`/`updateSalesOrder()` are now genuinely transactional; atomicity itself is asserted in
+ * `tests/DatabaseTransaction/SalesOrderUpdateAtomicityTest.php`, not here.
  */
 class SalesOrderFlowTest extends TestCase
 {

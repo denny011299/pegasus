@@ -23,6 +23,7 @@
 # cdocs/integrations/202607282149-external-api-v1/.
 
 @baseUrl = https://pegasus.okejob.id/api/external/v1
+# @baseUrl = https://okejob-pegasus-production-uzjbbu.laravel.cloud/api/external/v1
 @apiKey = {{$dotenv EXTERNAL_API_KEY}}
 
 

@@ -106,6 +106,12 @@ class ExternalApiShipmentShowFlowTest extends TestCase
 
     public function test_a_request_without_an_api_key_is_rejected(): void
     {
+        // Test ini sengaja TIDAK memanggil externalApiHeaders() (justru itu intinya: tanpa API
+        // Key), jadi saklar endpoint-nya harus dinyalakan sendiri di sini. Tanpa ini, endpoint
+        // yang kebetulan dimatikan di DB lokal menjawab 503 lebih dulu — sebelum autentikasi
+        // sempat jalan — dan test-nya gagal karena alasan yang sama sekali bukan yang diuji.
+        $this->enableAllExternalApiEndpoints();
+
         $this->getJson('/api/external/v1/shipments/SHP-1')
             ->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }

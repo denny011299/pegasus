@@ -331,6 +331,9 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
     public function test_store_rejects_an_invalid_gudang_id(): void
     {
         $headers = $this->externalApiHeaders();
+        // okeh8644 snapshot data ships pre-existing CustomerSupplyReturn rows -- assert nothing
+        // NEW was created, not that the global count is 0.
+        $before = \App\Models\CustomerSupplyReturn::count();
         $armada = $this->createArmada();
         $refUnitId = random_int(900000, 949999);
         $unit = $this->createUnit($refUnitId);
@@ -346,7 +349,7 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             ],
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
-        $this->assertSame(0, \App\Models\CustomerSupplyReturn::count());
+        $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
     }
 
     public function test_store_merges_duplicate_item_lines_by_summing_qty(): void
@@ -412,6 +415,9 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
     public function test_store_rejects_an_unknown_armada_code(): void
     {
         $headers = $this->externalApiHeaders();
+        // okeh8644 snapshot data ships pre-existing CustomerSupplyReturn rows -- assert nothing
+        // NEW was created, not that the global count is 0.
+        $before = \App\Models\CustomerSupplyReturn::count();
         $refUnitId = random_int(900000, 949999);
         $unit = $this->createUnit($refUnitId);
         $refSuppliesId = random_int(900000, 949999);
@@ -426,7 +432,7 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             ],
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
-        $this->assertSame(0, \App\Models\CustomerSupplyReturn::count());
+        $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
     }
 
     public function test_store_rejects_an_unknown_ref_supplies_id_for_type_1(): void
@@ -466,6 +472,9 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
     public function test_store_rejects_a_unit_not_registered_for_the_supplies(): void
     {
         $headers = $this->externalApiHeaders();
+        // okeh8644 snapshot data ships pre-existing CustomerSupplyReturn rows -- assert nothing
+        // NEW was created, not that the global count is 0.
+        $before = \App\Models\CustomerSupplyReturn::count();
         $armada = $this->createArmada();
         $refUnitIdRegistered = random_int(900000, 924999);
         $registeredUnit = $this->createUnit($refUnitIdRegistered);
@@ -484,12 +493,15 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             ],
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
-        $this->assertSame(0, \App\Models\CustomerSupplyReturn::count());
+        $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
     }
 
     public function test_store_rejects_a_request_without_proof(): void
     {
         $headers = $this->externalApiHeaders();
+        // okeh8644 snapshot data ships pre-existing CustomerSupplyReturn rows -- assert nothing
+        // NEW was created, not that the global count is 0.
+        $before = \App\Models\CustomerSupplyReturn::count();
         $armada = $this->createArmada();
         $refUnitId = random_int(900000, 949999);
         $unit = $this->createUnit($refUnitId);
@@ -504,6 +516,6 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             ],
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
-        $this->assertSame(0, \App\Models\CustomerSupplyReturn::count());
+        $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
     }
 }

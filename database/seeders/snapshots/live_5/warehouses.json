@@ -1,0 +1,24 @@
+[
+    {
+        "id": 1,
+        "warehouse_name": "Gudang Hikari Pegasus Sidoarjo",
+        "warehouse_type_id": 1,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A8 - 9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": null,
+        "status": 1,
+        "created_by": null,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-08-31 23:52:23"
+    },
+    {
+        "id": 2,
+        "warehouse_name": "Gudang Eceran Sidoarjo",
+        "warehouse_type_id": 2,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": null,
+        "status": 1,
+        "created_by": null,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-08-31 23:52:23"
+    }
+]

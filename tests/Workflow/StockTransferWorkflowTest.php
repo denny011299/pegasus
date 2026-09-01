@@ -11,6 +11,7 @@ use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
 use App\Models\Warehouse;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -26,6 +27,7 @@ use Tests\TestCase;
 class StockTransferWorkflowTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private const MAIN_WAREHOUSE_ID = 1;
     private const RETAIL_WAREHOUSE_ID = 2;
@@ -355,6 +357,11 @@ class StockTransferWorkflowTest extends TestCase
     {
         $this->actingAsSuperAdminStaff();
 
+        // self::RETAIL_WAREHOUSE_ID is only valid against the committed default seed's layout --
+        // resolve a real active one instead. See ResolvesTestWarehouses.
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId('Stock Transfer');
+        $this->assignWarehousesToActingStaff(self::MAIN_WAREHOUSE_ID, $retailWarehouseId);
+
         $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID, retailUnit: self::PIECE_UNIT_ID);
         $this->createDosPieceRelation($fx['variant']);
 
@@ -364,7 +371,7 @@ class StockTransferWorkflowTest extends TestCase
             $fx['product'],
             $fx['variant'],
             self::MAIN_WAREHOUSE_ID,
-            self::RETAIL_WAREHOUSE_ID,
+            $retailWarehouseId,
             self::DOS_UNIT_ID,
             2
         );
@@ -372,18 +379,18 @@ class StockTransferWorkflowTest extends TestCase
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
         $this->post('/shipStockTransfer', ['id' => $header->st_id])->assertJson(['status' => 1]);
 
-        $this->withActiveWarehouse(self::RETAIL_WAREHOUSE_ID);
+        $this->withActiveWarehouse($retailWarehouseId);
         $this->post('/accStockTransfer', ['id' => $header->st_id])
             ->assertStatus(200)
             ->assertJson(['status' => 1]);
 
         $destPiece = ProductStock::withoutGlobalScope('active_warehouse')
-            ->where('warehouse_id', self::RETAIL_WAREHOUSE_ID)
+            ->where('warehouse_id', $retailWarehouseId)
             ->where('product_variant_id', $fx['variant']->product_variant_id)
             ->where('unit_id', self::PIECE_UNIT_ID)
             ->first();
         $destDos = ProductStock::withoutGlobalScope('active_warehouse')
-            ->where('warehouse_id', self::RETAIL_WAREHOUSE_ID)
+            ->where('warehouse_id', $retailWarehouseId)
             ->where('product_variant_id', $fx['variant']->product_variant_id)
             ->where('unit_id', self::DOS_UNIT_ID)
             ->first();
@@ -413,6 +420,10 @@ class StockTransferWorkflowTest extends TestCase
         $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID);
         $this->createDosPieceRelation($fx['variant']);
         $mainWarehouse2 = $this->createSecondMainWarehouse();
+        // assertCanAcc() fails closed against a staff with SOME assignments not covering the
+        // destination -- real data assigns staff, unlike the old near-empty default seed. See
+        // ActingAsStaff::assignWarehousesToActingStaff()'s doc.
+        $this->assignWarehousesToActingStaff(self::MAIN_WAREHOUSE_ID, (int) $mainWarehouse2->id);
 
         $sourcePieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
 

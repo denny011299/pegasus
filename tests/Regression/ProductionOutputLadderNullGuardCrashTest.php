@@ -52,6 +52,13 @@ class ProductionOutputLadderNullGuardCrashTest extends TestCase
     public function test_missing_larger_unit_stock_row_asks_for_confirmation_then_provisions_on_confirm(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Wajib di fase2/main: insertProduction()/accProduction() menolak kalau gudang aktif sesi
+        // bukan gudang utama ("Pilih gudang utama sebagai gudang aktif"), dan pegasus_testing punya
+        // LEBIH DARI SATU gudang utama aktif (id 1 dan 13) -- tanpa ini insert-nya gagal diam-diam
+        // (respons 200 berisi error), lalu Production::orderByDesc() mengambil dokumen lama yang
+        // sudah di-ACC dan test-nya gagal dengan "-2 sudah diterima/ditolak", bukan pada perilaku
+        // yang sebenarnya diuji. Lihat memory pegasus-testing-db-multiwarehouse-drift.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $category = new Category();
         $category->category_name = 'Null-Guard Regression Category';

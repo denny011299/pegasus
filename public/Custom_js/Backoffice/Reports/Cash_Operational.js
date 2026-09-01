@@ -12,6 +12,14 @@
         $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
     }
 
+    function showCashSkeleton() {
+        $('#tableCash-wrap').removeClass('dt-ready').addClass('dt-pending');
+    }
+
+    function hideCashSkeleton() {
+        $('#tableCash-wrap').removeClass('dt-pending').addClass('dt-ready');
+    }
+
     let today = new Date();
     let yyyy = today.getFullYear();
     let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -41,6 +49,7 @@
         if (!$cashType.find("option").length) {
             $cashType.append('<option value="" selected>Tidak ada akses</option>').prop("disabled", true);
             $("#tableCash tbody").html('<tr><td colspan="10" class="text-center text-muted">Anda tidak punya akses view Kas Operasional.</td></tr>');
+            hideCashSkeleton();
             return;
         }
 
@@ -614,6 +623,7 @@
     }
 
     function refreshCashAdmin() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashAdmin",
             data: {
@@ -705,8 +715,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -714,6 +726,7 @@
     }
 
     function refreshCashGudang() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashGudang",
             data: {
@@ -806,8 +819,10 @@
                     });
                 }, 100);
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -815,6 +830,7 @@
     }
 
     function refreshCashArmada() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashArmada",
             data: {
@@ -917,8 +933,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -926,6 +944,7 @@
     }
 
     function refreshCashSales() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashSales",
             data: {
@@ -1020,8 +1039,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -1453,15 +1474,15 @@
             return false;
         }
 
-        let total = 0;
-        items.forEach(element => {
-            total += element.cad_nominal;
-        });
-        if (total > sisa_kas){
-            notifikasi('error', "Gagal Insert", 'Sisa kas tidak mencukupi');
-            ResetLoadingButton('.btn-save-admin', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
-            return false;
-        }
+        // GitHub #99 (2026-09-01): blokir "Sisa kas tidak mencukupi" DIHAPUS. Aktivitas
+        // operasional di sini cuma PENGAJUAN (status 1 = "Sedang Diajukan"); kas baru benar-benar
+        // keluar saat ACC (acceptCashAdmin/acceptCashGudang). Selain salah waktu, `sisa_kas` yang
+        // dipakai di sini adalah total SELURUH staff/gudang sepanjang waktu (lihat
+        // CashAdmin::getCashAdmin()/CashGudang::getCashGudang()), bukan angka milik staff yang
+        // sedang difilter di tabel — jadi kelebihan pakai di satu gudang ikut mengunci gudang
+        // lain. Blokir ini juga cuma ada di sisi JS (tidak ada guard server), dan PM sudah
+        // memutuskan 2026-08-05 saldo minus memang diizinkan (guard kembar di Kas Sales sudah
+        // dimatikan lebih dulu, lihat blok komentar di handler .btn-save-sales).
 
         if (type == "admin"){
             param = {
@@ -1667,15 +1688,15 @@
             return false;
         }
 
-        let total = 0;
-        items.forEach(element => {
-            total += element.cgd_nominal;
-        });
-        if (total > sisa_kas){
-            notifikasi('error', "Gagal Insert", 'Sisa kas tidak mencukupi');
-            ResetLoadingButton('.btn-save-gudang', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
-            return false;
-        }
+        // GitHub #99 (2026-09-01): blokir "Sisa kas tidak mencukupi" DIHAPUS. Aktivitas
+        // operasional di sini cuma PENGAJUAN (status 1 = "Sedang Diajukan"); kas baru benar-benar
+        // keluar saat ACC (acceptCashAdmin/acceptCashGudang). Selain salah waktu, `sisa_kas` yang
+        // dipakai di sini adalah total SELURUH staff/gudang sepanjang waktu (lihat
+        // CashAdmin::getCashAdmin()/CashGudang::getCashGudang()), bukan angka milik staff yang
+        // sedang difilter di tabel — jadi kelebihan pakai di satu gudang ikut mengunci gudang
+        // lain. Blokir ini juga cuma ada di sisi JS (tidak ada guard server), dan PM sudah
+        // memutuskan 2026-08-05 saldo minus memang diizinkan (guard kembar di Kas Sales sudah
+        // dimatikan lebih dulu, lihat blok komentar di handler .btn-save-sales).
 
         param = {
             cg_date: $('#oc_date_gudang').val(),

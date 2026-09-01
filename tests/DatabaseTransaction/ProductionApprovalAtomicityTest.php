@@ -113,6 +113,10 @@ class ProductionApprovalAtomicityTest extends TestCase
     public function test_a_multi_item_request_with_a_previously_crashing_ladder_item_now_succeeds_atomically(): void
     {
         $this->actingAsSuperAdminStaff();
+        // Lihat ProductionOutputLadderNullGuardCrashTest untuk alasannya: tanpa gudang aktif yang
+        // dipin, insertProduction() gagal diam-diam dan test-nya menguji dokumen lama, bukan
+        // dokumen yang baru saja dibuat.
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
 
         $itemA = $this->createSimpleFixture('A');
         $itemB = $this->createSimpleFixture('B');
