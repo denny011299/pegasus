@@ -211,7 +211,7 @@
         if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
 
         return window.permissionList.some(
-            p => p.name.toLowerCase() === moduleName.toLowerCase()
+            p => p && typeof p.name === "string" && p.name.toLowerCase() === moduleName.toLowerCase()
         );
     }
 
@@ -220,7 +220,7 @@
         if (!window.permissionList || !Array.isArray(window.permissionList)) return false;
 
         const found = window.permissionList.find(p =>
-            p.name.toLowerCase() === moduleName.toLowerCase()
+            p && typeof p.name === "string" && p.name.toLowerCase() === moduleName.toLowerCase()
         );
 
         if (!found) return false;
