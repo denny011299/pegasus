@@ -1,7 +1,7 @@
 <div class="modal custom-modal fade pg-modal--form" id="addProduction" aria-modal="true" role="dialog" tabindex="-1"
   data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content d-flex flex-column">
       <div class="modal-header">
         <div class="d-flex align-items-center gap-3">
           <div class="pg-modal-icon">
@@ -16,8 +16,8 @@
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="#" class="d-flex flex-column h-100" style="margin: 0; min-height: 0;">
-        <div class="modal-body p-0 bg-light d-flex flex-column" style="overflow-y:auto;">
+      <form action="#" class="d-flex flex-column flex-grow-1" style="margin: 0; min-height: 0;">
+        <div class="modal-body p-0 bg-light d-flex flex-column flex-grow-1">
 
           <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
             <div class="row g-4">
