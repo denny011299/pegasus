@@ -1,4 +1,4 @@
-autocompleteBom("#product_id", "#addProduction");
+autocompleteBom("#product_id", "body");
 autocompleteSupplies("#fix_recipe_supplies_id", "#fixRecipeBom .modal-content");
 var mode = 1; // 1 = insert; 2 = edit; 3 = view
 var modeBahan = 1;
@@ -78,7 +78,7 @@ function syncProductionDestinationControl() {
         if (typeof autocompleteWarehouse === "function") {
             autocompleteWarehouse(
                 "#production_destination_warehouse_id",
-                "#addProduction",
+                "body",
                 { placeholder: "Pilih gudang eceran tujuan", retailOnly: true },
             );
         }
