@@ -17,8 +17,8 @@
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
             aria-label="Close"></button>
         </div>
-        <form action="#">
-          <div class="modal-body">
+        <form action="#" class="d-flex flex-column flex-grow-1 overflow-hidden">
+          <div class="modal-body" style="overflow-y: auto; flex: 1 1 auto;">
             <div class="form-groups-item border-0 pb-0">
               <div class="row">
                 <div class="col-12 row pe-0">
