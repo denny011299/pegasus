@@ -297,7 +297,7 @@ function isRecipeNeedsUpdateError(payload) {
  */
 function handleProductionValidationError(e, bomIdFallback) {
     if (!e) {
-        notifikasi("error", "Gagal", "Terjadi kesalahan yang tidak diketahui.");
+        showPgErrorModal("Gagal", "Terjadi kesalahan yang tidak diketahui.");
         return;
     }
     if (e.status == 0) {
@@ -312,14 +312,14 @@ function handleProductionValidationError(e, bomIdFallback) {
                 return;
             }
         }
-        notifikasi("error", e.header, e.message);
+        showPgErrorModal(e.header, e.message);
         return;
     }
     if (e.status == -1) {
-        notifikasi("error", "Stock Tidak Mencukupi", e.message);
+        showPgErrorModal("Stock Tidak Mencukupi", e.message);
         return;
     }
-    notifikasi("error", "Gagal", e.message || "Terjadi kesalahan.");
+    showPgErrorModal("Gagal", e.message || "Terjadi kesalahan.");
 }
 
 /**
@@ -346,11 +346,12 @@ function promptRecipeNeedsUpdate(bomId, options) {
 
     Swal.fire({
         icon: "error",
+        iconColor: "#ef4444",
         title: title,
         text: message,
         confirmButtonText: "Tutup",
         customClass: {
-            confirmButton: "btn btn-light px-4 py-2",
+            confirmButton: "pg-btn-confirm pg-btn-confirm--danger",
             title: "fw-bold fs-4 text-dark",
             popup: "rounded-4",
         },
