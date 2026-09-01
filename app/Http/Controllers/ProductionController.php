@@ -169,6 +169,96 @@ class ProductionController extends Controller
                 'message' => $destinationValidation['message'],
             ]);
         }
+        $validation = $this->validateProductionItems($item);
+        if ($validation) {
+            return response()->json($validation);
+        }
+
+        $p = (new Production())->insertProduction($data);
+        foreach ($item as $key => $value) {
+            $value['production_id'] = $p->production_id;
+            $value['list_bahan'] = json_encode($bahan[$key]);
+            (new ProductionDetails())->insertProductionDetail($value);
+        }
+
+        if ($isRevisionResubmit) {
+            $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
+            if ($sourceId > 0) {
+                $staffId = (int) (session('user')->staff_id ?? 0);
+                DB::table('dashboard_queue_dismissals')->updateOrInsert(
+                    [
+                        'staff_id' => $staffId,
+                        'queue_section' => 'revision',
+                        'queue_key' => 'pr:' . $sourceId,
+                    ],
+                    [
+                        'status' => 1,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+            }
+        }
+
+        // Jangan auto-ACC di sini. Simpan = Pending di list Produksi.
+        // Stock Transfer (tujuan eceran) baru dibuat saat Acc produksi manual
+        // (atau lewat production:resolve-overdue).
+
+        return response()->json([
+            "status" => 1,
+            "message" => "Berhasil"
+        ]);
+    }
+
+    /**
+     * Endpoint dipanggil dari JS setiap kali user menambah baris produk ke
+     * "Daftar Produk" pada modal Tambah/Konfirmasi Produksi (bukan cuma saat
+     * klik Tambah Produksi) - lihat GitHub #101. Menerima daftar produk yang
+     * SUDAH termasuk baris yang baru mau ditambahkan (client kirim seluruh
+     * `items` setelah merge/push), supaya validasi & simulasi stok agregat
+     * (dos/pack, dsb.) tetap dihitung dari kondisi akhir yang benar.
+     *
+     * Read-only, tidak memutasi apa pun - dipakai juga oleh insertProduction()
+     * lewat validateProductionItems() supaya keduanya konsisten.
+     */
+    function checkProductionStock(Request $req)
+    {
+        $item = json_decode($req->input('detail'), true) ?: [];
+        if (empty($item)) {
+            return response()->json(['status' => 1]);
+        }
+
+        $destinationValidation = $this->normalizeProductionDestinations($item);
+        if (! $destinationValidation['ok']) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Tujuan Hasil Produksi Tidak Valid',
+                'message' => $destinationValidation['message'],
+            ]);
+        }
+
+        $validation = $this->validateProductionItems($item);
+        if ($validation) {
+            return response()->json($validation);
+        }
+
+        return response()->json(['status' => 1]);
+    }
+
+    /**
+     * Validasi konsistensi resep (satuan aktif, satuan terkecil, relasi
+     * produk, qty kelipatan resep) + simulasi ketersediaan stok bahan mentah
+     * agregat (termasuk konversi unit "bongkar" & perlakuan khusus dos/pack)
+     * untuk sekumpulan baris produksi. Read-only - tidak memutasi stok/DB.
+     *
+     * Dipakai baik oleh checkProductionStock() (tiap kali user menambah baris
+     * ke daftar produk) maupun insertProduction() (submit akhir), supaya
+     * pesan error & aturan validasinya selalu identik di kedua titik.
+     *
+     * @return array|null null kalau valid; array response (status/header/message/...) kalau tidak.
+     */
+    protected function validateProductionItems(array $item): ?array
+    {
         $cek = -1;
         $bahan_kurang = [];
         $produk_tanpa_relasi = [];
@@ -177,38 +267,38 @@ class ProductionController extends Controller
 
         $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item);
         if (count($bahan_satuan_tidak_aktif) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Satuan Resep Tidak Aktif',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithInactiveUnits($item),
                 'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_satuan_tidak_aktif),
-            ]);
+            ];
         }
 
         $bahan_bukan_satuan_terkecil = $this->validateBomSuppliesSmallestUnit($item);
         if (count($bahan_bukan_satuan_terkecil) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithNonSmallestSupplyUnit($item),
                 'message' => 'Satuan bahan mentah pada resep bukan satuan terkecil sesuai relasi. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bahan_bukan_satuan_terkecil),
-            ]);
+            ];
         }
 
         $bom_satuan_produk_bukan_terkecil = $this->validateBomProductSmallestUnit($item);
         if (count($bom_satuan_produk_bukan_terkecil) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'code' => 'recipe_needs_update',
                 'bom_id' => $this->firstBomIdWithNonSmallestProductUnit($item),
                 'message' => 'Satuan produk pada resep bukan satuan terkecil sesuai relasi produk. Perbarui resep terlebih dahulu: '
                     . implode(', ', $bom_satuan_produk_bukan_terkecil),
-            ]);
+            ];
         }
 
         foreach ($item as $value) {
@@ -246,11 +336,11 @@ class ProductionController extends Controller
         }
 
         if (count($produk_qty_tidak_kelipatan) > 0) {
-            return response()->json([
+            return [
                 'status' => 0,
                 'header' => 'Gagal Insert',
                 'message' => 'Qty produksi harus kelipatan resep bahan mentah untuk produk: ' . implode(', ', $produk_qty_tidak_kelipatan),
-            ]);
+            ];
         }
 
         // 1. AGGREGASI: Hitung total kebutuhan bahan mentah dari SEMUA item produksi di awal
@@ -258,11 +348,11 @@ class ProductionController extends Controller
         foreach ($item as $key => $value) {
             $bom = (new Bom())->getBom(['bom_id' => $value['bom_id']])->first();
             if (!isset($bom)) {
-                return response()->json([
+                return [
                     "status" => 0,
                     "header" => "Gagal Insert",
                     "message" => "Mohon cek kembali resep bahan mentah"
-                ]);
+                ];
             }
 
             // Pengecekan unit produksi punya relasi yang tersambung ke satuan resep atau tidak
@@ -362,11 +452,11 @@ class ProductionController extends Controller
         }
 
         if (count($produk_tanpa_relasi) > 0) {
-            return response()->json([
+            return [
                 "status" => 0,
                 "header" => "Gagal Insert",
                 "message" => "Mohon masukkan relasi produk: " . implode(", ", $produk_tanpa_relasi)
-            ]);
+            ];
         }
 
         // 2. PROCESSING: Eksekusi Konversi Stok (Bongkar Satuan Besar) berdasarkan total agregat
@@ -492,46 +582,13 @@ class ProductionController extends Controller
         }
 
         if ($cek == 1) {
-            return response()->json([
+            return [
                 "status"  => -1,
                 "message" => "Bahan baku tidak mencukupi untuk : " . implode(", ", $bahan_kurang)
-            ]);
+            ];
         }
 
-        $p = (new Production())->insertProduction($data);
-        foreach ($item as $key => $value) {
-            $value['production_id'] = $p->production_id;
-            $value['list_bahan'] = json_encode($bahan[$key]);
-            (new ProductionDetails())->insertProductionDetail($value);
-        }
-
-        if ($isRevisionResubmit) {
-            $sourceId = (int) ($req->input('revision_source_production_id') ?? 0);
-            if ($sourceId > 0) {
-                $staffId = (int) (session('user')->staff_id ?? 0);
-                DB::table('dashboard_queue_dismissals')->updateOrInsert(
-                    [
-                        'staff_id' => $staffId,
-                        'queue_section' => 'revision',
-                        'queue_key' => 'pr:' . $sourceId,
-                    ],
-                    [
-                        'status' => 1,
-                        'updated_at' => now(),
-                        'created_at' => now(),
-                    ]
-                );
-            }
-        }
-
-        // Jangan auto-ACC di sini. Simpan = Pending di list Produksi.
-        // Stock Transfer (tujuan eceran) baru dibuat saat Acc produksi manual
-        // (atau lewat production:resolve-overdue).
-
-        return response()->json([
-            "status" => 1,
-            "message" => "Berhasil"
-        ]);
+        return null;
     }
 
     function updateProduction(Request $req) {}

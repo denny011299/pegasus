@@ -1,7 +1,57 @@
+<style>
+  #addProduction.modal {
+    overflow: hidden !important;
+  }
+  html:has(#addProduction.show),
+  body:has(#addProduction.show) {
+    overflow: hidden !important;
+  }
+  #addProduction .modal-dialog {
+    height: auto !important;
+    max-height: calc(100dvh - 2rem) !important;
+    margin: 1rem auto !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  #addProduction .modal-content {
+    height: auto !important;
+    max-height: calc(100dvh - 2rem) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #addProduction form {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #addProduction .modal-header,
+  #addProduction .modal-footer {
+    flex: 0 0 auto !important;
+  }
+  #addProduction .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  /* Nama Produk / Gudang Tujuan autocompletes are appended to <body> (not
+     .modal-content) so their dropdown can't get clipped by the modal's own
+     overflow:hidden. Bootstrap's .modal is z-index 1055, above select2's
+     default 1051 - bump it so the dropdown isn't hidden behind the modal. */
+  .select2-dropdown {
+    z-index: 1065 !important;
+  }
+</style>
 <div class="modal custom-modal fade pg-modal--form" id="addProduction" aria-modal="true" role="dialog" tabindex="-1"
   data-bs-backdrop="static">
-  <div class="modal-dialog modal-dialog-centered modal-xl">
-    <div class="modal-content">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content d-flex flex-column">
       <div class="modal-header">
         <div class="d-flex align-items-center gap-3">
           <div class="pg-modal-icon">
@@ -16,8 +66,8 @@
         </div>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <form action="#" class="d-flex flex-column h-100" style="margin: 0; min-height: 0;">
-        <div class="modal-body p-0 bg-light d-flex flex-column" style="overflow-y:auto;">
+      <form action="#" class="d-flex flex-column flex-grow-1" style="margin: 0; min-height: 0;">
+        <div class="modal-body p-0 bg-light d-flex flex-column flex-grow-1">
 
           <div class="p-4 border-bottom bg-white shadow-sm" style="flex: 0 0 auto;">
             <div class="row g-4">
