@@ -40,6 +40,11 @@
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
+  /* Hint "1 pallet = N dos" di bawah field Qty diposisikan absolute; beri ruang
+     ekstra di bawah kartu input supaya teksnya tidak keluar dari kartu. */
+  #addProduction .pg-popup-table-input {
+    padding-bottom: 24px;
+  }
   /* Nama Produk / Gudang Tujuan autocompletes are appended to <body> (not
      .modal-content) so their dropdown can't get clipped by the modal's own
      overflow:hidden. Bootstrap's .modal is z-index 1055, above select2's
@@ -136,7 +141,80 @@
               <span class="fw-bold text-dark" style="font-size:14px;">Daftar Produk</span>
             </div>
 
-            <div class="table-responsive rounded border mb-3 bg-white">
+            <div class="pg-popup-table-input input_table">
+              <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-3 add">
+                  <div class="input-block mb-0" id="row-product">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Produk
+                      <span class="text-danger">*</span></label>
+                    <select class="form-select fill_product" id="product_id"
+                      style="font-size:14px;border-radius:8px;height:42px;"></select>
+                  </div>
+                </div>
+                <div class="col-6 col-lg-2 add">
+                  <div class="input-block mb-0" style="position: relative;">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Qty <span
+                        class="text-danger">*</span></label>
+                    <input type="text" class="form-control fill_product number-only" id="production_qty"
+                      placeholder="Qty" value="1" style="font-size:14px;border-radius:8px;height:42px;">
+                    <small class="text-muted position-absolute" id="production_pallet_hint"
+                      style="bottom: -18px; left: 2px; font-size: 10px; white-space: nowrap;"></small>
+                  </div>
+                </div>
+                <div class="col-6 col-lg-2 add">
+                  <div class="input-block mb-0">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Satuan
+                      <span class="text-danger">*</span></label>
+                    <select class="form-select fill_product" id="unit_id"
+                      style="font-size:14px;border-radius:8px;height:42px;"></select>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4 add">
+                  <div class="input-block mb-0">
+                    <label class="text-muted mb-2"
+                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
+                      Tujuan <span class="text-danger">*</span></label>
+                    @php
+                      $prodDestWh = $activeWarehouse ?? null;
+                      $prodDestWhName = $prodDestWh
+                        ? ($prodDestWh->warehouse_name ?? $prodDestWh->name ?? '')
+                        : '';
+                      $isActiveMainWh = $prodDestWh
+                        && isset($prodDestWh->type)
+                        && (int) ($prodDestWh->type->is_main_warehouse ?? 0) === 1;
+                      $prodMainWhName = $prodDestWhName;
+                      if (! $isActiveMainWh && isset($warehouses)) {
+                          $prodMainWh = collect($warehouses)->first(function ($wh) {
+                              return isset($wh->type) && (int) $wh->type->is_main_warehouse === 1;
+                          });
+                          if ($prodMainWh) {
+                              $prodMainWhName = $prodMainWh->warehouse_name ?? $prodMainWh->name ?? $prodMainWhName;
+                          }
+                      }
+                    @endphp
+                    <div id="production-main-warehouse-badge" class="d-flex align-items-center px-3"
+                      style="height:42px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;">
+                      <i class="fe fe-home me-2"></i><span>{{ $prodMainWhName !== '' ? $prodMainWhName : 'Gudang utama' }}</span>
+                    </div>
+                    <select class="form-select" id="production_destination_warehouse_id"
+                      style="display:none;font-size:14px;border-radius:8px;height:42px;"></select>
+                  </div>
+                </div>
+                <div class="col-12 col-md-12 col-lg-1 add">
+                  <label class="text-muted mb-2 d-none d-lg-block"
+                    style="font-size:11px;font-weight:600;">&nbsp;</label>
+                  <button type="button"
+                    class="btn btn-primary w-100 btn-add-product d-flex align-items-center justify-content-center"
+                    style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                    <i class="fe fe-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="table-responsive rounded border bg-white pg-popup-table-scroll">
               <table class="table table-center custom-table-scroll mb-0" id="tableProduct"
                 style="min-width: 800px;">
                 <thead style="background: #f1f5f9;">
@@ -159,6 +237,9 @@
                   </tr>
                 </thead>
                 <tbody>
+                  <tr class="pg-popup-table-empty">
+                    <td colspan="5">Belum ada produk. Tambahkan lewat form di atas.</td>
+                  </tr>
                 </tbody>
                 <tfoot class="dos" style="background: #f8fafc; border-top: 2px solid #e2e8f0;">
                   <tr>
@@ -173,76 +254,6 @@
                   </tr>
                 </tfoot>
               </table>
-            </div>
-            <div class="row input_table g-3 align-items-end p-3 rounded bg-white"
-              style="border: 1px solid #e2e8f0; box-shadow: 0 2px 4px rgba(0,0,0,0.02);">
-              <div class="col-12 col-lg-3 add">
-                <div class="input-block mb-0" id="row-product">
-                  <label class="text-muted mb-2"
-                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama Produk
-                    <span class="text-danger">*</span></label>
-                  <select class="form-select fill_product" id="product_id"
-                    style="font-size:14px;border-radius:8px;height:42px;"></select>
-                </div>
-              </div>
-              <div class="col-6 col-lg-2 add">
-                <div class="input-block mb-0" style="position: relative;">
-                  <label class="text-muted mb-2"
-                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Qty <span
-                      class="text-danger">*</span></label>
-                  <input type="text" class="form-control fill_product number-only" id="production_qty"
-                    placeholder="Qty" value="1" style="font-size:14px;border-radius:8px;height:42px;">
-                  <small class="text-muted position-absolute" id="production_pallet_hint"
-                    style="bottom: -18px; left: 2px; font-size: 10px; white-space: nowrap;"></small>
-                </div>
-              </div>
-              <div class="col-6 col-lg-2 add">
-                <div class="input-block mb-0">
-                  <label class="text-muted mb-2"
-                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Satuan
-                    <span class="text-danger">*</span></label>
-                  <select class="form-select fill_product" id="unit_id"
-                    style="font-size:14px;border-radius:8px;height:42px;"></select>
-                </div>
-              </div>
-              <div class="col-12 col-lg-4 add">
-                <div class="input-block mb-0">
-                  <label class="text-muted mb-2"
-                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
-                    Tujuan <span class="text-danger">*</span></label>
-                  @php
-                    $prodDestWh = $activeWarehouse ?? null;
-                    $prodDestWhName = $prodDestWh
-                      ? ($prodDestWh->warehouse_name ?? $prodDestWh->name ?? '')
-                      : '';
-                    $isActiveMainWh = $prodDestWh
-                      && isset($prodDestWh->type)
-                      && (int) ($prodDestWh->type->is_main_warehouse ?? 0) === 1;
-                    $prodMainWhName = $prodDestWhName;
-                    if (! $isActiveMainWh && isset($warehouses)) {
-                        $prodMainWh = collect($warehouses)->first(function ($wh) {
-                            return isset($wh->type) && (int) $wh->type->is_main_warehouse === 1;
-                        });
-                        if ($prodMainWh) {
-                            $prodMainWhName = $prodMainWh->warehouse_name ?? $prodMainWh->name ?? $prodMainWhName;
-                        }
-                    }
-                  @endphp
-                  <div id="production-main-warehouse-badge" class="d-flex align-items-center px-3"
-                    style="height:42px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;font-size:13px;font-weight:600;">
-                    <i class="fe fe-home me-2"></i><span>{{ $prodMainWhName !== '' ? $prodMainWhName : 'Gudang utama' }}</span>
-                  </div>
-                  <select class="form-select" id="production_destination_warehouse_id"
-                    style="display:none;font-size:14px;border-radius:8px;height:42px;"></select>
-                </div>
-              </div>
-              <div class="col-12 col-md-12 col-lg-1 add text-end">
-                <button type="button"
-                  class="btn btn-primary w-100 btn-add-product d-flex align-items-center justify-content-center"
-                  style="background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;border-radius:8px;height:42px;box-shadow:0 4px 12px rgba(59,130,246,.3);">
-                  <i class="fe fe-plus"></i>
-                </button>
-              </div>
             </div>
           </div>
         </div>
