@@ -27,7 +27,7 @@ var PG_POPUP_TABLE = {
      * 'top'    → baris baru masuk paling atas (langsung terlihat tanpa scroll)
      * 'bottom' → baris baru masuk paling bawah
      */
-    ROW_INSERT_POSITION: "top",
+    ROW_INSERT_POSITION: "bottom",
 };
 window.PG_POPUP_TABLE = PG_POPUP_TABLE;
 
