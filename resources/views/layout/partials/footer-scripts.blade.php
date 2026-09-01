@@ -415,6 +415,33 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   }
 
   /**
+   * Popup error bertema PG (rounded-16px, tombol pg-btn-confirm--danger, ikon merah) — dipakai
+   * lintas modul supaya konsisten dengan pg-modal--danger, alih-alih notifikasi() polos
+   * (SweetAlert2 default) yang sudah tidak sesuai desain modal sejak redesign Kanakku. Versi
+   * generik dari showSoErrorModal() di Sales_Order.js — lihat commit e90f255. `.swal2-container`
+   * sudah global z-index:2000 (pg-modal-styles.blade.php) jadi popup ini tetap tampil di depan
+   * walau dipanggil sementara modal PG lain (pg-modal--form/--confirm/--danger) masih terbuka.
+   */
+  function showPgErrorModal(header, message) {
+    Swal.fire({
+      icon: "error",
+      iconColor: "#ef4444",
+      title: header || "Gagal",
+      html:
+        '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;">' +
+        $("<div>").text(message || "").html() +
+        "</p>",
+      confirmButtonText: "Tutup",
+      customClass: {
+        confirmButton: "pg-btn-confirm pg-btn-confirm--danger",
+        title: "fw-bold fs-4 text-dark",
+        popup: "rounded-4",
+      },
+      buttonsStyling: false,
+    });
+  }
+
+  /**
    * Panggil ini di awal setiap ajax error callback (terutama di popup) supaya pesan
    * 403 (ditolak middleware permission) konsisten di seluruh aplikasi dan tidak
    * membocorkan modul/permission apa yang kurang ke user.
