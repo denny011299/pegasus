@@ -116,4 +116,51 @@ class AkuntansiLaporanSmokeTest extends TestCase
     {
         $this->get('/operationalCash')->assertRedirect('/login');
     }
+
+    /**
+     * GitHub #97: staff granted only the generic "Kas Operasional" module
+     * (no per-jenis submodule) saw an empty jenis dropdown on this page and
+     * couldn't view/insert anything, while roles with the specific
+     * submodules worked fine. Cash_Operational.blade.php computed $all
+     * (the generic-module check) and $isSuper but never OR'd them into the
+     * per-jenis $admin/$gudang/$armada/$sales flags that gate each <option>.
+     */
+    public function test_operational_cash_shows_all_jenis_options_for_generic_kas_operasional_permission(): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Kas Operasional');
+
+        $response = $this->get('/operationalCash');
+
+        $response->assertStatus(200);
+        $response->assertSee('value="admin"', false);
+        $response->assertSee('value="gudang"', false);
+        $response->assertSee('value="armada"', false);
+        $response->assertSee('value="sales"', false);
+    }
+
+    public function test_operational_cash_shows_all_jenis_options_for_super_admin(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $response = $this->get('/operationalCash');
+
+        $response->assertStatus(200);
+        $response->assertSee('value="admin"', false);
+        $response->assertSee('value="gudang"', false);
+        $response->assertSee('value="armada"', false);
+        $response->assertSee('value="sales"', false);
+    }
+
+    public function test_operational_cash_shows_only_granted_jenis_option(): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Kas Operasional Gudang');
+
+        $response = $this->get('/operationalCash');
+
+        $response->assertStatus(200);
+        $response->assertSee('value="gudang"', false);
+        $response->assertDontSee('value="admin"', false);
+        $response->assertDontSee('value="armada"', false);
+        $response->assertDontSee('value="sales"', false);
+    }
 }
