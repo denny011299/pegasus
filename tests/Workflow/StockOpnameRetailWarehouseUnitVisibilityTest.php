@@ -139,6 +139,23 @@ class StockOpnameRetailWarehouseUnitVisibilityTest extends TestCase
         $this->assertCount(0, $row->stock);
     }
 
+    /** getProductVariantBulk dipakai halaman detail/PDF — harus sama aturannya dengan getProductVariant. */
+    public function test_bulk_respects_retail_unit_for_document_warehouse(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$variant, , $retailWarehouseId] = $this->makeFixture();
+
+        $bulk = (new ProductVariant())->getProductVariantBulk(
+            [$variant->product_variant_id],
+            $retailWarehouseId
+        );
+        $row = $bulk->get($variant->product_variant_id);
+
+        $this->assertNotNull($row);
+        $unitIds = collect($row->stock)->pluck('unit_id')->map(fn ($u) => (int) $u)->all();
+        $this->assertSame([self::PIECE_UNIT_ID], $unitIds);
+    }
+
     /** Menembus endpoint sungguhan yang dipakai CreateStockOpname.js. */
     public function test_wired_into_get_product_variant_endpoint(): void
     {

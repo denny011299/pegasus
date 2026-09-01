@@ -292,6 +292,7 @@ class ProductVariant extends Model
      * keep the old ambient-scope behavior for every other caller.
      *
      * @param  array<int>  $productVariantIds
+     * @param  int|null  $warehouseId  Gudang dokumen (bukan session) — penting untuk stock opname multi-gudang.
      * @return \Illuminate\Support\Collection<string|int, self>
      */
     public function getProductVariantBulk(array $productVariantIds, ?int $warehouseId = null)
@@ -333,14 +334,23 @@ class ProductVariant extends Model
             $allUnitIds[(int) $rel->pr_unit_id_2] = true;
         }
 
-        $stocks = ($warehouseId !== null
-                ? ProductStock::withoutGlobalScope('active_warehouse')
-                    ->where('warehouse_id', $warehouseId)
-                : ProductStock::query())
+        $resolvedWarehouseId = ProductStock::resolveWarehouseId($warehouseId);
+        $isMainWarehouse = true;
+        if ($resolvedWarehouseId) {
+            $warehouse = Warehouse::query()
+                ->with(['type' => fn ($q) => $q->select('id', 'is_main_warehouse')])
+                ->find($resolvedWarehouseId);
+            $isMainWarehouse = ! $warehouse || ! $warehouse->type || (int) $warehouse->type->is_main_warehouse === 1;
+        }
+        $hasRetailUnitColumn = Schema::hasColumn('product_variants', 'retail_unit');
+
+        $stocksQuery = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', '=', 1)
-            ->whereIn('product_variant_id', $productVariantIds)
-            ->orderBy('created_at', 'asc')
-            ->get();
+            ->whereIn('product_variant_id', $productVariantIds);
+        if ($resolvedWarehouseId > 0) {
+            $stocksQuery->where('warehouse_id', $resolvedWarehouseId);
+        }
+        $stocks = $stocksQuery->orderBy('created_at', 'asc')->get();
 
         foreach ($stocks as $stk) {
             $allUnitIds[(int) $stk->unit_id] = true;
@@ -410,6 +420,13 @@ class ProductVariant extends Model
                 $stocksGrouped->get($clone->product_variant_id, collect()),
                 $relationsGrouped->get($clone->product_variant_id, collect())
             );
+
+            if (! $isMainWarehouse) {
+                $retailUnitId = $hasRetailUnitColumn ? (int) ($clone->retail_unit ?? 0) : 0;
+                $clone->stock = $retailUnitId > 0
+                    ? $clone->stock->filter(fn ($s) => (int) $s->unit_id === $retailUnitId)->values()
+                    : collect();
+            }
 
             $s = $clone->stock->firstWhere('unit_id', (int) $clone->unit_id)
                 ?? $stocksGrouped->get($clone->product_variant_id, collect())->firstWhere('unit_id', (int) $clone->unit_id);

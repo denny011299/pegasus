@@ -10,6 +10,7 @@ use App\Models\StockOpnameLine;
 use App\Models\SuppliesStock;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Kembalikan stok yang kepotong dari ACC produksi gagal
@@ -236,11 +237,17 @@ class ProductionPendingStockRestorer
 
     private function applyReverseStock(LogStock $log, int $qty): bool
     {
+        $warehouseId = (int) ($log->warehouse_id ?? 0);
+
         if ((int) $log->log_type === 2) {
-            $ss = SuppliesStock::where('supplies_id', $log->log_item_id)
+            $ssQuery = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('supplies_id', $log->log_item_id)
                 ->where('unit_id', $log->unit_id)
-                ->where('status', 1)
-                ->first();
+                ->where('status', 1);
+            if ($warehouseId > 0) {
+                $ssQuery->where('warehouse_id', $warehouseId);
+            }
+            $ss = $ssQuery->first();
             if (! $ss) {
                 return false;
             }
@@ -258,10 +265,14 @@ class ProductionPendingStockRestorer
         }
 
         if ((int) $log->log_type === 1) {
-            $ps = ProductStock::where('product_variant_id', $log->log_item_id)
+            $psQuery = ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('product_variant_id', $log->log_item_id)
                 ->where('unit_id', $log->unit_id)
-                ->where('status', 1)
-                ->first();
+                ->where('status', 1);
+            if ($warehouseId > 0) {
+                $psQuery->where('warehouse_id', $warehouseId);
+            }
+            $ps = $psQuery->first();
             if (! $ps) {
                 return false;
             }
@@ -305,6 +316,9 @@ class ProductionPendingStockRestorer
             . ' — ' . $typeLabel;
         $row->log_jumlah = $qty;
         $row->unit_id = $original->unit_id;
+        if (Schema::hasColumn($row->getTable(), 'warehouse_id')) {
+            $row->warehouse_id = $original->warehouse_id;
+        }
         $row->status = 1;
         $row->staff_id = $staffId;
         $row->save();

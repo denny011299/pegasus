@@ -1,5 +1,14 @@
 <!--- modal Delete -->
 <style>
+  #camera #video {
+    width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    transform-origin: center center;
+    transition: transform 0.15s ease;
+    background: #000;
+  }
+
   #video.rot90 {
     transform: rotate(90deg);
   }

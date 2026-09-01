@@ -239,6 +239,8 @@ class StockController extends Controller
             ]);
         }
 
+        StockOpnameDetail::rebuildMissingFromLogs((int) $id);
+
         $sto = (new StockOpname())->getStockOpname(['sto_id' => $id, 'with_items' => true])->first();
         if (!$sto) {
             abort(404);
@@ -269,6 +271,10 @@ class StockController extends Controller
                     // submits as "-" (not counted), not a value copy-pasted from this hint.
                     'live_qty'         => (int) $s->ps_stock,
                 ];
+            }
+
+            if ($units === []) {
+                $units = $this->buildUnitsFromQtyStrings($detail);
             }
 
             $items[] = [
@@ -332,6 +338,51 @@ class StockController extends Controller
             }
         }
         return null;
+    }
+
+    /**
+     * Fallback bila koleksi stock kosong (mis. filter gudang eceran) tapi string qty tersimpan ada.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildUnitsFromQtyStrings($detail): array
+    {
+        $unitNames = [];
+        foreach (['stod_system', 'stod_real', 'stod_selisih'] as $key) {
+            $str = trim((string) ($detail->{$key} ?? ''));
+            if ($str === '') {
+                continue;
+            }
+            foreach (explode(',', $str) as $part) {
+                $part = trim($part);
+                if ($part === '' || ! preg_match('/^(-?\d+)\s+(.+)$/u', $part, $m)) {
+                    continue;
+                }
+                $unitNames[trim($m[2])] = true;
+            }
+        }
+
+        if ($unitNames === []) {
+            return [];
+        }
+
+        $unitsByShortName = Unit::whereIn('unit_short_name', array_keys($unitNames))
+            ->get(['unit_id', 'unit_short_name'])
+            ->keyBy('unit_short_name');
+
+        $units = [];
+        foreach (array_keys($unitNames) as $unitShortName) {
+            $u = $unitsByShortName->get($unitShortName);
+            $units[] = [
+                'unit_id' => $u ? $u->unit_id : 0,
+                'unit_short_name' => $unitShortName,
+                'system_qty' => $this->getQty($detail->stod_system ?? '', $unitShortName),
+                'real_qty' => $this->getQty($detail->stod_real ?? '', $unitShortName),
+                'selisih_qty' => $this->getQty($detail->stod_selisih ?? '', $unitShortName),
+            ];
+        }
+
+        return $units;
     }
 
     // Kebalikan dari getQty() -- rakit ['DOS' => 10, 'pcs' => null] jadi "10 DOS, - pcs".
@@ -480,6 +531,15 @@ class StockController extends Controller
         $data = $req->all();
         $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
+
+        if (! is_array($stod) || count($stod) === 0) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Tidak ada item produk pada dokumen ini',
+            ]);
+        }
+
         $warehouseId = (int) (
             ($sto->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)

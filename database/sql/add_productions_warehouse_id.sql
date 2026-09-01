@@ -1,20 +1,32 @@
 -- =============================================================================
 -- productions.warehouse_id — gudang asal produksi (header)
 -- Filter list produksi pakai kolom ini, BUKAN destination_warehouse_id di detail.
--- Default / backfill data lama = 1 (gudang utama Hikari).
--- Jalankan di phpMyAdmin / mysql CLI. Abaikan "Duplicate column name" jika sudah ada.
+-- Default / backfill data lama = gudang utama (biasanya ID 1).
+-- Jalankan di phpMyAdmin / mysql CLI. Aman diulang (cek kolom).
 -- =============================================================================
 
 SET NAMES utf8mb4;
 
-ALTER TABLE `productions`
-  ADD COLUMN `warehouse_id` BIGINT UNSIGNED NOT NULL DEFAULT 1
-  AFTER `production_created_by`;
+SET @col_prod_wh_exists := (
+  SELECT COUNT(*)
+  FROM INFORMATION_SCHEMA.COLUMNS
+  WHERE TABLE_SCHEMA = DATABASE()
+    AND TABLE_NAME = 'productions'
+    AND COLUMN_NAME = 'warehouse_id'
+);
 
-ALTER TABLE `productions`
-  ADD INDEX `productions_warehouse_id_index` (`warehouse_id`);
+SET @sql_prod_wh := IF(
+  @col_prod_wh_exists = 0,
+  'ALTER TABLE `productions`
+     ADD COLUMN `warehouse_id` BIGINT UNSIGNED NOT NULL DEFAULT 1 AFTER `production_created_by`,
+     ADD INDEX `productions_warehouse_id_index` (`warehouse_id`)',
+  'SELECT ''kolom productions.warehouse_id sudah ada'' AS info'
+);
 
--- Pastikan semua baris lama = gudang utama (biasanya ID 1)
+PREPARE stmt_prod_wh FROM @sql_prod_wh;
+EXECUTE stmt_prod_wh;
+DEALLOCATE PREPARE stmt_prod_wh;
+
 SET @main_wh_id := (
   SELECT w.`id`
   FROM `warehouses` w

@@ -2643,11 +2643,9 @@ class StockTransferController extends Controller
                 || StockTransferApproval::isOpsApproved($header))) {
             return false;
         }
-        // Request eceran→besar: eceran (tujuan) boleh edit selama belum ada approval.
-        if ($isRetailRequest
-            && $toWarehouseId > 0
-            && $activeWarehouseId === $toWarehouseId) {
-            return true;
+        // Request eceran (utama→eceran): hanya gudang eceran (tujuan/pemohon) yang boleh edit.
+        if ($isRetailRequest) {
+            return $toWarehouseId > 0 && $activeWarehouseId === $toWarehouseId;
         }
         if ($fromWarehouseId <= 0) {
             return false;
@@ -2760,7 +2758,7 @@ class StockTransferController extends Controller
         return true;
     }
 
-    /** Edit/hapus: gudang asal, atau eceran (tujuan) untuk request utama→eceran sebelum approval. @return true|string */
+    /** Edit/hapus: gudang asal (transfer biasa), atau gudang eceran (request utama→eceran). @return true|string */
     protected function assertCanEditSource(StockTransfer $header)
     {
         $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
@@ -2784,13 +2782,15 @@ class StockTransferController extends Controller
                 || StockTransferApproval::isOpsApproved($header))) {
             return 'Request sudah di-approve; tidak bisa diedit. Tolak lalu buat request baru jika perlu ubah.';
         }
-        if ($isRetailRequest && $activeWh === $toWh) {
+        if ($isRetailRequest) {
+            if ($activeWh !== $toWh) {
+                return 'Request stok eceran hanya bisa diedit di gudang eceran (pemohon).';
+            }
+
             return true;
         }
         if ($activeWh !== $fromWh) {
-            return 'Edit/hapus hanya bisa dilakukan di gudang asal'
-                . ($isRetailRequest ? ' (atau gudang eceran sebelum approval)' : '')
-                . '.';
+            return 'Edit/hapus hanya bisa dilakukan di gudang asal.';
         }
 
         return true;
