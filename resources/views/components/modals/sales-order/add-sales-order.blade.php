@@ -1,7 +1,21 @@
+<style>
+  /* Flex items default to min-height:auto, which stops them from shrinking
+     below their content height even with flex-grow set - without this the
+     form/modal-body below never actually get capped to max-height, so
+     .modal-body's overflow-y:auto never kicks in and the footer/bottom rows
+     end up unreachable on shorter (tablet/laptop) viewports. See the
+     pegasus-modal-dropdown skill / GitHub #101 for the full writeup. */
+  #add_sales_order form {
+    min-height: 0 !important;
+  }
+  #add_sales_order .modal-body {
+    min-height: 0 !important;
+  }
+</style>
 <div class="modal fade custom-modal pg-modal--form" id="add_sales_order" data-bs-backdrop="static"
     data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: 90vw;">
-      <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
+      <div class="modal-content d-flex flex-column" style="border-radius: 16px; overflow: hidden; border: none; max-height: calc(100dvh - 2rem);">
 
         {{-- ── HEADER ── --}}
         <div class="modal-header">
