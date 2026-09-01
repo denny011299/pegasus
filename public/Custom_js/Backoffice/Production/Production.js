@@ -290,6 +290,39 @@ function isRecipeNeedsUpdateError(payload) {
 }
 
 /**
+ * Tangani response error validasi produksi (status != 1) dari
+ * checkProductionStock()/insertProduction() - dipakai baik saat menambah
+ * baris produk (tiap klik +) maupun submit akhir (Tambah/Update Produksi),
+ * supaya penanganannya konsisten di kedua titik. Lihat GitHub #101.
+ */
+function handleProductionValidationError(e, bomIdFallback) {
+    if (!e) {
+        notifikasi("error", "Gagal", "Terjadi kesalahan yang tidak diketahui.");
+        return;
+    }
+    if (e.status == 0) {
+        if (isRecipeNeedsUpdateError(e)) {
+            var bomId = e.bom_id || bomIdFallback || null;
+            if (bomId) {
+                promptRecipeNeedsUpdate(bomId, {
+                    returnToProduction: true,
+                    title: e.header || "Satuan Resep Tidak Aktif",
+                    message: e.message,
+                });
+                return;
+            }
+        }
+        notifikasi("error", e.header, e.message);
+        return;
+    }
+    if (e.status == -1) {
+        notifikasi("error", "Stock Tidak Mencukupi", e.message);
+        return;
+    }
+    notifikasi("error", "Gagal", e.message || "Terjadi kesalahan.");
+}
+
+/**
  * Alert + swap: hide Tambah Produksi, open Update Resep, show brief error Swal.
  * Tutup/dismiss hanya menutup Swal — Update Resep tetap terbuka; restore produksi
  * lewat footer Batal/X di modal Update Resep.
@@ -1009,8 +1042,14 @@ function continueAddProduct(tempBom) {
     var destinationId = isRetailOutput
         ? parseInt($("#production_destination_warehouse_id").val() || 0, 10)
         : productionNonRetailDestinationId();
+
+    // Kerja di atas salinan `items` dulu (bukan `items` asli) - baris baru/gabungan
+    // baru benar-benar masuk ke daftar kalau cek stok di bawah (GitHub #101) lolos.
+    var candidateItems = items.map(function (element) {
+        return $.extend({}, element);
+    });
     var idx = -1;
-    items.forEach(function (element) {
+    candidateItems.forEach(function (element) {
         if (
             element.product_variant_id == temp.product_variant_id &&
             element.unit_id == resolved.unit_id &&
@@ -1023,7 +1062,7 @@ function continueAddProduct(tempBom) {
     });
 
     if (idx == 1) {
-        var mergedItem = items.find(function (element) {
+        var mergedItem = candidateItems.find(function (element) {
             return (
                 element.product_variant_id == temp.product_variant_id &&
                 element.unit_id == resolved.unit_id &&
@@ -1037,7 +1076,6 @@ function continueAddProduct(tempBom) {
             tempBom,
         );
         if (!qtyKelipatanGabung.valid) {
-            mergedItem.pd_qty -= resolved.pd_qty;
             clearPendingProductionAdd();
             notifikasi(
                 "error",
@@ -1075,18 +1113,55 @@ function continueAddProduct(tempBom) {
                     : productionNonRetailDestinationName()),
             bom_id: temp.bom_id,
         };
-        items.push(data);
+        candidateItems.push(data);
     }
-    addRow(items);
 
-    $("#product_id").empty();
-    $("#unit_id").empty();
-    $("#unit_id").append("<option selected>Pilih Satuan</option>");
-    $("#production_qty").val(1);
-    $("#production_pallet_hint").text("");
-    $("#production_destination_warehouse_id").val(null).trigger("change");
-    syncProductionDestinationControl();
-    clearPendingProductionAdd();
+    // Cek stok bahan mentah agregat (termasuk baris ini) SEBELUM baris masuk ke
+    // daftar - dulu cek ini cuma jalan pas klik "Tambah Produksi" di akhir, jadi
+    // user baru tahu stok kurang setelah menyusun seluruh daftar. GitHub #101.
+    LoadingButton(".btn-add-product");
+    $.ajax({
+        url: "/checkProductionStock",
+        method: "post",
+        data: {
+            detail: JSON.stringify(candidateItems),
+            _token: token,
+        },
+        headers: {
+            "X-CSRF-TOKEN": token,
+        },
+        success: function (e) {
+            ResetLoadingButton(".btn-add-product", "+");
+            if (!e || e.status != 1) {
+                handleProductionValidationError(e, temp.bom_id);
+                return;
+            }
+
+            items = candidateItems;
+            addRow(items);
+
+            $("#product_id").empty();
+            $("#unit_id").empty();
+            $("#unit_id").append("<option selected>Pilih Satuan</option>");
+            $("#production_qty").val(1);
+            $("#production_pallet_hint").text("");
+            $("#production_destination_warehouse_id")
+                .val(null)
+                .trigger("change");
+            syncProductionDestinationControl();
+            clearPendingProductionAdd();
+        },
+        error: function (a) {
+            ResetLoadingButton(".btn-add-product", "+");
+            if (handlePermissionError(a)) return;
+            console.log(a);
+            notifikasi(
+                "error",
+                "Gagal Cek Stok",
+                "Terjadi kesalahan saat memeriksa stok. Silakan coba lagi.",
+            );
+        },
+    });
     return true;
 }
 $(document).ready(function () {
@@ -1741,26 +1816,11 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
-            console.log(e.length);
-            if (e.status == 0) {
-                if (isRecipeNeedsUpdateError(e)) {
-                    var bomId =
-                        e.bom_id ||
-                        (items[0] && items[0].bom_id) ||
-                        null;
-                    if (bomId) {
-                        promptRecipeNeedsUpdate(bomId, {
-                            returnToProduction: true,
-                            title: e.header || "Satuan Resep Tidak Aktif",
-                            message: e.message,
-                        });
-                        return false;
-                    }
-                }
-                notifikasi("error", e.header, e.message);
-                return false;
-            } else if (e.status == -1) {
-                notifikasi("error", "Stock Tidak Mencukupi", e.message);
+            if (!e || e.status != 1) {
+                handleProductionValidationError(
+                    e,
+                    items[0] && items[0].bom_id,
+                );
                 return false;
             }
             afterInsert();
