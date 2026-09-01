@@ -140,7 +140,8 @@
                   {{-- Sembunyikan sementara: terima langsung = qty kirim (toggle class d-none untuk tampilkan lagi) --}}
                   <th style="width: 140px;" class="text-center d-none st-col-qty-terima">Qty Terima</th>
                   <th style="width: 140px;" class="text-center">Hasil Konversi</th>
-                  <th style="width: 110px;" class="text-center">Selisih</th>
+                  {{-- Sembunyikan sementara: terima langsung = qty kirim (toggle class d-none untuk tampilkan lagi) --}}
+                  <th style="width: 110px;" class="text-center d-none st-col-selisih">Selisih</th>
                 </tr>
               </thead>
               <tbody>

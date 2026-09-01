@@ -3837,7 +3837,7 @@ function renderAcceptItems(items) {
             formatTransferQtyWithUnit(formatTransferQty(convertedPreview), targetUnitLabel) +
             '<div class="text-muted mt-1" style="font-size:11px;">satuan stok tujuan</div>' +
             "</td>" +
-            '<td class="text-center accept-selisih" style="padding: 14px 16px; font-weight: 500;">' +
+            '<td class="text-center accept-selisih d-none st-col-selisih" style="padding: 14px 16px; font-weight: 500;">' +
             formatTransferSelisih(selisih, targetUnitLabel) +
             "</td>" +
             "</tr>";
