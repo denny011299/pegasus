@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -40,26 +41,50 @@ class CashGudang extends Model
 
         $result = $result->get();
 
-        // hitung sisa kas
-        $allData = CashGudang::where('status', 2)->get();
-        $sisa_kas = 0;
-        foreach ($allData as $value) {
-            if ($value->cg_type == 1 && $value->cg_aksi == 1) {
-                $sisa_kas += $value->cg_nominal;
-            } else if ($value->cg_type == 1 && $value->cg_aksi == 2) {
-                $sisa_kas -= $value->cg_nominal;
-            } else if ($value->cg_type == 2) {
-                $sisa_kas -= $value->cg_nominal;
-            }
-        }
-        
-        foreach ($result as $key => $value) {
-            $value->staff_name = Staff::find($value->staff_id)->staff_name;
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+        $sisa_kas = (int) (CashGudang::where('status', 2)
+            ->selectRaw('COALESCE(SUM(CASE
+                WHEN cg_type = 1 AND cg_aksi = 1 THEN cg_nominal
+                WHEN cg_type = 1 AND cg_aksi = 2 THEN -cg_nominal
+                WHEN cg_type = 2 THEN -cg_nominal
+                ELSE 0
+            END), 0) as sisa_kas')
+            ->value('sisa_kas') ?? 0);
 
-            $detail = (new CashGudangDetail())->getCashGudangDetail(['cg_id' => $value->cg_id]);
-            if ($detail->count() > 0) $value->detail = $detail;
+        $staffNames = BatchLookup::staffNames(
+            $result->flatMap(fn ($row) => [$row->staff_id, $row->created_by, $row->acc_by])
+        );
+
+        $cgIds = $result->pluck('cg_id')->all();
+        $detailsByCgId = collect();
+        if ($cgIds !== []) {
+            $details = CashGudangDetail::where('status', 1)
+                ->whereIn('cg_id', $cgIds)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $customerNotes = BatchLookup::customers($details->pluck('customer_id'), ['customer_id', 'customer_notes'])
+                ->mapWithKeys(fn ($row) => [(int) $row->customer_id => $row->customer_notes]);
+
+            foreach ($details as $detailRow) {
+                $detailRow->customer_notes = $customerNotes->get((int) $detailRow->customer_id) ?? '';
+            }
+
+            $detailsByCgId = $details->groupBy('cg_id');
+        }
+
+        foreach ($result as $key => $value) {
+            $value->staff_name = $staffNames->get((int) $value->staff_id) ?? '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
+
+            $detail = $detailsByCgId->get($value->cg_id);
+            if ($detail && $detail->count() > 0) {
+                $value->detail = $detail->values();
+            }
         }
         return [
             'data' => $result,

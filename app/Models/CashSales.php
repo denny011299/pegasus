@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
@@ -44,41 +45,63 @@ class CashSales extends Model
 
         $result = $result->get();
 
-        // Ambil staff_saldo meski $result kosong
         $staff_saldo = 0;
         if ($data["staff_id"]) {
-            $selectedStaff = Staff::find($data["staff_id"]);
-            $staff_saldo   = $selectedStaff ? $selectedStaff->staff_saldo : 0;
+            $staff_saldo = (int) (Staff::where('staff_id', $data["staff_id"])->value('staff_saldo') ?? 0);
         }
-        
-        $allData = CashSales::where('status', '=', 2)->get();
-        $sisa_kas = 0;
-        foreach ($allData as $value) {
-            if ($value->cs_transaction == 1) {
-                $sisa_kas += $value->cs_nominal;
-            } else if ($value->cs_transaction >= 2) {
-                $sisa_kas -= $value->cs_nominal;
-            }
-        }
+
+        $sisa_kas = (int) (CashSales::where('status', 2)
+            ->selectRaw('COALESCE(SUM(CASE
+                WHEN cs_transaction = 1 THEN cs_nominal
+                WHEN cs_transaction >= 2 THEN -cs_nominal
+                ELSE 0
+            END), 0) as sisa_kas')
+            ->value('sisa_kas') ?? 0);
+
+        $total_all = (int) Staff::where('status', 1)->sum('staff_saldo');
+
+        $staffRows = BatchLookup::staffRows(
+            $result->flatMap(fn ($row) => [$row->staff_id, $row->created_by, $row->acc_by])
+        );
+
+        $bankIds = $result->pluck('bank_id')
+            ->filter(fn ($id) => (int) $id !== 0)
+            ->unique()
+            ->values()
+            ->all();
+        $bankCodes = $bankIds === []
+            ? collect()
+            : Bank::whereIn('bank_id', $bankIds)->pluck('bank_kode', 'bank_id');
+
+        $csIds = $result->pluck('cs_id')->all();
+        $detailsByCsId = $csIds === []
+            ? collect()
+            : CashSalesDetail::where('status', 1)
+                ->whereIn('cs_id', $csIds)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy('cs_id');
 
         foreach ($result as $key => $value) {
-            $sales = Staff::find($value->staff_id);
-            $value->staff_name = $sales->staff_name;
-            $value->staff_saldo = $sales->staff_saldo;
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+            $sales = $staffRows->get((int) $value->staff_id);
+            $value->staff_name = $sales?->staff_name ?? '-';
+            $value->staff_saldo = $sales?->staff_saldo ?? 0;
+            $value->created_by_name = $value->created_by
+                ? ($staffRows->get((int) $value->created_by)?->staff_name ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffRows->get((int) $value->acc_by)?->staff_name ?? '-')
+                : '-';
+            $value->total_all = $total_all;
 
-            $staffAll = (new Staff())->getStaff();
-            $total = 0;
-            foreach ($staffAll as $key => $val) {
-                $total += $val->staff_saldo;
+            if ((int) $value->bank_id !== 0) {
+                $value->bank_kode = $bankCodes->get((int) $value->bank_id);
             }
-            $value->total_all = $total;
 
-            if ($value->bank_id != 0) $value->bank_kode = Bank::find($value->bank_id)->bank_kode;
-
-            $detail = (new CashSalesDetail())->getCashSalesDetail(['cs_id' => $value->cs_id]);
-            if ($detail->count() > 0) $value->detail = $detail;
+            $detail = $detailsByCsId->get($value->cs_id);
+            if ($detail && $detail->count() > 0) {
+                $value->detail = $detail->values();
+            }
         }
         return [
             'data' => $result,

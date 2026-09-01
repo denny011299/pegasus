@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Session;
 
@@ -42,25 +43,41 @@ class CashAdmin extends Model
 
         $result = $result->get();
 
-        $allData = CashAdmin::where('status', 2)->get();
-        $sisa_kas = 0;
-        foreach ($allData as $value) {
-            if ($value->ca_type == 1 && $value->ca_aksi == 1) {
-                $sisa_kas += $value->ca_nominal;
-            } else if ($value->ca_type == 1 && $value->ca_aksi == 2) {
-                $sisa_kas -= $value->ca_nominal;
-            } else if ($value->ca_type == 2) {
-                $sisa_kas -= $value->ca_nominal;
-            }
-        }
+        $sisa_kas = (int) (CashAdmin::where('status', 2)
+            ->selectRaw('COALESCE(SUM(CASE
+                WHEN ca_type = 1 AND ca_aksi = 1 THEN ca_nominal
+                WHEN ca_type = 1 AND ca_aksi = 2 THEN -ca_nominal
+                WHEN ca_type = 2 THEN -ca_nominal
+                ELSE 0
+            END), 0) as sisa_kas')
+            ->value('sisa_kas') ?? 0);
+
+        $staffNames = BatchLookup::staffNames(
+            $result->flatMap(fn ($row) => [$row->staff_id, $row->created_by, $row->acc_by])
+        );
+
+        $caIds = $result->pluck('ca_id')->all();
+        $detailsByCaId = $caIds === []
+            ? collect()
+            : CashAdminDetail::where('status', 1)
+                ->whereIn('ca_id', $caIds)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy('ca_id');
 
         foreach ($result as $key => $value) {
-            $value->staff_name = Staff::find($value->staff_id)->staff_name;
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+            $value->staff_name = $staffNames->get((int) $value->staff_id) ?? '-';
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
 
-            $detail = CashAdminDetail::where('ca_id', $value->ca_id)->where('status', 1)->get();
-            if ($detail->count() > 0) $value->detail = $detail;
+            $detail = $detailsByCaId->get($value->ca_id);
+            if ($detail && $detail->count() > 0) {
+                $value->detail = $detail->values();
+            }
         }
         return [
             'data' => $result,

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
@@ -44,41 +45,53 @@ class CashArmada extends Model
 
         $result = $result->get();
 
-        // Ambil customer_saldo meski $result kosong
         $customer_saldo = 0;
         if ($data["customer_id"]) {
-            $selectedStaff = Customer::find($data["customer_id"]);
-            $customer_saldo   = $selectedStaff ? $selectedStaff->customer_saldo : 0;
+            $customer_saldo = (int) (Customer::where('customer_id', $data["customer_id"])->value('customer_saldo') ?? 0);
         }
 
-        $allData = CashArmada::where('status', 2)->get();
-        $sisa_kas = 0;
-        foreach ($allData as $value) {
-            if ($value->cr_type == 1) {
-                if ($value->cr_nominal < 0) $sisa_kas -= $value->cr_nominal;
-                else $sisa_kas += $value->cr_nominal;
-            } else if ($value->cr_type >= 2) {
-                if ($value->cr_nominal < 0) $sisa_kas += $value->cr_nominal;
-                else $sisa_kas -= $value->cr_nominal;
-            }
-        }
+        $sisa_kas = (int) (CashArmada::where('status', 2)
+            ->selectRaw('COALESCE(SUM(CASE
+                WHEN cr_type = 1 AND cr_nominal < 0 THEN -cr_nominal
+                WHEN cr_type = 1 THEN cr_nominal
+                WHEN cr_type >= 2 AND cr_nominal < 0 THEN cr_nominal
+                WHEN cr_type >= 2 THEN -cr_nominal
+                ELSE 0
+            END), 0) as sisa_kas')
+            ->value('sisa_kas') ?? 0);
+
+        $total_all = (int) Customer::where('status', 1)->sum('customer_saldo');
+
+        $customers = BatchLookup::customers($result->pluck('customer_id'));
+        $staffNames = BatchLookup::staffNames(
+            $result->flatMap(fn ($row) => [$row->created_by, $row->acc_by])
+        );
+
+        $crIds = $result->pluck('cr_id')->all();
+        $detailsByCrId = $crIds === []
+            ? collect()
+            : CashArmadaDetail::where('status', 1)
+                ->whereIn('cr_id', $crIds)
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->groupBy('cr_id');
 
         foreach ($result as $key => $value) {
-            $customer = Customer::find($value->customer_id);
-            $value->customer_notes = $customer->customer_notes;
-            $value->customer_saldo = $customer->customer_saldo;
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+            $customer = $customers->get((int) $value->customer_id);
+            $value->customer_notes = $customer?->customer_notes ?? '';
+            $value->customer_saldo = $customer?->customer_saldo ?? 0;
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
+            $value->total_all = $total_all;
 
-            $custAll = (new Customer())->getCustomer();
-            $total = 0;
-            foreach ($custAll as $key => $val) {
-                $total += $val->customer_saldo;
+            $detail = $detailsByCrId->get($value->cr_id);
+            if ($detail && $detail->count() > 0) {
+                $value->detail = $detail->values();
             }
-            $value->total_all = $total;
-
-            $detail = (new CashArmadaDetail())->getCashArmadaDetail(['cr_id' => $value->cr_id]);
-            if ($detail->count() > 0) $value->detail = $detail;
         }
         return [
             'data' => $result,
