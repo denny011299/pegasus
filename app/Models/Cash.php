@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\BatchLookup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
@@ -40,52 +41,116 @@ class Cash extends Model
         $result->orderBy('status', 'asc')->orderBy('cash_date', 'desc')->orderBy('created_at', 'desc');
         $result = $result->get();
 
+        $armadaCustomerIds = $result
+            ->filter(fn ($row) => in_array($row->cash_type, [1, 2], true) && (int) $row->cash_tujuan === 3)
+            ->pluck('person_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $armadaByCustomer = $armadaCustomerIds === []
+            ? collect()
+            : CashArmada::whereIn('customer_id', $armadaCustomerIds)
+                ->orderBy('cr_id')
+                ->get()
+                ->groupBy('customer_id');
+
+        $salesStaffIds = $result
+            ->filter(fn ($row) => in_array($row->cash_type, [1, 2, 3], true) && (int) $row->cash_tujuan === 4)
+            ->pluck('person_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $salesByStaff = $salesStaffIds === []
+            ? collect()
+            : CashSales::whereIn('staff_id', $salesStaffIds)
+                ->orderBy('cs_id')
+                ->get()
+                ->groupBy('staff_id');
+
+        $adminCashIds = $result
+            ->filter(fn ($row) => in_array($row->cash_type, [1, 2], true) && (int) $row->cash_tujuan === 1)
+            ->pluck('cash_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $pengembalianAdminByCashId = $adminCashIds === []
+            ? collect()
+            : CashAdmin::whereIn('cash_id', $adminCashIds)
+                ->where('ca_aksi', 2)
+                ->get()
+                ->keyBy('cash_id');
+
+        $adminStaffIds = $pengembalianAdminByCashId
+            ->pluck('staff_id')
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        $adminByStaff = $adminStaffIds === []
+            ? collect()
+            : CashAdmin::whereIn('staff_id', $adminStaffIds)
+                ->orderBy('ca_id')
+                ->get()
+                ->groupBy('staff_id');
+
         foreach ($result as $key => $value) {
             // Armada
             if (in_array($value->cash_type, [1, 2]) && $value->cash_tujuan == 3){
+                $rows = $armadaByCustomer->get((int) $value->person_id, collect());
 
-                $pengembalianIni = CashArmada::where('cash_id', $value->cash_id)
-                    ->where('customer_id', $value->person_id)
-                    ->where('cr_aksi', 1)
+                $pengembalianIni = $rows->first(
+                    fn ($row) => (int) $row->cash_id === (int) $value->cash_id && (int) $row->cr_aksi === 1
+                );
+
+                if (!$pengembalianIni) {
+                    continue;
+                }
+
+                $pengembalianSebelumnya = $rows
+                    ->filter(fn ($row) => (int) $row->cr_aksi === 1
+                        && (int) $row->cash_id !== 0
+                        && (int) $row->cr_id < (int) $pengembalianIni->cr_id)
+                    ->sortByDesc('cr_id')
                     ->first();
 
-                if (!$pengembalianIni) continue;
+                $penyerahanCandidates = $rows->filter(fn ($row) => (int) $row->cr_aksi === 0
+                    && (int) $row->status === 2
+                    && (int) $row->cash_id === 0
+                    && (int) $row->cr_id < (int) $pengembalianIni->cr_id);
 
-                $pengembalianSebelumnya = CashArmada::where('customer_id', $value->person_id)
-                    ->where('cr_aksi', 1)
-                    ->where('cash_id', '!=', 0)
-                    ->where('cr_id', '<', $pengembalianIni->cr_id)
-                    ->orderBy('cr_id', 'desc')
-                    ->first();
+                if ($pengembalianSebelumnya) {
+                    $penyerahanCandidates = $penyerahanCandidates
+                        ->filter(fn ($row) => (int) $row->cr_id > (int) $pengembalianSebelumnya->cr_id);
+                }
 
-                $penyerahanPertama = CashArmada::where('customer_id', $value->person_id)
-                    ->where('cr_aksi', 0)
-                    ->where('status', 2)
-                    ->where('cash_id', 0)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('cr_id', '>', $pengembalianSebelumnya->cr_id);
-                    })
-                    ->where('cr_id', '<', $pengembalianIni->cr_id)
-                    ->orderBy('cr_id', 'asc')
-                    ->first();
+                $penyerahanPertama = $penyerahanCandidates->sortBy('cr_id')->first();
 
-                // ← GANTI if (!$penyerahanPertama) continue; DENGAN INI
                 if (!$penyerahanPertama && $pengembalianSebelumnya) {
-                    $penyerahanPertama = CashArmada::where('customer_id', $value->person_id)
-                        ->where('cr_aksi', 0)
-                        ->where('cash_id', 0)
-                        ->where('status', 2)
-                        ->where('cr_id', '<', $pengembalianSebelumnya->cr_id)
-                        ->orderBy('cr_id', 'desc')
+                    $penyerahanPertama = $rows
+                        ->filter(fn ($row) => (int) $row->cr_aksi === 0
+                            && (int) $row->cash_id === 0
+                            && (int) $row->status === 2
+                            && (int) $row->cr_id < (int) $pengembalianSebelumnya->cr_id)
+                        ->sortByDesc('cr_id')
                         ->first();
                 }
 
                 if (!$penyerahanPertama) {
                     if ($pengembalianSebelumnya) {
-                        // Tidak ada penyerahan baru → operasional dihitung dari setelah pengembalian sebelumnya
                         $batasOperasionalCrId = $pengembalianSebelumnya->cr_id;
                     } else {
-                        continue; // Tidak ada konteks sama sekali
+                        continue;
                     }
                 } else {
                     $batasOperasionalCrId = $pengembalianSebelumnya
@@ -93,44 +158,30 @@ class Cash extends Model
                         : $penyerahanPertama->cr_id;
                 }
 
-                // Penyerahan — hanya yang baru di siklus ini
-                $allPenyerahan = CashArmada::where('customer_id', $value->person_id)
-                    ->where('cr_aksi', 0)
-                    ->where('cash_id', 0)
-                    ->where('status', 2)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('cr_id', '>', $pengembalianSebelumnya->cr_id);
-                    })
-                    ->where('cr_id', '<', $pengembalianIni->cr_id)
-                    ->orderBy('cr_id', 'asc')
-                    ->get();
+                $allPenyerahan = $rows
+                    ->filter(fn ($row) => (int) $row->cr_aksi === 0
+                        && (int) $row->cash_id === 0
+                        && (int) $row->status === 2
+                        && (int) $row->cr_id < (int) $pengembalianIni->cr_id
+                        && (!$pengembalianSebelumnya || (int) $row->cr_id > (int) $pengembalianSebelumnya->cr_id))
+                    ->sortBy('cr_id')
+                    ->values();
 
-                // Kalau tidak ada penyerahan baru, tampilkan penyerahanPertama
                 if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
-                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
-                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
-                    if (!$pengembalianSebelumnya || 
+                    if (!$pengembalianSebelumnya ||
                         $penyerahanPertama->cr_id > $pengembalianSebelumnya->cr_id) {
                         $allPenyerahan = collect([$penyerahanPertama]);
                     }
-                    // Kalau tidak, biarkan kosong
                 }
 
-                // Semua operasional dari penyerahanPertama sampai pengembalianIni
-                $allOperasional = CashArmada::where('customer_id', $value->person_id)
-                    ->where('cr_aksi', 2)
-                    ->where('cash_id', 0)
-                    ->where('status', 2)
-                    ->where('cr_id', '>', $batasOperasionalCrId)
-                    ->where('cr_id', '<', $pengembalianIni->cr_id)
-                    ->orderBy('cr_id', 'asc')
-                    ->get();
-
-                foreach ($allOperasional as $val) {
-                    $val->detail_armada = CashArmadaDetail::where('cr_id', $val->cr_id)
-                        ->where('status', 1)
-                        ->get();
-                }
+                $allOperasional = $rows
+                    ->filter(fn ($row) => (int) $row->cr_aksi === 2
+                        && (int) $row->cash_id === 0
+                        && (int) $row->status === 2
+                        && (int) $row->cr_id > (int) $batasOperasionalCrId
+                        && (int) $row->cr_id < (int) $pengembalianIni->cr_id)
+                    ->sortBy('cr_id')
+                    ->values();
 
                 $value->armada_penyerahan  = $allPenyerahan;
                 $value->armada_operasional = $allOperasional;
@@ -138,47 +189,51 @@ class Cash extends Model
 
             // Sales
             else if (in_array($value->cash_type, [1, 2, 3]) && $value->cash_tujuan == 4){
-                $pengembalianIni = CashSales::where('cash_id', $value->cash_id)
-                    ->where('staff_id', $value->person_id)
-                    ->where('cs_type', 1)
-                    ->where('cs_aksi', 3)
+                $rows = $salesByStaff->get((int) $value->person_id, collect());
+
+                $pengembalianIni = $rows->first(
+                    fn ($row) => (int) $row->cash_id === (int) $value->cash_id
+                        && (int) $row->cs_type === 1
+                        && (int) $row->cs_aksi === 3
+                );
+
+                if (!$pengembalianIni) {
+                    continue;
+                }
+
+                $pengembalianSebelumnya = $rows
+                    ->filter(fn ($row) => (int) $row->cs_type === 1
+                        && (int) $row->cs_aksi === 3
+                        && (int) $row->cash_id !== 0
+                        && (int) $row->status === 2
+                        && (int) $row->cs_id < (int) $pengembalianIni->cs_id)
+                    ->sortByDesc('cs_id')
                     ->first();
 
-                if (!$pengembalianIni) continue;
+                $penyerahanCandidates = $rows->filter(fn ($row) => (int) $row->cs_type === 1
+                    && (int) $row->cs_aksi === 1
+                    && (int) $row->cash_id === 0
+                    && (int) $row->status === 2
+                    && (int) $row->cs_id < (int) $pengembalianIni->cs_id);
 
-                $pengembalianSebelumnya = CashSales::where('staff_id', $value->person_id)
-                    ->where('cs_type', 1)
-                    ->where('cs_aksi', 3)
-                    ->where('cash_id', '!=', 0)
-                    ->where('cs_id', '<', $pengembalianIni->cs_id)
-                    ->where('status', 2)
-                    ->orderBy('cs_id', 'desc')
-                    ->first();
+                if ($pengembalianSebelumnya) {
+                    $penyerahanCandidates = $penyerahanCandidates
+                        ->filter(fn ($row) => (int) $row->cs_id > (int) $pengembalianSebelumnya->cs_id);
+                }
 
-                $penyerahanPertama = CashSales::where('staff_id', $value->person_id)
-                    ->where('cs_type', 1)
-                    ->where('cs_aksi', 1)
-                    ->where('cash_id', 0)
-                    ->where('status', 2)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('cs_id', '>', $pengembalianSebelumnya->cs_id);
-                    })
-                    ->where('cs_id', '<', $pengembalianIni->cs_id)
-                    ->orderBy('cs_id', 'asc')
-                    ->first();
+                $penyerahanPertama = $penyerahanCandidates->sortBy('cs_id')->first();
 
                 if (!$penyerahanPertama && $pengembalianSebelumnya) {
-                    $penyerahanPertama = CashSales::where('staff_id', $value->person_id)
-                        ->where('cs_type', 1)
-                        ->where('cs_aksi', 1)
-                        ->where('cash_id', 0)
-                        ->where('status', 2)
-                        ->where('cs_id', '<', $pengembalianSebelumnya->cs_id)
-                        ->orderBy('cs_id', 'desc')
+                    $penyerahanPertama = $rows
+                        ->filter(fn ($row) => (int) $row->cs_type === 1
+                            && (int) $row->cs_aksi === 1
+                            && (int) $row->cash_id === 0
+                            && (int) $row->status === 2
+                            && (int) $row->cs_id < (int) $pengembalianSebelumnya->cs_id)
+                        ->sortByDesc('cs_id')
                         ->first();
                 }
 
-                // ← SAMA SEPERTI ARMADA
                 if (!$penyerahanPertama) {
                     if ($pengembalianSebelumnya) {
                         $batasOperasionalCsId = $pengembalianSebelumnya->cs_id;
@@ -191,44 +246,31 @@ class Cash extends Model
                         : $penyerahanPertama->cs_id;
                 }
 
-                // Penyerahan — hanya yang baru di siklus ini
-                $allPenyerahan = CashSales::where('staff_id', $value->person_id)
-                    ->where('cs_type', 1)
-                    ->where('cs_aksi', 1)
-                    ->where('status', 2)
-                    ->where('cash_id', 0)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('cs_id', '>', $pengembalianSebelumnya->cs_id);
-                    })
-                    ->where('cs_id', '<', $pengembalianIni->cs_id)
-                    ->orderBy('cs_id', 'asc')
-                    ->get();
+                $allPenyerahan = $rows
+                    ->filter(fn ($row) => (int) $row->cs_type === 1
+                        && (int) $row->cs_aksi === 1
+                        && (int) $row->status === 2
+                        && (int) $row->cash_id === 0
+                        && (int) $row->cs_id < (int) $pengembalianIni->cs_id
+                        && (!$pengembalianSebelumnya || (int) $row->cs_id > (int) $pengembalianSebelumnya->cs_id))
+                    ->sortBy('cs_id')
+                    ->values();
 
                 if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
-                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
-                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
-                    if (!$pengembalianSebelumnya || 
+                    if (!$pengembalianSebelumnya ||
                         $penyerahanPertama->cs_id > $pengembalianSebelumnya->cs_id) {
                         $allPenyerahan = collect([$penyerahanPertama]);
                     }
-                    // Kalau tidak, biarkan kosong
                 }
 
-                // ← PAKAI $batasOperasionalCsId, bukan $penyerahanPertama->cs_id
-                $allOperasional = CashSales::where('staff_id', $value->person_id)
-                    ->where('cs_type', 2)
-                    ->where('cash_id', 0)
-                    ->where('status', 2)
-                    ->where('cs_id', '>', $batasOperasionalCsId)
-                    ->where('cs_id', '<', $pengembalianIni->cs_id)
-                    ->orderBy('cs_id', 'asc')
-                    ->get();
-
-                foreach ($allOperasional as $val) {
-                    $val->detail_armada = CashSalesDetail::where('cs_id', $val->cs_id)
-                        ->where('status', 1)
-                        ->get();
-                }
+                $allOperasional = $rows
+                    ->filter(fn ($row) => (int) $row->cs_type === 2
+                        && (int) $row->cash_id === 0
+                        && (int) $row->status === 2
+                        && (int) $row->cs_id > (int) $batasOperasionalCsId
+                        && (int) $row->cs_id < (int) $pengembalianIni->cs_id)
+                    ->sortBy('cs_id')
+                    ->values();
 
                 $value->sales_penyerahan  = $allPenyerahan;
                 $value->sales_operasional = $allOperasional;
@@ -236,39 +278,41 @@ class Cash extends Model
 
             // Admin
             else if (in_array($value->cash_type, [1, 2]) && $value->cash_tujuan == 1) {
-                $pengembalianIni = CashAdmin::where('cash_id', $value->cash_id)
-                    ->where('ca_aksi', 2)
+                $pengembalianIni = $pengembalianAdminByCashId->get((int) $value->cash_id);
+
+                if (!$pengembalianIni) {
+                    continue;
+                }
+
+                $rows = $adminByStaff->get((int) $pengembalianIni->staff_id, collect());
+
+                $pengembalianSebelumnya = $rows
+                    ->filter(fn ($row) => (int) $row->ca_aksi === 2
+                        && (int) $row->cash_id !== 0
+                        && (int) $row->ca_id < (int) $pengembalianIni->ca_id)
+                    ->sortByDesc('ca_id')
                     ->first();
 
-                if (!$pengembalianIni) continue;
+                $penyerahanCandidates = $rows->filter(fn ($row) => (int) $row->ca_aksi === 1
+                    && (int) $row->ca_type === 1
+                    && (int) $row->ca_id < (int) $pengembalianIni->ca_id);
 
-                $pengembalianSebelumnya = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
-                    ->where('ca_aksi', 2)
-                    ->where('cash_id', '!=', 0)
-                    ->where('ca_id', '<', $pengembalianIni->ca_id)
-                    ->orderBy('ca_id', 'desc')
-                    ->first();
+                if ($pengembalianSebelumnya) {
+                    $penyerahanCandidates = $penyerahanCandidates
+                        ->filter(fn ($row) => (int) $row->ca_id > (int) $pengembalianSebelumnya->ca_id);
+                }
 
-                $penyerahanPertama = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
-                    ->where('ca_aksi', 1)
-                    ->where('ca_type', 1)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('ca_id', '>', $pengembalianSebelumnya->ca_id);
-                    })
-                    ->where('ca_id', '<', $pengembalianIni->ca_id)
-                    ->orderBy('ca_id', 'asc')
-                    ->first();
+                $penyerahanPertama = $penyerahanCandidates->sortBy('ca_id')->first();
 
                 if (!$penyerahanPertama && $pengembalianSebelumnya) {
-                    $penyerahanPertama = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
-                        ->where('ca_aksi', 1)
-                        ->where('ca_type', 1)
-                        ->where('ca_id', '<', $pengembalianSebelumnya->ca_id)
-                        ->orderBy('ca_id', 'desc')
+                    $penyerahanPertama = $rows
+                        ->filter(fn ($row) => (int) $row->ca_aksi === 1
+                            && (int) $row->ca_type === 1
+                            && (int) $row->ca_id < (int) $pengembalianSebelumnya->ca_id)
+                        ->sortByDesc('ca_id')
                         ->first();
                 }
 
-                // ← TAMBAH LOGIKA batasOperasionalCaId
                 if (!$penyerahanPertama) {
                     if ($pengembalianSebelumnya) {
                         $batasOperasionalCaId = $pengembalianSebelumnya->ca_id;
@@ -281,48 +325,104 @@ class Cash extends Model
                         : $penyerahanPertama->ca_id;
                 }
 
-                $allPenyerahan = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
-                    ->where('ca_aksi', 1)
-                    ->where('ca_type', 1)
-                    ->when($pengembalianSebelumnya, function($q) use ($pengembalianSebelumnya) {
-                        $q->where('ca_id', '>', $pengembalianSebelumnya->ca_id);
-                    })
-                    ->where('ca_id', '<', $pengembalianIni->ca_id)
-                    ->orderBy('ca_id', 'asc')
-                    ->get();
+                $allPenyerahan = $rows
+                    ->filter(fn ($row) => (int) $row->ca_aksi === 1
+                        && (int) $row->ca_type === 1
+                        && (int) $row->ca_id < (int) $pengembalianIni->ca_id
+                        && (!$pengembalianSebelumnya || (int) $row->ca_id > (int) $pengembalianSebelumnya->ca_id))
+                    ->sortBy('ca_id')
+                    ->values();
 
                 if ($allPenyerahan->isEmpty() && $penyerahanPertama) {
-                    // Hanya tampilkan penyerahanPertama kalau cr_id-nya
-                    // LEBIH BESAR dari pengembalianSebelumnya (berarti memang baru)
-                    if (!$pengembalianSebelumnya || 
+                    if (!$pengembalianSebelumnya ||
                         $penyerahanPertama->ca_id > $pengembalianSebelumnya->ca_id) {
                         $allPenyerahan = collect([$penyerahanPertama]);
                     }
-                    // Kalau tidak, biarkan kosong
                 }
 
-                // ← PAKAI $batasOperasionalCaId
-                $allOperasional = CashAdmin::where('staff_id', $pengembalianIni->staff_id)
-                    ->where('ca_type', 2)
-                    ->where('ca_id', '>', $batasOperasionalCaId)
-                    ->where('ca_id', '<', $pengembalianIni->ca_id)
-                    ->orderBy('ca_id', 'asc')
-                    ->get();
-
-                foreach ($allOperasional as $val) {
-                    $val->detail_admin = CashAdminDetail::where('ca_id', $val->ca_id)
-                        ->where('status', 1)
-                        ->get();
-                }
+                $allOperasional = $rows
+                    ->filter(fn ($row) => (int) $row->ca_type === 2
+                        && (int) $row->ca_id > (int) $batasOperasionalCaId
+                        && (int) $row->ca_id < (int) $pengembalianIni->ca_id)
+                    ->sortBy('ca_id')
+                    ->values();
 
                 $value->admin_penyerahan  = $allPenyerahan;
                 $value->admin_operasional = $allOperasional;
             }
         }
 
+        $crIds = [];
+        $csIds = [];
+        $caIds = [];
         foreach ($result as $value) {
-            $value->created_by_name = $value->created_by ? (Staff::find($value->created_by)->staff_name ?? '-') : '-';
-            $value->acc_by_name = $value->acc_by ? (Staff::find($value->acc_by)->staff_name ?? '-') : '-';
+            if (!empty($value->armada_operasional)) {
+                foreach ($value->armada_operasional as $row) {
+                    $crIds[] = (int) $row->cr_id;
+                }
+            }
+            if (!empty($value->sales_operasional)) {
+                foreach ($value->sales_operasional as $row) {
+                    $csIds[] = (int) $row->cs_id;
+                }
+            }
+            if (!empty($value->admin_operasional)) {
+                foreach ($value->admin_operasional as $row) {
+                    $caIds[] = (int) $row->ca_id;
+                }
+            }
+        }
+
+        $armadaDetailsByCrId = $crIds === []
+            ? collect()
+            : CashArmadaDetail::where('status', 1)
+                ->whereIn('cr_id', array_values(array_unique($crIds)))
+                ->get()
+                ->groupBy('cr_id');
+
+        $salesDetailsByCsId = $csIds === []
+            ? collect()
+            : CashSalesDetail::where('status', 1)
+                ->whereIn('cs_id', array_values(array_unique($csIds)))
+                ->get()
+                ->groupBy('cs_id');
+
+        $adminDetailsByCaId = $caIds === []
+            ? collect()
+            : CashAdminDetail::where('status', 1)
+                ->whereIn('ca_id', array_values(array_unique($caIds)))
+                ->get()
+                ->groupBy('ca_id');
+
+        foreach ($result as $value) {
+            if (!empty($value->armada_operasional)) {
+                foreach ($value->armada_operasional as $row) {
+                    $row->detail_armada = $armadaDetailsByCrId->get($row->cr_id, collect())->values();
+                }
+            }
+            if (!empty($value->sales_operasional)) {
+                foreach ($value->sales_operasional as $row) {
+                    $row->detail_armada = $salesDetailsByCsId->get($row->cs_id, collect())->values();
+                }
+            }
+            if (!empty($value->admin_operasional)) {
+                foreach ($value->admin_operasional as $row) {
+                    $row->detail_admin = $adminDetailsByCaId->get($row->ca_id, collect())->values();
+                }
+            }
+        }
+
+        $staffNames = BatchLookup::staffNames(
+            $result->flatMap(fn ($row) => [$row->created_by, $row->acc_by])
+        );
+
+        foreach ($result as $value) {
+            $value->created_by_name = $value->created_by
+                ? ($staffNames->get((int) $value->created_by) ?? '-')
+                : '-';
+            $value->acc_by_name = $value->acc_by
+                ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
         }
         
         return $result;

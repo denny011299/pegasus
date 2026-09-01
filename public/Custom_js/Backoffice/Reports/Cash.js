@@ -3,6 +3,62 @@
     let debit = 0, credit1 = 0, credit2 = 0;
     var dates = null;
     var list_photo;
+    var cashLoadXhr = null;
+    var cashTableReady = false;
+
+    function setCashTableLoading(isLoading) {
+        var $wrap = $('#tableCash-wrap');
+        if (!$wrap.length) return;
+        $wrap.toggleClass('is-loading', !!isLoading);
+    }
+
+    function showCashSkeleton() {
+        var $wrap = $('#tableCash-wrap');
+        if (!cashTableReady || !table) {
+            $wrap.removeClass('dt-ready is-loading').addClass('dt-pending');
+        } else {
+            $wrap.removeClass('dt-pending').addClass('dt-ready');
+            setCashTableLoading(true);
+        }
+    }
+
+    function hideCashSkeleton() {
+        cashTableReady = true;
+        $('#tableCash-wrap').removeClass('dt-pending is-loading').addClass('dt-ready');
+        setCashTableLoading(false);
+    }
+
+    function abortCashLoad() {
+        if (cashLoadXhr && cashLoadXhr.readyState !== 4) {
+            cashLoadXhr.abort();
+        }
+        cashLoadXhr = null;
+    }
+
+    function cashHasChildRow(rowData) {
+        return !!(
+            rowData.armada_operasional?.length ||
+            rowData.armada_penyerahan?.length ||
+            rowData.sales_operasional?.length ||
+            rowData.sales_penyerahan?.length ||
+            rowData.admin_operasional?.length ||
+            rowData.admin_penyerahan?.length
+        );
+    }
+
+    function cashControlColumn() {
+        return {
+            className: 'dt-control text-center',
+            orderable: false,
+            data: null,
+            defaultContent: '',
+            render: function (_data, _type, row) {
+                return cashHasChildRow(row) ? '<i class="fe fe-plus-circle text-primary"></i>' : '';
+            },
+            width: '1%',
+        };
+    }
+
     $(document).ready(function(){
         inisialisasi();
         refreshCash();
@@ -27,39 +83,27 @@
     
     function inisialisasi() {
         table = $('#tableCash').DataTable({
+            processing: true,
+            deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
             ordering: false,
             autoWidth: false,
-            // scrollX was removed (2026-08-05): DataTables 1.10's scroll feature clones/resizes
-            // the header and footer into separate synced-width tables, and it does not support
-            // colspan'd cells in that clone — this tfoot uses colspan="3"/"5" on both rows
-            // (Cash.blade.php), so with scrollX on, the footer's labels ("Total :", "Sisa Kas :",
-            // "Total Setoran :") and the values written by updateCashFooterTotals() below rendered
-            // misaligned/on the wrong row. The table is still wrapped in a Bootstrap
-            // `.table-responsive` div, so horizontal scrolling on narrow screens still works via
-            // plain CSS overflow — just not through DataTables' own scrollX cloning. Sibling table
-            // Cash_Operational.js uses the same tfoot-update JS pattern without scrollX and renders
-            // correctly; match that instead of re-enabling this.
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Kas",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing: '<div class="d-flex align-items-center gap-2"><span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span><span>Memuat data...</span></div>',
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
                 },
             },
             columns: [
-                {
-                    className: 'dt-control text-center',
-                    orderable: false,
-                    data: null,
-                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "1%"
-                },
+                cashControlColumn(),
                 { data: "date", width: "9%"},
                 { data: "status_text", className: "text-center", width: "14%"},
                 { data: "cash_description", width: "18%"},
@@ -71,10 +115,13 @@
                 { data: "updated_at_text", defaultContent: "-" },
                 { data: "action", className: "text-center align-middle", width: "15%"},
             ],
-            initComplete: (settings, json) => {
+            initComplete: function () {
                 $('.dataTables_filter').appendTo('#tableSearch');
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            },
+            drawCallback: function () {
+                if (typeof feather !== 'undefined') feather.replace();
             },
         });
     }
@@ -89,7 +136,9 @@
     }
 
     function refreshCash() {
-        $.ajax({
+        abortCashLoad();
+        showCashSkeleton();
+        cashLoadXhr = $.ajax({
             url: "/getCash",
             method: "get",
             data: {dates: dates},
@@ -97,9 +146,7 @@
                 if (!Array.isArray(e)) {
                     e = e.original || [];
                 }
-                console.log(e);
-                table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
+                table.clear().draw();
                 var debits = 0;
                 var credits1 = 0;
                 var credits2 = 0;
@@ -181,48 +228,48 @@
                 }
                 table.rows.add(e).draw(false);
                 updateCashFooterTotals(debits, credits1, credits2, sisa, setor);
-                feather.replace(); // Biar icon feather muncul lagi
-
-                // Expand child row
-                setTimeout(function () {
-                    $('#tableCash tbody td.dt-control').each(function () {
-                        $(this).trigger('click');
-                    });
-                }, 100);
             },
             error: function (err) {
+                if (err && err.statusText === 'abort') return;
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kas:", err);
-            }
+            },
+            complete: function (_xhr, status) {
+                if (status === 'abort') return;
+                hideCashSkeleton();
+            },
         });
     }
 
     $('#tableCash tbody').on('click', 'td.dt-control', function () {
         let tr = $(this).closest('tr');
         let row = table.row(tr);
+        let $icon = $(this).find('i.fe');
 
         if (row.child.isShown()) {
             row.child.hide();
             tr.removeClass('shown');
-        } else {
-            let rowData = row.data();
-            if (rowData.armada_operasional || rowData.armada_penyerahan) {
-                row.child(formatArmada(rowData)).show();
-                tr.addClass('shown');
-            }
-            else if (rowData.sales_operasional || rowData.sales_penyerahan) {
-                row.child(formatSales(rowData)).show();
-                tr.addClass('shown');
-            }
-            else if (rowData.admin_operasional || rowData.admin_penyerahan) {
-                row.child(formatAdmin(rowData)).show();
-                tr.addClass('shown');
-            }
+            $icon.removeClass('fe-minus-circle').addClass('fe-plus-circle');
+            return;
         }
+
+        let rowData = row.data();
+        if (!cashHasChildRow(rowData)) return;
+
+        if (rowData.armada_operasional || rowData.armada_penyerahan) {
+            row.child(formatArmada(rowData)).show();
+        }
+        else if (rowData.sales_operasional || rowData.sales_penyerahan) {
+            row.child(formatSales(rowData)).show();
+        }
+        else if (rowData.admin_operasional || rowData.admin_penyerahan) {
+            row.child(formatAdmin(rowData)).show();
+        }
+        tr.addClass('shown');
+        $icon.removeClass('fe-plus-circle').addClass('fe-minus-circle');
     });
 
     function formatArmada(rowData) {
-        console.log(rowData)
         let operasional = rowData.armada_operasional;
         let penyerahan = rowData.armada_penyerahan;
 
@@ -237,7 +284,6 @@
         let html = `<div class="px-5">`;
 
         if (penyerahan && penyerahan.length > 0) {
-            console.log(penyerahan)
             penyerahan.forEach((p) => {
                 total += parseInt(p.cr_nominal);
                 html += `
@@ -326,7 +372,6 @@
         return html;
     }
     function formatSales(rowData) {
-        console.log(rowData)
         let operasional = rowData.sales_operasional;
         let penyerahan = rowData.sales_penyerahan;
 
@@ -411,7 +456,6 @@
         return html;
     }
     function formatAdmin(rowData) {
-        console.log(rowData)
         let operasional = rowData.admin_operasional;
         let penyerahan = rowData.admin_penyerahan;
 
