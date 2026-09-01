@@ -1,3 +1,47 @@
+<style>
+  #addProduction.modal {
+    overflow: hidden !important;
+  }
+  html:has(#addProduction.show),
+  body:has(#addProduction.show) {
+    overflow: hidden !important;
+  }
+  #addProduction .modal-dialog {
+    height: calc(100dvh - 2rem) !important;
+    max-height: calc(100dvh - 2rem) !important;
+    min-height: 0 !important;
+    margin: 1rem auto !important;
+    display: flex !important;
+    align-items: stretch !important;
+  }
+  #addProduction .modal-content {
+    height: 100% !important;
+    max-height: 100% !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #addProduction form {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #addProduction .modal-header,
+  #addProduction .modal-footer {
+    flex: 0 0 auto !important;
+  }
+  #addProduction .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+</style>
 <div class="modal custom-modal fade pg-modal--form" id="addProduction" aria-modal="true" role="dialog" tabindex="-1"
   data-bs-backdrop="static">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
