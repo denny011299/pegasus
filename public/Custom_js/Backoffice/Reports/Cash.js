@@ -59,6 +59,17 @@
         };
     }
 
+    function expandCashChildRows() {
+        setTimeout(function () {
+            $('#tableCash tbody td.dt-control').each(function () {
+                var $cell = $(this);
+                if (!$cell.find('i.fe').length) return;
+                if ($cell.closest('tr').hasClass('shown')) return;
+                $cell.trigger('click');
+            });
+        }, 0);
+    }
+
     $(document).ready(function(){
         inisialisasi();
         refreshCash();
@@ -228,6 +239,7 @@
                 }
                 table.rows.add(e).draw(false);
                 updateCashFooterTotals(debits, credits1, credits2, sisa, setor);
+                expandCashChildRows();
             },
             error: function (err) {
                 if (err && err.statusText === 'abort') return;

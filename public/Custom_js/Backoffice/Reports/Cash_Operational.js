@@ -57,6 +57,17 @@
         };
     }
 
+    function expandCashOperationalChildRows() {
+        setTimeout(function () {
+            $('#tableCash tbody td.dt-control').each(function () {
+                var $cell = $(this);
+                if (!$cell.find('i.fe').length) return;
+                if ($cell.closest('tr').hasClass('shown')) return;
+                $cell.trigger('click');
+            });
+        }, 0);
+    }
+
     function cashAjaxGet(url, data, onSuccess) {
         abortCashLoad();
         showCashSkeleton();
@@ -67,6 +78,7 @@
             success: function (response) {
                 onSuccess(response);
                 if (typeof feather !== 'undefined') feather.replace();
+                expandCashOperationalChildRows();
                 openCashFromDashboardLink();
             },
             error: function (err) {
