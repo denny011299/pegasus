@@ -40,6 +40,13 @@
     overflow-y: auto !important;
     overflow-x: hidden !important;
   }
+  /* Nama Produk / Gudang Tujuan autocompletes are appended to <body> (not
+     .modal-content) so their dropdown can't get clipped by the modal's own
+     overflow:hidden. Bootstrap's .modal is z-index 1055, above select2's
+     default 1051 - bump it so the dropdown isn't hidden behind the modal. */
+  .select2-dropdown {
+    z-index: 1065 !important;
+  }
 </style>
 <div class="modal custom-modal fade pg-modal--form" id="addProduction" aria-modal="true" role="dialog" tabindex="-1"
   data-bs-backdrop="static">
