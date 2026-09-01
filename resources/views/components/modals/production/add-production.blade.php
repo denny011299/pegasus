@@ -7,15 +7,14 @@
     overflow: hidden !important;
   }
   #addProduction .modal-dialog {
-    height: calc(100dvh - 2rem) !important;
+    height: auto !important;
     max-height: calc(100dvh - 2rem) !important;
-    min-height: 0 !important;
     margin: 1rem auto !important;
     display: flex !important;
-    align-items: stretch !important;
+    align-items: center !important;
   }
   #addProduction .modal-content {
-    height: 100% !important;
+    height: auto !important;
     max-height: 100% !important;
     min-height: 0 !important;
     display: flex !important;
