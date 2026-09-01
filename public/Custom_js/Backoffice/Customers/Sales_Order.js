@@ -2147,6 +2147,12 @@ function showSoErrorModal(header, message) {
             popup: "rounded-4",
         },
         buttonsStyling: false,
+    }).then(function () {
+        // Tutup #modalKonfirmasi juga begitu popup error ditutup (tombol Tutup, klik luar,
+        // atau Esc) — kalau tidak, user harus klik dua kali: sekali untuk popup error, sekali
+        // lagi untuk modal konfirmasi hijau yang masih terbuka di belakangnya. Aman dipanggil
+        // walau modal itu tidak sedang terbuka (mis. dipanggil dari alur tambah/update).
+        $("#modalKonfirmasi").modal("hide");
     });
 }
 
@@ -2220,6 +2226,12 @@ function showStockRecommendModal(res) {
             return val;
         },
     }).then(function (result) {
+        // Sama seperti showSoErrorModal() — tutup #modalKonfirmasi begitu popup ini ditutup,
+        // apa pun jalan keluarnya (pilih gudang, Batal, klik luar, Esc), supaya user tidak
+        // perlu klik dua kali. Aman dipanggil walau modal itu tidak sedang terbuka (mis.
+        // dipanggil dari alur tambah/update, bukan ACC).
+        $("#modalKonfirmasi").modal("hide");
+
         if (!result.isConfirmed || !result.value) return;
         var picked = opts.find(function (a) {
             return String(a.warehouse_id) === String(result.value);
