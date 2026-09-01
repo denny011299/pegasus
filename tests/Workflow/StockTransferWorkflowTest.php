@@ -495,4 +495,72 @@ class StockTransferWorkflowTest extends TestCase
         $dosStock->refresh();
         $this->assertSame(10.0, (float) $dosStock->ps_stock, 'the leftover DOS row must be untouched');
     }
+
+    /**
+     * Request stok eceran (retail_request) milik gudang eceran — gudang utama tidak boleh edit.
+     */
+    public function test_main_warehouse_cannot_edit_retail_stock_request(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->createProductFixture(defaultUnitId: self::PIECE_UNIT_ID);
+        $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 100);
+
+        $header = $this->createPendingTransfer(
+            $fx['product'],
+            $fx['variant'],
+            self::MAIN_WAREHOUSE_ID,
+            self::RETAIL_WAREHOUSE_ID,
+            self::PIECE_UNIT_ID,
+            5,
+            sourceType: 'retail_request'
+        );
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertStatus(200)
+            ->assertJson(['can_edit' => false]);
+
+        $this->post('/updateStockTransfer', [
+            'id' => $header->st_id,
+            'transfer_date' => now()->toDateString(),
+            'from_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'to_warehouse_id' => self::RETAIL_WAREHOUSE_ID,
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::PIECE_UNIT_ID,
+                'qty' => 10,
+            ]],
+        ])
+            ->assertStatus(200)
+            ->assertJson(['status' => -1]);
+
+        $this->withActiveWarehouse(self::RETAIL_WAREHOUSE_ID);
+
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertStatus(200)
+            ->assertJson(['can_edit' => true]);
+
+        $this->post('/updateStockTransfer', [
+            'id' => $header->st_id,
+            'transfer_date' => now()->toDateString(),
+            'from_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'to_warehouse_id' => self::RETAIL_WAREHOUSE_ID,
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::PIECE_UNIT_ID,
+                'qty' => 8,
+            ]],
+        ])
+            ->assertStatus(200)
+            ->assertJson(['status' => 1]);
+
+        $detail = StockTransferDetail::query()
+            ->where('st_id', $header->st_id)
+            ->where('status', 1)
+            ->first();
+        $this->assertNotNull($detail);
+        $this->assertEquals(8, (float) $detail->qty);
+    }
 }

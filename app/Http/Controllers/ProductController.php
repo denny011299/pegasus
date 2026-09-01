@@ -212,8 +212,8 @@ class ProductController extends Controller
                             ->where('units.status', 1)
                             ->where('units.unit_name', 'like', $like)
                             ->whereRaw(
-                                'JSON_CONTAINS(products.product_unit, JSON_QUOTE(CAST(units.unit_id AS CHAR)), "$")
-                                 OR JSON_CONTAINS(products.product_unit, CAST(units.unit_id AS JSON), "$")'
+                                // product_unit = JSON array id satuan, mis. ["7","9"] — LIKE saja (MariaDB-safe)
+                                "products.product_unit LIKE CONCAT('%\"', CAST(units.unit_id AS CHAR), '\"%')"
                             );
                     });
             });

@@ -1632,6 +1632,8 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     camRotation = 0;
     rotationAngle = 0;
     $("#video").removeClass("rot90 rot180 rot270");
+    $("#camera").css("min-height", "240px");
+    $("#modalPhoto .modal-body").css("height", "");
     $("#preview-box").hide();
     $("#camera").show();
     $("#preview-actions").attr("style", "display: none !important;");
@@ -1692,6 +1694,9 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     currentStream = stream;
     video.srcObject = stream;
     video.muted = true;
+    video.onloadedmetadata = function() {
+      adjustCameraLayout();
+    };
     return video.play().catch(function(playErr) {
       console.warn("Preview kamera menunggu modal siap:", playErr);
     });
@@ -1812,7 +1817,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         camRotation === 180 ? "rot180" :
         camRotation === 270 ? "rot270" : ""
       );
-    adjustModalHeight();
+    adjustCameraLayout();
   });
 
   // =========================
@@ -1915,14 +1920,32 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   });
 
-  function adjustModalHeight() {
-    let video = document.getElementById("video");
-    if (!video) return;
+  function adjustCameraLayout() {
+    var video = document.getElementById("video");
+    var camera = document.getElementById("camera");
+    if (!video || !camera) return;
 
-    let modalDialog = $("#modalPhoto .modal-body");
+    // Jangan paksa tinggi modal-body — ini yang bikin preview hitam setelah Putar
+    $("#modalPhoto .modal-body").css("height", "");
 
-    // Tinggi modal mengikuti tinggi video
-    modalDialog.css("height", (video.clientHeight / 4) + "px");
+    var vw = video.videoWidth || 0;
+    var vh = video.videoHeight || 0;
+    var boxW = camera.clientWidth || 300;
+
+    if (!vw || !vh) {
+      camera.style.minHeight = "240px";
+      return;
+    }
+
+    var displayH;
+    if (camRotation === 90 || camRotation === 270) {
+      displayH = boxW * (vw / vh);
+    } else {
+      displayH = boxW * (vh / vw);
+    }
+
+    displayH = Math.min(Math.max(240, displayH), window.innerHeight * 0.6);
+    camera.style.minHeight = Math.round(displayH) + "px";
   }
 
   function showDataTableLoading(tableId) {

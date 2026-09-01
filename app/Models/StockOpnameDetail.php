@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class StockOpnameDetail extends Model
 {
@@ -33,9 +34,15 @@ class StockOpnameDetail extends Model
             return $result;
         }
 
+        $warehouseId = null;
+        if ($data['sto_id']) {
+            $warehouseId = (int) StockOpname::where('sto_id', $data['sto_id'])->value('warehouse_id');
+        }
+
         // Enrich sekali via bulk (hindari N+1 getProductVariant per baris).
         $variantMap = (new ProductVariant())->getProductVariantBulk(
-            $result->pluck('product_variant_id')->unique()->filter()->values()->all()
+            $result->pluck('product_variant_id')->unique()->filter()->values()->all(),
+            $warehouseId > 0 ? $warehouseId : null
         );
 
         foreach ($result as $key => $value) {
@@ -78,30 +85,144 @@ class StockOpnameDetail extends Model
             return collect();
         }
 
-        $variantIds = $details->pluck('product_variant_id')->unique()->filter()->values()->all();
-        $variantMap = (new ProductVariant())->getProductVariantBulk($variantIds);
+        $stoWarehouses = StockOpname::whereIn('sto_id', $stoIds)
+            ->pluck('warehouse_id', 'sto_id')
+            ->toArray();
 
-        $mapped = $details->map(function ($value) use ($variantMap) {
-            $pv = $variantMap->get($value->product_variant_id);
-            if (! $pv) {
-                return null;
+        $mapped = collect();
+        foreach ($details->groupBy('sto_id') as $stoId => $stoDetails) {
+            $warehouseId = (int) ($stoWarehouses[$stoId] ?? 0);
+            $variantIds = $stoDetails->pluck('product_variant_id')->unique()->filter()->values()->all();
+            $variantMap = (new ProductVariant())->getProductVariantBulk(
+                $variantIds,
+                $warehouseId > 0 ? $warehouseId : null
+            );
+
+            foreach ($stoDetails as $value) {
+                $pv = $variantMap->get($value->product_variant_id);
+                if (! $pv) {
+                    continue;
+                }
+
+                $temp = clone $pv;
+                $temp->stod_system = $value->stod_system;
+                $temp->stod_real = $value->stod_real;
+                $temp->stod_selisih = $value->stod_selisih;
+                $temp->stod_notes = $value->stod_notes;
+                $temp->stod_touched = $value->stod_touched;
+                $temp->stod_id = $value->stod_id;
+                $temp->sto_id = $value->sto_id;
+
+                $mapped->push($temp);
             }
-
-            $temp = clone $pv;
-            $temp->stod_system = $value->stod_system;
-            $temp->stod_real = $value->stod_real;
-            $temp->stod_selisih = $value->stod_selisih;
-            $temp->stod_notes = $value->stod_notes;
-            $temp->stod_touched = $value->stod_touched;
-            $temp->stod_id = $value->stod_id;
-            $temp->sto_id = $value->sto_id;
-
-            return $temp;
-        })->filter();
+        }
 
         return $mapped->groupBy('sto_id')->map(function ($group) {
             return $group->sortBy('stod_id')->values();
         });
+    }
+
+    /**
+     * Beberapa dokumen lama/restore DB kehilangan baris stock_opname_details padahal
+     * header + log_stocks approval masih ada. Rekonstruksi dari log agar halaman detail/PDF
+     * tidak kosong (hanya untuk dokumen yang sudah disetujui).
+     */
+    public static function rebuildMissingFromLogs(int $stoId): bool
+    {
+        if ($stoId <= 0) {
+            return false;
+        }
+
+        if (self::where('sto_id', $stoId)->where('status', 1)->exists()) {
+            return false;
+        }
+
+        $sto = StockOpname::find($stoId);
+        if (! $sto || (int) $sto->status !== 2 || empty($sto->sto_code)) {
+            return false;
+        }
+
+        $logs = LogStock::where('log_kode', $sto->sto_code)
+            ->where('log_type', 1)
+            ->where('status', 1)
+            ->orderBy('log_id')
+            ->get();
+
+        if ($logs->isEmpty()) {
+            return false;
+        }
+
+        $warehouseId = (int) ($sto->warehouse_id ?: $logs->first()->warehouse_id ?: 0);
+        $unitIds = $logs->pluck('unit_id')->unique()->filter()->map(fn ($id) => (int) $id)->all();
+        $unitNames = $unitIds !== []
+            ? Unit::whereIn('unit_id', $unitIds)->pluck('unit_short_name', 'unit_id')
+            : collect();
+
+        $buildQtyString = function (array $qtyByUnitId) use ($unitNames): string {
+            $parts = [];
+            foreach ($qtyByUnitId as $unitId => $qty) {
+                $name = $unitNames[$unitId] ?? ('unit#' . $unitId);
+                $parts[] = (int) $qty . ' ' . $name;
+            }
+
+            return implode(', ', $parts);
+        };
+
+        DB::beginTransaction();
+        try {
+            foreach ($logs->groupBy('log_item_id') as $variantId => $variantLogs) {
+                $variantId = (int) $variantId;
+                $pv = ProductVariant::find($variantId);
+                if (! $pv) {
+                    continue;
+                }
+
+                $deltaByUnit = [];
+                foreach ($variantLogs as $log) {
+                    $uid = (int) $log->unit_id;
+                    $sign = (int) $log->log_category === 1 ? 1 : -1;
+                    $deltaByUnit[$uid] = ($deltaByUnit[$uid] ?? 0) + ($sign * (int) $log->log_jumlah);
+                }
+
+                $systemByUnit = [];
+                $realByUnit = [];
+                foreach ($deltaByUnit as $unitId => $delta) {
+                    $currentQuery = ProductStock::withoutGlobalScope('active_warehouse')
+                        ->where('status', 1)
+                        ->where('product_variant_id', $variantId)
+                        ->where('unit_id', $unitId);
+                    if ($warehouseId > 0) {
+                        $currentQuery->where('warehouse_id', $warehouseId);
+                    }
+                    $current = (int) ($currentQuery->value('ps_stock') ?? 0);
+                    $realByUnit[$unitId] = $current;
+                    $systemByUnit[$unitId] = $current - $delta;
+                }
+
+                $selisihByUnit = [];
+                foreach ($systemByUnit as $unitId => $systemQty) {
+                    $selisihByUnit[$unitId] = ($realByUnit[$unitId] ?? 0) - $systemQty;
+                }
+
+                self::insertDetail([
+                    'sto_id' => $stoId,
+                    'product_id' => $pv->product_id,
+                    'product_variant_id' => $variantId,
+                    'stod_system' => $buildQtyString($systemByUnit),
+                    'stod_real' => $buildQtyString($realByUnit),
+                    'stod_selisih' => $buildQtyString($selisihByUnit),
+                    'stod_notes' => null,
+                    'stod_touched' => 1,
+                ]);
+            }
+
+            DB::commit();
+
+            return true;
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     /**

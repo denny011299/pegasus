@@ -68,6 +68,37 @@ class ProductStock extends Model
         return (int) (Warehouse::query()->where('status', 1)->orderBy('id')->value('id') ?? 0);
     }
 
+    /**
+     * @return bool|null true = gudang utama, false = eceran, null = tidak ditemukan
+     */
+    public static function warehouseIsMain(int $warehouseId): ?bool
+    {
+        static $cache = [];
+        if ($warehouseId <= 0) {
+            return null;
+        }
+        if (array_key_exists($warehouseId, $cache)) {
+            return $cache[$warehouseId];
+        }
+
+        $row = DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->where('w.id', $warehouseId)
+            ->where('w.status', 1)
+            ->select('wt.is_main_warehouse')
+            ->first();
+
+        if (! $row) {
+            $cache[$warehouseId] = null;
+
+            return null;
+        }
+
+        $cache[$warehouseId] = (int) $row->is_main_warehouse === 1;
+
+        return $cache[$warehouseId];
+    }
+
     function getProductStock($data = [])
     {
         $data = array_merge([
