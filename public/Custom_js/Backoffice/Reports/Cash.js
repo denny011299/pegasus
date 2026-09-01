@@ -59,6 +59,12 @@
         };
     }
 
+    function beginCashTableLoad() {
+        var $wrap = $('#tableCash-wrap');
+        $wrap.removeClass('dt-pending').addClass('dt-ready');
+        setCashTableLoading(true);
+    }
+
     function expandCashChildRows() {
         setTimeout(function () {
             $('#tableCash tbody td.dt-control').each(function () {
@@ -70,9 +76,62 @@
         }, 0);
     }
 
+    function getCashExtraParams() {
+        return { dates: dates };
+    }
+
+    function applyCashBesarMeta(json) {
+        var meta = json && json.meta ? json.meta : {};
+        if (meta.debits !== undefined) {
+            updateCashFooterTotals(
+                meta.debits,
+                meta.credits1,
+                meta.credits2,
+                meta.sisa,
+                meta.setor
+            );
+        }
+    }
+
+    function cashBesarAjax(dtData, callback) {
+        abortCashLoad();
+        cashLoadXhr = $.ajax({
+            url: '/getCash',
+            data: $.extend({}, dtData, getCashExtraParams()),
+            method: 'get',
+            beforeSend: function () {
+                beginCashTableLoad();
+            },
+            success: function (json) {
+                applyCashBesarMeta(json);
+                callback(json);
+            },
+            error: function (err) {
+                if (err && err.statusText === 'abort') return;
+                if (handlePermissionError(err)) return;
+                console.error('Gagal load kas:', err);
+                callback({
+                    draw: dtData.draw,
+                    recordsTotal: 0,
+                    recordsFiltered: 0,
+                    data: [],
+                });
+            },
+            complete: function (_xhr, status) {
+                if (status === 'abort') return;
+                hideCashSkeleton();
+            },
+        });
+    }
+
+    function refreshCash(resetPaging) {
+        if (!table) return;
+        table.ajax.reload(null, resetPaging !== false);
+    }
+
     $(document).ready(function(){
+        showCashSkeleton();
         inisialisasi();
-        refreshCash();
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -93,14 +152,24 @@
     });
     
     function inisialisasi() {
+        if ($.fn.DataTable.isDataTable('#tableCash')) {
+            $('#tableCash').DataTable().destroy();
+            $('#tableCash tbody').empty();
+            cashTableReady = false;
+        }
+
         table = $('#tableCash').DataTable({
+            destroy: true,
             processing: true,
+            serverSide: true,
             deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             pageLength: 10,
             ordering: false,
+            searching: true,
+            searchDelay: 400,
             autoWidth: false,
             language: {
                 search: ' ',
@@ -126,15 +195,29 @@
                 { data: "updated_at_text", defaultContent: "-" },
                 { data: "action", className: "text-center align-middle", width: "15%"},
             ],
+            ajax: function (data, callback) {
+                cashBesarAjax(data, callback);
+            },
             initComplete: function () {
                 $('.dataTables_filter').appendTo('#tableSearch');
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+                hideCashSkeleton();
             },
             drawCallback: function () {
                 if (typeof feather !== 'undefined') feather.replace();
+                expandCashChildRows();
             },
         });
+
+        $('#tableCash')
+            .off('preXhr.dt.cashLoad xhr.dt.cashLoad')
+            .on('preXhr.dt.cashLoad', function () {
+                beginCashTableLoad();
+            })
+            .on('xhr.dt.cashLoad', function () {
+                setCashTableLoading(false);
+            });
     }
 
     function updateCashFooterTotals(debits, credits1, credits2, sisa, setor) {
@@ -144,113 +227,6 @@
         $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
         $('#tableCash tfoot .setor').html(`Rp ${formatRupiahMinus(setor)}`);
         $('#totalAll').html(`Rp ${formatRupiahMinus(sisa)}`);
-    }
-
-    function refreshCash() {
-        abortCashLoad();
-        showCashSkeleton();
-        cashLoadXhr = $.ajax({
-            url: "/getCash",
-            method: "get",
-            data: {dates: dates},
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                table.clear().draw();
-                var debits = 0;
-                var credits1 = 0;
-                var credits2 = 0;
-                var sisa = 0;
-                var setor = 0;
-                var bulan = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-                for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].cash_date).format('D MMM YYYY');
-                    if (e[i].cash_type == 1) {
-                        e[i].debit = "Rp " + formatRupiahMinus(e[i].cash_nominal);
-                        e[i].credit1 = "Rp " + 0;
-                        e[i].credit2 = "Rp " + 0;
-                        if (e[i].status == 2) {
-                            debits += parseInt(e[i].cash_nominal, 10) || 0;
-                            sisa += parseInt(e[i].cash_nominal, 10) || 0;
-                        }
-                    }
-                    else if (e[i].cash_type == 2) {
-                        e[i].credit1 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
-                        e[i].debit = "Rp " + 0;
-                        e[i].credit2 = "Rp " + 0;
-                        if (e[i].status == 2) {
-                            credits1 += parseInt(e[i].cash_nominal, 10) || 0;
-                            sisa -= parseInt(e[i].cash_nominal, 10) || 0;
-                        }
-                    }
-                    else if (e[i].cash_type == 3) {
-                        e[i].credit2 = "(Rp " + formatRupiahMinus(e[i].cash_nominal) + ")";
-                        e[i].credit1 = "Rp " + 0;
-                        e[i].debit = "Rp " + 0;
-
-                        // Kalau ini sales dan ada keluar 1, jangan dihitung (setor ke bank)
-                        if (e[i].status == 2) {
-                            if (e[i].cash_tujuan != 4) {
-                                sisa -= parseInt(e[i].cash_nominal, 10) || 0;
-                            } else {
-                                setor += parseInt(e[i].cash_nominal, 10) || 0;
-                            }
-                            credits2 += parseInt(e[i].cash_nominal, 10) || 0;
-                        }
-                    }
-                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
-                    e[i].credit_text1 =`<label class='text-danger'>${e[i].credit1}</label>`
-                    e[i].credit_text2 =`<label class='text-danger'>${e[i].credit2}</label>`
-
-                    if (
-                        e[i].updated_at &&
-                        e[i].created_at &&
-                        moment(e[i].created_at).format('YYYY-MM-DD HH:mm:ss') !== moment(e[i].updated_at).format('YYYY-MM-DD HH:mm:ss')
-                    ) {
-                        var updatedAt = moment(e[i].updated_at);
-                        e[i].updated_at_text = updatedAt.format('DD') + ' ' + bulan[updatedAt.month()] + ' ' + updatedAt.format('YYYY, HH:mm');
-                    } else {
-                        e[i].updated_at_text = '-';
-                    }
-
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 11px">Menunggu Konfirmasi</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 11px">Diterima</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 11px">Ditolak</span>`;
-                    }
-
-                    e[i].action = "";
-                    if (
-                        e[i].status == 1 &&
-                        hasAccessActionAny(KAS_OR_OP_MODS, "others")
-                    ) {
-                        e[i].action =
-                            '<div class="d-flex align-items-center gap-1">' +
-                            '<a class="btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' +
-                            e[i].cash_id +
-                            '"><i class="fe fe-check"></i></a>' +
-                            '<a class="btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' +
-                            e[i].cash_id +
-                            '"><i class="fe fe-x"></i></a></div>';
-                    }
-                }
-                table.rows.add(e).draw(false);
-                updateCashFooterTotals(debits, credits1, credits2, sisa, setor);
-                expandCashChildRows();
-            },
-            error: function (err) {
-                if (err && err.statusText === 'abort') return;
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load kas:", err);
-            },
-            complete: function (_xhr, status) {
-                if (status === 'abort') return;
-                hideCashSkeleton();
-            },
-        });
     }
 
     $('#tableCash tbody').on('click', 'td.dt-control', function () {

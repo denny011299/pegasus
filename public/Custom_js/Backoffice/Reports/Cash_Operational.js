@@ -6,6 +6,7 @@
     var dates = null;
     var cashLoadXhr = null;
     var cashTableReady = false;
+    var cashPendingDeepLink = null;
 
     function updateCashOperationalFooter(debits, credits) {
         var sisa = (parseInt(debits, 10) || 0) - (parseInt(credits, 10) || 0);
@@ -28,6 +29,12 @@
             $wrap.removeClass('dt-pending').addClass('dt-ready');
             setCashTableLoading(true);
         }
+    }
+
+    function beginCashTableLoad() {
+        var $wrap = $('#tableCash-wrap');
+        $wrap.removeClass('dt-pending').addClass('dt-ready');
+        setCashTableLoading(true);
     }
 
     function hideCashSkeleton() {
@@ -57,6 +64,107 @@
         };
     }
 
+    function getCashSearchText() {
+        if (type === 'admin') return 'Cari Kas Admin';
+        if (type === 'gudang') return 'Cari Kas Gudang';
+        if (type === 'armada') return 'Cari Kas Armada';
+        if (type === 'sales') return 'Cari Kas Sales';
+        return 'Cari Kas';
+    }
+
+    function personColumn() {
+        return {
+            data: null,
+            width: '12%',
+            render: function (_data, _type, row) {
+                if (type === 'armada') return row.customer_notes || '-';
+                return row.staff_name || '-';
+            },
+        };
+    }
+
+    function notesColumn() {
+        return {
+            data: null,
+            width: '22%',
+            render: function (_data, _type, row) {
+                if (type === 'admin') return row.ca_notes || '';
+                if (type === 'gudang') return row.cg_notes || '';
+                if (type === 'armada') return row.cr_notes || '';
+                if (type === 'sales') return row.cs_notes || '';
+                return '';
+            },
+        };
+    }
+
+    function setupCashTypeUi() {
+        if (type === 'admin' || type === 'gudang') {
+            $('#tableCash thead th').eq(3).text('Staff');
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Staff</label>
+                <select class="form-select" id="filter_staff_id"></select>
+            `);
+            autocompleteStaff('#filter_staff_id');
+            $('.total-summary').hide();
+            return;
+        }
+
+        if (type === 'armada') {
+            $('#tableCash thead th').eq(3).text('Armada');
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Armada</label>
+                <select class="form-select" id="filter_customer_id"></select>
+            `);
+            $('.info_card').html(`
+                <div class="fw-bold text-end text-black p-0">
+                    <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">Rp 0</span>
+                </div>
+            `);
+            autocompleteCustomer('#filter_customer_id');
+            $('.total-summary').show();
+            return;
+        }
+
+        if (type === 'sales') {
+            $('#tableCash thead th').eq(3).text('Sales');
+            $('.filter_person').html(`
+                <label class="form-label mb-1">Sales</label>
+                <select class="form-select" id="filter_sales_id"></select>
+            `);
+            $('.info_card').html(`
+                <div class="fw-bold text-end text-black p-0">
+                    <i class="fe fe-dollar-sign"></i> Kas Sales : <span id="totalSales">Rp 0</span>
+                </div>
+            `);
+            autocompleteStaffSales('#filter_sales_id');
+            $('.total-summary').show();
+        }
+    }
+
+    function updateCashSearchPlaceholder() {
+        var searchText = getCashSearchText();
+        if (table) {
+            table.settings()[0].oLanguage.sSearchPlaceholder = searchText;
+        }
+        $('.dataTables_filter input').attr('placeholder', searchText);
+    }
+
+    function collapseCashOperationalChildRows() {
+        if (!table) return;
+        table.rows('.shown').every(function () {
+            this.child.hide();
+            $(this.node()).removeClass('shown').find('td.dt-control i.fe')
+                .removeClass('fe-minus-circle').addClass('fe-plus-circle');
+        });
+    }
+
+    function reloadCashOperationalTable() {
+        beginCashTableLoad();
+        collapseCashOperationalChildRows();
+        updateCashSearchPlaceholder();
+        table.ajax.reload(null, true);
+    }
+
     function expandCashOperationalChildRows() {
         setTimeout(function () {
             $('#tableCash tbody td.dt-control').each(function () {
@@ -68,29 +176,118 @@
         }, 0);
     }
 
-    function cashAjaxGet(url, data, onSuccess) {
+    function captureCashDeepLink() {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('ca_id')) {
+            cashPendingDeepLink = { type: 'admin', idKey: 'ca_id', id: params.get('ca_id'), btn: '.btn_view_admin' };
+        } else if (params.get('cg_id')) {
+            cashPendingDeepLink = { type: 'gudang', idKey: 'cg_id', id: params.get('cg_id'), btn: '.btn_view_gudang' };
+        } else if (params.get('cr_id')) {
+            cashPendingDeepLink = { type: 'armada', idKey: 'cr_id', id: params.get('cr_id'), btn: '.btn_view_armada' };
+        } else if (params.get('cs_id')) {
+            cashPendingDeepLink = { type: 'sales', idKey: 'cs_id', id: params.get('cs_id'), btn: '.btn_view_sales' };
+        }
+    }
+
+    function getCashAjaxUrl() {
+        if (type === 'admin') return '/getCashAdmin';
+        if (type === 'gudang') return '/getCashGudang';
+        if (type === 'armada') return '/getCashArmada';
+        if (type === 'sales') return '/getCashSales';
+        return null;
+    }
+
+    function getCashExtraParams() {
+        var extra = { dates: dates };
+        if (type === 'admin') {
+            extra.staff_id = $('#filter_staff_id').val();
+            if (cashPendingDeepLink && cashPendingDeepLink.type === 'admin') {
+                extra.ca_id = cashPendingDeepLink.id;
+            }
+        } else if (type === 'gudang') {
+            extra.staff_id = $('#filter_staff_id').val();
+            if (cashPendingDeepLink && cashPendingDeepLink.type === 'gudang') {
+                extra.cg_id = cashPendingDeepLink.id;
+            }
+        } else if (type === 'armada') {
+            extra.customer_id = $('#filter_customer_id').val();
+            if (cashPendingDeepLink && cashPendingDeepLink.type === 'armada') {
+                extra.cr_id = cashPendingDeepLink.id;
+            }
+        } else if (type === 'sales') {
+            extra.staff_id = $('#filter_sales_id').val();
+            if (cashPendingDeepLink && cashPendingDeepLink.type === 'sales') {
+                extra.cs_id = cashPendingDeepLink.id;
+            }
+        }
+        return extra;
+    }
+
+    function applyCashMeta(json) {
+        var meta = json && json.meta ? json.meta : {};
+        if (meta.debits !== undefined) {
+            updateCashOperationalFooter(meta.debits, meta.credits);
+        }
+        if (meta.sisa_kas !== undefined) {
+            sisa_kas = meta.sisa_kas;
+        }
+        if (type === 'armada') {
+            if ($('#filter_customer_id').val() != null && meta.customer_saldo !== undefined) {
+                $('#totalArmada').html('Rp ' + formatRupiahMinus(meta.customer_saldo));
+            } else if (!$('#filter_customer_id').val()) {
+                $('#totalArmada').html('-');
+            }
+        }
+        if (type === 'sales') {
+            if ($('#filter_sales_id').val() != null && meta.staff_saldo !== undefined) {
+                $('#totalSales').html('Rp ' + formatRupiahMinus(meta.staff_saldo));
+            } else if (!$('#filter_sales_id').val()) {
+                $('#totalSales').html('-');
+            }
+        }
+    }
+
+    function cashOperasionalAjax(dtData, callback) {
         abortCashLoad();
-        showCashSkeleton();
+        var url = getCashAjaxUrl();
+        if (!url) {
+            callback({ draw: dtData.draw, recordsTotal: 0, recordsFiltered: 0, data: [] });
+            hideCashSkeleton();
+            return;
+        }
+
         cashLoadXhr = $.ajax({
             url: url,
-            data: data,
+            data: $.extend({}, dtData, getCashExtraParams()),
             method: 'get',
-            success: function (response) {
-                onSuccess(response);
-                if (typeof feather !== 'undefined') feather.replace();
-                expandCashOperationalChildRows();
-                openCashFromDashboardLink();
+            beforeSend: function () {
+                beginCashTableLoad();
+            },
+            success: function (json) {
+                applyCashMeta(json);
+                callback(json);
             },
             error: function (err) {
                 if (err && err.statusText === 'abort') return;
                 if (handlePermissionError(err)) return;
                 console.error('Gagal load kas operasional:', err);
+                callback({
+                    draw: dtData.draw,
+                    recordsTotal: 0,
+                    recordsFiltered: 0,
+                    data: [],
+                });
             },
             complete: function (_xhr, status) {
                 if (status === 'abort') return;
-                hideCashSkeleton();
+                if (!cashTableReady) hideCashSkeleton();
             },
         });
+    }
+
+    function refreshCashTable(resetPaging) {
+        if (!table) return;
+        table.ajax.reload(null, resetPaging !== false);
     }
 
     let today = new Date();
@@ -144,6 +341,7 @@
         } else if (params.get("cs_id") && $('#cashType option[value="sales"]').length) {
             $("#cashType").val("sales");
         }
+        captureCashDeepLink();
         if (!$('#cashType').val()) {
             $("#cashType").val($('#cashType option:first').val() || "");
         }
@@ -164,63 +362,15 @@
         $('#filter_customer_id').empty(null);
         $('#filter_sales_id').empty(null);
 
-        if (type === 'admin') {
-            inisialisasi();
-            $('#tableCash thead th').eq(3).text('Staff');
-            $('.filter_person').html(`
-                <label class="form-label mb-1">Staff</label>
-                <select class="form-select" id="filter_staff_id"></select>
-            `);
-            autocompleteStaff('#filter_staff_id');
-            $('.total-summary').hide();
-            refreshCashAdmin();
-        }
-        
-        else if (type === 'gudang') {
-            inisialisasi();
-            $('#tableCash thead th').eq(3).text('Staff');
-            $('.filter_person').html(`
-                <label class="form-label mb-1">Staff</label>
-                <select class="form-select" id="filter_staff_id"></select>
-            `);
-            autocompleteStaff('#filter_staff_id');
-            $('.total-summary').hide();
-            refreshCashGudang();
-        }
-        
-        else if (type === 'armada') {
-            inisialisasi();
-            $('#tableCash thead th').eq(3).text('Armada');
-            $('.filter_person').html(`
-                <label class="form-label mb-1">Armada</label>
-                <select class="form-select" id="filter_customer_id"></select>
-            `);
-            $('.info_card').html(`
-                <div class="fw-bold text-end text-black p-0">
-                    <i class="fe fe-dollar-sign"></i> Kas Armada : <span id="totalArmada">Rp 0</span>
-                </div>    
-            `);
-            autocompleteCustomer('#filter_customer_id');
-            $('.total-summary').show();
-            refreshCashArmada();
+        setupCashTypeUi();
+
+        if (table && $.fn.DataTable.isDataTable('#tableCash')) {
+            reloadCashOperationalTable();
+            return;
         }
 
-        else if (type === 'sales') {
-            inisialisasi();
-            $('#tableCash thead th').eq(3).text('Sales');
-            $('.filter_person').html(`
-                <label class="form-label mb-1">Sales</label>
-                <select class="form-select" id="filter_sales_id"></select>
-            `);
-            $('.info_card').html(`
-                <div class="fw-bold text-end text-black p-0">
-                    <i class="fe fe-dollar-sign"></i> Kas Sales : <span id="totalSales">Rp 0</span>
-                </div>    
-            `);
-            autocompleteStaffSales('#filter_sales_id');
-            $('.total-summary').show();
-            refreshCashSales();
-        }
+        showCashSkeleton();
+        inisialisasi();
     });
 
     $(document).on('change', '#jenis_input', function(){
@@ -576,85 +726,36 @@
     
     function inisialisasi() {
         if ($.fn.DataTable.isDataTable('#tableCash')) {
-            $('#tableCash').DataTable().destroy();
-            $('#tableCash tbody').empty();
-            cashTableReady = false;
+            reloadCashOperationalTable();
+            return;
         }
 
-        let column;
-        let searchText;
-
-        if (type === "admin") {
-            column = [
-                cashControlColumn(),
-                { data: "date", width: "12%" },
-                { data: "status_text", width: "13%" },
-                { data: "staff_name", width: "12%" },
-                { data: "ca_notes", width: "22%" },
-                { data: "debit_text", className: "text-end", width: "15%" },
-                { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", className: "d-flex align-items-center", width: "80px" },
-            ];
-            searchText = "Cari Kas Admin";
-        } 
-        else if (type === "gudang") {
-            column = [
-                cashControlColumn(),
-                { data: "date", width: "12%" },
-                { data: "status_text", width: "13%" },
-                { data: "staff_name", width: "12%" },
-                { data: "cg_notes", width: "22%" },
-                { data: "debit_text", className: "text-end", width: "15%" },
-                { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", className: "d-flex align-items-center", width: "80px" },
-            ];
-            searchText = "Cari Kas Gudang";
-        }
-        else if (type === "armada") {
-            column = [
-                cashControlColumn(),
-                { data: "date", width: "12%" },
-                { data: "status_text", width: "13%" },
-                { data: "customer_notes", width: "12%" },
-                { data: "cr_notes", width: "22%" },
-                { data: "debit_text", className: "text-end", width: "15%" },
-                { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", className: "d-flex align-items-center", width: "80px" },
-            ];
-            searchText = "Cari Kas Armada";
-        }
-        else if (type === "sales") {
-            column = [
-                cashControlColumn(),
-                { data: "date", width: "12%" },
-                { data: "status_text", width: "13%" },
-                { data: "staff_name", width: "12%" },
-                { data: "cs_notes", width: "22%" },
-                { data: "debit_text", className: "text-end", width: "15%" },
-                { data: "credit_text", className: "text-end", width: "15%" },
-                { data: "created_by_name", defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "acc_by_name", defaultContent: "-" },
-                { data: "action", className: "d-flex align-items-center", width: "80px" },
-            ];
-            searchText = "Cari Kas Sales";
-        }
+        var column = [
+            cashControlColumn(),
+            { data: 'date', width: '12%' },
+            { data: 'status_text', width: '13%' },
+            personColumn(),
+            notesColumn(),
+            { data: 'debit_text', className: 'text-end', width: '15%' },
+            { data: 'credit_text', className: 'text-end', width: '15%' },
+            { data: 'created_by_name', defaultContent: '-', render: function (data) { return typeof renderCreatedByName === 'function' ? renderCreatedByName(data) : data; } },
+            { data: 'acc_by_name', defaultContent: '-' },
+            { data: 'action', className: 'd-flex align-items-center', width: '80px' },
+        ];
+        var searchText = getCashSearchText();
 
         table = $('#tableCash').DataTable({
             destroy: true,
             processing: true,
+            serverSide: true,
             deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             pageLength: 10,
             ordering: false,
-            searching: false,
+            searching: true,
+            searchDelay: 400,
             responsive: false,
             language: {
                 search: ' ',
@@ -668,346 +769,56 @@
                 },
             },
             columns: column,
+            ajax: function (data, callback) {
+                cashOperasionalAjax(data, callback);
+            },
             initComplete: function () {
                 $('.dataTables_filter').appendTo('#tableSearch');
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+                hideCashSkeleton();
             },
             drawCallback: function () {
                 if (typeof feather !== 'undefined') feather.replace();
+                expandCashOperationalChildRows();
+                openCashFromDashboardLink();
             },
         });
+
+        $('#tableCash')
+            .off('preXhr.dt.cashLoad xhr.dt.cashLoad')
+            .on('preXhr.dt.cashLoad', function () {
+                beginCashTableLoad();
+            })
+            .on('xhr.dt.cashLoad', function () {
+                setCashTableLoading(false);
+                hideCashSkeleton();
+            });
     }
 
     function refreshCashAdmin() {
-        cashAjaxGet('/getCashAdmin', {
-            dates: dates,
-            staff_id: $('#filter_staff_id').val(),
-        }, function (data) {
-            table.clear().draw();
-
-            let e = data['data'];
-            let debits = 0;
-            let credits = 0;
-            for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].ca_date).format('D MMM YYYY');
-                    if (e[i].ca_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].ca_nominal));
-                        e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += parseInt(e[i].ca_nominal);
-                    }
-                    else{
-                        e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].ca_nominal)) + ")";
-                        if (e[i].status == 2) credits += parseInt(e[i].ca_nominal);
-                    }
-                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
-                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
-                    }
-                    e[i].action = "";
-                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
-                        e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_view_admin" data-id="' +
-                            e[i].ca_id +
-                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
-                    }
-                    if (e[i].status == 1) {
-                        if (e[i].ca_type == 1) {
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "edit")) {
-                                e[i].action +=
-                                    '<a class="me-2 btn-action-icon p-2 btn_edit_admin" data-id="' +
-                                    e[i].ca_id +
-                                    '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
-                            }
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "delete")) {
-                                e[i].action +=
-                                    '<a class="p-2 btn-action-icon btn_delete_admin" data-id="' +
-                                    e[i].ca_id +
-                                    '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
-                            }
-                        } else if (e[i].ca_type == 2) {
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "others")) {
-                                e[i].action +=
-                                    '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
-                                    e[i].cash_id +
-                                    '" ><i class="fe fe-check"></i></a>' +
-                                    '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
-                                    e[i].cash_id +
-                                    '" ><i class="fe fe-x"></i></a>';
-                            }
-                        }
-                    }
-                    if (!e[i].action) {
-                        e[i].action =
-                            '<span class="text-muted small">—</span>';
-                    }
-                }
-            table.rows.add(e).draw(false);
-            updateCashOperationalFooter(debits, credits);
-            sisa_kas = data['sisa_kas'];
-        });
+        refreshCashTable();
     }
 
     function refreshCashGudang() {
-        cashAjaxGet('/getCashGudang', {
-            dates: dates,
-            staff_id: $('#filter_staff_id').val(),
-        }, function (data) {
-            table.clear().draw();
-            let e = data['data'];
-            let debits = 0;
-            let credits = 0;
-            for (let i = 0; i < e.length; i++) {
-                    e[i].date = moment(e[i].cg_date).format('D MMM YYYY');
-                    if (e[i].cg_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cg_nominal));
-                        e[i].credit = "Rp 0";
-                        if (e[i].status == 2) debits += parseInt(e[i].cg_nominal);
-                    }
-                    else{
-                        e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cg_nominal)) + ")";
-                        if (e[i].status == 2) credits += parseInt(e[i].cg_nominal);
-                    }
-
-                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
-                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
-                    }
-
-                    e[i].action = "";
-                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
-                        e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_view_gudang" data-id="' +
-                            e[i].cg_id +
-                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
-                    }
-                    if (e[i].status == 1) {
-                        if (e[i].cg_type == 1) {
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "edit")) {
-                                e[i].action +=
-                                    '<a class="me-2 btn-action-icon p-2 btn_edit_gudang" data-id="' +
-                                    e[i].cg_id +
-                                    '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
-                            }
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "delete")) {
-                                e[i].action +=
-                                    '<a class="p-2 btn-action-icon btn_delete_gudang" data-id="' +
-                                    e[i].cg_id +
-                                    '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
-                            }
-                        } else if (e[i].cg_type == 2) {
-                            if (hasAccessActionAny(KAS_OR_OP_MODS, "others")) {
-                                e[i].action +=
-                                    '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
-                                    e[i].cash_id +
-                                    '" ><i class="fe fe-check"></i></a>' +
-                                    '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
-                                    e[i].cash_id +
-                                    '" ><i class="fe fe-x"></i></a>';
-                            }
-                        }
-                    }
-                    if (!e[i].action) {
-                        e[i].action =
-                            '<span class="text-muted small">—</span>';
-                    }
-                }
-            table.rows.add(e).draw(false);
-            updateCashOperationalFooter(debits, credits);
-            sisa_kas = data['sisa_kas'];
-        });
+        refreshCashTable();
     }
 
     function refreshCashArmada() {
-        cashAjaxGet('/getCashArmada', {
-            dates: dates,
-            customer_id: $('#filter_customer_id').val(),
-        }, function (data) {
-            table.clear().draw();
-
-            let e = data['data'];
-            let debits = 0;
-            let credits = 0;
-            let totalAll = 0;
-            var sisa = 0;
-            for (let i = 0; i < e.length; i++) {
-                    totalAll = e[i].total_all;
-                    e[i].date = moment(e[i].cr_date).format('D MMM YYYY');
-                    if (e[i].cr_type == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cr_nominal));
-                        e[i].credit = "Rp 0";
-                        if (e[i].status == 2) {
-                            debits += parseInt(e[i].cr_nominal);
-
-                            if (e[i].cr_nominal < 0) sisa -= parseInt(e[i].cr_nominal);
-                            else sisa += parseInt(e[i].cr_nominal);
-                        }
-                    }
-                    else{
-                        e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cr_nominal)) + ")";
-                        if (e[i].status == 2) {
-                            credits += parseInt(e[i].cr_nominal);
-
-                            if (e[i].cr_nominal < 0) sisa += parseInt(e[i].cr_nominal);
-                            else sisa -= parseInt(e[i].cr_nominal);
-                        }
-                    }
-                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
-                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
-                    }
-                    e[i].action = "";
-                    if (
-                        !(e[i].status == 2 && e[i].cr_type == 1) &&
-                        hasAccessActionAny(KAS_OR_OP_MODS, "view")
-                    ) {
-                        e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_view_armada" data-id="' +
-                            e[i].cr_id +
-                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
-                    }
-                    if (e[i].status == 1) {
-                        if (
-                            e[i].cr_aksi == 2 &&
-                            hasAccessActionAny(KAS_OR_OP_MODS, "others")
-                        ) {
-                            e[i].action +=
-                                '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
-                                e[i].cash_id +
-                                '" ><i class="fe fe-check"></i></a>' +
-                                '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
-                                e[i].cash_id +
-                                '" ><i class="fe fe-x"></i></a>';
-                        }
-                    }
-                    if (
-                        !e[i].action &&
-                        !(e[i].status == 2 && e[i].cr_type == 1)
-                    ) {
-                        e[i].action =
-                            '<span class="text-muted small">—</span>';
-                    }
-                }
-            table.rows.add(e).draw(false);
-
-            updateCashOperationalFooter(debits, credits);
-            if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
-            else $('#totalArmada').html('-');
-        });
+        refreshCashTable();
     }
 
     function refreshCashSales() {
-        cashAjaxGet('/getCashSales', {
-            dates: dates,
-            staff_id: $('#filter_sales_id').val(),
-        }, function (data) {
-            table.clear().draw();
-
-            let e = data['data'];
-            let debits = 0;
-            let credits = 0;
-            let totalAll = 0;
-            var sisa = 0;
-            for (let i = 0; i < e.length; i++) {
-                    totalAll = e[i].total_all;
-                    e[i].date = moment(e[i].cs_date).format('D MMM YYYY');
-                    if (e[i].cs_transaction == 1 && e[i].cs_aksi == 1){
-                        e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cs_nominal));
-                        e[i].credit = "Rp 0";
-                        if (e[i].status == 2) {
-                            debits += parseInt(e[i].cs_nominal);
-                            if (e[i].cs_nominal < 0) sisa -= parseInt(e[i].cs_nominal);
-                            else sisa += parseInt(e[i].cs_nominal);
-                        }
-                    }
-                    else{
-                        e[i].debit = "Rp 0";
-                        e[i].credit = "(Rp " + formatRupiahMinus(parseInt(e[i].cs_nominal)) + ")";
-                        if (e[i].status == 2) {
-                            credits += parseInt(e[i].cs_nominal);
-
-                            if (e[i].cs_nominal < 0) sisa += parseInt(e[i].cs_nominal);
-                            else sisa -= parseInt(e[i].cs_nominal);
-                        }
-                    }
-                    e[i].debit_text =`<label class='text-success'>${e[i].debit}</label>`
-                    e[i].credit_text =`<label class='text-danger'>${e[i].credit}</label>`
-
-                    if (e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Sedang Diajukan</span>`;
-                    } else if (e[i].status == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Diterima</span>`;
-                    } else if (e[i].status == 3){
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
-                    }
-                    e[i].action = "";
-                    if (hasAccessActionAny(KAS_OR_OP_MODS, "view")) {
-                        e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_view_sales" data-id="' +
-                            e[i].cs_id +
-                            '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
-                    }
-                    if (
-                        e[i].status == 1 &&
-                        e[i].cs_aksi == 1 &&
-                        hasAccessActionAny(KAS_OR_OP_MODS, "others")
-                    ) {
-                        e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  cash_id = "' +
-                            e[i].cash_id +
-                            '" ><i class="fe fe-check"></i></a>' +
-                            '<a  class="me-2 btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  cash_id = "' +
-                            e[i].cash_id +
-                            '" ><i class="fe fe-x"></i></a>';
-                    }
-                    if (!e[i].action) {
-                        e[i].action =
-                            '<span class="text-muted small">—</span>';
-                    }
-                }
-            table.rows.add(e).draw(false);
-
-            updateCashOperationalFooter(debits, credits);
-            if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
-            else $('#totalSales').html('-');
-        });
+        refreshCashTable();
     }
 
-    /** Dari dashboard: /operationalCash?[ca_id|cg_id|cr_id|cs_id]=... — pakai tombol view yang sama seperti klik manual (termasuk pindah halaman DataTables jika perlu). */
+    /** Dari dashboard: /operationalCash?[ca_id|cg_id|cr_id|cs_id]=... — pakai tombol view yang sama seperti klik manual. */
     function openCashFromDashboardLink() {
         try {
-            if (!table) {
+            if (!table || !cashPendingDeepLink) {
                 return;
             }
-            var params = new URLSearchParams(window.location.search);
-            var target = null;
-            if (params.get("ca_id")) target = { type: "admin", idKey: "ca_id", id: params.get("ca_id"), btn: ".btn_view_admin" };
-            else if (params.get("cg_id")) target = { type: "gudang", idKey: "cg_id", id: params.get("cg_id"), btn: ".btn_view_gudang" };
-            else if (params.get("cr_id")) target = { type: "armada", idKey: "cr_id", id: params.get("cr_id"), btn: ".btn_view_armada" };
-            else if (params.get("cs_id")) target = { type: "sales", idKey: "cs_id", id: params.get("cs_id"), btn: ".btn_view_sales" };
-
-            if (!target) return;
+            var target = cashPendingDeepLink;
             if (type !== target.type) {
                 if ($('#cashType option[value="' + target.type + '"]').length) {
                     $('#cashType').val(target.type).trigger('change');
@@ -1015,6 +826,7 @@
                 return;
             }
 
+            var params = new URLSearchParams(window.location.search);
             var stripParamFromUrl = function () {
                 params.delete(target.idKey);
                 var q = params.toString();
@@ -1023,53 +835,14 @@
                     "",
                     window.location.pathname + (q ? "?" + q : "")
                 );
+                cashPendingDeepLink = null;
             };
 
-            var tryClickView = function () {
-                var indexes = table.rows({ order: "current", search: "applied" }).indexes().toArray();
-                var j;
-                for (j = 0; j < indexes.length; j++) {
-                    var r = table.row(indexes[j]);
-                    var d = r.data();
-                    if (!d || String(d[target.idKey]) !== String(target.id)) continue;
-                    var node = r.node();
-                    if (!node) continue;
-                    var $btn = $(node).find(target.btn).first();
-                    if (!$btn.length) continue;
-                    $btn.trigger("click");
-                    stripParamFromUrl();
-                    return true;
-                }
-                return false;
-            };
-
-            var displayOrder = table.rows({ order: "current", search: "applied" }).indexes().toArray();
-            var dtIndex = null;
-            for (var i = 0; i < displayOrder.length; i++) {
-                var rd = table.row(displayOrder[i]).data();
-                if (rd && String(rd[target.idKey]) === String(target.id)) {
-                    dtIndex = displayOrder[i];
-                    break;
-                }
+            var $btn = $('#tableCash tbody ' + target.btn + '[data-id="' + target.id + '"]').first();
+            if ($btn.length) {
+                $btn.trigger('click');
+                stripParamFromUrl();
             }
-            if (dtIndex === null) {
-                return;
-            }
-
-            var pageInfo = table.page.info();
-            var pos = displayOrder.indexOf(dtIndex);
-            if (pos < 0) return;
-            var pageLen = pageInfo.length || 10;
-            var targetPage = Math.floor(pos / pageLen);
-            if (targetPage !== pageInfo.page) {
-                table.one("draw", function () {
-                    tryClickView();
-                });
-                table.page(targetPage).draw(false);
-                return;
-            }
-
-            tryClickView();
         } catch (err) {
             console.warn("openCashFromDashboardLink", err);
         }

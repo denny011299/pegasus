@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Bank;
 use App\Models\Cash;
+use App\Support\CashBesarDataTable;
+use App\Support\CashOperasionalDataTable;
 use App\Models\CashAdmin;
 use App\Models\CashAdminDetail;
 use App\Models\CashArmada;
@@ -547,6 +549,10 @@ class ReportController extends Controller
     }
 
     function getCash(Request $req){
+        if ($req->has('draw') || $req->has('page')) {
+            return response()->json(CashBesarDataTable::paginate($req->all()));
+        }
+
         $data = (new Cash())->getCash($req->all());
         return response()->json($data);
     }
@@ -917,6 +923,10 @@ class ReportController extends Controller
 
     function getCashAdmin(Request $req)
     {
+        if ($req->has('draw') || $req->has('page')) {
+            return response()->json(CashOperasionalDataTable::admin($req->all()));
+        }
+
         $data = (new CashAdmin())->getCashAdmin($req->all());
         return response()->json($data);
     }
@@ -1169,6 +1179,10 @@ class ReportController extends Controller
 
     function getCashGudang(Request $req)
     {
+        if ($req->has('draw') || $req->has('page')) {
+            return response()->json(CashOperasionalDataTable::gudang($req->all()));
+        }
+
         $data = (new CashGudang())->getCashGudang($req->all());
         return response()->json($data);
     }
@@ -1520,6 +1534,10 @@ class ReportController extends Controller
 
     function getCashArmada(Request $req)
     {
+        if ($req->has('draw') || $req->has('page')) {
+            return response()->json(CashOperasionalDataTable::armada($req->all()));
+        }
+
         $data = (new CashArmada())->getCashArmada($req->all());
         return response()->json($data);
     }
@@ -1776,6 +1794,10 @@ class ReportController extends Controller
 
     function getCashSales(Request $req)
     {
+        if ($req->has('draw') || $req->has('page')) {
+            return response()->json(CashOperasionalDataTable::sales($req->all()));
+        }
+
         $data = (new CashSales())->getCashSales($req->all());
         return response()->json($data);
     }

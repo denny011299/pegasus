@@ -41,6 +41,20 @@ class Cash extends Model
         $result->orderBy('status', 'asc')->orderBy('cash_date', 'desc')->orderBy('created_at', 'desc');
         $result = $result->get();
 
+        self::enrichCashRows($result);
+
+        return $result;
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, self>|\Illuminate\Database\Eloquent\Collection<int, self>  $result
+     */
+    public static function enrichCashRows($result): void
+    {
+        if ($result->isEmpty()) {
+            return;
+        }
+
         $armadaCustomerIds = $result
             ->filter(fn ($row) => in_array($row->cash_type, [1, 2], true) && (int) $row->cash_tujuan === 3)
             ->pluck('person_id')
@@ -424,8 +438,6 @@ class Cash extends Model
                 ? ($staffNames->get((int) $value->acc_by) ?? '-')
                 : '-';
         }
-        
-        return $result;
     }
 
     function insertCash($data){
