@@ -12,6 +12,14 @@
         $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
     }
 
+    function showCashSkeleton() {
+        $('#tableCash-wrap').removeClass('dt-ready').addClass('dt-pending');
+    }
+
+    function hideCashSkeleton() {
+        $('#tableCash-wrap').removeClass('dt-pending').addClass('dt-ready');
+    }
+
     let today = new Date();
     let yyyy = today.getFullYear();
     let mm = String(today.getMonth() + 1).padStart(2, '0');
@@ -41,6 +49,7 @@
         if (!$cashType.find("option").length) {
             $cashType.append('<option value="" selected>Tidak ada akses</option>').prop("disabled", true);
             $("#tableCash tbody").html('<tr><td colspan="10" class="text-center text-muted">Anda tidak punya akses view Kas Operasional.</td></tr>');
+            hideCashSkeleton();
             return;
         }
 
@@ -614,6 +623,7 @@
     }
 
     function refreshCashAdmin() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashAdmin",
             data: {
@@ -705,8 +715,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -714,6 +726,7 @@
     }
 
     function refreshCashGudang() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashGudang",
             data: {
@@ -806,8 +819,10 @@
                     });
                 }, 100);
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -815,6 +830,7 @@
     }
 
     function refreshCashArmada() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashArmada",
             data: {
@@ -917,8 +933,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }
@@ -926,6 +944,7 @@
     }
 
     function refreshCashSales() {
+        showCashSkeleton();
         $.ajax({
             url: "/getCashSales",
             data: {
@@ -1020,8 +1039,10 @@
 
                 feather.replace(); // Biar icon feather muncul lagi
                 openCashFromDashboardLink();
+                hideCashSkeleton();
             },
             error: function (err) {
+                hideCashSkeleton();
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load kategori:", err);
             }

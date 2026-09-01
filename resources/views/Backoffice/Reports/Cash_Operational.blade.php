@@ -168,7 +168,37 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive">
+                            <div class="table-responsive dt-pending" id="tableCash-wrap">
+                                <div class="dt-skeleton" aria-hidden="true">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 4% 11% 12% 11% 20% 10% 10% 8% 8% 6%;">
+                                        <span style="width:30%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:70%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:50%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:60%"></span>
+                                    </div>
+                                    <div class="dt-skeleton-body">
+                                        @for ($i = 0; $i < 6; $i++)
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 4% 11% 12% 11% 20% 10% 10% 8% 8% 6%;">
+                                                <span class="skel-text" style="width:30%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-badge" style="width:70%;justify-self:center"></span>
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-text" style="width:85%"></span>
+                                                <span class="skel-text" style="width:70%;justify-self:end"></span>
+                                                <span class="skel-text" style="width:70%;justify-self:end"></span>
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-text" style="width:60%"></span>
+                                            </div>
+                                        @endfor
+                                    </div>
+                                </div>
                                 <table class="table table-center table-hover" id="tableCash">
                                     <thead class="thead-light">
                                         <tr id="headers">
