@@ -4,6 +4,8 @@
     var items = [];
     var sisa_kas = 0;
     var dates = null;
+    var cashLoadXhr = null;
+    var cashTableReady = false;
 
     function updateCashOperationalFooter(debits, credits) {
         var sisa = (parseInt(debits, 10) || 0) - (parseInt(credits, 10) || 0);
@@ -12,12 +14,71 @@
         $('#tableCash tfoot .sisa').html(`Rp ${formatRupiahMinus(sisa)}`);
     }
 
+    function setCashTableLoading(isLoading) {
+        var $wrap = $('#tableCash-wrap');
+        if (!$wrap.length) return;
+        $wrap.toggleClass('is-loading', !!isLoading);
+    }
+
     function showCashSkeleton() {
-        $('#tableCash-wrap').removeClass('dt-ready').addClass('dt-pending');
+        var $wrap = $('#tableCash-wrap');
+        if (!cashTableReady || !table) {
+            $wrap.removeClass('dt-ready is-loading').addClass('dt-pending');
+        } else {
+            $wrap.removeClass('dt-pending').addClass('dt-ready');
+            setCashTableLoading(true);
+        }
     }
 
     function hideCashSkeleton() {
-        $('#tableCash-wrap').removeClass('dt-pending').addClass('dt-ready');
+        cashTableReady = true;
+        $('#tableCash-wrap').removeClass('dt-pending is-loading').addClass('dt-ready');
+        setCashTableLoading(false);
+    }
+
+    function abortCashLoad() {
+        if (cashLoadXhr && cashLoadXhr.readyState !== 4) {
+            cashLoadXhr.abort();
+        }
+        cashLoadXhr = null;
+    }
+
+    function cashControlColumn() {
+        return {
+            className: 'dt-control text-center',
+            orderable: false,
+            data: null,
+            defaultContent: '',
+            render: function (_data, _type, row) {
+                if (!row.detail || !row.detail.length) return '';
+                return '<i class="fe fe-plus-circle text-primary"></i>';
+            },
+            width: '1.5rem',
+        };
+    }
+
+    function cashAjaxGet(url, data, onSuccess) {
+        abortCashLoad();
+        showCashSkeleton();
+        cashLoadXhr = $.ajax({
+            url: url,
+            data: data,
+            method: 'get',
+            success: function (response) {
+                onSuccess(response);
+                if (typeof feather !== 'undefined') feather.replace();
+                openCashFromDashboardLink();
+            },
+            error: function (err) {
+                if (err && err.statusText === 'abort') return;
+                if (handlePermissionError(err)) return;
+                console.error('Gagal load kas operasional:', err);
+            },
+            complete: function (_xhr, status) {
+                if (status === 'abort') return;
+                hideCashSkeleton();
+            },
+        });
     }
 
     let today = new Date();
@@ -505,6 +566,7 @@
         if ($.fn.DataTable.isDataTable('#tableCash')) {
             $('#tableCash').DataTable().destroy();
             $('#tableCash tbody').empty();
+            cashTableReady = false;
         }
 
         let column;
@@ -512,13 +574,7 @@
 
         if (type === "admin") {
             column = [
-                {
-                    className: 'dt-control text-center',
-                    orderable: false,
-                    data: null,
-                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "1.5rem"
-                },
+                cashControlColumn(),
                 { data: "date", width: "12%" },
                 { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
@@ -533,13 +589,7 @@
         } 
         else if (type === "gudang") {
             column = [
-                {
-                    className: 'dt-control text-center',
-                    orderable: false,
-                    data: null,
-                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "1.5rem"
-                },
+                cashControlColumn(),
                 { data: "date", width: "12%" },
                 { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
@@ -554,13 +604,7 @@
         }
         else if (type === "armada") {
             column = [
-                {
-                    className: 'dt-control text-center',
-                    orderable: false,
-                    data: null,
-                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "1.5rem"
-                },
+                cashControlColumn(),
                 { data: "date", width: "12%" },
                 { data: "status_text", width: "13%" },
                 { data: "customer_notes", width: "12%" },
@@ -575,13 +619,7 @@
         }
         else if (type === "sales") {
             column = [
-                {
-                    className: 'dt-control text-center',
-                    orderable: false,
-                    data: null,
-                    defaultContent: '<i class="fe fe-plus-circle text-primary"></i>',
-                    width: "1.5rem"
-                },
+                cashControlColumn(),
                 { data: "date", width: "12%" },
                 { data: "status_text", width: "13%" },
                 { data: "staff_name", width: "12%" },
@@ -597,9 +635,12 @@
 
         table = $('#tableCash').DataTable({
             destroy: true,
+            processing: true,
+            deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
             ordering: false,
             searching: false,
             responsive: false,
@@ -608,6 +649,7 @@
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: searchText,
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing: '<div class="d-flex align-items-center gap-2"><span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span><span>Memuat data...</span></div>',
                 paginate: {
                     next: '<i class="fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i>'
@@ -619,30 +661,23 @@
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
+            drawCallback: function () {
+                if (typeof feather !== 'undefined') feather.replace();
+            },
         });
     }
 
     function refreshCashAdmin() {
-        showCashSkeleton();
-        $.ajax({
-            url: "/getCashAdmin",
-            data: {
-                dates: dates,
-                staff_id: $('#filter_staff_id').val()
-            },
-            method: "get",
-            success: function (data) {
-                // if (!Array.isArray(e)) {
-                //     e = e.original || [];
-                // }
-                table.clear().draw(); 
+        cashAjaxGet('/getCashAdmin', {
+            dates: dates,
+            staff_id: $('#filter_staff_id').val(),
+        }, function (data) {
+            table.clear().draw();
 
-                // Manipulasi data sebelum masuk ke tabel
-                console.log(data['data']);
-                let e = data['data'];
-                let debits = 0;
-                let credits = 0;
-                for (let i = 0; i < e.length; i++) {
+            let e = data['data'];
+            let debits = 0;
+            let credits = 0;
+            for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].ca_date).format('D MMM YYYY');
                     if (e[i].ca_aksi == 1){
                         e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].ca_nominal));
@@ -702,49 +737,22 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw(false);
-                updateCashOperationalFooter(debits, credits);
-                sisa_kas = data['sisa_kas'];
-
-                // Expand child row
-                setTimeout(function () {
-                    $('#tableCash tbody td.dt-control').each(function () {
-                        $(this).trigger('click');
-                    });
-                }, 100);
-
-                feather.replace(); // Biar icon feather muncul lagi
-                openCashFromDashboardLink();
-                hideCashSkeleton();
-            },
-            error: function (err) {
-                hideCashSkeleton();
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load kategori:", err);
-            }
+            table.rows.add(e).draw(false);
+            updateCashOperationalFooter(debits, credits);
+            sisa_kas = data['sisa_kas'];
         });
     }
 
     function refreshCashGudang() {
-        showCashSkeleton();
-        $.ajax({
-            url: "/getCashGudang",
-            data: {
-                dates: dates,
-                staff_id: $('#filter_staff_id').val()
-            },
-            method: "get",
-            success: function (data) {
-                // if (!Array.isArray(data)) {
-                //     data = data.original || [];
-                // }
-                table.clear().draw(); 
-                console.log(data['data']);
-                e = data['data'];
-                let debits = 0;
-                let credits = 0;
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
+        cashAjaxGet('/getCashGudang', {
+            dates: dates,
+            staff_id: $('#filter_staff_id').val(),
+        }, function (data) {
+            table.clear().draw();
+            let e = data['data'];
+            let debits = 0;
+            let credits = 0;
+            for (let i = 0; i < e.length; i++) {
                     e[i].date = moment(e[i].cg_date).format('D MMM YYYY');
                     if (e[i].cg_aksi == 1){
                         e[i].debit = "Rp " + formatRupiahMinus(parseInt(e[i].cg_nominal));
@@ -806,53 +814,25 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw(false);
-                feather.replace(); // Biar icon feather muncul lagi
-
-                updateCashOperationalFooter(debits, credits);
-                sisa_kas = data['sisa_kas'];
-
-                // Expand child row
-                setTimeout(function () {
-                    $('#tableCash tbody td.dt-control').each(function () {
-                        $(this).trigger('click');
-                    });
-                }, 100);
-                openCashFromDashboardLink();
-                hideCashSkeleton();
-            },
-            error: function (err) {
-                hideCashSkeleton();
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load kategori:", err);
-            }
+            table.rows.add(e).draw(false);
+            updateCashOperationalFooter(debits, credits);
+            sisa_kas = data['sisa_kas'];
         });
     }
 
     function refreshCashArmada() {
-        showCashSkeleton();
-        $.ajax({
-            url: "/getCashArmada",
-            data: {
-                dates: dates,
-                customer_id: $('#filter_customer_id').val()
-            },
-            method: "get",
-            success: function (data) {
-                // if (!Array.isArray(e)) {
-                //     e = e.original || [];
-                // }
-                table.clear().draw(); 
+        cashAjaxGet('/getCashArmada', {
+            dates: dates,
+            customer_id: $('#filter_customer_id').val(),
+        }, function (data) {
+            table.clear().draw();
 
-                // Manipulasi data sebelum masuk ke tabel
-                let e = data['data'];
-                console.log(e);
-                let debits = 0;
-                let credits = 0;
-                let totalAll = 0;
-                let totalSummary = 0;
-                var sisa = 0;
-                for (let i = 0; i < e.length; i++) {
+            let e = data['data'];
+            let debits = 0;
+            let credits = 0;
+            let totalAll = 0;
+            var sisa = 0;
+            for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].cr_date).format('D MMM YYYY');
                     if (e[i].cr_type == 1){
@@ -917,56 +897,27 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw(false);
-                
-                updateCashOperationalFooter(debits, credits);
-                // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
-                if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
-                else $('#totalArmada').html('-');
+            table.rows.add(e).draw(false);
 
-                // Expand child row
-                setTimeout(function () {
-                    $('#tableCash tbody td.dt-control').each(function () {
-                        $(this).trigger('click');
-                    });
-                }, 100);
-
-                feather.replace(); // Biar icon feather muncul lagi
-                openCashFromDashboardLink();
-                hideCashSkeleton();
-            },
-            error: function (err) {
-                hideCashSkeleton();
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load kategori:", err);
-            }
+            updateCashOperationalFooter(debits, credits);
+            if ($('#filter_customer_id').val() != null) $('#totalArmada').html(`Rp ${formatRupiahMinus(data['customer_saldo'])}`);
+            else $('#totalArmada').html('-');
         });
     }
 
     function refreshCashSales() {
-        showCashSkeleton();
-        $.ajax({
-            url: "/getCashSales",
-            data: {
-                dates: dates,
-                staff_id: $('#filter_sales_id').val()
-            },
-            method: "get",
-            success: function (data) {
-                // if (!Array.isArray(e)) {
-                //     e = e.original || [];
-                // }
-                table.clear().draw(); 
+        cashAjaxGet('/getCashSales', {
+            dates: dates,
+            staff_id: $('#filter_sales_id').val(),
+        }, function (data) {
+            table.clear().draw();
 
-                // Manipulasi data sebelum masuk ke tabel
-                let e = data['data'];
-                console.log(e);
-                let debits = 0;
-                let credits = 0;
-                let totalAll = 0;
-                let totalSummary = 0;
-                var sisa = 0;
-                for (let i = 0; i < e.length; i++) {
+            let e = data['data'];
+            let debits = 0;
+            let credits = 0;
+            let totalAll = 0;
+            var sisa = 0;
+            for (let i = 0; i < e.length; i++) {
                     totalAll = e[i].total_all;
                     e[i].date = moment(e[i].cs_date).format('D MMM YYYY');
                     if (e[i].cs_transaction == 1 && e[i].cs_aksi == 1){
@@ -1023,29 +974,11 @@
                             '<span class="text-muted small">—</span>';
                     }
                 }
-                table.rows.add(e).draw(false);
-                
-                updateCashOperationalFooter(debits, credits);
-                // $('#totalSeluruh').html(`Rp ${formatRupiahMinus(totalAll)}`);
-                if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
-                else $('#totalSales').html('-');
+            table.rows.add(e).draw(false);
 
-                // Expand child row
-                setTimeout(function () {
-                    $('#tableCash tbody td.dt-control').each(function () {
-                        $(this).trigger('click');
-                    });
-                }, 100);
-
-                feather.replace(); // Biar icon feather muncul lagi
-                openCashFromDashboardLink();
-                hideCashSkeleton();
-            },
-            error: function (err) {
-                hideCashSkeleton();
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load kategori:", err);
-            }
+            updateCashOperationalFooter(debits, credits);
+            if ($('#filter_sales_id').val() != null) $('#totalSales').html(`Rp ${formatRupiahMinus(data['staff_saldo'])}`);
+            else $('#totalSales').html('-');
         });
     }
 
@@ -1324,33 +1257,36 @@
     $('#tableCash tbody').on('click', 'td.dt-control', function () {
         let tr = $(this).closest('tr');
         let row = table.row(tr);
+        let $icon = $(this).find('i.fe');
 
         if (row.child.isShown()) {
             row.child.hide();
             tr.removeClass('shown');
-        } else {
-            if (type == "admin") {
-                let detail = row.data().detail ?? null;
-                if (detail) detail.ca_date = row.data().ca_date;
-                row.child(format(detail)).show();
-            }
-            else if (type == "gudang") {
-                let detail = row.data().detail ?? null;
-                if (detail) detail.cg_date = row.data().cg_date;
-                row.child(formatGudang(detail)).show();
-            }
-            else if (type == "armada") {
-                let detail = row.data().detail ?? null;
-                if (detail) detail.cr_date = row.data().cr_date;
-                row.child(formatArmada(detail)).show();
-            }
-            else if (type == "sales") {
-                let detail = row.data().detail ?? null;
-                if (detail) detail.cs_date = row.data().cs_date;
-                row.child(formatSales(detail)).show();
-            }
-            tr.addClass('shown');
+            $icon.removeClass('fe-minus-circle').addClass('fe-plus-circle');
+            return;
         }
+
+        let detail = row.data().detail ?? null;
+        if (!detail || !detail.length) return;
+
+        if (type == "admin") {
+            detail.ca_date = row.data().ca_date;
+            row.child(format(detail)).show();
+        }
+        else if (type == "gudang") {
+            detail.cg_date = row.data().cg_date;
+            row.child(formatGudang(detail)).show();
+        }
+        else if (type == "armada") {
+            detail.cr_date = row.data().cr_date;
+            row.child(formatArmada(detail)).show();
+        }
+        else if (type == "sales") {
+            detail.cs_date = row.data().cs_date;
+            row.child(formatSales(detail)).show();
+        }
+        tr.addClass('shown');
+        $icon.removeClass('fe-plus-circle').addClass('fe-minus-circle');
     });
 
     // -------------- ROW DETAIL ADMIN --------------

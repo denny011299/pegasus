@@ -81,6 +81,24 @@
             padding-right: 0 !important; /* tapi hilangkan padding-right yang bikin geser */
         }
 
+        #tableCash-wrap {
+            position: relative;
+            min-height: 280px;
+        }
+
+        #tableCash-wrap:not(.is-loading) .dataTables_processing {
+            display: none !important;
+        }
+
+        #tableCash-wrap.is-loading .dataTables_processing {
+            display: flex !important;
+        }
+
+        #tableCash-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
     </style>
 @endsection
 @section('content')
@@ -168,7 +186,7 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableCash-wrap">
+                            <div class="table-responsive position-relative dt-pending" id="tableCash-wrap">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div class="dt-skeleton-head" style="grid-template-columns: 4% 11% 12% 11% 20% 10% 10% 8% 8% 6%;">
                                         <span style="width:30%"></span>
