@@ -2058,11 +2058,7 @@ $(document).on("click", "#btn-accept-so", function () {
                             e.message,
                             fallbackNames,
                         );
-                        notifikasi(
-                            "error",
-                            e.header || "Gagal ACC",
-                            messageText,
-                        );
+                        showSoErrorModal(e.header || "Gagal ACC", messageText);
                     }
                     if (e.status == -2) {
                         $(".modal").modal("hide");
@@ -2131,12 +2127,35 @@ function collectRecommendWarehouses(res) {
     return opts;
 }
 
+// Popup error bertema PG (rounded-4/16px, tombol pg-btn-*) — dipakai di alur ACC Pengiriman
+// supaya konsisten dengan pg-modal--danger, dan MUNCUL DI DEPAN #modalKonfirmasi (lihat
+// .swal2-container z-index di pg-modal-styles.blade.php) alih-alih notifikasi() polos yang
+// dulu tertutup modal konfirmasi hijau yang masih terbuka di belakangnya.
+function showSoErrorModal(header, message) {
+    Swal.fire({
+        icon: "error",
+        iconColor: "#ef4444",
+        title: header || "Gagal ACC",
+        html:
+            '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;">' +
+            escapeHtmlSo(message || "") +
+            "</p>",
+        confirmButtonText: "Tutup",
+        customClass: {
+            confirmButton: "pg-btn-confirm pg-btn-confirm--danger",
+            title: "fw-bold fs-4 text-dark",
+            popup: "rounded-4",
+        },
+        buttonsStyling: false,
+    });
+}
+
 function showStockRecommendModal(res) {
     var opts = collectRecommendWarehouses(res);
     var summary = formatStockRecommendations(res);
 
     if (!opts.length) {
-        notifikasi("error", res.header || "Stok tidak cukup", summary);
+        showSoErrorModal(res.header || "Stok tidak cukup", summary);
         return;
     }
 
@@ -2167,16 +2186,17 @@ function showStockRecommendModal(res) {
 
     Swal.fire({
         icon: "error",
+        iconColor: "#ef4444",
         title: res.header || "Stok tidak cukup",
         html: html,
         showCancelButton: true,
+        reverseButtons: true, // Batal di kiri, aksi di kanan (SOP tombol footer modal)
         confirmButtonText: '<i class="fe fe-check"></i> Pakai Gudang Ini',
         cancelButtonText: "Batal",
         focusConfirm: false,
         customClass: {
-            confirmButton:
-                "btn btn-primary d-inline-flex align-items-center gap-2 px-4 py-2 mx-1",
-            cancelButton: "btn btn-light px-4 py-2 mx-1",
+            confirmButton: "pg-btn-confirm",
+            cancelButton: "pg-btn-cancel",
             title: "fw-bold fs-4 text-dark",
             popup: "rounded-4",
         },
