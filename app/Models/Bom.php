@@ -490,5 +490,38 @@ class Bom extends Model
             'created_by' => $staffId,
         ]);
     }
+
+    /**
+     * QC21: soft-delete seluruh resep yang memakai bahan (supplies_id) di bom_details.
+     *
+     * @param  array<int|string>  $suppliesIds
+     */
+    public function softDeleteBySuppliesIds(array $suppliesIds): void
+    {
+        $suppliesIds = array_values(array_unique(array_filter(array_map('intval', $suppliesIds))));
+        if ($suppliesIds === []) {
+            return;
+        }
+
+        $bomIds = BomDetail::where('status', 1)
+            ->whereIn('supplies_id', $suppliesIds)
+            ->pluck('bom_id')
+            ->unique()
+            ->values()
+            ->all();
+        if ($bomIds === []) {
+            return;
+        }
+
+        $staffId = Session::get('user') ? Session::get('user')->staff_id : null;
+        self::whereIn('bom_id', $bomIds)->where('status', 1)->update([
+            'status' => 0,
+            'created_by' => $staffId,
+        ]);
+        BomDetail::whereIn('bom_id', $bomIds)->where('status', 1)->update([
+            'status' => 0,
+            'created_by' => $staffId,
+        ]);
+    }
 }
 

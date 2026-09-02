@@ -399,6 +399,9 @@ class Supplies extends Model
         SuppliesStock::withoutGlobalScope('active_warehouse')
             ->where("supplies_id", "=", $data["supplies_id"])
             ->update(["status" => 0]);
+
+        // QC21: cascade soft-delete resep BOM yang memakai bahan ini
+        (new Bom())->softDeleteBySuppliesIds([(int) $data["supplies_id"]]);
     }
 
     public function getActiveUnitsForSupplies(int $suppliesId)
