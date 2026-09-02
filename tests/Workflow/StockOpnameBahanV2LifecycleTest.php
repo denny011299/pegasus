@@ -12,6 +12,7 @@ use App\Support\StockOpname\BahanOpnameLifecycle;
 use App\Support\StockOpname\BahanOpnameLineReader;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ use Tests\TestCase;
 class StockOpnameBahanV2LifecycleTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private function staffId(): int
     {
@@ -35,7 +37,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     }
 
     /** @return array{0: Supplies, 1: SuppliesStock, 2: SuppliesStock, 3: Unit, 4: Unit} */
-    private function makeFixture(int $dosStock = 12, int $pcsStock = 42): array
+    private function makeFixture(int $dosStock = 12, int $pcsStock = 42, int $warehouseId = 1): array
     {
         $units = Unit::where('status', 1)->limit(2)->get();
         $this->assertGreaterThanOrEqual(2, $units->count(), 'fixture butuh minimal 2 satuan aktif');
@@ -53,7 +55,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
             $s = new SuppliesStock();
             $s->supplies_id = $supplies->supplies_id;
             $s->unit_id = $unit->unit_id;
-            $s->warehouse_id = 1;
+            $s->warehouse_id = $warehouseId;
             $s->ss_stock = $qty;
             $s->status = 1;
             $s->save();
@@ -326,9 +328,9 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     // ---------------------------------------------------------------- gulung satuan (rollUpUnits)
 
     /** Kembaran persis makeFixtureWithLadder() (Produk) -- lihat StockOpnameV2LifecycleTest. */
-    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12): array
+    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12, int $warehouseId = 1): array
     {
-        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock);
+        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock, $warehouseId);
 
         $relation = new SuppliesRelation();
         $relation->supplies_id = $supplies->supplies_id;
@@ -445,5 +447,38 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
         (new BahanOpnameLifecycle())->rollUpUnits($stob);
         $this->assertSame(0, StockOpnameBahanLine::where('stob_id', $stob->stob_id)->count());
+    }
+
+    /** Kembaran persis Produk -- lihat StockOpnameV2LifecycleTest untuk alasan lengkap. */
+    public function test_roll_up_skips_a_retail_warehouse_document_entirely(): void
+    {
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0, pcsStock: 42, ratio: 12, warehouseId: $retailWarehouseId);
+        $stob = $this->makeDocument(isDraft: false);
+        $stob->warehouse_id = $retailWarehouseId;
+        $stob->save();
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'pcs harus tetap apa adanya, tidak digulung');
+        $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty, 'DOS tidak boleh ikut terisi otomatis di gudang eceran');
+    }
+
+    /** Dokumen tanpa gudang sama sekali (warehouse_id null) tetap digulung seperti sebelum multi-gudang ada. */
+    public function test_roll_up_still_applies_when_document_has_no_warehouse_pinned(): void
+    {
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
+        $stob = $this->makeDocument(isDraft: false);
+        $this->assertNull($stob->warehouse_id);
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty);
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
     }
 }
