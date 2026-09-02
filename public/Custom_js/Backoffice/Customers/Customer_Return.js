@@ -1534,6 +1534,7 @@
             inputFile = "#cr-proof-camera";
             cameraReturnModal = "#customer-return-modal";
             resetCameraModalUi();
+            startCamera();
             $("#customer-return-modal").modal("hide");
             $("#modalPhoto").modal("show");
         });
