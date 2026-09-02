@@ -684,6 +684,15 @@
             '</div>';
     }
 
+    function lineActionCell(type, index, editable) {
+        if (!editable) {
+            return '<td class="text-center text-muted">—</td>';
+        }
+        return '<td class="text-center">' +
+            '<a href="javascript:void(0);" class="btn-action-icon cr-remove-line" data-type="' + type + '" data-index="' + index + '" title="Hapus">' +
+            '<i class="fe fe-trash-2" style="font-size:14px;"></i></a></td>';
+    }
+
     function removeLineAt(type, index, $row) {
         if ($row && $row.length) {
             $row.css({ transition: "opacity .2s ease", opacity: 0 });
@@ -707,17 +716,21 @@
                 '<td class="px-4">' + lineTypeBadge("supply") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.supplies_name) + '</td>' +
                 "<td>" + qtyCell("supply", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + esc(line.warehouse_name) + "</td></tr>";
+                '<td class="px-4">' + esc(line.warehouse_name) + "</td>" +
+                lineActionCell("supply", index, editable) +
+                "</tr>";
         });
         productLines.forEach(function (line, index) {
             html += "<tr>" +
                 '<td class="px-4">' + lineTypeBadge("product") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.product_label) + '</td>' +
                 "<td>" + qtyCell("product", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + productWarehouseCell(line, index, editable) + "</td></tr>";
+                '<td class="px-4">' + productWarehouseCell(line, index, editable) + "</td>" +
+                lineActionCell("product", index, editable) +
+                "</tr>";
         });
         if (!html) {
-            html = '<tr><td colspan="4" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
+            html = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
         }
         $("#cr-all-lines").html(html);
         updateCounts();
@@ -1469,6 +1482,13 @@
             lines[index].qty = qty;
             $(this).removeClass("is-invalid");
             updateCounts();
+        });
+
+        $(document).on("click", ".cr-remove-line", function () {
+            if (crMode === "view") return;
+            var type = $(this).data("type");
+            var index = parseInt($(this).data("index"), 10);
+            removeLineAt(type, index, $(this).closest("tr"));
         });
 
         $(document).on("keydown", ".cr-line-qty", function (event) {
