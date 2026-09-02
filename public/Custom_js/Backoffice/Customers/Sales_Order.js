@@ -223,7 +223,8 @@ function openSalesOrderRevisionModal(data) {
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
 
-function openSalesOrderDetailModal(data) {
+function openSalesOrderDetailModal(data, intent) {
+    intent = intent === "confirm" ? "confirm" : "view";
     var img =
         typeof parsePhotoInputValue === "function"
             ? parsePhotoInputValue(data.so_img)
@@ -306,13 +307,14 @@ function openSalesOrderDetailModal(data) {
     $("#so_scan_barcode, #so_scan_qty").attr("disabled", true);
     setSoProductInputVisible(false);
 
-    if (data.status == 1) {
-        if (soHasAccess("Pengiriman", "others")) {
-            showSoAccButtons();
-            $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
-        } else {
-            hideSoAccButtons();
-        }
+    var soStatus = parseInt(data.status, 10);
+    var confirmMode =
+        intent === "confirm" &&
+        soStatus === 1 &&
+        soHasAccess("Pengiriman", "others");
+    if (confirmMode) {
+        showSoAccButtons();
+        $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
         $(".btn_acc").attr("so_id", data.so_id);
         $(".btn_acc").data("items", data.items);
         $(".btn_decline").attr("so_id", data.so_id);
@@ -1183,10 +1185,17 @@ function renderSoStatus(status) {
 function renderSoAction(row) {
     var soa =
         '<div class="d-flex justify-content-center align-items-center gap-2">';
+    var status = parseInt(row.status, 10);
+    var pending = status === 1;
     var canView = soHasAccess("Pengiriman", "view");
-    var canDelete =
-        parseInt(row.status, 10) === 1 && soHasAccess("Pengiriman", "delete");
-    if (canView) {
+    var canConfirm = pending && soHasAccess("Pengiriman", "others");
+    var canDelete = pending && soHasAccess("Pengiriman", "delete");
+    if (canConfirm) {
+        soa +=
+            '<a class="btn-action-icon btn_confirm" data-id="' +
+            row.so_id +
+            '" href="javascript:void(0);" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#059669;" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+    } else if (canView) {
         soa +=
             '<a class="btn-action-icon btn_view" data-id="' +
             row.so_id +
@@ -1199,7 +1208,7 @@ function renderSoAction(row) {
             '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
-    if (!canView && !canDelete) {
+    if (!canConfirm && !canView && !canDelete) {
         return '<span class="text-muted small">—</span>';
     }
     return soa;
@@ -1226,13 +1235,15 @@ function maybeOpenDeepLinkModals() {
         confirmAutoOpened = true;
         loadSalesOrderWithItems(confirmSoId, function (data) {
             cleanConfirmQueryParam();
-            if (soHasAccess("Pengiriman", "view")) {
-                openSalesOrderDetailModal(data);
+            if (soHasAccess("Pengiriman", "others")) {
+                openSalesOrderDetailModal(data, "confirm");
+            } else if (soHasAccess("Pengiriman", "view")) {
+                openSalesOrderDetailModal(data, "view");
             } else {
                 notifikasi(
                     "error",
                     "Akses Ditolak",
-                    "Role ini tidak punya akses lihat pengiriman.",
+                    "Role ini tidak punya akses konfirmasi pengiriman.",
                 );
             }
         });
@@ -1976,7 +1987,18 @@ $(document).on("click", "#tableSalesOrder-wrap .btn_view", function (e) {
     e.preventDefault();
     var soId = parseInt($(this).attr("data-id"), 10);
     if (!soId) return;
-    loadSalesOrderWithItems(soId, openSalesOrderDetailModal);
+    loadSalesOrderWithItems(soId, function (data) {
+        openSalesOrderDetailModal(data, "view");
+    });
+});
+
+$(document).on("click", "#tableSalesOrder-wrap .btn_confirm", function (e) {
+    e.preventDefault();
+    var soId = parseInt($(this).attr("data-id"), 10);
+    if (!soId) return;
+    loadSalesOrderWithItems(soId, function (data) {
+        openSalesOrderDetailModal(data, "confirm");
+    });
 });
 
 //delete
