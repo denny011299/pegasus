@@ -9,15 +9,26 @@ use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
  * GitHub #116: Pengiriman had no early stock-availability check while building the "Daftar
  * Produk" list in the Tambah/Update Pengiriman modal — the user only found out stock was
  * short at ACC, after already filling in the whole document. This mirrors Produksi's
- * add-time check (GitHub #101/#105, see ProductionCheckStockOnAddTest): POST
- * /checkSalesOrderStock simulates SalesOrderStock::buildPlan() read-only against the
- * candidate product list sent from the "+ Tambah" button.
+ * add-time check (GitHub #101/#105, see ProductionCheckStockOnAddTest) but scoped to ONE
+ * line per call, not the whole candidate list: POST /checkSalesOrderStock simulates
+ * SalesOrderStock::buildPlan() read-only against just the single row being added (or whose
+ * gudang eceran dropdown was just changed) — the frontend only calls this once that row's
+ * warehouse is already known (main warehouse, staff's own active retail warehouse, or the
+ * row's freshly-picked gudang eceran). A row using the eceran unit with no warehouse picked
+ * yet never calls this at all — it's added straight to the list, and "wajib pilih gudang
+ * eceran" is enforced client-side, focused on that row, only at final submit.
+ *
+ * Checking one row per call (instead of the whole array, as an earlier version of this fix
+ * did) also matters functionally: re-simulating every earlier row on every new add would
+ * make an already-known shortage on row 1 pop the error again every time row 2, 3, ... are
+ * added, even though nothing about row 1 changed.
  *
  * This is a UI early-warning only — it does NOT touch insertSalesOrder()'s behavior, which
  * stays intentionally unblocked by current stock (GitHub #99, see
@@ -27,6 +38,7 @@ use Tests\TestCase;
 class SalesOrderCheckStockOnAddTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private const UNIT_ID = 9; // Piece
     private const DOS_UNIT_ID = 7; // Dos — placeholder upper unit, never stocked or ordered here
@@ -171,6 +183,95 @@ class SalesOrderCheckStockOnAddTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertSame(1, $response->json('status'), 'add-row check must not demand a retail warehouse before final submit');
+    }
+
+    /**
+     * A row picking its gudang eceran (the frontend's .so-retail-warehouse dropdown) sends a
+     * single line with that warehouse_id resolved. This checks stock against exactly the
+     * warehouse picked, not the main one — a retail-unit line has no stock at all in the main
+     * warehouse (see SalesOrderRetailAndUnitConversionFlowTest), so it must not be flagged
+     * short just because the check happened to look at the wrong warehouse.
+     */
+    public function test_check_scopes_a_retail_row_to_its_own_picked_warehouse(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $category = new Category();
+        $category->category_name = 'SO Check Stock Row Warehouse Test Category';
+        $category->status = 1;
+        $category->save();
+
+        $product = new Product();
+        $product->product_name = 'SO Check Stock Row Warehouse Test Product';
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([self::UNIT_ID]);
+        $product->unit_id = self::UNIT_ID;
+        $product->status = 1;
+        $product->save();
+
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'SO Check Stock Row Warehouse Test Variant';
+        $variant->product_variant_sku = 'RG-SOCHECKROWWH-'.uniqid();
+        $variant->product_variant_price = 1000;
+        $variant->retail_unit = self::UNIT_ID;
+        $variant->status = 1;
+        $variant->save();
+
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId('Pengiriman');
+        $this->assignWarehousesToActingStaff(self::WAREHOUSE_ID, $retailWarehouseId);
+        $retailStock = new ProductStock();
+        $retailStock->product_id = $product->product_id;
+        $retailStock->product_variant_id = $variant->product_variant_id;
+        $retailStock->unit_id = self::UNIT_ID;
+        $retailStock->warehouse_id = $retailWarehouseId;
+        $retailStock->ps_stock = 10;
+        $retailStock->status = 1;
+        $retailStock->save();
+        // Deliberately no ProductStock row at all for the main warehouse.
+
+        $line = [
+            'product_variant_id' => $variant->product_variant_id,
+            'unit_id' => self::UNIT_ID,
+            'so_qty' => 5,
+            'warehouse_id' => $retailWarehouseId,
+        ];
+
+        $response = $this->post('/checkSalesOrderStock', [
+            'products' => json_encode([$line]),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame(1, $response->json('status'), 'must check the row against its own picked warehouse, not the main one');
+    }
+
+    /**
+     * The core bug report behind this follow-up: adding a second row must not re-surface an
+     * already-known shortage on the first row. Since each add now only sends the one row being
+     * added, a shortage on an earlier row (already reported once) simply never appears again in
+     * a later call it wasn't included in.
+     */
+    public function test_adding_a_second_row_does_not_re_flag_an_earlier_rows_shortage(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fxShort = $this->createFixture(startingStock: 0);
+        $fxOk = $this->createFixture(startingStock: 10);
+
+        // Row 1 (short) is checked and correctly flagged once.
+        $firstCheck = $this->post('/checkSalesOrderStock', [
+            'products' => json_encode([$this->productLine($fxShort['variant'], 5)]),
+        ]);
+        $firstCheck->assertStatus(200);
+        $this->assertNotSame(1, $firstCheck->json('status'));
+
+        // Row 2 (fine) is added afterwards — the request for row 2 alone must not re-mention
+        // row 1's shortage at all.
+        $secondCheck = $this->post('/checkSalesOrderStock', [
+            'products' => json_encode([$this->productLine($fxOk['variant'], 5)]),
+        ]);
+        $secondCheck->assertStatus(200);
+        $this->assertSame(1, $secondCheck->json('status'));
     }
 
     public function test_check_still_lets_a_short_document_be_created_per_github_99(): void

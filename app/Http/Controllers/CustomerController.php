@@ -128,12 +128,17 @@ class CustomerController extends Controller
     }
 
     /**
-     * Endpoint dipanggil dari JS setiap kali user menambah baris produk ke
-     * "Daftar Produk" pada modal Tambah/Update Pengiriman - GitHub #116, meniru
-     * pola checkProductionStock() di Produksi (GitHub #101/#105). Menerima
-     * `products` yang SUDAH termasuk baris yang baru mau ditambahkan (client
-     * kirim seluruh array setelah push/merge), supaya simulasi stok per gudang
-     * dihitung dari kondisi akhir yang benar.
+     * Endpoint dipanggil dari JS setiap kali user menambah SATU baris produk ke
+     * "Daftar Produk" pada modal Tambah/Update Pengiriman, atau memilih gudang eceran
+     * pada dropdown per baris - GitHub #116, meniru pola checkProductionStock() di
+     * Produksi (GitHub #101/#105) tapi disederhanakan ke SATU baris per panggilan
+     * (bukan seluruh daftar): mengecek ulang seluruh baris lama tiap kali ada baris
+     * baru cuma bikin alert lama nongol lagi berulang-ulang tanpa alasan baru. Client
+     * hanya mengirim baris yang baru mau ditambahkan/diubah, dengan warehouse_id yang
+     * SUDAH pasti (gudang utama aktif, gudang eceran aktif staf, atau gudang eceran
+     * yang baru dipilih di dropdown baris itu) - baris satuan eceran yang gudangnya
+     * belum dipilih sama sekali TIDAK memanggil endpoint ini dulu (lihat catatan di
+     * #btn-add-product-so/.so-retail-warehouse di Sales_Order.js).
      *
      * Read-only - hanya mensimulasikan ketersediaan lewat SalesOrderStock::buildPlan(),
      * TIDAK memutasi stok. Ini murni peringatan dini di UI: insertSalesOrder()/
@@ -145,12 +150,10 @@ class CustomerController extends Controller
      * lolos nanti kalau stok bertambah (produksi/PO/transfer) sebelum ACC.
      *
      * SENGAJA tidak menjalankan validateRetailWarehouseUnits()/validateRetailSelection() di
-     * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), supaya
-     * popup "Gudang eceran wajib" tidak muncul cuma karena user belum sempat pilih gudang
-     * eceran saat baris baru ditambahkan (kolom itu lazimnya diisi belakangan, di footer
-     * form, bukan per baris). Baris satuan eceran yang gudangnya belum jelas cukup dilewati
-     * (tidak ikut disimulasikan) di sini - tetap divalidasi & diperiksa stoknya nanti saat
-     * submit akhir.
+     * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), karena
+     * baris yang gudangnya belum dipilih memang tidak sampai ke sini sama sekali (lihat di
+     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang eceran" tetap
+     * divalidasi & fokus ke dropdown yang kosong saat klik "Tambah/Update Pengiriman".
      */
     function checkSalesOrderStock(Request $req)
     {
@@ -161,7 +164,6 @@ class CustomerController extends Controller
 
         $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
 
-        $retailWarehouseId = (int) $req->input('retail_warehouse_id');
         $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
 
         $checkableProducts = [];
@@ -171,12 +173,11 @@ class CustomerController extends Controller
             if ($variantId <= 0 || $unitId <= 0) {
                 continue;
             }
-            if ($hasRetailCol) {
+            if ($hasRetailCol && (int) ($p['warehouse_id'] ?? 0) <= 0) {
                 $retailUnit = (int) (ProductVariant::where('product_variant_id', $variantId)->value('retail_unit') ?? 0);
-                $lineWarehouseId = (int) ($p['warehouse_id'] ?? 0);
-                if ($retailUnit > 0 && $unitId === $retailUnit && $lineWarehouseId <= 0 && $retailWarehouseId <= 0) {
-                    // Gudang eceran belum dipilih untuk baris ini - lewati dari simulasi,
-                    // jangan gagalkan add-time check karenanya (lihat catatan di atas).
+                if ($retailUnit > 0 && $unitId === $retailUnit) {
+                    // Baris eceran tanpa gudang - seharusnya tidak pernah sampai di sini
+                    // (lihat docblock), tapi tetap dilewati alih-alih digagalkan kalau terjadi.
                     continue;
                 }
             }
@@ -187,7 +188,7 @@ class CustomerController extends Controller
             return response()->json(['status' => 1]);
         }
 
-        $plan = SalesOrderStock::buildPlan($checkableProducts, $retailWarehouseId ?: null);
+        $plan = SalesOrderStock::buildPlan($checkableProducts, null);
         if (! ($plan['ok'] ?? false)) {
             return response()->json([
                 'status' => 0,

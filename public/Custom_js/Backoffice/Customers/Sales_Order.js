@@ -462,13 +462,8 @@ function doScanAddSoProduct(data, qty) {
         });
     }
 
-    // Salinan dulu, sama seperti alur manual - lihat catatan GitHub #116 di atas
-    // #btn-add-product-so.
-    var candidateProducts = products.map(function (element) {
-        return $.extend({}, element);
-    });
     var idx = -1;
-    candidateProducts.forEach(function (el, i) {
+    products.forEach(function (el, i) {
         if (
             parseInt(el.product_variant_id) ===
                 parseInt(data.product_variant_id) &&
@@ -478,34 +473,32 @@ function doScanAddSoProduct(data, qty) {
         }
     });
 
-    if (idx === -1) {
-        candidateProducts.push(
-            normalizeProductForActiveWarehouse(
-                applyDefaultMainWarehouse(
-                    applyDefaultRetailWarehouse({
-                        product_variant_id: data.product_variant_id,
-                        product_name: data.pr_name || "-",
-                        product_variant_name: data.product_variant_name,
-                        product_variant_sku: data.product_variant_sku,
-                        product_variant_price: data.product_variant_price || 0,
-                        so_qty: qty,
-                        unit_id: defaultUnitId,
-                        unit_name: defaultUnitName,
-                        pr_unit: data.pr_unit || [],
-                        retail_unit: data.retail_unit || 0,
-                        warehouse_id: null,
-                        warehouse_name: null,
-                    }),
+    function commitScanAdd() {
+        if (idx === -1) {
+            products.push(
+                normalizeProductForActiveWarehouse(
+                    applyDefaultMainWarehouse(
+                        applyDefaultRetailWarehouse({
+                            product_variant_id: data.product_variant_id,
+                            product_name: data.pr_name || "-",
+                            product_variant_name: data.product_variant_name,
+                            product_variant_sku: data.product_variant_sku,
+                            product_variant_price: data.product_variant_price || 0,
+                            so_qty: qty,
+                            unit_id: defaultUnitId,
+                            unit_name: defaultUnitName,
+                            pr_unit: data.pr_unit || [],
+                            retail_unit: data.retail_unit || 0,
+                            warehouse_id: null,
+                            warehouse_name: null,
+                        }),
+                    ),
                 ),
-            ),
-        );
-    } else {
-        candidateProducts[idx].so_qty =
-            (parseInt(candidateProducts[idx].so_qty) || 0) + qty;
-    }
+            );
+        } else {
+            products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        }
 
-    checkSoStockThenAdd(candidateProducts, function () {
-        products = candidateProducts;
         toastr.success(
             "",
             "Berhasil menambahkan: " +
@@ -518,7 +511,32 @@ function doScanAddSoProduct(data, qty) {
         );
         refreshTableProduct();
         $("#so_scan_barcode").val("").focus();
-    });
+    }
+
+    // Sama seperti #btn-add-product-so - lihat catatan GitHub #116 di sana: baris eceran
+    // yang gudangnya belum dipilih langsung masuk daftar tanpa cek, baris lain (gudang
+    // sudah pasti) dicek SATU baris ini saja.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(data.retail_unit || 0, 10) > 0 &&
+        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitScanAdd();
+        return;
+    }
+
+    var whMeta = isActiveRetailWarehouse()
+        ? activeRetailWarehouseMeta()
+        : activeMainWarehouseMeta();
+    var checkQty = idx === -1 ? qty : (parseInt(products[idx].so_qty) || 0) + qty;
+    var checkLine = {
+        product_variant_id: data.product_variant_id,
+        unit_id: defaultUnitId,
+        so_qty: checkQty,
+        warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
+    };
+
+    checkSoStockThenAdd([checkLine], commitScanAdd);
 }
 
 $(document).on("click", "#btn_scan_add_so", function () {
@@ -655,13 +673,8 @@ $(document).on("click", "#btn-add-product-so", function () {
     $("#so_unit_input").removeClass("is-invalid");
 
     var unitText = $("#so_unit_input option:selected").text();
-    // Kerja di atas salinan `products` dulu (bukan `products` asli) - baris baru/gabungan
-    // baru benar-benar masuk ke daftar kalau cek stok di bawah (GitHub #116) lolos.
-    var candidateProducts = products.map(function (element) {
-        return $.extend({}, element);
-    });
     var idx = -1;
-    candidateProducts.forEach((element, index) => {
+    products.forEach((element, index) => {
         if (
             parseInt(element.product_variant_id) ==
                 parseInt(temp.product_variant_id) &&
@@ -671,44 +684,69 @@ $(document).on("click", "#btn-add-product-so", function () {
         }
     });
 
-    if (idx == -1) {
-        var data = {
-            product_variant_id: temp.product_variant_id,
-            product_name: temp.product_name || temp.pr_name || "-",
-            product_variant_name: temp.product_variant_name,
-            product_variant_sku: temp.product_variant_sku,
-            product_variant_price: temp.product_variant_price || 0,
-            so_qty: qty,
-            unit_id: unitId,
-            unit_name: unitText,
-            pr_unit: temp.pr_unit || [],
-            retail_unit: temp.retail_unit || 0,
-            warehouse_id: null,
-            warehouse_name: null,
-        };
-        candidateProducts.push(
-            normalizeProductForActiveWarehouse(
-                applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
-            ),
-        );
-    } else {
-        candidateProducts[idx].so_qty =
-            (parseInt(candidateProducts[idx].so_qty) || 0) + qty;
+    function commitSoAdd() {
+        if (idx == -1) {
+            var data = {
+                product_variant_id: temp.product_variant_id,
+                product_name: temp.product_name || temp.pr_name || "-",
+                product_variant_name: temp.product_variant_name,
+                product_variant_sku: temp.product_variant_sku,
+                product_variant_price: temp.product_variant_price || 0,
+                so_qty: qty,
+                unit_id: unitId,
+                unit_name: unitText,
+                pr_unit: temp.pr_unit || [],
+                retail_unit: temp.retail_unit || 0,
+                warehouse_id: null,
+                warehouse_name: null,
+            };
+            products.push(
+                normalizeProductForActiveWarehouse(
+                    applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
+                ),
+            );
+        } else {
+            products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        }
+
+        toastr.success("", "Berhasil menambahkan Produk");
+        refreshTableProduct();
+
+        $("#so_sku").val(null).trigger("change");
+        fillSoUnitInput(null);
+        $("#so_qty_input").val(1);
     }
 
-    checkSoStockThenAdd(
-        candidateProducts,
-        function () {
-            products = candidateProducts;
-            toastr.success("", "Berhasil menambahkan Produk");
-            refreshTableProduct();
+    // Satuan eceran, dan staf tidak sedang "berada" di gudang eceran (gudangnya sendiri
+    // sudah pasti) - baris ini belum tahu gudang tujuannya (dipilih belakangan lewat
+    // dropdown per baris), jadi TIDAK ada yang bisa dicek sekarang. Cukup masuk ke daftar;
+    // cek stok baru jalan begitu dropdown gudang eceran baris itu diisi (lihat handler
+    // .so-retail-warehouse) - GitHub #116.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(temp.retail_unit || 0, 10) > 0 &&
+        unitId === parseInt(temp.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitSoAdd();
+        return;
+    }
 
-            $("#so_sku").val(null).trigger("change");
-            fillSoUnitInput(null);
-            $("#so_qty_input").val(1);
-        },
-        "#btn-add-product-so",
-    );
+    // Gudangnya sudah pasti di titik ini (gudang utama aktif, atau gudang eceran aktif
+    // kalau staf sedang berada di situ) - cek stok baris INI SAJA, bukan seluruh daftar
+    // (mengecek ulang baris lama tiap kali baris baru ditambah cuma bikin alert lama
+    // nongol lagi berulang-ulang tanpa alasan baru).
+    var whMeta = isActiveRetailWarehouse()
+        ? activeRetailWarehouseMeta()
+        : activeMainWarehouseMeta();
+    var checkQty = idx == -1 ? qty : (parseInt(products[idx].so_qty) || 0) + qty;
+    var checkLine = {
+        product_variant_id: temp.product_variant_id,
+        unit_id: unitId,
+        so_qty: checkQty,
+        warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
+    };
+
+    checkSoStockThenAdd([checkLine], commitSoAdd, "#btn-add-product-so");
 });
 
 /**
@@ -723,14 +761,13 @@ $(document).on("click", "#btn-add-product-so", function () {
  * submit akhir (Tambah/Update Pengiriman) tetap tidak diblokir oleh stok saat ini, sesuai
  * keputusan GitHub #99.
  */
-function checkSoStockThenAdd(candidateProducts, onOk, $btn) {
+function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail) {
     if ($btn) LoadingButton($btn);
     $.ajax({
         url: "/checkSalesOrderStock",
         method: "post",
         data: {
             products: JSON.stringify(candidateProducts),
-            retail_warehouse_id: firstRetailWarehouseId(),
             _token: token,
         },
         headers: {
@@ -747,6 +784,7 @@ function checkSoStockThenAdd(candidateProducts, onOk, $btn) {
                         (e && e.message) || "Stok tidak mencukupi",
                     );
                 }
+                if (onFail) onFail();
                 return;
             }
             onOk();
@@ -760,6 +798,7 @@ function checkSoStockThenAdd(candidateProducts, onOk, $btn) {
                 "Gagal Cek Stok",
                 "Terjadi kesalahan saat memeriksa stok. Silakan coba lagi.",
             );
+            if (onFail) onFail();
         },
     });
 }
@@ -1623,15 +1662,55 @@ $(document).on("change", ".so_unit", function () {
 });
 
 $(document).on("change", ".so-retail-warehouse", function () {
-    var index = parseInt($(this).data("index"), 10);
+    var $select = $(this);
+    var index = parseInt($select.data("index"), 10);
     if (!products[index]) return;
-    products[index].warehouse_id = parseInt($(this).val(), 10) || null;
-    products[index].warehouse_name =
-        $(this).find("option:selected").text() || null;
-    $(this)
+
+    var newWarehouseId = parseInt($select.val(), 10) || null;
+    var newWarehouseName = $select.find("option:selected").text() || null;
+    var previousWarehouseId = products[index].warehouse_id || null;
+    var previousWarehouseName = products[index].warehouse_name || null;
+
+    if (!newWarehouseId) {
+        products[index].warehouse_id = null;
+        products[index].warehouse_name = null;
+        return;
+    }
+
+    $select
         .next(".select2-container")
         .find(".select2-selection")
         .removeClass("is-invalids");
+
+    // Cek stok baris ini SAJA terhadap gudang eceran yang baru dipilih - GitHub #116.
+    // Kalau gagal, kembalikan dropdown ke pilihan sebelumnya (bukan biarkan tampil
+    // seolah pilihan tadi tersimpan) supaya user harus pilih gudang lain.
+    checkSoStockThenAdd(
+        [
+            {
+                product_variant_id: products[index].product_variant_id,
+                unit_id: products[index].unit_id,
+                so_qty: products[index].so_qty,
+                warehouse_id: newWarehouseId,
+            },
+        ],
+        function () {
+            products[index].warehouse_id = newWarehouseId;
+            products[index].warehouse_name = newWarehouseName;
+        },
+        null,
+        function () {
+            products[index].warehouse_id = previousWarehouseId;
+            products[index].warehouse_name = previousWarehouseName;
+            if ($select.hasClass("select2-hidden-accessible")) {
+                $select
+                    .val(previousWarehouseId ? String(previousWarehouseId) : null)
+                    .trigger("change.select2");
+            } else {
+                $select.val(previousWarehouseId || "");
+            }
+        },
+    );
 });
 
 function updateTotal() {
