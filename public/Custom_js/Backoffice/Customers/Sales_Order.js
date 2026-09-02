@@ -1702,16 +1702,36 @@ $(document).on("change", ".so-retail-warehouse", function () {
         function () {
             products[index].warehouse_id = previousWarehouseId;
             products[index].warehouse_name = previousWarehouseName;
-            if ($select.hasClass("select2-hidden-accessible")) {
-                $select
-                    .val(previousWarehouseId ? String(previousWarehouseId) : null)
-                    .trigger("change.select2");
-            } else {
-                $select.val(previousWarehouseId || "");
-            }
+            revertSoRetailWarehouseSelect(
+                $select,
+                previousWarehouseId,
+                previousWarehouseName,
+            );
         },
     );
 });
+
+/**
+ * .so-retail-warehouse is an ajax/remote Select2 (autocompleteWarehouse()) - it keeps NO
+ * static <option> list, only whatever was last picked, so a plain $select.val(id) can't find
+ * an option to select back to on revert (silently no-ops, leaving the rejected pick visually
+ * selected - the bug reported after the stock-scoping fix above). Rebuild the option element
+ * for the previous pick instead, same technique Select2 itself recommends for a
+ * programmatic/ajax option: `new Option(text, value, true, true)`.
+ */
+function revertSoRetailWarehouseSelect($select, warehouseId, warehouseName) {
+    if (!warehouseId) {
+        $select.val(null).trigger("change.select2");
+        return;
+    }
+    var option = new Option(
+        warehouseName || "Gudang #" + warehouseId,
+        warehouseId,
+        true,
+        true,
+    );
+    $select.empty().append(option).trigger("change.select2");
+}
 
 function updateTotal() {
     let total = 0;
