@@ -30,6 +30,18 @@
         setProductIssuesTableLoading(false);
         productIssuesWraps().removeClass("dt-pending").addClass("dt-ready");
     }
+
+    function setProductIssuesViewMode(isView) {
+        var $modal = $('#add-product-issues');
+        var $dialog = $modal.find('.modal-dialog');
+        if (isView) {
+            $modal.addClass('pi-view-mode');
+            $dialog.addClass('modal-dialog-scrollable');
+        } else {
+            $modal.removeClass('pi-view-mode');
+            $dialog.removeClass('modal-dialog-scrollable');
+        }
+    }
     
     $(document).on("click", ".nav-jenis", function () {
         type = $(this).attr("tipe");
@@ -53,9 +65,11 @@
 
     $(document).on('click','.btnAdd',function(){
         mode=1;
+        setProductIssuesViewMode(false);
         items = [];
         ids = [];
         suppliesIds = [];
+        $('#header_action').show();
         $('#add-product-issues .modal-title').html("Tambah Produk Bermasalah");
         $('#add-product-issues input').val("");
         $('#pi_type').html(`
@@ -650,6 +664,15 @@ function loadPiType() {
     
     // 1 = produk, 2 = bahan mentah
     function addRow(define) {
+        var isView = mode === 3;
+        $('#header_action').toggle(!isView);
+        var deleteBtnClass = define == 1 ? 'btn_delete_row_pr' : 'btn_delete_row_sp';
+        var actionCell = isView ? '' : `
+                        <td class="text-center d-flex align-items-center">
+                            <a class="p-2 btn-action-icon ${deleteBtnClass} mx-auto" href="javascript:void(0);">
+                                <i class="fe fe-trash-2"></i>
+                            </a>
+                        </td>`;
         if (define == 1){
             $('#tableProduct tr.row-product').html(" ");
             items.sort(function(a, b) {
@@ -660,12 +683,7 @@ function loadPiType() {
                     <tr class="row-product" data-id="${e.product_variant_id}">
                         <td>${e.product_name}</td>
                         <td>${e.pid_qty}</td>
-                        <td>${e.unit_name}</td>
-                        <td class="text-center d-flex align-items-center">
-                            <a class="p-2 btn-action-icon btn_delete_row_pr mx-auto"  href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                            </a>
-                        </td>
+                        <td>${e.unit_name}</td>${actionCell}
                     </tr>    
                 `);
             });
@@ -683,12 +701,7 @@ function loadPiType() {
                     <tr class="row-supplies" data-id="${e.supplies_variant_id}">
                         <td>${e.supplies_name || e.sup_name}</td>
                         <td>${e.pid_qty}</td>
-                        <td>${e.unit_name}</td>
-                        <td class="text-center d-flex align-items-center">
-                            <a class="p-2 btn-action-icon btn_delete_row_sp mx-auto"  href="javascript:void(0);">
-                                    <i class="fe fe-trash-2"></i>
-                            </a>
-                        </td>
+                        <td>${e.unit_name}</td>${actionCell}
                     </tr>    
                 `);
                 getInvoice(e.supplies_variant_id);
@@ -698,12 +711,14 @@ function loadPiType() {
     }
 
     $(document).on("click",".btn_delete_row_pr",function(){
+        if (mode === 3) return;
         let row = $(this).closest("tr");
         let productId = row.data("id");
         items = items.filter(e => e.product_variant_id != productId);
         row.remove();
     });
     $(document).on("click",".btn_delete_row_sp",function(){
+        if (mode === 3) return;
         let row = $(this).closest("tr");
         let suppliesId = row.data("id");
         items = items.filter(e => e.supplies_variant_id != suppliesId);
@@ -759,6 +774,8 @@ $(document).on("click", ".btn_edit", function () {
     console.log(data);
 
     mode = 2;
+    setProductIssuesViewMode(false);
+    $('#header_action').show();
     $("add-product-issues input").empty().val("");
     $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
     $("#pi_notes").val(data.pi_notes);
@@ -827,6 +844,7 @@ $(document).on("click", ".btn_view", function () {
     console.log(data);
 
     mode = 3;
+    setProductIssuesViewMode(true);
     $("add-product-issues input").empty().val("");
     $("#pi_date").val(moment(data.pi_date).format("DD-MM-YYYY"));
     $("#pi_notes").val(data.pi_notes);

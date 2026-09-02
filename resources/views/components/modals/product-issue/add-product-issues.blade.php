@@ -1,3 +1,41 @@
+<style>
+  #add-product-issues.pi-view-mode.modal {
+    overflow: hidden !important;
+  }
+  html:has(#add-product-issues.pi-view-mode.show),
+  body:has(#add-product-issues.pi-view-mode.show) {
+    overflow: hidden !important;
+  }
+  #add-product-issues.pi-view-mode .modal-dialog {
+    height: auto !important;
+    max-height: calc(100dvh - 2rem) !important;
+  }
+  #add-product-issues.pi-view-mode .modal-content {
+    height: auto !important;
+    max-height: calc(100dvh - 2rem) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #add-product-issues.pi-view-mode form {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #add-product-issues.pi-view-mode .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  #add-product-issues.pi-view-mode .pi-view-table-scroll {
+    max-height: min(50vh, calc(100dvh - 24rem));
+    overflow-y: auto;
+  }
+</style>
   <div class="modal fade" id="add-product-issues" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content p-3">
@@ -87,13 +125,13 @@
                                     </div>
                                 </div> --}}
                 <div class="col-12 py-3 mb-3">
-                  <div class="table-responsive">
+                  <div class="table-responsive pi-view-table-scroll">
                     <table class="table table-center" id="tableProduct" style="min-height: 15vh">
                       <thead>
                         <th id="header_name">Nama Produk</th>
                         <th>Qty</th>
                         <th>Satuan</th>
-                        <th class="no-sort text-center">Aksi</th>
+                        <th id="header_action" class="no-sort text-center">Aksi</th>
                       </thead>
                       <tbody></tbody>
                     </table>
