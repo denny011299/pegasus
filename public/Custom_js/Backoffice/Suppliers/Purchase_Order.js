@@ -3,6 +3,27 @@
     var item = [];
     var grand = 0;
     var dates = null;
+    var purchaseOrderXhr = null;
+
+    function purchaseOrderWrap() {
+        return $("#tablePurchaseOrder-wrap");
+    }
+
+    function setPurchaseOrderTableLoading(isLoading) {
+        var $wrap = purchaseOrderWrap();
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
+    function showPurchaseOrderSkeleton() {
+        purchaseOrderWrap().removeClass("dt-ready").addClass("dt-pending");
+        setPurchaseOrderTableLoading(true);
+    }
+
+    function hidePurchaseOrderSkeleton() {
+        setPurchaseOrderTableLoading(false);
+        purchaseOrderWrap().removeClass("dt-pending").addClass("dt-ready");
+    }
     autocompleteSupplier("#filter_supplier");
     autocompleteSupplier("#po_supplier","#add_purchase_order .modal-content");
     autocompleteSupplier("#select_supplier");
@@ -285,6 +306,7 @@
  
     function inisialisasi() {
         table = $('#tablePurchaseOrder').DataTable({
+            processing: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
@@ -297,6 +319,8 @@
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Pesanan Pembelian",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing:
+                    '<div><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span>Memuat pesanan pembelian...</span></div>',
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
@@ -325,11 +349,21 @@
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
+            drawCallback: function () {
+                setPurchaseOrderTableLoading(false);
+                if (typeof feather !== 'undefined') feather.replace();
+            },
         });
     }
 
     function refreshPurchaseOrder() {
-        $.ajax({
+        if (purchaseOrderXhr && purchaseOrderXhr.readyState !== 4) {
+            purchaseOrderXhr.abort();
+        }
+
+        showPurchaseOrderSkeleton();
+
+        purchaseOrderXhr = $.ajax({
             url: "/getPurchaseOrder",
             method: "get",
             data:{
@@ -386,11 +420,16 @@
                 }
 
                 table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (err && err.statusText === "abort") return;
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
+            },
+            complete: function (xhr, status) {
+                if (status === "abort") return;
+                hidePurchaseOrderSkeleton();
+                if (table) table.columns.adjust();
             }
         });
     }
