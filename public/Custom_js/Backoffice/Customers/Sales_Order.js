@@ -1654,10 +1654,14 @@ $(document).on("change", ".so_unit", function () {
         }
     }
     products[index].unit_id = unit;
-    if (parseInt(products[index].retail_unit || 0, 10) !== unit) {
-        products[index].warehouse_id = null;
-        products[index].warehouse_name = null;
-    }
+    // Selalu kosongkan gudang baris ini begitu satuannya berubah - termasuk saat BERUBAH
+    // MENJADI satuan eceran, yang sebelumnya luput (kondisinya cuma cek "!== unit", jadi
+    // warehouse_id lama - technicalnya gudang UTAMA dari satuan sebelumnya - malah ikut
+    // kebawa dan tampil ke-pre-select di dropdown gudang eceran, padahal gudang itu bukan
+    // gudang eceran sama sekali). User harus pilih manual lagi, yang otomatis memicu cek
+    // stok baris itu lewat handler .so-retail-warehouse (GitHub #116).
+    products[index].warehouse_id = null;
+    products[index].warehouse_name = null;
     refreshTableProduct();
 });
 
