@@ -53,9 +53,21 @@ class BahanOpnameLineReader
         // Dipin ke gudang dokumen ini, bukan gudang aktif sesi pembaca -- lihat liveStockMap().
         $live = $isDraft ? collect() : $this->liveStockMap($lines, $stob->warehouse_id ?: null);
 
+        // Bug dilaporkan user (2026-09-02): draft TIDAK PERNAH lewat publish() (lihat
+        // BahanOpnameLifecycle::publish()'s own guard), jadi sobl_unit_short_name masih NULL --
+        // dulu jatuh ke fallback "unit#12" di bawah. legacyItems() mencetak fallback itu ke dalam
+        // stobd_real/stobd_system, lalu CreateStockOpnameSupplies.js MEM-PARSE ULANG string itu
+        // (seedSavedValuesFromItems()/renderMode2()) dan mencocokkan nama satuan ke katalog asli
+        // ("pcs", bukan "unit#12") -- cocoknya gagal, jadi nilai yang barusan diinput staf tidak
+        // pernah muncul lagi saat draft dibuka ulang. Pakai nama satuan KATALOG (live, sama seperti
+        // yang dipakai legacyItems() membangun daftar 'units') sebagai fallback SEBELUM literal
+        // "unit#N" -- itu cadangan terakhir kalau unit-nya sendiri sudah terhapus dari database.
+        $unitNames = Unit::whereIn('unit_id', $lines->pluck('unit_id')->filter()->unique()->all())
+            ->pluck('unit_short_name', 'unit_id');
+
         return $lines
             ->groupBy('supplies_id')
-            ->map(function ($group) use ($pending, $live, $isDraft) {
+            ->map(function ($group) use ($pending, $live, $isDraft, $unitNames) {
                 $first = $group->first();
                 $units = [];
 
@@ -69,7 +81,7 @@ class BahanOpnameLineReader
                     }
 
                     $units[] = [
-                        'unit' => $line->sobl_unit_short_name ?? ('unit#'.$line->unit_id),
+                        'unit' => $line->sobl_unit_short_name ?? $unitNames->get($line->unit_id) ?? ('unit#'.$line->unit_id),
                         'unit_id' => $line->unit_id,
                         'system' => $system,
                         'live' => $liveQty,
