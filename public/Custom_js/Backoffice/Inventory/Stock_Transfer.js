@@ -103,13 +103,8 @@ function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, dan
     transferOverlayState.done = false;
     var wasOpen = beginTransferOverlay(parentSelector || "#add_stock_transfer");
     function openConfirm() {
-        if (danger) {
-            $("#modalKonfirmasi .btn-konfirmasi")
-                .removeClass("btn-success pg-btn-confirm")
-                .addClass("btn-danger pg-btn-confirm--danger");
-        }
         if (typeof showModalKonfirmasi === "function") {
-            showModalKonfirmasi(text, buttonId);
+            showModalKonfirmasi(text, buttonId, danger);
         }
         // Harus SETELAH showModalKonfirmasi (button id baru di-assign di situ)
         if (dataId != null && dataId !== "") {
@@ -4098,12 +4093,10 @@ $(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", func
         $("#reject_production_transfer").modal("show");
         return;
     }
-    $("#modalKonfirmasi .btn-konfirmasi")
-        .removeClass("btn-success pg-btn-confirm")
-        .addClass("btn-danger pg-btn-confirm--danger");
     showModalKonfirmasi(
         "Cancel transfer pending ini? Status menjadi Cancel.",
-        "btn-reject-stock-transfer"
+        "btn-reject-stock-transfer",
+        true
     );
     $("#modalKonfirmasi #btn-reject-stock-transfer").attr("data-id", id);
 });

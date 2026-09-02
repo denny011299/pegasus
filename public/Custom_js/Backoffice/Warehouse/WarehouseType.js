@@ -294,8 +294,7 @@ $(document).on("click", "#btn-delete-warehouse-type", function () {
                     (e.message || "Masih ada gudang yang memakai tipe ini") +
                     ". Apakah benar-benar mau menghapus tipe gudang ini?";
                 $("#modalKonfirmasi .modal-title").text("Konfirmasi Hapus Lanjutan");
-                $("#modalKonfirmasi .btn-konfirmasi").removeClass("btn-success pg-btn-confirm").addClass("btn-danger pg-btn-confirm--danger");
-                showModalKonfirmasi(msg, "btn-force-delete-warehouse-type");
+                showModalKonfirmasi(msg, "btn-force-delete-warehouse-type", true);
                 $("#btn-force-delete-warehouse-type").attr("data-id", id);
                 return;
             }

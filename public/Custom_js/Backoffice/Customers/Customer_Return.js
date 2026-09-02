@@ -1404,12 +1404,7 @@
             return;
         }
         $("#customer-return-modal").modal("hide");
-        if (action === "decline") {
-            $("#modalKonfirmasi .btn-konfirmasi")
-                .removeClass("btn-success pg-btn-confirm")
-                .addClass("btn-danger pg-btn-confirm--danger");
-        }
-        showModalKonfirmasi(detail, btnId);
+        showModalKonfirmasi(detail, btnId, action === "decline");
         $("#" + btnId)
             .attr("data-key", key)
             .attr("data-action", action);
