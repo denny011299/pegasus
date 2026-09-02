@@ -32,8 +32,27 @@ class Bank extends Model
         return $rows;
     }
 
+    /**
+     * True kalau ada bank aktif lain dengan nama yang sama (case-insensitive, trimmed).
+     * $excludeId dipakai saat update supaya baris itu sendiri tidak dianggap bentrok
+     * dengan dirinya sendiri.
+     */
+    function isDuplicateName($name, $excludeId = null)
+    {
+        $query = Bank::where('status', 1)
+            ->whereRaw('LOWER(TRIM(bank_kode)) = ?', [strtolower(trim($name))]);
+        if ($excludeId) {
+            $query->where('bank_id', '!=', $excludeId);
+        }
+        return $query->exists();
+    }
+
     function insertBank($data)
     {
+        if ($this->isDuplicateName($data["bank_kode"])) {
+            return response()->json(['message' => 'Nama bank sudah digunakan'], 422);
+        }
+
         $t = new Bank();
         $t->bank_kode = $data["bank_kode"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
@@ -44,6 +63,12 @@ class Bank extends Model
     function updateBank($data)
     {
         $t = Bank::find($data["bank_id"]);
+        if (!$t) return null;
+
+        if ($this->isDuplicateName($data["bank_kode"], $t->bank_id)) {
+            return response()->json(['message' => 'Nama bank sudah digunakan'], 422);
+        }
+
         $t->bank_kode = $data["bank_kode"];
         $t->save();
         return $t->bank_id;
