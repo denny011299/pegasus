@@ -75,7 +75,10 @@ function syncProductionDestinationControl() {
     if (isRetail) {
         // Satuan eceran → pilih gudang eceran (d-none, bukan .hide — badge pakai d-flex !important)
         $badge.addClass("d-none").removeClass("d-flex");
-        if (typeof autocompleteWarehouse === "function") {
+        if (
+            typeof autocompleteWarehouse === "function" &&
+            !$dest.hasClass("select2-hidden-accessible")
+        ) {
             autocompleteWarehouse(
                 "#production_destination_warehouse_id",
                 "body",
@@ -89,13 +92,35 @@ function syncProductionDestinationControl() {
             $dest.show();
         }
     } else {
-        $dest.val(null).trigger("change");
+        if ($dest.hasClass("select2-hidden-accessible")) {
+            $dest.val(null).trigger("change");
+            $dest.select2("destroy");
+        } else {
+            $dest.val(null);
+        }
         if ($destSelect2.length) {
             $destSelect2.hide();
         }
         $dest.hide();
         $badge.removeClass("d-none").addClass("d-flex");
     }
+}
+
+function resetProductionProductUnitSelect() {
+    $("#unit_id").html("");
+    $("#unit_id").append("<option selected>Pilih Satuan</option>");
+    $("#production_pallet_hint").text("");
+    syncProductionDestinationControl();
+}
+
+function clearProductionProductSelect() {
+    var $product = $("#product_id");
+    if ($product.hasClass("select2-hidden-accessible")) {
+        $product.val(null).trigger("change");
+        return;
+    }
+    $product.empty();
+    resetProductionProductUnitSelect();
 }
 
 function resetProductionApprovalActions() {
@@ -1175,7 +1200,7 @@ function continueAddProduct(tempBom) {
                 );
             }
 
-            $("#product_id").empty();
+            clearProductionProductSelect();
             $("#unit_id").empty();
             $("#unit_id").append("<option selected>Pilih Satuan</option>");
             $("#production_qty").val(1);
@@ -1215,7 +1240,7 @@ $(document).on("click", ".btnAdd", function () {
     clearPendingProductionAdd();
     $("#addProduction .modal-title").html("Tambah Produksi");
     $("#addProduction input").val("");
-    $("#product_id").empty();
+    clearProductionProductSelect();
     $("#production_qty").val(1);
     addRow([]);
     $(".is-invalid").removeClass("is-invalid");
@@ -1284,13 +1309,14 @@ function updateProductionPalletHint() {
 
 $(document).on("change", "#product_id", function () {
     var data = $(this).select2("data")[0];
-    console.log(data);
+
+    if (!data || !data.bom_id) {
+        resetProductionProductUnitSelect();
+        return;
+    }
 
     // Blokir jika produk / varian sudah tidak aktif
-    if (
-        data &&
-        (data.product_status == 0 || data.product_variant_status == 0)
-    ) {
+    if (data.product_status == 0 || data.product_variant_status == 0) {
         var alasan = [];
         if (data.product_status == 0) alasan.push("produk sudah tidak aktif");
         if (data.product_variant_status == 0)
@@ -1302,14 +1328,13 @@ $(document).on("change", "#product_id", function () {
                 alasan.join(" & ") +
                 ". Silakan hapus resep (BOM) ini di halaman Resep Bahan Mentah.",
         );
-        // Clear pilihan agar user tidak bisa lanjut
         $(this).val(null).trigger("change");
-        $("#unit_id").html("");
         return;
     }
 
+    var units = Array.isArray(data.pr_unit) ? data.pr_unit : [];
     $("#unit_id").html("");
-    data.pr_unit.forEach((element) => {
+    units.forEach(function (element) {
         $("#unit_id").append(
             `<option value="${element.unit_id}">${element.unit_name}</option>`,
         );
@@ -1664,7 +1689,7 @@ function openProductionRevisionFromDashboardLink() {
 
         $("#addProduction .modal-title").html("Revisi Produksi");
         $("#addProduction input").val("");
-        $("#product_id").empty();
+        clearProductionProductSelect();
         $("#production_qty").val(1);
         addRow([]);
         $(".is-invalid").removeClass("is-invalid");
@@ -2113,7 +2138,7 @@ $(document).on("click", ".btn_view", function () {
     list_bahan = [];
     $("#addProduction .modal-title").html("Detail Produksi");
     $("#addProduction input").val("");
-    $("#product_id").empty();
+    clearProductionProductSelect();
     $("#production_qty").val(1);
     addRow([]);
     $(".is-invalid").removeClass("is-invalid");
