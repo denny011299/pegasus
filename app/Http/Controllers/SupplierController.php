@@ -720,6 +720,20 @@ class SupplierController extends Controller
             ]);
         }
 
+        if ((int) $p->pembayaran === 2) {
+            return response()->json([
+                "status" => -1,
+                "message" => "PO sudah terbayar dan tidak dapat ditolak",
+            ]);
+        }
+
+        if ((int) $p->pembayaran === 3) {
+            return response()->json([
+                "status" => -1,
+                "message" => "PO sedang menunggu tanda terima dan tidak dapat ditolak",
+            ]);
+        }
+
         DB::beginTransaction();
         try {
             //liat sebelumnya status apa

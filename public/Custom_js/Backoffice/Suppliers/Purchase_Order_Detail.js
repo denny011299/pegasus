@@ -38,19 +38,13 @@
         $('#po_date').val(data.po_date ? moment(data.po_date).format('D MMMM YYYY') : '-');
    
         $('.save-terima,.save-tolak,.save-qty').hide();
-        if(data.status==1){
+        $('.qtySummary').prop('disabled', true);
+        if (data.status == 1) {
             $('.save-tolak,.save-terima,.save-qty').show();
             $('.qtySummary').prop('disabled', false);
-        }
-        else if(data.status==2){
+        } else if (data.status == 2 && data.pembayaran == 1) {
+            // Approved but belum terbayar — Tolak masih diizinkan (lihat tolakPO regression #14)
             $('.save-tolak').show();
-            $('.save-terima,.save-qty').hide();
-            $('.qtySummary').prop('disabled', true);
-        }
-        
-        if(data.pembayaran==3){
-            $('.save-tolak,.save-terima,.save-qty').hide();
-            $('.qtySummary').prop('disabled', true);
         }
     });
     
@@ -1111,19 +1105,11 @@
         var data = $('#tableDelivery').DataTable().row($(this).parents('tr')).data();
         console.log(data);
         mode = 2;
-        if(data.status == 1){
-            $('.btn-decline').show();
+        $('.btn-decline,.btn-approve,.btn-save-delivery').hide();
+        if (data.status == 1) {
+            $('.btn-decline,.btn-approve,.btn-save-delivery').show();
+        } else if (data.status == 0) {
             $('.btn-approve').show();
-        }
-        else if(data.status == 2){
-            $('.btn-decline').show();
-            $('.btn-approve').hide();
-            $('.btn-save-delivery').hide();
-        }
-        else if(data.status == 0){
-            $('.btn-decline').hide();
-            $('.btn-approve').show();
-            $('.btn-save-delivery').hide();
         }
 
         $('#add_purchase_delivery .modal-title').html("Update Catatan Pengiriman");
@@ -1290,19 +1276,11 @@
         $('.is-invalid').removeClass('is-invalid');
         console.log();
         
-        if(data.status == 1){
-            $('.btn-save-invoice').show();
-            $('.row-acc-invoice').show();
-        }
-        else if(data.status == 0){
-            $('.btn-decline-invoice').hide();
-            $('.btn-approve-invoice').show();
-            $('.btn-save-invoice').hide();
-        }
-        else if(data.status == 2){
-            $('.btn-decline-invoice').show();
-            $('.btn-approve-invoice').hide();
-            $('.btn-save-invoice').hide();
+        $('.btn-save-invoice,.row-acc-invoice,.btn-decline-invoice,.btn-approve-invoice').hide();
+        if (data.status == 1) {
+            $('.btn-save-invoice,.row-acc-invoice,.btn-decline-invoice,.btn-approve-invoice').show();
+        } else if (data.status == 0) {
+            $('.row-acc-invoice,.btn-approve-invoice').show();
         }
 
         $('.btn-approve-invoice').attr("poi_id", data.poi_id);
