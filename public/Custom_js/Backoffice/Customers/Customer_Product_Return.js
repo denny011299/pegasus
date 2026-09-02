@@ -777,7 +777,7 @@
         $(document).on("click", ".cpr-edit", function () { openRecord($(this).data("id"), "edit"); });
         $(document).on("click", ".cpr-delete", function () {
             var id = $(this).data("id");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian produk?", showCancelButton: true, confirmButtonText: "Hapus" })
+            Swal.fire({ icon: "warning", title: "Hapus pengembalian produk?", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#dc2626" })
                 .then(function (result) {
                     if (!result.isConfirmed) return;
                     $.post("/customerProductReturns/" + id + "/delete", { _token: csrf() })

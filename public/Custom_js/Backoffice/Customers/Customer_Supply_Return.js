@@ -703,7 +703,7 @@
         $(document).on("click", ".csr-edit", function () { openRecord($(this).data("id"), "edit"); });
         $(document).on("click", ".csr-delete", function () {
             var id = $(this).data("id");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus" })
+            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#dc2626" })
                 .then(function (result) {
                     if (!result.isConfirmed) return;
                     $.post("/customerSupplyReturns/" + id + "/delete", { _token: csrf() })

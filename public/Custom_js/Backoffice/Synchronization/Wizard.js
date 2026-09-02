@@ -54,6 +54,9 @@
 
         $('.sync-review-list').on('click', '.btn-review-discard', function () {
             var btn = $(this);
+            $('#modalKonfirmasi .btn-konfirmasi')
+                .removeClass('btn-success pg-btn-confirm')
+                .addClass('btn-danger pg-btn-confirm--danger');
             showModalKonfirmasi(
                 'Abaikan armada #' + btn.data('ref-armada-id') + ' ini? Tindakan ini permanen — '
                     + 'tidak akan ditawarkan lagi pada sinkronisasi berikutnya.',

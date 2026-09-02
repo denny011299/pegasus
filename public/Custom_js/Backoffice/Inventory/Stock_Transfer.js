@@ -99,10 +99,15 @@ function restoreTransferOverlayIfNeeded() {
 }
 
 /** Konfirmasi di atas detail ST / accept: hide parent → show konfirmasi; cancel → buka lagi parent. */
-function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector) {
+function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, danger) {
     transferOverlayState.done = false;
     var wasOpen = beginTransferOverlay(parentSelector || "#add_stock_transfer");
     function openConfirm() {
+        if (danger) {
+            $("#modalKonfirmasi .btn-konfirmasi")
+                .removeClass("btn-success pg-btn-confirm")
+                .addClass("btn-danger pg-btn-confirm--danger");
+        }
         if (typeof showModalKonfirmasi === "function") {
             showModalKonfirmasi(text, buttonId);
         }
@@ -3611,7 +3616,9 @@ $(document).on("click", ".btn-reject-transfer", function () {
             ? "Tolak transfer ini? Status menjadi Cancel dan proses approval/Kirim dihentikan."
             : "Cancel transfer pending ini? Status menjadi Cancel (stok belum dipotong).",
         "btn-reject-stock-transfer",
-        id
+        id,
+        null,
+        true
     );
 });
 
@@ -3962,7 +3969,9 @@ $(document).on("click", ".btnDeleteTransfer", function () {
         showTransferModalKonfirmasi(
             "Cancel request stock transfer ini? Status menjadi Cancel.",
             "btn-reject-stock-transfer",
-            id
+            id,
+            null,
+            true
         );
         return;
     }
@@ -4089,6 +4098,9 @@ $(document).on("click", ".btnRejectTransfer, .btnRejectProductionTransfer", func
         $("#reject_production_transfer").modal("show");
         return;
     }
+    $("#modalKonfirmasi .btn-konfirmasi")
+        .removeClass("btn-success pg-btn-confirm")
+        .addClass("btn-danger pg-btn-confirm--danger");
     showModalKonfirmasi(
         "Cancel transfer pending ini? Status menjadi Cancel.",
         "btn-reject-stock-transfer"
