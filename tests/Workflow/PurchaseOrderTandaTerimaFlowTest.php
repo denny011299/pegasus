@@ -173,6 +173,71 @@ class PurchaseOrderTandaTerimaFlowTest extends TestCase
         $this->assertSame(1, (int) $po->pembayaran, 'declining reverts pembayaran back to its unpaid/ungrouped default');
     }
 
+    /**
+     * QC7: decline clears live tt_id (rebundle), but print must still list the invoices that were
+     * on that TT. Snapshot declined_po_ids at decline; viewTandaTerima falls back when status=0.
+     */
+    public function test_declining_the_tt_snapshots_po_ids_so_rejected_print_still_lists_invoices(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $fx = $this->insertPoWithAcceptedInvoice(qty: 2, price: 5000);
+        $invoice = PurchaseOrderDetailInvoice::where('po_id', $fx['po_id'])->firstOrFail();
+        $result = $this->generateTt($fx['poi_id']);
+        $ttId = (int) $result['tt_id'];
+
+        $this->post('/declineTt', ['tt_id' => $ttId])->assertStatus(200);
+
+        $tt = purchase_order_tt::findOrFail($ttId);
+        $this->assertSame(0, (int) $tt->status);
+        $snap = json_decode((string) $tt->declined_po_ids, true);
+        $this->assertIsArray($snap);
+        $this->assertContains($fx['po_id'], $snap);
+
+        $po = PurchaseOrder::findOrFail($fx['po_id']);
+        $this->assertNull($po->tt_id);
+        $this->assertSame(1, (int) $po->pembayaran);
+        $this->assertTrue(
+            PurchaseOrder::where('tt_id', $ttId)->get()->isEmpty(),
+            'live tt_id link must be gone after decline'
+        );
+
+        // Same fallback path viewTandaTerima uses when status=0 (PDF stream is Flate-compressed).
+        $printedPos = PurchaseOrder::whereIn('po_id', $snap)->get();
+        $this->assertCount(1, $printedPos);
+        foreach ($printedPos as $row) {
+            $row->poi_code = PurchaseOrderDetailInvoice::where('po_id', $row->po_id)->first()->poi_code;
+        }
+        $this->assertSame($invoice->poi_code, $printedPos[0]->poi_code);
+        $html = view('Backoffice.PDF.TandaTerima', [
+            'tt' => $tt,
+            'data' => $printedPos,
+            'supplier' => \App\Models\Supplier::find($tt->supplier_id),
+            'printed_by' => 'Workflow Test',
+            'printed_at' => now()->format('d/m/Y H:i'),
+        ])->render();
+        $this->assertStringContainsString($invoice->poi_code, $html);
+
+        $pdf = $this->get('/viewTandaTerima/'.$ttId);
+        $pdf->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $pdf->headers->get('content-type'));
+        $this->assertGreaterThan(500, strlen($pdf->getContent()));
+
+        // Rebundle into a new TT must still work after decline.
+        $rebundle = $this->generateTt($fx['poi_id']);
+        $this->assertSame(1, $rebundle['status']);
+        $this->assertNotSame($ttId, (int) $rebundle['tt_id']);
+
+        $po->refresh();
+        $this->assertSame((int) $rebundle['tt_id'], (int) $po->tt_id);
+        $this->assertSame(3, (int) $po->pembayaran);
+
+        // Old rejected TT print still succeeds via snapshot after the PO joined a new TT.
+        $pdfAgain = $this->get('/viewTandaTerima/'.$ttId);
+        $pdfAgain->assertOk();
+        $this->assertStringContainsString('application/pdf', (string) $pdfAgain->headers->get('content-type'));
+    }
+
     public function test_a_po_already_grouped_cannot_be_grouped_into_a_second_tt(): void
     {
         $this->actingAsSuperAdminStaff();

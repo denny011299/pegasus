@@ -477,6 +477,18 @@ class SupplierController extends Controller
     function viewTandaTerima($id) {
         $param["tt"] = (new purchase_order_tt())->getTt(["tt_id"=>$id])[0]??null;
         $param["data"] = PurchaseOrder::where('tt_id','=',$id)->get();
+
+        // Decline clears live tt_id (rebundle). Rejected print uses decline-time PO snapshot.
+        if ($param["data"]->isEmpty()
+            && $param["tt"]
+            && (int) $param["tt"]["status"] === 0
+            && !empty($param["tt"]["declined_po_ids"])
+        ) {
+            $poIds = json_decode($param["tt"]["declined_po_ids"], true) ?: [];
+            if ($poIds) {
+                $param["data"] = PurchaseOrder::whereIn('po_id', $poIds)->get();
+            }
+        }
         $param["supplier"] = Supplier::find($param["tt"]["supplier_id"]); 
 
         foreach ($param['data'] as $key => $value) {
@@ -545,6 +557,9 @@ class SupplierController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
+        // Snapshot before clearing live tt_id so rejected PDF can still list invoices (QC7).
+        $poIds = PurchaseOrder::where('tt_id', '=', $req->tt_id)->pluck('po_id')->values()->all();
+        $p->declined_po_ids = json_encode($poIds);
         $p->staffFinance_name = Session::get('user')->staff_name;
         $p->acc_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $p->status=0;
