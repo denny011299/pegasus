@@ -532,8 +532,7 @@ class StockTransferController extends Controller
                 $isRetailRequest
             );
             $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh, $row);
-            $atOrigin = $activeWh === $fromWh
-                && ($assignedWh === [] || in_array($fromWh, $assignedWh, true));
+            $atOrigin = StockTransferApproval::isAtOriginForApproval($user, $fromWh, $activeWh);
 
             return [
                 'id' => (int) $row->st_id,
@@ -783,8 +782,7 @@ class StockTransferController extends Controller
             $fromWh
         );
         $approvalsComplete = ! $requiresApproval || StockTransferApproval::isFullyApproved($header, $fromWh);
-        $atOrigin = $activeWh === $fromWh
-            && ($assignedWh === [] || in_array($fromWh, $assignedWh, true));
+        $atOrigin = StockTransferApproval::isAtOriginForApproval($user, $fromWh, $activeWh);
         $actorRole = StockTransferApproval::resolveActorRole($user, $fromWh, $header);
         $qcBy = $header->qc_approved_by ? (int) $header->qc_approved_by : null;
         $opsBy = $header->ops_approved_by ? (int) $header->ops_approved_by : null;
@@ -1515,8 +1513,8 @@ class StockTransferController extends Controller
             return response()->json([
                 'status' => -1,
                 'message' => $type === 'qc'
-                    ? 'Hanya Staf QC & Gudang (assigned gudang asal) yang boleh approve QC'
-                    : 'Hanya Kepala Operasional gudang asal yang boleh approve',
+                    ? 'Hanya Staf QC & Gudang (assigned gudang asal), Direksi, atau Developer yang boleh approve QC'
+                    : 'Hanya Kepala Operasional gudang asal, Direksi, atau Developer yang boleh approve',
             ]);
         }
 
@@ -2819,11 +2817,12 @@ class StockTransferController extends Controller
             $this->warehouseIsMain($toWh)
         );
         if ($activeWh === $fromWh && $fromWh > 0) {
-            if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)) {
+            if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)
+                && ! StockTransferApproval::isElevatedApprover($user)) {
                 return 'Anda tidak punya akses ke gudang asal transfer ini';
             }
             if ($isRetailRequest && ! StockTransferApproval::canRejectAtOrigin($user, $header, $fromWh)) {
-                return 'Tolak request di gudang besar hanya oleh Staf QC atau Kepala Operasional (Ops setelah QC approve)';
+                return 'Tolak request di gudang besar hanya oleh Staf QC, Kepala Operasional, Direksi, atau Developer (Ops setelah QC approve)';
             }
             if (! $isRetailRequest && ! RoleAccess::can($user, 'Stock Transfer', 'others')) {
                 return 'Anda tidak punya akses cancel transfer';
