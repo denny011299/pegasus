@@ -338,7 +338,7 @@ class ProductController extends Controller
         $html = '';
 
         if ($canEdit) {
-            $html .= '<a class="me-2 btn-action-icon p-2" href="/updateProduct/' . $productId . '">'
+            $html .= '<a class="me-2 btn-action-icon p-2 btn_edit" href="/updateProduct/' . $productId . '">'
                 . '<i class="fe fe-edit"></i></a>';
         }
 

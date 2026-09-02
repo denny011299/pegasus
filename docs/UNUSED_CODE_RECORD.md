@@ -76,6 +76,20 @@ Not referenced by any `@section('custom_js')` include — literal leftover "copy
 - `public/Custom_js/Backoffice/Inventory/Stock_Product copy.js`
 - `public/Custom_js/Backoffice/Inventory/CreateStockOpname cop.js`
 
+**Different flavor — pre-unification per-type Pengembalian pages** (found 2026-09-02 while working GitHub #117):
+
+- `public/Custom_js/Backoffice/Customers/Customer_Product_Return.js` (calls `/customerProductReturns`)
+- `public/Custom_js/Backoffice/Customers/Customer_Supply_Return.js` (calls `/customerSupplyReturns`)
+
+Neither is `<script src>`'d from any Blade view — confirmed via repo-wide grep, zero hits. Unlike the
+"copy" files above, their **backend is still alive**: `CustomerProductReturnController` /
+`CustomerSupplyReturnController` and their routes ([routes/web.php:342-347](../routes/web.php#L342-L347),
+plus the matching store/update/destroy/accept/decline routes) are registered and would work if hit
+directly. Git blame (`4721ce88`, "feat: unified pengembalian, ...") shows why: Produk/Produk-varian/Bahan
+returns were merged into one shared table — `Customer_Return.js` / `#tableCustomerReturn` / the
+`/customerReturns` endpoint, which is what actually renders on Pengiriman → Pengembalian today. These
+two files (and arguably their controllers) are the pre-unification implementation left behind.
+
 ---
 
 ## 5. Dead functions

@@ -120,7 +120,7 @@
         var canDelete = pending && can("delete");
 
         if (canConfirm) {
-            html += '<a class="btn-action-icon csr-confirm" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#059669;" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon csr-confirm btn-action-approve" data-id="' + row.return_id + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
         } else if (canView) {
             html += '<a class="btn-action-icon csr-view" data-id="' + row.return_id + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }

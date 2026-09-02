@@ -139,18 +139,18 @@
         var key = esc(row.doc_key);
 
         if (canConfirm) {
-            html += '<a class="btn-action-icon cr-confirm" data-key="' + key + '" href="javascript:void(0);" style="background:#ecfdf5;border:1px solid #a7f3d0;color:#059669;" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cr-confirm btn-action-approve" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
         } else if (canView) {
-            html += '<a class="btn-action-icon cr-view" data-key="' + key + '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cr-view btn-action-view" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }
         if (status === 2) {
             html += '<a class="btn-action-icon cr-print" data-key="' + key + '" href="javascript:void(0);" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" data-bs-toggle="tooltip" title="Print"><i class="fe fe-printer" style="font-size:14px;"></i></a>';
         }
         if (canEdit) {
-            html += '<a class="btn-action-icon cr-edit" data-key="' + key + '" href="javascript:void(0);" style="background:#fffbeb;border:1px solid #fde68a;color:#d97706;" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cr-edit btn-action-edit" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
         }
         if (canDelete) {
-            html += '<a class="btn-action-icon cr-delete" data-key="' + key + '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
+            html += '<a class="btn-action-icon cr-delete btn-action-delete" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
         }
         html += "</div>";
         if (!canConfirm && !canView && !canEdit && !canDelete) {

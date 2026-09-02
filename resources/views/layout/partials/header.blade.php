@@ -592,6 +592,79 @@
             box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15) !important;
             transform: translateY(-1px) !important;
         }
+        /* ACC / TERIMA (approve) — GitHub #117: needs to stand out from view/edit icons.
+           Soft tint + border, same language as the delete icon's hover state, kept permanently
+           on for approve/reject since these need to read as colored at a glance, not just on hover. */
+        .btn-action-icon.btn-action-approve {
+            background: #ecfdf5 !important;
+            border: 1px solid #a7f3d0 !important;
+            color: #059669 !important;
+            font-weight: 700 !important;
+        }
+        .btn-action-icon.btn-action-approve:hover {
+            background: #d1fae5 !important;
+            border-color: #6ee7b7 !important;
+            color: #047857 !important;
+            box-shadow: 0 2px 8px rgba(5, 150, 105, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        /* TOLAK (reject) — GitHub #117. Same tint values as the delete icon's hover state. */
+        .btn-action-icon.btn-action-reject {
+            background: #fef2f2 !important;
+            border: 1px solid #fecaca !important;
+            color: #dc2626 !important;
+            font-weight: 700 !important;
+        }
+        .btn-action-icon.btn-action-reject:hover {
+            background: #fee2e2 !important;
+            border-color: #fca5a5 !important;
+            color: #b91c1c !important;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        /* VIEW — same soft-tint language */
+        .btn-action-icon.btn-action-view {
+            background: #eff6ff !important;
+            border: 1px solid #bfdbfe !important;
+            color: #2563eb !important;
+            font-weight: 700 !important;
+        }
+        .btn-action-icon.btn-action-view:hover {
+            background: #dbeafe !important;
+            border-color: #93c5fd !important;
+            color: #1d4ed8 !important;
+            box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        /* EDIT — same soft-tint language, reusable wherever an edit icon's inline style
+           needs to survive the base .btn-action-icon !important reset. */
+        .btn-action-icon.btn-action-edit {
+            background: #fffbeb !important;
+            border: 1px solid #fde68a !important;
+            color: #d97706 !important;
+            font-weight: 700 !important;
+        }
+        .btn-action-icon.btn-action-edit:hover {
+            background: #fef3c7 !important;
+            border-color: #fcd34d !important;
+            color: #b45309 !important;
+            box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
+        /* DELETE (permanent tint, distinct from .btn_delete/.text-danger which only tint on hover) */
+        .btn-action-icon.btn-action-delete {
+            background: #fef2f2 !important;
+            border: 1px solid #fecaca !important;
+            color: #dc2626 !important;
+            font-weight: 700 !important;
+        }
+        .btn-action-icon.btn-action-delete:hover {
+            background: #fee2e2 !important;
+            border-color: #fca5a5 !important;
+            color: #b91c1c !important;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15) !important;
+            transform: translateY(-1px) !important;
+        }
     </style>
     <div class="dropdown warehouse-custom-dropdown" style="float: left; margin-left: 45px; margin-top: 13px;">
         @php

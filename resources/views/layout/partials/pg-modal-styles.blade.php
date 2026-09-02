@@ -319,6 +319,30 @@
         border-color: #fca5a5 !important;
     }
 
+    /* ═══ Edit action icon — selalu kuning/amber, sama seperti pola delete di atas.
+       GitHub #117: btn_edit dipakai lewat helper global roleIconEdit() jadi ini otomatis
+       menyala di semua tabel master data (Bank, BOM/Resep Bahan Mentah, Warehouse, dst),
+       bukan cuma satu halaman. ═══ */
+    .table tbody td a.btn-action-icon.btn_edit,
+    .table tbody td a.btn-action-icon.text-warning {
+        background: #fffbeb !important;
+        border: 1px solid #fde68a !important;
+        color: #d97706 !important;
+        border-radius: 8px !important;
+        width: 32px !important;
+        height: 32px !important;
+        padding: 0 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .table tbody td a.btn-action-icon.btn_edit:hover,
+    .table tbody td a.btn-action-icon.text-warning:hover {
+        color: #b45309 !important;
+        background: #fef3c7 !important;
+        border-color: #fcd34d !important;
+    }
+
     /* ═══ PG Popup Table — tabel input di dalam modal (GitHub #111) ═══
        Pola standar: kartu input di ATAS, lalu tabel daftar item yang scroll
        sendiri setinggi PG_POPUP_TABLE.MAX_VISIBLE_ROWS baris.

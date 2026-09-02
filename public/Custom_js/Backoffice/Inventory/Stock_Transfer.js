@@ -661,7 +661,7 @@ function inisialisasi() {
                             : "";
 
                     var accBtn = canAcc
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnAccept text-info" title="ACC Terkirim" data-id="${row.id}">
+                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnAccept btn-action-approve" title="ACC Terkirim" data-id="${row.id}">
                                 <i class="fe fe-check-circle"></i>
                            </a>`
                         : "";
