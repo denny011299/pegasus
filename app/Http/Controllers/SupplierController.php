@@ -114,21 +114,16 @@ class SupplierController extends Controller
 
     function updatePurchaseOrderDetail(Request $req)
     {
-        $total = 0;
+        // QC4: BE hitung ulang subtotal + po_total (diskon/PPN/biaya - retur), jangan percaya FE saja.
         foreach (json_decode($req->po_detail, true) as $key => $value) {
-            $total += $value["pod_subtotal"];
+            $value["pod_qty"] = (int) ($value["pod_qty"] ?? 0);
+            $value["pod_harga"] = (int) ($value["pod_harga"] ?? 0);
+            $value["pod_subtotal"] = $value["pod_qty"] * $value["pod_harga"];
             (new PurchaseOrderDetail())->updatePurchaseOrderDetail($value);
         }
-        $retur = ReturnSupplies::where('po_id', '=', $req->po_id)->where('status', 1)->get();
-        if ($retur->count() > 0){
-            foreach ($retur as $key => $val) {
-                $total -= $val->rs_total;
-            }
-        }
-        $p = PurchaseOrder::find($req->po_id);
-        $p->po_total = $total;
-        $p->save();
+        $poTotal = (new PurchaseOrder())->recalculatePoTotal((int) $req->po_id);
 
+        return response()->json(['po_total' => $poTotal]);
     }
 
     function searchSupplies(Request $req)
@@ -914,11 +909,9 @@ class SupplierController extends Controller
         // keluar begitu saja padahal po_total sudah dikurangi, ProductIssues/ReturnSupplies sudah
         // dibuat, dan item-item sebelumnya sudah dipotong stoknya -- dan itu jalur bisnis normal,
         // bukan cuma skenario crash. Semua pre-check yang murni baca tetap di luar transaksi.
+        // QC4: po_total di-recalc setelah ReturnSupplies tersimpan (bukan -= mentah).
         DB::beginTransaction();
         try {
-        $po->po_total -= $total;
-        $po->save();
-
         $pi = (new ProductIssues())->insertProductIssues([
             "pi_type" => 2,
             "ref_num" => 0,
@@ -983,6 +976,8 @@ class SupplierController extends Controller
             (new ReturnSuppliesDetail())->insertReturnSuppliesDetail($value);
         }
 
+        (new PurchaseOrder())->recalculatePoTotal((int) $po->po_id);
+
 
         DB::commit();
         return 1;
@@ -1003,12 +998,7 @@ class SupplierController extends Controller
         $returs = ReturnSuppliesDetail::where('rs_id', $data['rs_id'])->where('status', 1)->get();
         $pi = ProductIssues::find($rs->pi_id);
 
-        // Balikin ke awal sebelum ada retur ini
-        $total = 0;
-        foreach ($returs as $key => $value) {
-            $total += ($value['rsd_price'] * $value['rsd_qty']);
-        }
-
+        // QC4: po_total di-recalc setelah retur soft-deleted (bukan += mentah).
         // Ditambahkan (2026-08-24): kebalikan dari insertReturnSupplies() di atas -- method ini
         // MENGEMBALIKAN stok bahan (lewat deleteProductIssuesDetail() di loop bawah) sekaligus
         // mengembalikan po_total. Dulu tanpa transaksi: gagal di tengah meninggalkan po_total sudah
@@ -1016,14 +1006,13 @@ class SupplierController extends Controller
         DB::beginTransaction();
         try {
         $po = PurchaseOrder::find($data['po_id']);
-        $po->po_total += $total;
-        $po->save();
 
         // Return value intentionally not checked here — see ProductIssues::deleteProductIssues()'s
         // dead-code comment. Currently harmless (its ref_num guard never actually triggers today),
         // but would need to change if that guard is ever revived.
         (new ProductIssues())->deleteProductIssues($rs);
         (new ReturnSupplies())->deleteReturnSupplies($data);
+        (new PurchaseOrder())->recalculatePoTotal((int) $po->po_id);
 
         $data_retur = ReturnSupplies::where('po_id', $data['po_id'])->where('status', 1)->get();
         $total_retur = 0;

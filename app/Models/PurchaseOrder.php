@@ -196,6 +196,46 @@ class PurchaseOrder extends Model
         $t->save();
 
     }
+
+    /**
+     * QC4: hitung ulang po_total dari detail aktif + diskon/PPN/biaya âˆ’ retur aktif.
+     * Samakan dengan formula FE detail (refreshSummary + grandTotal) agar list & detail sync.
+     */
+    public function recalculatePoTotal(int $poId): int
+    {
+        $po = self::find($poId);
+        if (!$po) {
+            return 0;
+        }
+
+        $subtotal = (int) PurchaseOrderDetail::where('po_id', $poId)
+            ->where('status', 1)
+            ->get()
+            ->sum(function ($row) {
+                return (int) $row->pod_qty * (int) $row->pod_harga;
+            });
+
+        $discount = 0;
+        if ($po->jenis_discount == 'persen') {
+            $discount = (int) round($subtotal * ((int) $po->po_discount) / 100);
+        } elseif ($po->jenis_discount == 'nominal') {
+            $discount = (int) $po->po_discount;
+        }
+
+        $afterDisc = $subtotal - $discount;
+        $ppn = (int) round($afterDisc * ((int) $po->po_ppn) / 100);
+        $total = $afterDisc + $ppn + (int) $po->po_cost;
+
+        $returTotal = (int) ReturnSupplies::where('po_id', $poId)
+            ->where('status', 1)
+            ->sum('rs_total');
+        $total -= $returTotal;
+
+        $po->po_total = $total;
+        $po->save();
+
+        return $total;
+    }
     function pelunasanPurchaseOrder($data)
     {
         $t = PurchaseOrder::find($data["po_id"]);

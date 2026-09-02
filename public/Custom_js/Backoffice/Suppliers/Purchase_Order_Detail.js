@@ -816,6 +816,9 @@
         var cost = convertToAngka($('#value_cost').html());
         var grand = total + ppn - discount - retur + cost;
         $('#value_grand').html(`Rp ${formatRupiah(grand)}`)
+        // QC4: sync hidden/input po_total dengan grand agar sisa invoice & list konsisten
+        $('#po_total').val(formatRupiah(grand, ""));
+        if (typeof data !== 'undefined') data.po_total = grand;
     }
 
     $(document).on('click', '.save-qty', function(){
@@ -876,7 +879,13 @@
             success:function(e){      
                 ResetLoadingButton(".save-qty", 'Simpan perubahan');      
                 notifikasi('success', 'Berhasil Update', 'Berhasil Update Qty');
+                if (e && e.po_total !== undefined) {
+                    $('#po_total').val(formatRupiah(e.po_total, ""));
+                    data.po_total = e.po_total;
+                }
                 refresh();
+                refreshSummary();
+                refreshRetur();
             },
             error:function(e){
                 ResetLoadingButton(".save-qty", 'Simpan perubahan');
