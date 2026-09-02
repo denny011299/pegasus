@@ -1521,18 +1521,31 @@ function refreshSalesOrder() {
 function refreshTableProduct() {
     $("#tableSalesModal").html("");
     var html = "";
+    var isViewMode = mode === 3;
     products.forEach((p, index) => {
-        normalizeProductForActiveWarehouse(p);
+        if (!isViewMode) {
+            normalizeProductForActiveWarehouse(p);
+        }
         let options = "";
-        var unitList =
-            isActiveRetailWarehouse() && parseInt(p.retail_unit || 0, 10) > 0
-                ? (p.pr_unit || []).filter(function (u) {
-                      return (
-                          parseInt(u.unit_id, 10) ===
-                          parseInt(p.retail_unit || 0, 10)
-                      );
-                  })
-                : p.pr_unit || [];
+        var unitList;
+        if (isViewMode) {
+            unitList = (p.pr_unit || []).filter(function (u) {
+                return parseInt(u.unit_id, 10) === parseInt(p.unit_id, 10);
+            });
+            if (unitList.length === 0 && p.unit_id && p.unit_name) {
+                unitList = [{ unit_id: p.unit_id, unit_name: p.unit_name }];
+            }
+        } else {
+            unitList =
+                isActiveRetailWarehouse() && parseInt(p.retail_unit || 0, 10) > 0
+                    ? (p.pr_unit || []).filter(function (u) {
+                          return (
+                              parseInt(u.unit_id, 10) ===
+                              parseInt(p.retail_unit || 0, 10)
+                          );
+                      })
+                    : p.pr_unit || [];
+        }
         if (unitList && Array.isArray(unitList) && unitList.length > 0) {
             unitList.forEach((u) => {
                 options += `<option value="${u.unit_id}" ${u.unit_id == p.unit_id ? "selected" : ""}>${escapeHtmlSo(u.unit_name)}</option>`;
@@ -1540,14 +1553,17 @@ function refreshTableProduct() {
         } else {
             options = `<option value="${p.unit_id}" ${p.unit_id == p.unit_id ? "selected" : ""}>${escapeHtmlSo(p.unit_name)}</option>`;
         }
-        var unitSelectDisabled = isActiveRetailWarehouse() ? "disabled" : "";
-        applyDefaultRetailWarehouse(p);
+        var unitSelectDisabled =
+            !isViewMode && isActiveRetailWarehouse() ? "disabled" : "";
+        if (!isViewMode) {
+            applyDefaultRetailWarehouse(p);
+        }
         applyDefaultMainWarehouse(p);
         var isRetail =
             parseInt(p.retail_unit || 0, 10) > 0 &&
             parseInt(p.unit_id || 0, 10) === parseInt(p.retail_unit || 0, 10);
         var warehouseCell;
-        if (isActiveRetailWarehouse()) {
+        if (isActiveRetailWarehouse() && !isViewMode) {
             var whMeta = activeRetailWarehouseMeta();
             if (whMeta.id) {
                 p.warehouse_id = whMeta.id;
@@ -1557,7 +1573,17 @@ function refreshTableProduct() {
                 '<span class="so-retail-warehouse-label"><i class="fe fe-home"></i> ' +
                 escapeHtmlSo(whMeta.name || "Gudang aktif") +
                 "</span>";
-        } else if (isRetail) {
+        } else if (isViewMode && isRetail) {
+            var viewRetailMeta = activeRetailWarehouseMeta();
+            warehouseCell =
+                '<span class="so-retail-warehouse-label"><i class="fe fe-home"></i> ' +
+                escapeHtmlSo(
+                    p.warehouse_name ||
+                        viewRetailMeta.name ||
+                        "Gudang eceran",
+                ) +
+                "</span>";
+        } else if (!isViewMode && isRetail) {
             warehouseCell = `<select class="form-control so-retail-warehouse" data-index="${index}">
                         ${
                             p.warehouse_id
@@ -1577,6 +1603,14 @@ function refreshTableProduct() {
                 "</span>";
         }
 
+        var actionCell = isViewMode
+            ? ""
+            : `<td class="text-center" style="padding: 12px 24px;">
+                        <a class="deleteRow d-inline-flex align-items-center justify-content-center mx-auto" index="${index}" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Produk" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
+                            <i class="fe fe-trash-2" style="font-size: 14px;"></i>
+                        </a>
+                    </td>`;
+
         html += `
                 <tr class="align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
                     <td style="padding: 12px 24px; font-weight: 600; color: #334155;">${escapeHtmlSo(p.product_name || p.pr_name || "-")}</td>
@@ -1595,14 +1629,11 @@ function refreshTableProduct() {
                         </div>
                     </td>
                     <td style="padding: 12px 16px;">${warehouseCell}</td>
-                    <td class="text-center" style="padding: 12px 24px;">
-                        <a class="deleteRow d-inline-flex align-items-center justify-content-center mx-auto" index="${index}" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Produk" onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='#fef2f2'">
-                            <i class="fe fe-trash-2" style="font-size: 14px;"></i>
-                        </a>
-                    </td>
+                    ${actionCell}
                 </tr>
             `;
     });
+    $("#add_sales_order thead th:last-child").toggle(!isViewMode);
     $("#tableSalesModal").append(html);
     initSalesOrderWarehouseSelects();
     if (typeof feather !== "undefined") feather.replace();
@@ -2053,6 +2084,7 @@ function afterInsert() {
 // });
 
 $(document).on("click", ".deleteRow", function () {
+    if (mode === 3) return;
     var index = $(this).attr("index");
     console.log(index);
     products.splice(index, 1);

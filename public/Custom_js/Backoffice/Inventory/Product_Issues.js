@@ -31,6 +31,29 @@
         productIssuesWraps().removeClass("dt-pending").addClass("dt-ready");
     }
 
+    function productIssuesSaveBtnLabel() {
+        return mode == 1 ? "Tambah Produk" : "Update Produk";
+    }
+
+    function productIssuesStockError(e, fallbackTitle) {
+        if (typeof e === "object" && e !== null && e.message) {
+            return {
+                title: e.header || fallbackTitle,
+                message: e.message,
+            };
+        }
+        if (e == -1 || e === "-1") {
+            return {
+                title: fallbackTitle,
+                message: "Stok tidak mencukupi!",
+            };
+        }
+        return {
+            title: fallbackTitle,
+            message: "Stok tidak mencukupi: " + e,
+        };
+    }
+
     function setProductIssuesViewMode(isView) {
         var $modal = $('#add-product-issues');
         var $dialog = $modal.find('.modal-dialog');
@@ -533,34 +556,38 @@ function loadPiType() {
             },
             success: function (e) {
                 console.log(e);
-                if (typeof e === "object") {
-                    notifikasi(
-                        "error",
-                        "Gagal Insert",
-                        e.message
-                    );
+                var failTitle = mode == 2 ? "Gagal Update" : "Gagal Insert";
+                if (typeof e === "object" && e !== null && e.status === -1) {
+                    var stockErr = productIssuesStockError(e, failTitle);
+                    notifikasi("error", stockErr.title, stockErr.message);
+                    ResetLoadingButton('.btn-save', productIssuesSaveBtnLabel());
+                    return;
                 }
-                else if (e == -1)
-                    notifikasi(
-                        "error",
-                        "Gagal Insert",
-                        "Stock tidak mencukupi!"
-                    );
-                else {
-                    $(".modal").modal("hide");
-                    if (mode == 1)
-                        notifikasi(
-                            "success",
-                            "Berhasil Insert",
-                            "Berhasil Data Ditambahkan"
-                        );
-                    else if (mode == 2)
-                        notifikasi(
-                            "success",
-                            "Berhasil Update",
-                            "Berhasil Data Diupdate"
-                        );
+                if (typeof e === "object" && e !== null && e.message) {
+                    notifikasi("error", e.header || failTitle, e.message);
+                    ResetLoadingButton('.btn-save', productIssuesSaveBtnLabel());
+                    return;
                 }
+                if (e == -1 || e === "-1") {
+                    var legacyErr = productIssuesStockError(e, failTitle);
+                    notifikasi("error", legacyErr.title, legacyErr.message);
+                    ResetLoadingButton('.btn-save', productIssuesSaveBtnLabel());
+                    return;
+                }
+                ResetLoadingButton('.btn-save', productIssuesSaveBtnLabel());
+                $(".modal").modal("hide");
+                if (mode == 1)
+                    notifikasi(
+                        "success",
+                        "Berhasil Insert",
+                        "Berhasil Data Ditambahkan"
+                    );
+                else if (mode == 2)
+                    notifikasi(
+                        "success",
+                        "Berhasil Update",
+                        "Berhasil Data Diupdate"
+                    );
 
                 afterInsert();
             },
@@ -935,18 +962,19 @@ $(document).on("click", ".btn_view", function () {
             method:"post",
             success:function(e){
                 if (e!=1){
-                    if (typeof e === "object"){
-                        notifikasi('error', e.header, e.message);
+                    if (typeof e === "object" && e !== null){
+                        notifikasi('error', e.header || 'Gagal ACC', e.message || 'Stok tidak mencukupi!');
                         ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                         if (e.status == -2) {
                             $('.modal').modal("hide");
                             refreshProductIssues();
                         }
                         return false;
-                    } else {
-                        ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                        notifikasi("error", "Gagal Update", "Stock Product yang tidak mencukupi : "+e);
                     }
+                    var accStockErr = productIssuesStockError(e, "Gagal ACC");
+                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                    notifikasi("error", accStockErr.title, accStockErr.message);
+                    return false;
                 }
                 else{
                     ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
@@ -1065,12 +1093,10 @@ $(document).on("click", "#btn-delete-issues", function () {
                     e.message
                 );
             }
-            else if (e == -1)
-            notifikasi(
-                "error",
-                "Gagal Insert",
-                "Stock tidak mencukupi!"
-            );
+            else if (e == -1 || e === "-1") {
+                var delStockErr = productIssuesStockError(e, "Gagal Delete");
+                notifikasi("error", delStockErr.title, delStockErr.message);
+            }
             else {
                 $(".modal").modal("hide");
                 afterInsert();

@@ -1542,6 +1542,62 @@ class StockController extends Controller
 
 
     // Product Issues
+    private function productIssuesItemLabel(array $item, int $tipeReturn): string
+    {
+        if ($tipeReturn === 1) {
+            $id = $item['supplies_variant_id'] ?? $item['item_id'] ?? null;
+            if (!$id) {
+                return 'Bahan tidak dikenal';
+            }
+            $m = SuppliesVariant::find($id);
+            if (!$m) {
+                return "Bahan id {$id}";
+            }
+            $nama = $m->supplies_variant_name;
+            if (!$nama) {
+                $nama = Supplies::find($m->supplies_id)->supplies_name ?? "id {$id}";
+            }
+            return $nama;
+        }
+
+        $id = $item['product_variant_id'] ?? $item['item_id'] ?? null;
+        if (!$id) {
+            return 'Produk tidak dikenal';
+        }
+        $pvr = ProductVariant::find($id);
+        if (!$pvr) {
+            return "Produk id {$id}";
+        }
+        $pr = Product::find($pvr->product_id);
+
+        return trim(($pr->product_name ?? '') . ' ' . ($pvr->product_variant_name ?? ''));
+    }
+
+    private function productIssuesStockPrecheck(array $items, int $tipeReturn): ?array
+    {
+        $kurang = [];
+        foreach ($items as $value) {
+            $value['tipe_return'] = $tipeReturn;
+            $c = (new ProductIssuesDetail())->stockCheck($value);
+            if ($c != -1) {
+                continue;
+            }
+            $name = $value['supplies_name']
+                ?? $value['product_name']
+                ?? $this->productIssuesItemLabel($value, $tipeReturn);
+            $kurang[] = $name;
+        }
+
+        if (count($kurang) === 0) {
+            return null;
+        }
+
+        return [
+            'status' => -1,
+            'message' => 'Stok tidak mencukupi: ' . implode(', ', array_unique($kurang)),
+        ];
+    }
+
     public function ProductIssue()
     {
         return view('Backoffice.Inventory.Product_Issues');
@@ -1617,11 +1673,13 @@ class StockController extends Controller
                 ];
             }
 
-            foreach (json_decode($data['items'], true) as $key => $value) {
-                $value['tipe_return'] = $data['tipe_return'];
-                // Pengecekan stock
-                $c = (new ProductIssuesDetail())->stockCheck($value);
-                if ($c == -1) return -1;
+            $stockFail = $this->productIssuesStockPrecheck(
+                json_decode($data['items'], true),
+                (int) $data['tipe_return']
+            );
+            if ($stockFail !== null) {
+                $stockFail['header'] = 'Gagal Insert';
+                return response()->json($stockFail);
             }
         }
 
@@ -1686,6 +1744,7 @@ class StockController extends Controller
 
         // Cek stock
         $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
+        $stockKurang = [];
         if (count($getPi) > 0) {
             foreach ($getPi as $key => $val) {
                 foreach (json_decode($data['items'], true) as $key => $value) {
@@ -1694,7 +1753,10 @@ class StockController extends Controller
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) { DB::rollBack(); return -1; }
+                            if ($c == -1) {
+                                $stockKurang[] = $value['supplies_name']
+                                    ?? $this->productIssuesItemLabel($value, 1);
+                            }
                         }
                     }
                     if ($data['tipe_return'] == 2) {
@@ -1702,11 +1764,22 @@ class StockController extends Controller
                             $val['tipe_return'] = $data['tipe_return'];
                             $val['pid_qty'] = $value['pid_qty'];
                             $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) { DB::rollBack(); return -1; }
+                            if ($c == -1) {
+                                $stockKurang[] = $value['product_name']
+                                    ?? $this->productIssuesItemLabel($value, 2);
+                            }
                         }
                     }
                 }
             }
+        }
+        if (count($stockKurang) > 0) {
+            DB::rollBack();
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal Update',
+                'message' => 'Stok tidak mencukupi: ' . implode(', ', array_unique($stockKurang)),
+            ]);
         }
         // Pengecekan invoice
         // if (isset($pi->ref_num) && $pi->ref_num > 0){
