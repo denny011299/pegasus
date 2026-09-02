@@ -49,7 +49,7 @@
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
-                            <div class="row total mt-3 justify-content-end">
+                            <div class="row total mt-1 justify-content-end">
                                 <div class="col-12 col-md-6">
                                     <div class="card p-3 shadow-sm">
                                         <div class="row g-2">

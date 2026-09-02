@@ -6,6 +6,9 @@ var revisionSoId = null;
 var revisionAutoOpened = false;
 var confirmSoId = null;
 var confirmAutoOpened = false;
+var soXhr = null;
+var soFilterState = { date_from: "", date_to: "" };
+var soFilterClearing = false;
 
 function soHasAccess(moduleName, action) {
     return (
@@ -76,6 +79,7 @@ $(document).ready(function () {
     if (!isNaN(qConfirmId) && qConfirmId > 0) confirmSoId = qConfirmId;
     initSalesOrderProductInput();
     inisialisasi();
+    initSalesOrderFilters();
 });
 
 function cleanRevisionQueryParam() {
@@ -803,8 +807,6 @@ function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail) {
     });
 }
 
-var soXhr = null;
-
 function setSalesOrderTableLoading(isLoading) {
     var $wrap = $("#tableSalesOrder-wrap");
     if (!$wrap.length) return;
@@ -1242,7 +1244,12 @@ function salesOrderAjax(data, callback) {
     soXhr = $.ajax({
         url: "/getSalesOrder",
         type: "GET",
-        data: $.extend({}, data, { active_warehouse_id: warehouseId }),
+        data: $.extend({}, data, {
+            active_warehouse_id: warehouseId,
+            date_from: soFilterState.date_from || "",
+            date_to: soFilterState.date_to || "",
+            status: $("#so_filter_status").val() || "",
+        }),
         beforeSend: function () {
             setSalesOrderTableLoading(true);
         },
@@ -1516,6 +1523,93 @@ function inisialisasi() {
 function refreshSalesOrder() {
     if (!table) return;
     table.ajax.reload(null, false);
+}
+
+function initSalesOrderFilters() {
+    if (!$("#so_filter_date").length) return;
+
+    var $date = $("#so_filter_date");
+    if (typeof $date.daterangepicker === "function" && typeof moment === "function") {
+        $date.daterangepicker(
+            {
+                autoUpdateInput: false,
+                alwaysShowCalendars: true,
+                showDropdowns: true,
+                locale: {
+                    format: "DD-MM-YYYY",
+                    separator: " — ",
+                    applyLabel: "Terapkan",
+                    cancelLabel: "Hapus",
+                    fromLabel: "Dari",
+                    toLabel: "Sampai",
+                    customRangeLabel: "Kustom",
+                    daysOfWeek: ["Mg", "Sn", "Sl", "Rb", "Km", "Jm", "Sb"],
+                    monthNames: [
+                        "Januari",
+                        "Februari",
+                        "Maret",
+                        "April",
+                        "Mei",
+                        "Juni",
+                        "Juli",
+                        "Agustus",
+                        "September",
+                        "Oktober",
+                        "November",
+                        "Desember",
+                    ],
+                    firstDay: 1,
+                },
+                ranges: {
+                    "Hari Ini": [moment(), moment()],
+                    Kemarin: [moment().subtract(1, "days"), moment().subtract(1, "days")],
+                    "7 Hari Terakhir": [moment().subtract(6, "days"), moment()],
+                    "30 Hari Terakhir": [moment().subtract(29, "days"), moment()],
+                    "Bulan Ini": [moment().startOf("month"), moment().endOf("month")],
+                    "Bulan Lalu": [
+                        moment().subtract(1, "month").startOf("month"),
+                        moment().subtract(1, "month").endOf("month"),
+                    ],
+                },
+            },
+            function (startDate, endDate) {
+                soFilterState.date_from = startDate.format("YYYY-MM-DD");
+                soFilterState.date_to = endDate.format("YYYY-MM-DD");
+            }
+        );
+        $date.on("apply.daterangepicker", function (ev, picker) {
+            soFilterState.date_from = picker.startDate.format("YYYY-MM-DD");
+            soFilterState.date_to = picker.endDate.format("YYYY-MM-DD");
+            $(this).val(
+                picker.startDate.format("DD-MM-YYYY") +
+                    " — " +
+                    picker.endDate.format("DD-MM-YYYY")
+            );
+            refreshSalesOrder();
+        });
+        $date.on("cancel.daterangepicker", function () {
+            soFilterState.date_from = "";
+            soFilterState.date_to = "";
+            $(this).val("");
+            refreshSalesOrder();
+        });
+        $date.val("");
+    }
+
+    $(document).on("change", "#so_filter_status", function () {
+        if (soFilterClearing) return;
+        refreshSalesOrder();
+    });
+    $(document).on("click", ".btn-clear-so-filter", function (e) {
+        e.preventDefault();
+        soFilterClearing = true;
+        soFilterState.date_from = "";
+        soFilterState.date_to = "";
+        $("#so_filter_status").val("");
+        $("#so_filter_date").val("");
+        soFilterClearing = false;
+        refreshSalesOrder();
+    });
 }
 
 function refreshTableProduct() {

@@ -133,7 +133,7 @@
                 <div class="company-name">PEGASUS HIKARI INDONESIA</div>
                 <div class="report-title">Laporan Hutang</div>
                 <div class="report-meta">
-                    Periode: {{ $dates != "-" ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-"}}<br>
+                    Periode: {{ (is_array($dates) && !empty($dates[0]) && !empty($dates[1])) ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-" }}<br>
                     Dicetak: {{ date('d M Y H:i') }}
                 </div>
             </td>
@@ -159,7 +159,7 @@
             </td>
             <td width="33%">
                 <div class="filter-label">Periode</div>
-                <div class="filter-value">{{ $dates != "-" ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-"}}</div>
+                <div class="filter-value">{{ (is_array($dates) && !empty($dates[0]) && !empty($dates[1])) ? date('d F Y', strtotime($dates[0])).' - '.date('d F Y', strtotime($dates[1])) : "-" }}</div>
             </td>
         </tr>
     </table>

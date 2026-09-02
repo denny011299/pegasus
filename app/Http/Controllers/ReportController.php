@@ -482,9 +482,38 @@ class ReportController extends Controller
         return view('Backoffice.Reports.Pay_Receive');
     }
 
+    /** Hutang print: dates must be both filled or absent (empty end → epoch 1970 in PDF). */
+    private function normalizeHutangDates($dates): array
+    {
+        if (!is_array($dates)) {
+            return ['ok' => true, 'dates' => null];
+        }
+        $start = trim((string) ($dates[0] ?? ''));
+        $end = trim((string) ($dates[1] ?? ''));
+        if ($start === '' && $end === '') {
+            return ['ok' => true, 'dates' => null];
+        }
+        if ($start === '' || $end === '') {
+            return [
+                'ok' => false,
+                'message' => 'Isi tanggal Dari dan Sampai terlebih dahulu',
+            ];
+        }
+        return ['ok' => true, 'dates' => [$start, $end]];
+    }
+
     public function checkHutang(Request $req)
     {
         $data = $req->all();
+        $norm = $this->normalizeHutangDates($data['dates'] ?? null);
+        if (!$norm['ok']) {
+            return response()->json([
+                'status' => -1,
+                'message' => $norm['message'],
+            ]);
+        }
+        $data['dates'] = $norm['dates'];
+
         $detail = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
 
         if (count($detail) <= 0) {
@@ -501,6 +530,12 @@ class ReportController extends Controller
 
     function generateHutang(Request $req) {
         $data = $req->all();
+        $norm = $this->normalizeHutangDates($data['dates'] ?? null);
+        if (!$norm['ok']) {
+            abort(400, $norm['message']);
+        }
+        $data['dates'] = $norm['dates'];
+
         $param["detail"] = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
 
         $total = 0;
@@ -514,7 +549,7 @@ class ReportController extends Controller
         }
         $param['total'] = $total;
 
-        $param['dates'] = $data['dates'] ?? "-";
+        $param['dates'] = $norm['dates'] ?? "-";
 
         $bank_kode = $data['bank_id'] ? Bank::find($data['bank_id'])->bank_kode : "-";
         $param['bank_kode'] = $bank_kode;

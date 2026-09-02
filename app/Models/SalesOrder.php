@@ -181,6 +181,19 @@ class SalesOrder extends Model
 
         $recordsTotal = $countBase->count('so_id');
 
+        $dateFrom = trim((string) ($data['date_from'] ?? ''));
+        $dateTo = trim((string) ($data['date_to'] ?? ''));
+        $statusFilter = trim((string) ($data['status'] ?? ''));
+        if ($dateFrom !== '') {
+            $base->whereDate('sales_orders.so_date', '>=', $dateFrom);
+        }
+        if ($dateTo !== '') {
+            $base->whereDate('sales_orders.so_date', '<=', $dateTo);
+        }
+        if ($statusFilter !== '' && ctype_digit($statusFilter)) {
+            $base->where('sales_orders.status', (int) $statusFilter);
+        }
+
         if ($search !== '') {
             $like = '%' . $search . '%';
             $base->where(function ($q) use ($like, $hasCreatedBy, $hasAccBy) {
@@ -195,10 +208,12 @@ class SalesOrder extends Model
                     $q->orWhere('approver.staff_name', 'like', $like);
                 }
             });
-            $recordsFiltered = (clone $base)->distinct()->count('sales_orders.so_id');
-        } else {
-            $recordsFiltered = $recordsTotal;
         }
+
+        $hasListFilter = $search !== '' || $dateFrom !== '' || $dateTo !== '' || $statusFilter !== '';
+        $recordsFiltered = $hasListFilter
+            ? (clone $base)->distinct()->count('sales_orders.so_id')
+            : $recordsTotal;
 
         $select = [
             'sales_orders.so_id',
