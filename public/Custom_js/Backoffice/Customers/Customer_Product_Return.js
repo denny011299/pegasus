@@ -620,6 +620,7 @@
             showCancelButton: true,
             confirmButtonText: "Ya, lanjutkan",
             cancelButtonText: "Batal",
+            confirmButtonColor: action === "accept" ? undefined : "#dc2626",
         }).then(function (result) {
             if (!result.isConfirmed) return;
             $.post("/customerProductReturns/" + id + "/" + action, { _token: csrf() })
@@ -777,15 +778,17 @@
         $(document).on("click", ".cpr-edit", function () { openRecord($(this).data("id"), "edit"); });
         $(document).on("click", ".cpr-delete", function () {
             var id = $(this).data("id");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian produk?", showCancelButton: true, confirmButtonText: "Hapus" })
-                .then(function (result) {
-                    if (!result.isConfirmed) return;
-                    $.post("/customerProductReturns/" + id + "/delete", { _token: csrf() })
-                        .done(function (response) {
-                            toastr.success(response.message);
-                            cprTable.ajax.reload(null, false);
-                        }).fail(notifyError);
-                });
+            showModalDelete("Hapus pengembalian produk ini?", "btn-delete-customer-product-return");
+            $("#btn-delete-customer-product-return").attr("data-id", id);
+        });
+        $(document).on("click", "#btn-delete-customer-product-return", function () {
+            var id = $(this).attr("data-id");
+            $.post("/customerProductReturns/" + id + "/delete", { _token: csrf() })
+                .done(function (response) {
+                    $(".modal").modal("hide");
+                    toastr.success(response.message);
+                    cprTable.ajax.reload(null, false);
+                }).fail(notifyError);
         });
         $("#cpr-accept").on("click", function () { processRecord($("#cpr-id").val(), "accept", "ACC pengembalian produk?"); });
         $("#cpr-decline").on("click", function () { processRecord($("#cpr-id").val(), "decline", "Tolak pengembalian produk?"); });

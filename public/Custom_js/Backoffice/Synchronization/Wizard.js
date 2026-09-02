@@ -57,7 +57,8 @@
             showModalKonfirmasi(
                 'Abaikan armada #' + btn.data('ref-armada-id') + ' ini? Tindakan ini permanen — '
                     + 'tidak akan ditawarkan lagi pada sinkronisasi berikutnya.',
-                'btn-armada-discard-confirm'
+                'btn-armada-discard-confirm',
+                true
             );
             $('#modalKonfirmasi #btn-armada-discard-confirm')
                 .attr('data-step', btn.data('step'))

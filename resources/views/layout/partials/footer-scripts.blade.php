@@ -470,14 +470,20 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $('#modalDelete').modal("show");
     }
       
-    function showModalKonfirmasi(text, button_id) {
+    function showModalKonfirmasi(text, button_id, danger) {
         //button id ini, id button ketika dikofrimasi delete
+        //danger = true untuk aksi cancel/tolak/hapus → tema modal & tombol jadi merah
         $("#text-konfirmasi").html(text);
+        $("#modalKonfirmasi")
+            .toggleClass("pg-modal--danger", !!danger)
+            .toggleClass("pg-modal--confirm", !danger);
         $("#modalKonfirmasi .btn-konfirmasi")
             .attr("id", button_id)
             .removeData("busy")
             .prop("disabled", false)
             .css({ "min-width": "", height: "" })
+            .toggleClass("btn-danger pg-btn-confirm--danger", !!danger)
+            .toggleClass("btn-success pg-btn-confirm", !danger)
             .html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
         $('#modalKonfirmasi').modal("show");
     }
@@ -508,6 +514,9 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   $(document).on('hidden.bs.modal', '#modalKonfirmasi', function () {
     $('#modalKonfirmasi .modal-title').text('Konfirmasi');
+    $('#modalKonfirmasi')
+      .removeClass('pg-modal--danger')
+      .addClass('pg-modal--confirm');
     $('#modalKonfirmasi .btn-konfirmasi')
       .removeClass('btn-danger pg-btn-confirm--danger')
       .addClass('btn-success pg-btn-confirm')

@@ -545,6 +545,7 @@
             showCancelButton: true,
             confirmButtonText: "Ya, lanjutkan",
             cancelButtonText: "Batal",
+            confirmButtonColor: action === "accept" ? undefined : "#dc2626",
         }).then(function (result) {
             if (!result.isConfirmed) return;
             $.post("/customerSupplyReturns/" + id + "/" + action, { _token: csrf() })
@@ -703,15 +704,17 @@
         $(document).on("click", ".csr-edit", function () { openRecord($(this).data("id"), "edit"); });
         $(document).on("click", ".csr-delete", function () {
             var id = $(this).data("id");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus" })
-                .then(function (result) {
-                    if (!result.isConfirmed) return;
-                    $.post("/customerSupplyReturns/" + id + "/delete", { _token: csrf() })
-                        .done(function (response) {
-                            toastr.success(response.message);
-                            csrTable.ajax.reload(null, false);
-                        }).fail(notifyError);
-                });
+            showModalDelete("Hapus pengembalian ini?", "btn-delete-customer-supply-return");
+            $("#btn-delete-customer-supply-return").attr("data-id", id);
+        });
+        $(document).on("click", "#btn-delete-customer-supply-return", function () {
+            var id = $(this).attr("data-id");
+            $.post("/customerSupplyReturns/" + id + "/delete", { _token: csrf() })
+                .done(function (response) {
+                    $(".modal").modal("hide");
+                    toastr.success(response.message);
+                    csrTable.ajax.reload(null, false);
+                }).fail(notifyError);
         });
         $("#csr-accept").on("click", function () { processRecord($("#csr-id").val(), "accept", "ACC pengembalian bahan?"); });
         $("#csr-decline").on("click", function () { processRecord($("#csr-id").val(), "decline", "Tolak pengembalian bahan?"); });

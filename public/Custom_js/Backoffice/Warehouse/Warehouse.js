@@ -634,10 +634,7 @@ $(document).on("click", "#btn-delete-warehouse", function () {
                 $("#modalKonfirmasi .modal-title").text(
                     "Konfirmasi Hapus Lanjutan",
                 );
-                $("#modalKonfirmasi .btn-konfirmasi")
-                    .removeClass("btn-success pg-btn-confirm")
-                    .addClass("btn-danger pg-btn-confirm--danger");
-                showModalKonfirmasi(msg, "btn-force-delete-warehouse");
+                showModalKonfirmasi(msg, "btn-force-delete-warehouse", true);
                 $("#btn-force-delete-warehouse").attr("data-id", id);
                 return;
             }
@@ -686,17 +683,7 @@ $(document).on("click", ".btn_status", function () {
         status == 1 ? "Konfirmasi Aktifkan" : "Konfirmasi Non Aktif",
     );
 
-    if (status == 1) {
-        $("#modalKonfirmasi .btn-konfirmasi")
-            .removeClass("btn-danger pg-btn-confirm--danger")
-            .addClass("btn-success pg-btn-confirm");
-    } else {
-        $("#modalKonfirmasi .btn-konfirmasi")
-            .removeClass("btn-success pg-btn-confirm")
-            .addClass("btn-danger pg-btn-confirm--danger");
-    }
-
-    showModalKonfirmasi(text, "btn-update-warehouse-status");
+    showModalKonfirmasi(text, "btn-update-warehouse-status", status != 1);
     $("#btn-update-warehouse-status")
         .attr("data-id", id)
         .attr("data-status", status);

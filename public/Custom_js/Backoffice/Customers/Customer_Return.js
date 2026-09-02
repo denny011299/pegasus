@@ -1416,6 +1416,7 @@
                     showCancelButton: true,
                     confirmButtonText: "Ya, lanjutkan",
                     cancelButtonText: "Batal",
+                    confirmButtonColor: action === "accept" ? undefined : "#dc2626",
                 }).then(function (result) {
                     if (!result.isConfirmed) return;
                     postProcessRecord(key, action, null);
@@ -1424,7 +1425,7 @@
             return;
         }
         $("#customer-return-modal").modal("hide");
-        showModalKonfirmasi(detail, btnId);
+        showModalKonfirmasi(detail, btnId, action === "decline");
         $("#" + btnId)
             .attr("data-key", key)
             .attr("data-action", action);
@@ -1792,16 +1793,18 @@
         $(document)
             .off("click.crDelete")
             .on("click.crDelete", "#tableCustomerReturn-wrap .cr-delete", function () {
+                var key = $(this).attr("data-key");
+                showModalDelete("Hapus pengembalian ini?", "btn-delete-customer-return");
+                $("#btn-delete-customer-return").attr("data-key", key);
+            });
+        $(document).on("click", "#btn-delete-customer-return", function () {
             var key = $(this).attr("data-key");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus" })
-                .then(function (result) {
-                    if (!result.isConfirmed) return;
-                    $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
-                        .done(function (response) {
-                            if (typeof toastr !== "undefined") toastr.success(response.message);
-                            refreshCustomerReturn();
-                        }).fail(notifyError);
-                });
+            $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
+                .done(function (response) {
+                    $(".modal").modal("hide");
+                    if (typeof toastr !== "undefined") toastr.success(response.message);
+                    refreshCustomerReturn();
+                }).fail(notifyError);
         });
         $("#cr-accept").off("click.crAccept").on("click.crAccept", function () {
             if (crMode !== "confirm") return;
