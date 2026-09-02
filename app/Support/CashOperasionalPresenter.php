@@ -44,12 +44,31 @@ class CashOperasionalPresenter
     }
 
     /**
+     * GitHub #130 (item 35): `ca_nominal`/`cg_nominal` are stored RAW (whatever sign the request
+     * sent — see the linked Cash row's own sign-flip at insert time in ReportController), but a
+     * "saldo" (`ca_type`/`cg_type` == 1) row's Masuk/Keluar column here was always decided purely
+     * by `ca_aksi`/`cg_aksi` (1=Pengajuan→Masuk, 2=Pengembalian→Keluar), ignoring the sign
+     * entirely. A NEGATIVE nominal reverses what actually happened (a negative Pengembalian is
+     * functionally a Pengajuan, and vice versa), so it must flip which column the row lands in —
+     * only for saldo rows; "operasional" (type 2, expense) rows are untouched, out of scope here.
+     */
+    private static function isDebitColumn(int $aksi, int $type, int $nominal): bool
+    {
+        $isDebit = $aksi === 1;
+        if ($type === 1 && $nominal < 0) {
+            $isDebit = !$isDebit;
+        }
+
+        return $isDebit;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public static function adminRow(object $row, $user): array
     {
         $nominal = (int) ($row->ca_nominal ?? 0);
-        $isDebit = (int) ($row->ca_aksi ?? 0) === 1;
+        $isDebit = self::isDebitColumn((int) ($row->ca_aksi ?? 0), (int) ($row->ca_type ?? 0), $nominal);
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
@@ -98,7 +117,7 @@ class CashOperasionalPresenter
     public static function gudangRow(object $row, $user): array
     {
         $nominal = (int) ($row->cg_nominal ?? 0);
-        $isDebit = (int) ($row->cg_aksi ?? 0) === 1;
+        $isDebit = self::isDebitColumn((int) ($row->cg_aksi ?? 0), (int) ($row->cg_type ?? 0), $nominal);
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
@@ -147,7 +166,17 @@ class CashOperasionalPresenter
     public static function armadaRow(object $row, $user): array
     {
         $nominal = (int) ($row->cr_nominal ?? 0);
-        $isDebit = (int) ($row->cr_type ?? 0) === 1;
+        // GitHub #130 (item 36): `cr_type` carries real meaning for "operasional" rows (1 =
+        // Setoran/Masuk, else Keluar) AND for rows CashGudang::acceptCashGudang() cross-creates
+        // directly (cr_type explicitly 1, cr_aksi left at its 0 default) — both must keep using
+        // `cr_type` exactly as before. Only the "saldo" / Pengembalian Dana Langsung branch
+        // (`cr_aksi` == 1) never sets `cr_type` at all (model defaults it to 3), so ITS Masuk/Keluar
+        // column must come from the nominal's own sign instead: a normal (positive) pengembalian
+        // reduces the wallet (Keluar), a negative one reverses that and is functionally an addition
+        // (Masuk).
+        $isDebit = (int) ($row->cr_aksi ?? 0) === 1
+            ? $nominal < 0
+            : (int) ($row->cr_type ?? 0) === 1;
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
@@ -191,7 +220,14 @@ class CashOperasionalPresenter
     public static function salesRow(object $row, $user): array
     {
         $nominal = (int) ($row->cs_nominal ?? 0);
-        $isDebit = (int) ($row->cs_transaction ?? 0) === 1 && (int) ($row->cs_aksi ?? 0) === 1;
+        // GitHub #130 (item 38): only the "Pengembalian" saldo action (`cs_aksi` == 3) needs the
+        // sign-based flip — a negative pengembalian is functionally an addition, so it belongs in
+        // Masuk instead of Keluar. "Pemasukan" (aksi 1), "Setor ke Bank" (aksi 2, and per item 39
+        // now guarded against ever being negative) and "operasional" rows (aksi left at its 0
+        // default) all keep their original logic untouched.
+        $isDebit = (int) ($row->cs_aksi ?? 0) === 3
+            ? $nominal < 0
+            : ((int) ($row->cs_transaction ?? 0) === 1 && (int) ($row->cs_aksi ?? 0) === 1);
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 

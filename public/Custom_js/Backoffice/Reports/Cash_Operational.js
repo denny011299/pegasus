@@ -646,9 +646,29 @@
 
     $(document).on('change', '#customer_id_armada', function(){
         if (mode == 1 && $('#jenis_input_armada').val() == "saldo"){
-            if ($(this).val()){
-                var temp = $('#customer_id_armada').select2("data")[0];
-                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
+            var customerId = $(this).val();
+            if (customerId){
+                // GitHub #130 (item 37): jangan pakai select2("data") di sini — kalau opsi ini
+                // dibuat dari data cache filter halaman (lihat pemanggilan .btn-add-armada di
+                // atas), customer_saldo-nya bisa basi (mis. sudah berubah + gara-gara aktivitas
+                // "Uang Masuk Customer" yang baru saja di-ACC), jadi default nominal pengembalian
+                // salah tanda (minus padahal seharusnya plus). Ambil ulang dari server.
+                $.ajax({
+                    url: '/autocompleteCustomer',
+                    method: 'post',
+                    data: { customer_id: customerId, _token: token },
+                    success: function (res) {
+                        var rows = (res && res.data) ? res.data : [];
+                        var fresh = rows.find(function (r) { return String(r.customer_id) == String(customerId); }) || rows[0];
+                        var saldo = fresh ? fresh.customer_saldo : 0;
+                        $('#oc_nominal_armada').val(formatRupiahMinus(saldo)).attr('disabled', false);
+                    },
+                    error: function () {
+                        // fallback ke data lama daripada mengosongkan field kalau request gagal
+                        var temp = $('#customer_id_armada').select2("data")[0];
+                        $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
+                    }
+                });
             } else {
                 $('#oc_nominal_armada').val("").attr('disabled', false);
             }
@@ -1131,7 +1151,10 @@
                 </tr>
             `);
         });
-        $('#tableDetail .col-aksi').toggle(mode !== 3);
+        // Jangan .toggle() seluruh kolom — menyembunyikan <th> tapi tidak <td> (atau sebaliknya)
+        // bikin header/body tidak sejajar lagi. Kolomnya tetap ada, cuma judulnya dikosongkan;
+        // isi selnya sendiri sudah otomatis kosong di mode view lewat ternary di atas.
+        $('#tableDetail thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row", function() {
@@ -1345,7 +1368,8 @@
                 </tr>
             `);
         });
-        $('#tableDetailGudang .col-aksi').toggle(mode !== 3);
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailGudang thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_gudang", function() {
@@ -1567,7 +1591,8 @@
                 </tr>
             `);
         });
-        $('#tableDetailArmada .col-aksi').toggle(mode !== 3);
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailArmada thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_armada", function() {
@@ -1781,7 +1806,8 @@
                 </tr>
             `);
         });
-        $('#tableDetailSales .col-aksi').toggle(mode !== 3);
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailSales thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_sales", function() {
@@ -1847,6 +1873,19 @@
             ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
             return false;
         };
+
+        // GitHub #130 (item 39): "Setor ke Bank" (aksi_sales==2) defaults its nominal from the
+        // sales rep's current staff_saldo, which can itself be negative — but a bank deposit
+        // itself can never sensibly be negative. This is a NEW, separate guard from the
+        // pengembalian-negative-balance one below (which stays disabled per PM's 2026-08-05
+        // decision that negative balances are allowed by design) — that decision was about letting
+        // an account run into a deficit, not about accepting a literally-negative deposit amount.
+        if ($('#aksi_sales').val() == 2 && jenis_input == "saldo" && convertToAngkaMinus($('#oc_nominal_sales').val()) < 0){
+            notifikasi('error', "Gagal Insert", 'Setor ke Bank tidak boleh minus');
+            ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+            $('#oc_nominal_sales').addClass('is-invalid');
+            return false;
+        }
 
         // if ($('#aksi_sales').val() == 3 && convertToAngkaMinus($('#oc_nominal_sales').val()) < 0){
         //     notifikasi('error', "Gagal Insert", 'Pengembalian tidak boleh kurang dari 0');

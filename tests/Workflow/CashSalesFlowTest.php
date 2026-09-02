@@ -22,10 +22,14 @@ use Tests\TestCase;
  *     mirroring the operasional branch's own `csd_type==1` Setoran case.
  *   - `cs_aksi=="2"` and `cs_aksi=="3"`: both create a linked Cash row and both fall through to the
  *     SAME `acceptCashSales()` branch (`staff_saldo -= cs_nominal`) — they are indistinguishable in
- *     every balance/aggregate effect. The only difference between them is which way the linked
- *     Cash row's own `cash_type` is flipped for a given nominal sign, and `cs_transaction` (2 vs 3,
- *     both `>= 2` so identical in `CashSales::getCashSales()`'s own `sisa_kas` aggregate too) — pure
- *     ledger-display bookkeeping, not a functional difference.
+ *     every balance/aggregate effect. `cs_transaction` (2 vs 3, both `>= 2` so identical in
+ *     `CashSales::getCashSales()`'s own `sisa_kas` aggregate too) is pure ledger-display
+ *     bookkeeping, not a functional difference. They DO still differ on nominal sign, though
+ *     (GitHub #130 item 39, 2026-09-03): `cs_aksi=="3"` (Pengembalian) legitimately flips the
+ *     linked Cash row's `cash_type` on a negative nominal — a return can go either direction.
+ *     `cs_aksi=="2"` (Setor ke Bank) used to do the same flip but a bank deposit can never
+ *     sensibly be negative, so insertCashSales()/updateCashSales() now reject a negative nominal
+ *     outright instead (see the rejection test below).
  */
 class CashSalesFlowTest extends TestCase
 {
@@ -208,32 +212,34 @@ class CashSalesFlowTest extends TestCase
         );
     }
 
-    public function test_saldo_aksi_2_with_a_negative_nominal_flips_the_linked_cash_row_type(): void
+    /**
+     * GitHub #130 (item 39, 2026-09-03): this used to document the same sign-flip trick as
+     * CashAdmin/CashArmada for aksi=="2" ("Setor ke Bank") — PM decided a bank deposit can never
+     * sensibly be negative (unlike a pengajuan/pengembalian, which legitimately flips direction),
+     * so insertCashSales()/updateCashSales() now reject it outright instead of flipping cash_type.
+     */
+    public function test_saldo_aksi_2_with_a_negative_nominal_is_rejected_instead_of_flipping_cash_type(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $staff = $this->pickStaff();
         $staff->staff_saldo = 1000000;
         $staff->save();
-        $nominal = -300000;
+        $countBefore = CashSales::count();
 
-        $csId = $this->insertSaldoCashSales($staff, csAksi: '2', csNominal: $nominal);
+        $response = $this->post('/insertCashSales', [
+            'staff_id' => $staff->staff_id,
+            'bank_id' => 0,
+            'oc_transaksi' => 'saldo',
+            'photo' => '',
+            'cs_aksi' => '2',
+            'cs_notes' => 'Workflow test saldo entry',
+            'cs_nominal' => -300000,
+        ]);
 
-        $cs = CashSales::findOrFail($csId);
-        $this->assertSame($nominal, (int) $cs->cs_nominal, 'cs_nominal is stored RAW, same as CashAdmin\'s ca_nominal');
-
-        $cash = Cash::find($cs->cash_id);
-        $this->assertSame(1, (int) $cash->cash_type, 'a negative cs_nominal flips aksi=="2" from cash_type 3 to 1');
-        $this->assertSame(-$nominal, (int) $cash->cash_nominal, 'the linked Cash row normalizes cash_nominal to a positive value, same pattern as CashAdmin/CashArmada');
-
-        $this->post('/acceptCashSales', ['cs_id' => $csId])->assertStatus(200);
-
-        $staff->refresh();
-        $this->assertSame(
-            1000000 - $nominal,
-            (int) $staff->staff_saldo,
-            'staff_saldo -= cs_nominal with a negative cs_nominal is a double negation: this INCREASES staff_saldo, the same sign trick as CashArmada\'s saldo branch'
-        );
+        $response->assertStatus(200);
+        $response->assertJsonPath('status', -1);
+        $this->assertSame($countBefore, CashSales::count(), 'a rejected Setor ke Bank must not insert any row');
     }
 
     public function test_saldo_aksi_3_has_an_oppositely_typed_cash_row_but_the_identical_balance_effect_as_aksi_2(): void

@@ -428,6 +428,11 @@ class AutocompleteController extends Controller
         $p = new Customer();
         $data_city = $p->getCustomer([
             "customer_notes" => $keyword,
+            // GitHub #130 (item 37): optional exact lookup, dipakai Cash_Operational.js untuk
+            // ambil customer_saldo TERBARU sebelum mengisi default nominal "Pengembalian Dana
+            // Langsung" — opsi Select2 di modal itu sering dibuat dari data cache filter halaman
+            // (bisa basi kalau saldo berubah sejak filter terakhir di-refresh).
+            "customer_id" => $req->customer_id ?? null,
         ]);
 
 
