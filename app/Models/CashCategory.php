@@ -54,8 +54,27 @@ class CashCategory extends Model
             ->select(['cc_id', 'cc_name', 'cc_type']);
     }
 
+    /**
+     * True kalau ada kategori kas aktif lain dengan nama yang sama (case-insensitive,
+     * trimmed). $excludeId dipakai saat update supaya baris itu sendiri tidak dianggap
+     * bentrok dengan dirinya sendiri.
+     */
+    function isDuplicateName($name, $excludeId = null)
+    {
+        $query = CashCategory::where('status', 1)
+            ->whereRaw('LOWER(TRIM(cc_name)) = ?', [strtolower(trim($name))]);
+        if ($excludeId) {
+            $query->where('cc_id', '!=', $excludeId);
+        }
+        return $query->exists();
+    }
+
     function insertCashCategory($data)
     {
+        if ($this->isDuplicateName($data["cc_name"])) {
+            return response()->json(['message' => 'Nama kategori kas sudah digunakan'], 422);
+        }
+
         $t = new CashCategory();
         $t->cc_name = $data["cc_name"];
         $t->cc_type = $data["cc_type"];
@@ -71,6 +90,10 @@ class CashCategory extends Model
         // gagal bersih. Mirror pattern yang sudah dipakai di StockOpname::updateStockOpname() dkk.
         $t = CashCategory::find($data["cc_id"]);
         if (!$t) return null;
+
+        if ($this->isDuplicateName($data["cc_name"], $t->cc_id)) {
+            return response()->json(['message' => 'Nama kategori kas sudah digunakan'], 422);
+        }
 
         $t->cc_name = $data["cc_name"];
         $t->cc_type = $data["cc_type"];
