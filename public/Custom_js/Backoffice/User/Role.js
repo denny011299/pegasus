@@ -245,11 +245,36 @@
                 '<td><select class="form-select reassign-role-select">' + optionsHtml + '</select></td>' +
                 '</tr>';
         }
+        if (!rows) {
+            rows = '<tr class="pg-popup-table-empty"><td colspan="2">Tidak ada pengguna yang memakai peran ini.</td></tr>';
+        }
         $('#reassign_role_users_body').html(rows);
         $('#btn-confirm-reassign-delete-role').attr("role_id", roleId);
-        $('#modalDelete').modal("hide");
+        $('.modal').modal("hide");
         $('#role_reassign_modal').modal("show");
     }
+
+    // Dropdown peran pengganti dibuat searchable (select2), sama seperti pola
+    // #staff_position di insertStaff.js — lokal, bukan AJAX, karena daftar
+    // peran sudah dimuat lewat refreshRole().
+    $('#role_reassign_modal').on('shown.bs.modal', function () {
+        $('#reassign_role_users_body .reassign-role-select').each(function () {
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({
+                    placeholder: "Pilih Peran Pengganti",
+                    allowClear: true,
+                    width: "100%",
+                    dropdownParent: $('body'),
+                });
+            }
+        });
+    });
+
+    $('#role_reassign_modal').on('hidden.bs.modal', function () {
+        $('#reassign_role_users_body .reassign-role-select.select2-hidden-accessible').each(function () {
+            $(this).select2("destroy");
+        });
+    });
 
     function submitDeleteRole(roleId, reassignments) {
         var payload = {
