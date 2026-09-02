@@ -1,3 +1,54 @@
+  <style>
+    /* Rapikan tampilan chip bootstrap-tagsinput khusus di modal Variasi — style global
+       .bootstrap-tagsinput (style.css) pakai display:flex tanpa flex-wrap + overflow-x:auto,
+       jadi chip yang kepanjangan ikut menyempit/wrap dua baris di dalam pill-nya sendiri
+       alih-alih pindah baris sebagai chip utuh. Di-scope ke #add_variant supaya penggunaan
+       bootstrap-tagsinput lain di luar modal ini tidak ikut berubah. */
+    #add_variant .bootstrap-tagsinput {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      align-content: flex-start;
+      gap: 8px;
+      overflow: visible;
+      min-height: 46px;
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+    }
+    #add_variant .bootstrap-tagsinput input {
+      flex: 1 1 140px;
+      min-width: 140px;
+      padding: 4px 2px;
+    }
+    #add_variant .bootstrap-tagsinput .tag {
+      display: inline-flex;
+      align-items: center;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      margin: 0;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    #add_variant .bootstrap-tagsinput .tag [data-role="remove"] {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      margin-left: 8px;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, .25);
+    }
+    #add_variant .bootstrap-tagsinput .tag [data-role="remove"]:after {
+      font-size: 10px;
+    }
+  </style>
   <div class="modal modal-lg custom-modal fade pg-modal--form" id="add_variant" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
