@@ -388,11 +388,29 @@
     }
 
     function resolveProductDestination(product, unitId) {
-        var main = crMainWarehouse();
-        if (!main) {
+        if (!product || !unitId) {
+            return null;
+        }
+        if (isRetailUnit(product, unitId)) {
+            var activeId = crActiveWarehouseId();
+            if (isRetailWarehouse(activeId)) {
+                return { id: activeId, name: crActiveWarehouseName() };
+            }
+            var main = crMainWarehouse();
+            if (!main) {
+                return { error: "Gudang utama tidak ditemukan." };
+            }
+            return {
+                id: parseInt(main.id, 10),
+                name: main.warehouse_name,
+                needsRetailDest: true,
+            };
+        }
+        var mainWh = crMainWarehouse();
+        if (!mainWh) {
             return { error: "Gudang utama tidak ditemukan." };
         }
-        return { id: parseInt(main.id, 10), name: main.warehouse_name };
+        return { id: parseInt(mainWh.id, 10), name: mainWh.warehouse_name };
     }
 
     function crActiveWarehouseName() {
@@ -666,6 +684,15 @@
             '</div>';
     }
 
+    function lineActionCell(type, index, editable) {
+        if (!editable) {
+            return '<td class="text-center text-muted">—</td>';
+        }
+        return '<td class="text-center">' +
+            '<a href="javascript:void(0);" class="btn-action-icon cr-remove-line" data-type="' + type + '" data-index="' + index + '" title="Hapus">' +
+            '<i class="fe fe-trash-2" style="font-size:14px;"></i></a></td>';
+    }
+
     function removeLineAt(type, index, $row) {
         if ($row && $row.length) {
             $row.css({ transition: "opacity .2s ease", opacity: 0 });
@@ -689,17 +716,21 @@
                 '<td class="px-4">' + lineTypeBadge("supply") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.supplies_name) + '</td>' +
                 "<td>" + qtyCell("supply", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + esc(line.warehouse_name) + "</td></tr>";
+                '<td class="px-4">' + esc(line.warehouse_name) + "</td>" +
+                lineActionCell("supply", index, editable) +
+                "</tr>";
         });
         productLines.forEach(function (line, index) {
             html += "<tr>" +
                 '<td class="px-4">' + lineTypeBadge("product") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.product_label) + '</td>' +
                 "<td>" + qtyCell("product", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + productWarehouseCell(line, index, editable) + "</td></tr>";
+                '<td class="px-4">' + productWarehouseCell(line, index, editable) + "</td>" +
+                lineActionCell("product", index, editable) +
+                "</tr>";
         });
         if (!html) {
-            html = '<tr><td colspan="4" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
+            html = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
         }
         $("#cr-all-lines").html(html);
         updateCounts();
@@ -712,21 +743,16 @@
         if (!isRetailProductLine(line)) {
             return '<span class="cr-main-warehouse"><i class="fe fe-home"></i> ' + esc(line.warehouse_name || crMainWarehouseName()) + "</span>";
         }
-        // Kalau belum diisi tapi gudang aktif eceran → isi otomatis
-        if (!parseInt(line.destination_warehouse_id || 0, 10)) {
-            var activeId = crActiveWarehouseId();
-            if (isRetailWarehouse(activeId)) {
-                line.destination_warehouse_id = activeId;
-                line.destination_warehouse_name = crActiveWarehouseName();
-            }
+        if (isRetailWarehouse(line.warehouse_id)) {
+            return '<span class="cr-retail-warehouse-locked"><i class="fe fe-map-pin me-1"></i>' +
+                esc(line.warehouse_name || crActiveWarehouseName()) + "</span>";
         }
         if (!editable) {
             return esc(line.destination_warehouse_name || line.warehouse_name || "Gudang eceran");
         }
         var selected = parseInt(line.destination_warehouse_id || 0, 10);
         var label = esc(line.destination_warehouse_name || (selected ? ("Gudang #" + selected) : ""));
-        // Gudang aktif = eceran yang sama → tampil teks (tidak perlu pilih ulang)
-        if (selected && selected === crActiveWarehouseId() && isRetailWarehouse(selected)) {
+        if (selected && isRetailWarehouse(selected)) {
             return '<span class="cr-retail-warehouse-locked"><i class="fe fe-map-pin me-1"></i>' +
                 (label || esc(crActiveWarehouseName())) + "</span>";
         }
@@ -760,7 +786,11 @@
 
     function missingRetailDestinations() {
         return productLines.some(function (line) {
-            return isRetailProductLine(line) && !parseInt(line.destination_warehouse_id || 0, 10);
+            return (
+                isRetailProductLine(line) &&
+                !isRetailWarehouse(line.warehouse_id) &&
+                !parseInt(line.destination_warehouse_id || 0, 10)
+            );
         });
     }
 
@@ -1028,20 +1058,6 @@
                     var destId = parseInt(detail.destination_warehouse_id, 10) || 0;
                     var destName = detail.destination_warehouse_name || "";
                     var warehouseName = detail.warehouse_name;
-                    var meta = warehouseMetaById(warehouseId);
-                    var receiveIsRetail = meta && parseInt(meta.is_main_warehouse, 10) === 0;
-                    var main = crMainWarehouse();
-                    if (
-                        retailUnit > 0 &&
-                        parseInt(detail.unit_id, 10) === retailUnit &&
-                        receiveIsRetail &&
-                        main
-                    ) {
-                        destId = destId > 0 ? destId : warehouseId;
-                        destName = destName || warehouseName;
-                        warehouseId = parseInt(main.id, 10);
-                        warehouseName = main.warehouse_name;
-                    }
                     return {
                         product_variant_id: parseInt(detail.product_variant_id, 10),
                         product_label: detail.product_label,
@@ -1062,7 +1078,7 @@
                 }
 
                 var number = record.return_number || key;
-                if (mode === "view") {
+                if (mode === "confirm") {
                     $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
                     $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
                     $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
@@ -1074,8 +1090,18 @@
                         setCrModalMode("confirm");
                         $("#customer-return-modal .modal-title").text("Konfirmasi Pengembalian " + number);
                     } else {
+                        $("#cr-accept,#cr-decline").addClass("d-none");
                         setCrModalMode("form");
                     }
+                } else if (mode === "view") {
+                    $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
+                    $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
+                    $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
+                    $("#cr-btn-upload-proof").addClass("d-none");
+                    $("#cr-add-strip,#cr-save").addClass("d-none");
+                    $("#cr-accept,#cr-decline").addClass("d-none");
+                    $("#cr-print").toggleClass("d-none", parseInt(record.status, 10) !== 2);
+                    setCrModalMode("form");
                 } else {
                     $("#customer-return-modal .modal-title").text("Edit Pengembalian " + number);
                     $("#cr-save").text("Update");
@@ -1137,13 +1163,19 @@
         form.append("product_details", JSON.stringify(productLines.filter(function (line) {
             return line.qty > 0;
         }).map(function (line) {
-            return {
+            var payload = {
                 product_variant_id: line.product_variant_id,
                 unit_id: line.unit_id,
                 warehouse_id: line.warehouse_id,
-                destination_warehouse_id: parseInt(line.destination_warehouse_id || 0, 10) || line.warehouse_id,
                 qty: line.qty,
             };
+            if (!isRetailWarehouse(line.warehouse_id)) {
+                var destId = parseInt(line.destination_warehouse_id || 0, 10);
+                if (destId > 0) {
+                    payload.destination_warehouse_id = destId;
+                }
+            }
+            return payload;
         })));
         if (photos.length) {
             form.append("proof_base64", photos[0]);
@@ -1191,6 +1223,7 @@
             }
             return;
         }
+        $("#customer-return-modal").modal("hide");
         showModalKonfirmasi(detail, btnId);
         $("#" + btnId)
             .attr("data-key", key)
@@ -1303,24 +1336,15 @@
             setSelectInvalid("#cr-product-unit", true);
             return false;
         }
-        // Tujuan ST eceran: kalau gudang aktif sudah eceran, isi otomatis (jangan minta pilih lagi).
-        var destWhId = 0;
-        var destWhName = "";
-        if (retail) {
-            var activeId = crActiveWarehouseId();
-            if (isRetailWarehouse(activeId)) {
-                destWhId = activeId;
-                destWhName = crActiveWarehouseName();
-            }
-        } else {
-            destWhId = dest.id;
-            destWhName = dest.name;
-        }
+        var destWhId = null;
+        var destWhName = null;
         var existing = productLines.find(function (line) {
-            return line.product_variant_id === parseInt(product.product_variant_id, 10) &&
+            return (
+                line.product_variant_id === parseInt(product.product_variant_id, 10) &&
                 line.unit_id === unitId &&
                 line.warehouse_id === dest.id &&
-                parseInt(line.destination_warehouse_id || 0, 10) === destWhId;
+                parseInt(line.destination_warehouse_id || 0, 10) === parseInt(destWhId || 0, 10)
+            );
         });
         if (existing) {
             existing.qty += qty;
@@ -1333,8 +1357,8 @@
                 warehouse_id: dest.id,
                 warehouse_name: dest.name,
                 retail_unit: parseInt(product.retail_unit || 0, 10) || null,
-                destination_warehouse_id: destWhId || null,
-                destination_warehouse_name: destWhName || null,
+                destination_warehouse_id: destWhId,
+                destination_warehouse_name: destWhName,
                 qty: qty,
             });
         }
@@ -1460,6 +1484,13 @@
             updateCounts();
         });
 
+        $(document).on("click", ".cr-remove-line", function () {
+            if (crMode === "view") return;
+            var type = $(this).data("type");
+            var index = parseInt($(this).data("index"), 10);
+            removeLineAt(type, index, $(this).closest("tr"));
+        });
+
         $(document).on("keydown", ".cr-line-qty", function (event) {
             if (event.key === "Enter") {
                 event.preventDefault();
@@ -1526,7 +1557,8 @@
             if (!key) return;
             window.open("/customerReturns/" + encodeURIComponent(key) + "/print", "_blank");
         }
-        $(document).on("click", ".cr-view, .cr-confirm", function () { openRecord($(this).data("key"), "view"); });
+        $(document).on("click", ".cr-view", function () { openRecord($(this).data("key"), "view"); });
+        $(document).on("click", ".cr-confirm", function () { openRecord($(this).data("key"), "confirm"); });
         $(document).on("click", ".cr-print", function (event) {
             event.preventDefault();
             event.stopPropagation();

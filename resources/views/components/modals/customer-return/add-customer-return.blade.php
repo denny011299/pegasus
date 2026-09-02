@@ -269,6 +269,7 @@
                                         <th class="py-2" style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;border-bottom:1px solid #e2e8f0;">Item</th>
                                         <th class="py-2" style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;border-bottom:1px solid #e2e8f0;width:90px;">Qty</th>
                                         <th class="px-4 py-2" style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;border-bottom:1px solid #e2e8f0;">Gudang</th>
+                                        <th class="text-center px-2 py-2" style="font-size:11px;font-weight:600;text-transform:uppercase;color:#475569;border-bottom:1px solid #e2e8f0;width:70px;">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody id="cr-all-lines"></tbody>
