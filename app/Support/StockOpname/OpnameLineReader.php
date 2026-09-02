@@ -5,6 +5,7 @@ namespace App\Support\StockOpname;
 use App\Models\ProductStock;
 use App\Models\StockOpnameDetail;
 use App\Models\StockOpnameLine;
+use App\Models\Unit;
 
 /**
  * Satu-satunya pintu baca dokumen Stock Opname untuk TAMPILAN (PDF, halaman detail, daftar).
@@ -111,9 +112,18 @@ class OpnameLineReader
         // liveStockMap().
         $live = $isDraft ? collect() : $this->liveStockMap($lines, $sto->warehouse_id ?: null);
 
+        // Bug dilaporkan user (2026-09-02, ditemukan lewat kembarannya di Bahan): draft TIDAK
+        // PERNAH lewat publish() (lihat OpnameLifecycle::publish()'s own guard), jadi
+        // sol_unit_short_name masih NULL -- dulu jatuh ke fallback "unit#12" di bawah, yang lantas
+        // ikut tercetak sebagai label satuan di halaman edit (CreateStockOpname.js renderMode2())
+        // dan di PDF. Pakai nama satuan KATALOG (live) sebagai fallback SEBELUM literal "unit#N" --
+        // itu cadangan terakhir kalau unit-nya sendiri sudah terhapus dari database.
+        $unitNames = Unit::whereIn('unit_id', $lines->pluck('unit_id')->filter()->unique()->all())
+            ->pluck('unit_short_name', 'unit_id');
+
         return $lines
             ->groupBy('product_variant_id')
-            ->map(function ($group) use ($pending, $live, $isDraft) {
+            ->map(function ($group) use ($pending, $live, $isDraft, $unitNames) {
                 $first = $group->first();
                 $units = [];
 
@@ -127,7 +137,7 @@ class OpnameLineReader
                     }
 
                     $units[] = [
-                        'unit' => $line->sol_unit_short_name ?? ('unit#'.$line->unit_id),
+                        'unit' => $line->sol_unit_short_name ?? $unitNames->get($line->unit_id) ?? ('unit#'.$line->unit_id),
                         'unit_id' => $line->unit_id,
                         'system' => $system,
                         'live' => $liveQty,

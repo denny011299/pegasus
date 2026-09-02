@@ -12,6 +12,7 @@ use App\Support\StockOpname\BahanOpnameLifecycle;
 use App\Support\StockOpname\BahanOpnameLineReader;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ use Tests\TestCase;
 class StockOpnameBahanV2LifecycleTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private function staffId(): int
     {
@@ -35,7 +37,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     }
 
     /** @return array{0: Supplies, 1: SuppliesStock, 2: SuppliesStock, 3: Unit, 4: Unit} */
-    private function makeFixture(int $dosStock = 12, int $pcsStock = 42): array
+    private function makeFixture(int $dosStock = 12, int $pcsStock = 42, int $warehouseId = 1): array
     {
         $units = Unit::where('status', 1)->limit(2)->get();
         $this->assertGreaterThanOrEqual(2, $units->count(), 'fixture butuh minimal 2 satuan aktif');
@@ -53,7 +55,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
             $s = new SuppliesStock();
             $s->supplies_id = $supplies->supplies_id;
             $s->unit_id = $unit->unit_id;
-            $s->warehouse_id = 1;
+            $s->warehouse_id = $warehouseId;
             $s->ss_stock = $qty;
             $s->status = 1;
             $s->save();
@@ -302,6 +304,51 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertSame(10, (int) $lines->first()->sobl_counted_qty);
     }
 
+    /**
+     * Bug dilaporkan user (2026-09-02): draft tidak pernah lewat publish() (lihat
+     * BahanOpnameLifecycle::publish()'s guard), jadi sobl_unit_short_name masih NULL selama masih
+     * draft. legacyItems() DULU jatuh ke fallback literal "unit#12" untuk label satuan yang
+     * dicetak ke stobd_real/stobd_system -- padahal 'units' (katalog) di payload yang SAMA tetap
+     * memuat nama asli ("pcs"). CreateStockOpnameSupplies.js (seedSavedValuesFromItems()) mem-
+     * PARSE ULANG stobd_real lalu mencocokkan namanya ke katalog itu untuk mengisi ulang form saat
+     * draft dibuka lagi -- "unit#12" vs "pcs" tidak pernah cocok, jadi angka yang barusan diinput
+     * staf hilang dari tampilan (walau tetap tersimpan benar di DB). Simulasikan persis logika
+     * JS itu di sini supaya regresi ini tertangkap tanpa perlu test browser.
+     */
+    public function test_draft_legacy_items_unit_label_matches_the_catalog_name_it_will_be_matched_against(): void
+    {
+        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture();
+        $stob = $this->makeDocument(isDraft: true);
+        $this->addLines($stob, $supplies, [$dos->unit_id => 8, $pcs->unit_id => null]);
+
+        $items = (new BahanOpnameLineReader())->legacyItems($stob);
+        $this->assertCount(1, $items);
+        $item = $items[0];
+
+        // Baris di stobd_real cuma boleh mencetak nama satuan katalog asli -- tidak pernah lagi
+        // fallback "unit#N" selama unit-nya sendiri masih ada di database.
+        $this->assertStringContainsString('8 '.$dosUnit->unit_short_name, $item['stobd_real']);
+        $this->assertStringNotContainsString('unit#', $item['stobd_real']);
+
+        // Simulasi persis seedSavedValuesFromItems() (CreateStockOpnameSupplies.js): urai
+        // stobd_real jadi peta nama->qty, lalu cocokkan tiap unit katalog ke peta itu.
+        $realMap = [];
+        foreach (explode(', ', $item['stobd_real']) as $part) {
+            [$qty, $name] = array_pad(explode(' ', trim($part), 2), 2, '');
+            $realMap[$name] = $qty;
+        }
+
+        $restored = [];
+        foreach ($item['units'] as $u) {
+            if (array_key_exists($u['unit_short_name'], $realMap) && $realMap[$u['unit_short_name']] !== '-') {
+                $restored[$u['unit_id']] = (int) $realMap[$u['unit_short_name']];
+            }
+        }
+
+        $this->assertSame(8, $restored[$dosUnit->unit_id] ?? null, 'nilai yang sudah diinput harus berhasil dipulihkan ke form saat draft dibuka lagi');
+        $this->assertArrayNotHasKey($pcsUnit->unit_id, $restored, 'satuan yang belum diisi tidak boleh ikut "dipulihkan"');
+    }
+
     // ---------------------------------------------------------------- laporan
 
     public function test_selisih_report_includes_new_version_bahan_documents(): void
@@ -326,9 +373,9 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     // ---------------------------------------------------------------- gulung satuan (rollUpUnits)
 
     /** Kembaran persis makeFixtureWithLadder() (Produk) -- lihat StockOpnameV2LifecycleTest. */
-    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12): array
+    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12, int $warehouseId = 1): array
     {
-        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock);
+        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock, $warehouseId);
 
         $relation = new SuppliesRelation();
         $relation->supplies_id = $supplies->supplies_id;
@@ -445,5 +492,38 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
         (new BahanOpnameLifecycle())->rollUpUnits($stob);
         $this->assertSame(0, StockOpnameBahanLine::where('stob_id', $stob->stob_id)->count());
+    }
+
+    /** Kembaran persis Produk -- lihat StockOpnameV2LifecycleTest untuk alasan lengkap. */
+    public function test_roll_up_skips_a_retail_warehouse_document_entirely(): void
+    {
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0, pcsStock: 42, ratio: 12, warehouseId: $retailWarehouseId);
+        $stob = $this->makeDocument(isDraft: false);
+        $stob->warehouse_id = $retailWarehouseId;
+        $stob->save();
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'pcs harus tetap apa adanya, tidak digulung');
+        $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty, 'DOS tidak boleh ikut terisi otomatis di gudang eceran');
+    }
+
+    /** Dokumen tanpa gudang sama sekali (warehouse_id null) tetap digulung seperti sebelum multi-gudang ada. */
+    public function test_roll_up_still_applies_when_document_has_no_warehouse_pinned(): void
+    {
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
+        $stob = $this->makeDocument(isDraft: false);
+        $this->assertNull($stob->warehouse_id);
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty);
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
     }
 }

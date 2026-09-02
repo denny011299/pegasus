@@ -14,6 +14,7 @@ use App\Support\StockOpname\OpnameLifecycle;
 use App\Support\StockOpname\OpnameLineReader;
 use Illuminate\Support\Facades\DB;
 use Tests\Support\ActingAsStaff;
+use Tests\Support\ResolvesTestWarehouses;
 use Tests\TestCase;
 
 /**
@@ -31,6 +32,7 @@ use Tests\TestCase;
 class StockOpnameV2LifecycleTest extends TestCase
 {
     use ActingAsStaff;
+    use ResolvesTestWarehouses;
 
     private function staffId(): int
     {
@@ -38,7 +40,7 @@ class StockOpnameV2LifecycleTest extends TestCase
     }
 
     /** @return array{0: ProductVariant, 1: ProductStock, 2: ProductStock, 3: Unit, 4: Unit} */
-    private function makeFixture(int $dosStock = 12, int $pcsStock = 42): array
+    private function makeFixture(int $dosStock = 12, int $pcsStock = 42, int $warehouseId = 1): array
     {
         $units = Unit::where('status', 1)->limit(2)->get();
         $this->assertGreaterThanOrEqual(2, $units->count(), 'fixture butuh minimal 2 satuan aktif');
@@ -71,7 +73,7 @@ class StockOpnameV2LifecycleTest extends TestCase
             $s->product_id = $product->product_id;
             $s->product_variant_id = $variant->product_variant_id;
             $s->unit_id = $unit->unit_id;
-            $s->warehouse_id = 1;
+            $s->warehouse_id = $warehouseId;
             $s->ps_stock = $qty;
             $s->status = 1;
             $s->save();
@@ -370,9 +372,9 @@ class StockOpnameV2LifecycleTest extends TestCase
     // ---------------------------------------------------------------- gulung satuan (rollUpUnits)
 
     /** @return array{0: ProductVariant, 1: ProductStock, 2: ProductStock, 3: Unit, 4: Unit} */
-    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12): array
+    private function makeFixtureWithLadder(int $dosStock = 12, int $pcsStock = 42, int $ratio = 12, int $warehouseId = 1): array
     {
-        [$variant, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock);
+        [$variant, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture($dosStock, $pcsStock, $warehouseId);
 
         $relation = new ProductRelation();
         $relation->product_variant_id = $variant->product_variant_id;
@@ -502,6 +504,44 @@ class StockOpnameV2LifecycleTest extends TestCase
 
         (new OpnameLifecycle())->rollUpUnits($sto);
         $this->assertSame(0, StockOpnameLine::where('sto_id', $sto->sto_id)->count());
+    }
+
+    /**
+     * Keputusan user 2026-09-02: skema multi-gudang membatasi gudang eceran untuk cuma
+     * menghitung satuan eceran-nya sendiri (retail_unit) -- menggulung ke satuan atas di sana
+     * bertabrakan langsung dengan aturan itu, jadi gudang eceran TIDAK digulung sama sekali,
+     * beda dari gudang utama yang tetap tergulung seperti biasa (lihat test-test di atas).
+     */
+    public function test_roll_up_skips_a_retail_warehouse_document_entirely(): void
+    {
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
+
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0, pcsStock: 42, ratio: 12, warehouseId: $retailWarehouseId);
+        $sto = $this->makeDocument(isDraft: false);
+        $sto->warehouse_id = $retailWarehouseId;
+        $sto->save();
+        $this->addLines($sto, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sol_counted_qty, 'pcs harus tetap apa adanya, tidak digulung');
+        $this->assertNull($lines[$dos->unit_id]->sol_counted_qty, 'DOS tidak boleh ikut terisi otomatis di gudang eceran');
+    }
+
+    /** Dokumen tanpa gudang sama sekali (warehouse_id null) tetap digulung seperti sebelum multi-gudang ada. */
+    public function test_roll_up_still_applies_when_document_has_no_warehouse_pinned(): void
+    {
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
+        $sto = $this->makeDocument(isDraft: false);
+        $this->assertNull($sto->warehouse_id);
+        $this->addLines($sto, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sol_counted_qty);
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sol_counted_qty);
     }
 
     // ---------------------------------------------------------------- identitas baris

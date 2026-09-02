@@ -8,6 +8,7 @@ use App\Models\ProductVariant;
 use App\Models\Staff;
 use App\Models\StockOpnameLine;
 use App\Models\Unit;
+use App\Models\Warehouse;
 use App\Support\UnitRollUp;
 
 /**
@@ -148,6 +149,16 @@ class OpnameLifecycle
         // UnitRollUp::collapseProduct() untuk alasannya.
         $warehouseId = $sto->warehouse_id ?: null;
 
+        // Keputusan user 2026-09-02: skema multi-gudang membatasi gudang ECERAN untuk cuma
+        // menghitung/menyimpan retail_unit varian itu sendiri (lihat ProductVariant::
+        // getProductVariant() dan StockOpnameRetailWarehouseUnitVisibilityTest) -- menggulung ke
+        // satuan atas di sana bertabrakan langsung dengan aturan itu, karena satuan atas memang
+        // SENGAJA tidak pernah ada/tersimpan di gudang eceran. Gudang utama tetap digulung seperti
+        // biasa (catatan lama tetap berlaku di sana).
+        if (self::isRetailWarehouse($warehouseId)) {
+            return;
+        }
+
         foreach ($lines as $productVariantId => $group) {
             if (! $productVariantId) {
                 continue;
@@ -184,5 +195,24 @@ class OpnameLifecycle
         $sto->sto_acc_name = $accBy ? optional(Staff::find($accBy))->staff_name : null;
         $sto->sto_decided_at = now();
         $sto->save();
+    }
+
+    /**
+     * true = $warehouseId ada dan tipenya BUKAN gudang utama (is_main_warehouse != 1), jadi
+     * eceran. Tidak ada gudang (null/0) atau tipe yang tidak ketemu dianggap BUKAN eceran --
+     * gulung tetap jalan seperti sebelum multi-gudang ada, sama seperti pola inline yang sama di
+     * ProductVariant::getProductVariant().
+     */
+    private static function isRetailWarehouse(?int $warehouseId): bool
+    {
+        if (! $warehouseId) {
+            return false;
+        }
+
+        $warehouse = Warehouse::query()
+            ->with(['type' => fn ($q) => $q->select('id', 'is_main_warehouse')])
+            ->find($warehouseId);
+
+        return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse !== 1);
     }
 }

@@ -7,6 +7,7 @@ use App\Models\StockOpnameBahanLine;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\Unit;
+use App\Models\Warehouse;
 use App\Support\UnitRollUp;
 
 /**
@@ -100,6 +101,12 @@ class BahanOpnameLifecycle
         // Gudang DOKUMEN -- lihat OpnameLifecycle::rollUpUnits().
         $warehouseId = $stob->warehouse_id ?: null;
 
+        // Keputusan user 2026-09-02: kembaran persis OpnameLifecycle::rollUpUnits() -- gudang
+        // eceran tidak digulung sama sekali.
+        if (self::isRetailWarehouse($warehouseId)) {
+            return;
+        }
+
         foreach ($lines as $suppliesId => $group) {
             if (! $suppliesId) {
                 continue;
@@ -134,5 +141,19 @@ class BahanOpnameLifecycle
         $stob->stob_acc_name = $accBy ? optional(Staff::find($accBy))->staff_name : null;
         $stob->stob_decided_at = now();
         $stob->save();
+    }
+
+    /** Kembaran persis OpnameLifecycle::isRetailWarehouse(). */
+    private static function isRetailWarehouse(?int $warehouseId): bool
+    {
+        if (! $warehouseId) {
+            return false;
+        }
+
+        $warehouse = Warehouse::query()
+            ->with(['type' => fn ($q) => $q->select('id', 'is_main_warehouse')])
+            ->find($warehouseId);
+
+        return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse !== 1);
     }
 }
