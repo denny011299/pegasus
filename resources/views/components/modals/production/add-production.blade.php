@@ -52,9 +52,21 @@
   .select2-dropdown {
     z-index: 1065 !important;
   }
+  /* Select2 dropdown di-append ke body; pastikan kolom search selalu tampil & bisa difokus. */
+  .select2-dropdown .select2-search--dropdown {
+    display: block !important;
+    padding: 8px;
+  }
+  .select2-dropdown .select2-search__field {
+    width: 100% !important;
+    min-height: 38px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 6px 10px;
+  }
 </style>
 <div class="modal custom-modal fade pg-modal--form" id="addProduction" aria-modal="true" role="dialog" tabindex="-1"
-  data-bs-backdrop="static">
+  data-bs-backdrop="static" data-bs-focus="false">
   <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
     <div class="modal-content d-flex flex-column">
       <div class="modal-header">

@@ -1,4 +1,20 @@
-autocompleteBom("#product_id", "body");
+function initProductionFormAutocompletes() {
+    if (typeof autocompleteBom !== "function") {
+        return;
+    }
+    autocompleteBom("#addProduction #product_id", "body");
+}
+
+function getSelect2FirstData($el) {
+    if (!$el || !$el.length || !$el.hasClass("select2-hidden-accessible")) {
+        return null;
+    }
+    var data = $el.select2("data");
+    return data && data.length ? data[0] : null;
+}
+
+$(document).on("shown.bs.modal", "#addProduction", initProductionFormAutocompletes);
+
 autocompleteSupplies("#fix_recipe_supplies_id", "#fixRecipeBom .modal-content");
 var mode = 1; // 1 = insert; 2 = edit; 3 = view
 var modeBahan = 1;
@@ -59,13 +75,14 @@ function productionActiveWarehouseName() {
 }
 
 function syncProductionDestinationControl() {
-    var product = $("#product_id").select2("data")[0] || {};
+    var $product = $("#addProduction #product_id");
+    var product = getSelect2FirstData($product) || {};
     var isRetail =
         parseInt(product.retail_unit || 0, 10) > 0 &&
         parseInt($("#unit_id").val() || 0, 10) ===
             parseInt(product.retail_unit, 10);
     var $badge = $("#production-main-warehouse-badge");
-    var $dest = $("#production_destination_warehouse_id");
+    var $dest = $("#addProduction #production_destination_warehouse_id");
     var $destSelect2 = $dest.next(".select2-container");
 
     $badge.find("span").text(
@@ -80,7 +97,7 @@ function syncProductionDestinationControl() {
             !$dest.hasClass("select2-hidden-accessible")
         ) {
             autocompleteWarehouse(
-                "#production_destination_warehouse_id",
+                "#addProduction #production_destination_warehouse_id",
                 "body",
                 { placeholder: "Pilih gudang eceran tujuan", retailOnly: true },
             );
@@ -114,7 +131,7 @@ function resetProductionProductUnitSelect() {
 }
 
 function clearProductionProductSelect() {
-    var $product = $("#product_id");
+    var $product = $("#addProduction #product_id");
     if ($product.hasClass("select2-hidden-accessible")) {
         $product.val(null).trigger("change");
         return;
@@ -1225,7 +1242,7 @@ function continueAddProduct(tempBom) {
     return true;
 }
 $(document).ready(function () {
-    // $('#date_production').val(moment().format('YYYY-MM-DD')).trigger("change");
+    initProductionFormAutocompletes();
     inisialisasi();
     refreshProduction();
 });

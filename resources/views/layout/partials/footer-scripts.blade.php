@@ -953,6 +953,21 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
+  /** Fokus kolom search Select2 (modal + dropdownParent body / mobile). */
+  function attachSelect2SearchOpenFix($el) {
+    $el.off('select2:open.pgSearchFix');
+    $el.on('select2:open.pgSearchFix', function() {
+      setTimeout(function() {
+        var $open = $('.select2-container--open').last();
+        $open.find('.select2-search--dropdown').removeClass('select2-search--hide').show();
+        var $search = $open.find('.select2-search__field');
+        if ($search.length) {
+          $search.prop('readonly', false).attr('inputmode', 'search').trigger('focus');
+        }
+      }, 0);
+    });
+  }
+
   function autocompleteBom(id, modalParent = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
@@ -988,9 +1003,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       placeholder: "Pilih Produk",
       closeOnSelect: true,
       allowClear: true,
+      minimumResultsForSearch: 0,
       width: "100%",
       dropdownParent: modalParent ? $(modalParent) : "",
     });
+    attachSelect2SearchOpenFix($(id));
   }
 
   function autocompleteProduct(id, modalParent = null) {
@@ -1496,9 +1513,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       placeholder: opts.placeholder || "Pilih toko atau gudang",
       closeOnSelect: true,
       allowClear: true,
+      minimumResultsForSearch: 0,
       width: "100%",
       dropdownParent: modalParent ? $(modalParent) : "",
     });
+    attachSelect2SearchOpenFix($(id));
   }
 
   function autocompleteRekening(id, modalParent = null) {
