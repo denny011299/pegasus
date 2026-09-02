@@ -1,11 +1,19 @@
 ﻿<?php $page = 'sales_order'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
+    <link rel="stylesheet" href="{{ asset('assets/plugins/daterangepicker/daterangepicker.css') }}">
     <style>
         /* Theme default .tab-content padding-top: 32px — tighten gap under Pengiriman/Pengembalian tabs */
         .tab-content {
             padding-top: 0px !important;
             margin-top: 10px !important;
+        }
+        .daterangepicker {
+            z-index: 1060 !important;
+        }
+        .sales-order-filter .cal-icon:after,
+        .customer-return-filter .cal-icon:after {
+            pointer-events: none;
         }
 
         #add_sales_order #so_qty_input {
