@@ -1096,7 +1096,7 @@
             "cad_notes": $('#cad_notes').val(),
             "cad_nominal": convertToAngkaMinus($('#cad_nominal').val()),
         };
-        items.push(data);
+        pgPopupTableInsert(items, data);
 
         var total = 0;
         items.forEach(element => {
@@ -1105,20 +1105,24 @@
         $('.total').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRow();
+        pgPopupTableScrollToEdge($('#tableDetail').closest('.pg-popup-table-scroll'));
 
         $('#cad_notes').val("");
         $('#cad_nominal').val("");
     })
 
     function addRow() {
-        $('#tableDetail tr.row-detail').html(" ");
+        $('#tableDetail tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetail tbody').html('<tr class="pg-popup-table-empty"><td colspan="4">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         items.forEach((e, index) => {
             $('#tableDetail tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1127,6 +1131,7 @@
                 </tr>
             `);
         });
+        $('#tableDetail .col-aksi').toggle(mode !== 3);
     }
 
     $(document).on("click", ".btn_delete_row", function() {
@@ -1300,7 +1305,7 @@
             "cgd_notes": $('#cgd_notes').val(),
             "cgd_nominal": convertToAngkaMinus($('#cgd_nominal').val()),
         };
-        items.push(data);
+        pgPopupTableInsert(items, data);
 
         var total = 0;
         items.forEach(element => {
@@ -1309,6 +1314,7 @@
         $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowGudang();
+        pgPopupTableScrollToEdge($('#tableDetailGudang').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cgd_notes').val("");
@@ -1318,7 +1324,10 @@
     })
 
     function addRowGudang() {
-        $('#tableDetailGudang tr.row-detail').html(" ");
+        $('#tableDetailGudang tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailGudang tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             $('#tableDetailGudang tbody').append(`
@@ -1327,7 +1336,7 @@
                     <td>${e.customer_notes}</td>
                     <td style="width: 25%">${e.cgd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1336,6 +1345,7 @@
                 </tr>
             `);
         });
+        $('#tableDetailGudang .col-aksi').toggle(mode !== 3);
     }
 
     $(document).on("click", ".btn_delete_row_gudang", function() {
@@ -1498,19 +1508,19 @@
         };
 
         if (items.length === 0) {
-            items.push(data);
+            pgPopupTableInsert(items, data);
         } else {
             if (
                 (newType == 1 && firstType == 1) ||
                 (newType == 2 && firstType == 2) ||
                 (newType == 3 && firstType == 3)
             ) {
-                items.push(data);
+                pgPopupTableInsert(items, data);
             }
             else {
                 $('#oc_transaksi_armada').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                 return false;
             }
         }
@@ -1522,6 +1532,7 @@
         $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowArmada();
+        pgPopupTableScrollToEdge($('#tableDetailArmada').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cc_id').empty(null);
@@ -1529,7 +1540,10 @@
     })
 
     function addRowArmada() {
-        $('#tableDetailArmada tr.row-detail').html(" ");
+        $('#tableDetailArmada tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailArmada tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             let type = "";
@@ -1544,7 +1558,7 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1553,6 +1567,7 @@
                 </tr>
             `);
         });
+        $('#tableDetailArmada .col-aksi').toggle(mode !== 3);
     }
 
     $(document).on("click", ".btn_delete_row_armada", function() {
@@ -1709,19 +1724,19 @@
         };
 
         if (items.length === 0) {
-            items.push(data);
+            pgPopupTableInsert(items, data);
         } else {
             if (
                 (newType == 1 && firstType == 1) ||
                 (newType == 2 && firstType == 2) ||
                 (newType == 3 && firstType == 3)
             ) {
-                items.push(data);
+                pgPopupTableInsert(items, data);
             }
             else {
                 $('#oc_transaksi_sales').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                 return false;
             }
         }
@@ -1733,6 +1748,7 @@
         $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowSales();
+        pgPopupTableScrollToEdge($('#tableDetailSales').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cc_id_sales').empty(null);
@@ -1740,7 +1756,10 @@
     })
 
     function addRowSales() {
-        $('#tableDetailSales tr.row-detail').html(" ");
+        $('#tableDetailSales tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailSales tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             let type = "";
@@ -1753,7 +1772,7 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1761,7 +1780,8 @@
                     </td>
                 </tr>
             `);
-        }); 
+        });
+        $('#tableDetailSales .col-aksi').toggle(mode !== 3);
     }
 
     $(document).on("click", ".btn_delete_row_sales", function() {

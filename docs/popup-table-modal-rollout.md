@@ -29,10 +29,10 @@ lose track of what's left. Check off + note the PR/commit when a row ships.
 | # | Modal | File(s) | Variant | Notes | Status |
 |---|---|---|---|---|---|
 | 1 | Produksi → Tambah Produksi | `components/modals/production/add-production.blade.php` + `Production.js` | A | Pilot — reference implementation | ✅ Done (`feat/popup-table-produksi`) |
-| 2 | Kas Operasional → Kas Admin | `components/modals/operational-cash/add-cash-admin.blade.php` | A | `btn-add-catatan` | ⬜ To do |
-| 3 | Kas Operasional → Kas Armada | `components/modals/operational-cash/add-cash-armada.blade.php` | A | already uses `input_table` class | ⬜ To do |
-| 4 | Kas Operasional → Kas Gudang | `components/modals/operational-cash/add-cash-gudang.blade.php` | A | already uses `input_table` class | ⬜ To do |
-| 5 | Kas Operasional → Kas Sales | `components/modals/operational-cash/add-cash-sales.blade.php` | A | already uses `input_table` class | ⬜ To do |
+| 2 | Kas Operasional → Kas Admin | `components/modals/operational-cash/add-cash-admin.blade.php` | A | `btn-add-catatan` | ✅ Done (GitHub #130 branch `fix/kas-operasional-module-130`) |
+| 3 | Kas Operasional → Kas Armada | `components/modals/operational-cash/add-cash-armada.blade.php` | A | already uses `input_table` class | ✅ Done (GitHub #130 branch `fix/kas-operasional-module-130`) |
+| 4 | Kas Operasional → Kas Gudang | `components/modals/operational-cash/add-cash-gudang.blade.php` | A | already uses `input_table` class | ✅ Done (GitHub #130 branch `fix/kas-operasional-module-130`) |
+| 5 | Kas Operasional → Kas Sales | `components/modals/operational-cash/add-cash-sales.blade.php` | A | already uses `input_table` class | ✅ Done (GitHub #130 branch `fix/kas-operasional-module-130`) |
 | 6 | Purchase Order → Tambah Purchase Order | `components/modals/purchase-order/add-purchase-order.blade.php` | A | SKU/scan input above table, no scroll cap today | ⬜ To do |
 | 7 | Purchase Order Detail → Retur | `components/modals/purchase-order-detail/add-retur.blade.php` | A | already uses `input_table` class | ⬜ To do |
 | 8 | Sales Order → Tambah Sales Order | `components/modals/sales-order/add-sales-order.blade.php` | A | has its own **broken** ad-hoc `max-height:300px` cap — blade has a comment admitting it doesn't actually apply; migrating fixes this as a side effect | ⬜ To do |

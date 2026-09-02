@@ -84,7 +84,7 @@
                     <h5 class="form-title mb-2 text-black">Detail</h5>
                   </div>
                   <div class="col-12 px-2 mb-3 operasional">
-                    <div class="row input_table g-3 align-items-end px-1">
+                    <div class="row input_table pg-popup-table-input g-3 align-items-end px-1">
                       <div class="col-12 col-lg-6 add">
                         <div class="input-block mb-3" id="row-gudang">
                           <label>Nama Armada<span class="text-danger">*</span></label>
@@ -122,6 +122,7 @@
                         </div>
                       </div>
                       <div class="col-12 col-md-12 col-lg-1 add">
+                        <label class="mb-2 d-none d-lg-block">&nbsp;</label>
                         <button type="button" class="btn btn-primary w-100 btn-add-gudang mb-3">
                           +
                         </button>
@@ -129,16 +130,20 @@
                     </div>
                   </div>
                   <div class="col-12 py-3 mb-3 operasional">
-                    <div class="table-responsive">
+                    <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailGudang" style="min-height: 15vh">
                         <thead>
                           <th>No</th>
                           <th>Armada</th>
                           <th style="width: 25%">Nama</th>
                           <th class="text-end">Nominal</th>
-                          <th class="no-sort text-center">Aksi</th>
+                          <th class="no-sort text-center col-aksi">Aksi</th>
                         </thead>
-                        <tbody></tbody>
+                        <tbody>
+                          <tr class="pg-popup-table-empty">
+                            <td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td>
+                          </tr>
+                        </tbody>
                         <tfoot>
                           <tr>
                             <td colspan="3" class="text-end fw-bold">Total : </td>
