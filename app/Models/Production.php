@@ -88,6 +88,29 @@ class Production extends Model
         ]);
         $detailsByProduction = $allDetails->groupBy('production_id');
 
+        // ST production: kirim(2)/terkirim(4) → produksi tidak boleh dibatalkan; pending(1) boleh.
+        $shippedStByProduction = [];
+        $pendingStByProduction = [];
+        if (
+            count($productionIds) > 0
+            && Schema::hasColumn('stock_transfers', 'source_type')
+            && Schema::hasColumn('stock_transfers', 'source_id')
+        ) {
+            $linkedTransfers = StockTransfer::query()
+                ->where('source_type', 'production')
+                ->whereIn('source_id', $productionIds)
+                ->whereIn('status', [1, 2, 4])
+                ->get(['source_id', 'status']);
+            foreach ($linkedTransfers as $st) {
+                $pid = (int) $st->source_id;
+                if ((int) $st->status === 1) {
+                    $pendingStByProduction[$pid] = true;
+                } else {
+                    $shippedStByProduction[$pid] = true;
+                }
+            }
+        }
+
         $staffIds = $result->flatMap(function ($production) {
             return array_filter([
                 $production->production_created_by,
@@ -108,6 +131,11 @@ class Production extends Model
 
         foreach ($result as $key => $value) {
             $value->items = $detailsByProduction->get($value->production_id, collect())->values();
+            $pid = (int) $value->production_id;
+            $value->has_pending_stock_transfer = ! empty($pendingStByProduction[$pid]);
+            $value->has_shipped_stock_transfer = ! empty($shippedStByProduction[$pid]);
+            // Batal hanya dari Berhasil (2), dan hanya jika ST belum dikirim.
+            $value->can_cancel = ((int) $value->status === 2) && ! $value->has_shipped_stock_transfer;
 
             $dos = 0;
             foreach ($value->items as $key => $val) {

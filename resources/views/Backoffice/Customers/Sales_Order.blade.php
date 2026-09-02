@@ -292,11 +292,6 @@
             @endcomponent
             <!-- /Page Header -->
 
-            <!-- Search Filter -->
-            @component('components.search-filter')
-            @endcomponent
-            <!-- /Search Filter -->
-
             <div class="d-flex mb-2">
                 <ul class="nav custom-premium-tabs" id="customer-return-tabs" role="tablist">
                     <li class="nav-item" role="presentation">
@@ -313,6 +308,10 @@
                     </li>
                 </ul>
             </div>
+
+            {{-- Filter di bawah tabs (sama pola Product Issues); kartu SO/CR di-toggle per tab --}}
+            @component('components.search-filter')
+            @endcomponent
 
             <div class="tab-content">
                 <div class="tab-pane fade show active" id="shipping-pane" role="tabpanel">

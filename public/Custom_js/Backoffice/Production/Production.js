@@ -180,12 +180,13 @@ function setProductionModalMode(kind) {
     }
 }
 
-function showProductionApprovalActions(action, productionId) {
+function showProductionApprovalActions(action, productionId, opts) {
     resetProductionApprovalActions();
     if (!hasAccessAction("Produksi", "others")) {
         return;
     }
 
+    opts = opts || {};
     var $accept = $("#addProduction #btn-terima");
     var $decline = $("#addProduction #btn-tolak");
     if (action === "production") {
@@ -202,6 +203,11 @@ function showProductionApprovalActions(action, productionId) {
         .add($decline)
         .attr("production_id", productionId)
         .removeClass("d-none");
+    // ST sudah dikirim: sembunyikan Terima Pembatalan (backend tetap menolak); biarkan Tolak
+    // supaya bisa lepas dari stuck Menunggu Batal.
+    if (action === "cancellation" && opts.hideAccept) {
+        $accept.addClass("d-none").removeAttr("production_id");
+    }
     setProductionModalMode("confirm");
 }
 
@@ -1434,6 +1440,8 @@ function renderProductionAction(row) {
     if (
         !isOldRow &&
         status === 2 &&
+        row.can_cancel !== false &&
+        !row.has_shipped_stock_transfer &&
         hasAccessAction("Produksi", "delete")
     ) {
         prAct +=
@@ -2234,11 +2242,19 @@ $(document).on("click", ".btn_view", function () {
         if (data.status == 1) {
             approvalAction = "production";
         } else if (data.status == 4) {
+            // Tetap tampilkan alur cancellation; jika ST sudah kirim, hide Terima
+            // (opts.hideAccept) tapi biarkan Tolak supaya lepas dari Menunggu Batal.
             approvalAction = "cancellation";
         }
     }
     $("#addProduction").data("approval-action", approvalAction);
-    showProductionApprovalActions(approvalAction, data.production_id);
+    $("#addProduction").data(
+        "hide-cancel-accept",
+        !!data.has_shipped_stock_transfer,
+    );
+    showProductionApprovalActions(approvalAction, data.production_id, {
+        hideAccept: !!data.has_shipped_stock_transfer,
+    });
 
     $(".is-invalid").removeClass("is-invalid");
     $(".input_table, .add, .btn_delete_row_pr").hide();
@@ -2293,6 +2309,7 @@ $(document).on("click", ".btn-close-bahan", function () {
         showProductionApprovalActions(
             $("#addProduction").data("approval-action"),
             $("#addProduction").attr("production_id"),
+            { hideAccept: !!$("#addProduction").data("hide-cancel-accept") },
         );
     }
 });
@@ -2656,6 +2673,15 @@ $(document).on("click", "#btn-delete-production", function () {
                 `<p id="text-delete" style="font-size:10pt"></p>`,
             );
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
+            if (e && e.status === 0) {
+                notifikasi(
+                    "error",
+                    e.header || "Pembatalan Tidak Diizinkan",
+                    e.message || "Produksi tidak dapat dibatalkan.",
+                );
+                refreshProduction();
+                return false;
+            }
             $(".modal").modal("hide");
             afterInsert();
             notifikasi(
@@ -2719,6 +2745,15 @@ $(document).on("click", "#btn-acc-delete-production", function () {
                 if (e.header) {
                     refreshProduction();
                 }
+                return false;
+            }
+            if (e && e.status === 0) {
+                notifikasi(
+                    "error",
+                    e.header || "Pembatalan Tidak Diizinkan",
+                    e.message || "Produksi tidak dapat dibatalkan.",
+                );
+                refreshProduction();
                 return false;
             }
             afterInsert();

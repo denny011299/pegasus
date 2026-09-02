@@ -27,6 +27,7 @@ use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Session;
 use Throwable;
 
 class ProductionController extends Controller
@@ -120,6 +121,7 @@ class ProductionController extends Controller
             "status" => $req->status,
             "report" => $req->report ? $req->report : null
         ]);
+        $this->attachProductionCancelFlags($data);
         return response()->json($data);
     }
 
@@ -596,7 +598,75 @@ class ProductionController extends Controller
     function deleteProduction(Request $req)
     {
         $data = $req->all();
+        $p = Production::find($data['production_id'] ?? null);
+        if (! $p || (int) $p->status !== 2) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Pembatalan Tidak Diizinkan',
+                'message' => 'Hanya produksi berstatus Berhasil yang dapat diajukan pembatalan.',
+            ]);
+        }
+        // ST sudah Kirim/Terkirim → stok sudah keluar dari gudang asal; jangan izinkan ajukan batal.
+        if ($this->productionHasShippedStockTransfer((int) $p->production_id)) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Pembatalan Tidak Diizinkan',
+                'message' => 'Stock Transfer hasil produksi sudah dikirim. Produksi tidak dapat dibatalkan.',
+            ]);
+        }
         (new Production())->deleteProduction($data);
+        return 1;
+    }
+
+    /**
+     * ST production sudah dikirim (status 2) atau diterima (4) — produksi tidak boleh dibatalkan.
+     * Pending (1) boleh: stok masih di gudang asal.
+     */
+    private function productionHasShippedStockTransfer(int $productionId): bool
+    {
+        if (
+            ! Schema::hasColumn('stock_transfers', 'source_type')
+            || ! Schema::hasColumn('stock_transfers', 'source_id')
+        ) {
+            return false;
+        }
+
+        return StockTransfer::query()
+            ->where('source_type', 'production')
+            ->where('source_id', $productionId)
+            ->whereIn('status', [2, 4])
+            ->exists();
+    }
+
+    /**
+     * Batalkan ST pending hasil produksi (belum kirim). Stok tetap di gudang asal.
+     */
+    private function cancelPendingProductionStockTransfers(int $productionId): void
+    {
+        if (
+            ! Schema::hasColumn('stock_transfers', 'source_type')
+            || ! Schema::hasColumn('stock_transfers', 'source_id')
+        ) {
+            return;
+        }
+
+        $pending = StockTransfer::query()
+            ->where('source_type', 'production')
+            ->where('source_id', $productionId)
+            ->where('status', 1)
+            ->lockForUpdate()
+            ->get();
+
+        $staffId = Session::get('user') ? Session::get('user')->staff_id : null;
+        foreach ($pending as $st) {
+            if (Schema::hasColumn('stock_transfers', 'disposition')) {
+                $st->disposition = 'return_warehouse';
+            }
+            $st->status = 3;
+            $st->accept_note = 'Dibatalkan otomatis karena pembatalan produksi';
+            $st->acc_by = $staffId;
+            $st->save();
+        }
     }
 
     /**
@@ -1359,24 +1429,23 @@ class ProductionController extends Controller
     function accDeleteProduction(Request $req)
     {
         $data = $req->all();
-        $p = (new Production())->getProduction(["production_id" => $data['production_id']])->first();
-        if (
-            Schema::hasColumn('stock_transfers', 'source_type')
-            && StockTransfer::query()
-            ->where('source_type', 'production')
-            ->where('source_id', (int) $data['production_id'])
-            ->whereIn('status', [1, 2, 4])
-            ->exists()
-        ) {
+        $productionId = (int) ($data['production_id'] ?? 0);
+        $p = (new Production())->getProduction(["production_id" => $productionId])->first();
+        if (! $p) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Update',
+                'message' => 'Data produksi tidak ditemukan',
+            ]);
+        }
+        // Hanya blokir jika ST sudah Kirim (2) / Terkirim (4). Pending (1) boleh dibatalkan
+        // bersama produksi (stok masih di gudang asal) — jangan biarkan stuck Menunggu Batal.
+        if ($this->productionHasShippedStockTransfer($productionId)) {
             return response()->json([
                 'status' => 0,
                 'header' => 'Pembatalan Tidak Diizinkan',
-                'message' => 'Produksi punya Stock Transfer aktif. Selesaikan/tolak lewat Stock Transfer dulu (stok tetap di gudang asal jika masih Pending).',
+                'message' => 'Stock Transfer hasil produksi sudah dikirim. Produksi tidak dapat dibatalkan.',
             ]);
-        }
-        if ($p['items']->count() == 0) {
-            (new Production())->cancelProduction($data);
-            return 1;
         }
 
         // Pengecekan ACC
@@ -1387,6 +1456,19 @@ class ProductionController extends Controller
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
+        }
+
+        if ($p['items']->count() == 0) {
+            DB::beginTransaction();
+            try {
+                $this->cancelPendingProductionStockTransfers($productionId);
+                (new Production())->cancelProduction($data);
+                DB::commit();
+            } catch (\Throwable $e) {
+                DB::rollBack();
+                throw $e;
+            }
+            return 1;
         }
 
         // accProduction() credits finished-goods stock into the MAIN warehouse only, via
@@ -1453,6 +1535,9 @@ class ProductionController extends Controller
         // roll back semuanya alih-alih meninggalkan reversal setengah jalan.
         DB::beginTransaction();
         try {
+        // Batalkan ST pending (belum kirim) dulu — stok belum potong dari gudang asal.
+        $this->cancelPendingProductionStockTransfers((int) $data['production_id']);
+
         // Stok produk
         foreach ($outputTotals as $output) {
             $cut = ProductUnitStock::deductQty(
@@ -2279,5 +2364,43 @@ class ProductionController extends Controller
         unset($group);
 
         return ['ok' => true, 'message' => null, 'groups' => $groups];
+    }
+
+    /**
+     * Flag list/UI: can_cancel false jika ada ST linked status Kirim(2)/Terkirim(4).
+     *
+     * @param  \Illuminate\Support\Collection|array  $productions
+     */
+    private function attachProductionCancelFlags($productions): void
+    {
+        if ($productions === null || (is_countable($productions) && count($productions) === 0)) {
+            return;
+        }
+
+        $shippedIds = [];
+        if (
+            Schema::hasColumn('stock_transfers', 'source_type')
+            && Schema::hasColumn('stock_transfers', 'source_id')
+        ) {
+            $ids = collect($productions)->pluck('production_id')->map(fn ($id) => (int) $id)->filter()->unique()->all();
+            if ($ids !== []) {
+                $shippedIds = StockTransfer::query()
+                    ->where('source_type', 'production')
+                    ->whereIn('source_id', $ids)
+                    ->whereIn('status', [2, 4])
+                    ->pluck('source_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->flip()
+                    ->all();
+            }
+        }
+
+        foreach ($productions as $production) {
+            $blocked = isset($shippedIds[(int) $production->production_id]);
+            $production->has_shipped_stock_transfer = $blocked;
+            $production->can_cancel = ! $blocked;
+            $production->can_cancel_production = ! $blocked;
+        }
     }
 }

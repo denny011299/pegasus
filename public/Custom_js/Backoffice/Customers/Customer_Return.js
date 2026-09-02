@@ -29,6 +29,17 @@
         }
     }
 
+    // Bootstrap .d-none uses !important; pair with explicit hide/show like Sales_Order.js
+    function hideCrAccButtons() {
+        $("#cr-accept,#cr-decline").addClass("d-none");
+        setCrModalMode("form");
+    }
+
+    function showCrAccButtons() {
+        $("#cr-accept,#cr-decline").removeClass("d-none");
+        setCrModalMode("confirm");
+    }
+
     function esc(value) {
         return $("<div>").text(value == null ? "" : value).html();
     }
@@ -95,8 +106,9 @@
 
     function setActiveTableFilter(active) {
         var $search = $(".search-input").first();
-        if (!$search.length) return;
-        $search.find(".dataTables_filter").not(".cr-table-filter").addClass("shipping-table-filter");
+        if ($search.length) {
+            $search.find(".dataTables_filter").not(".cr-table-filter").addClass("shipping-table-filter");
+        }
         $(".cr-table-filter").toggle(active === "customer-return");
         $(".shipping-table-filter").toggle(active === "shipping");
         $(".sales-order-filter").toggle(active === "shipping");
@@ -235,9 +247,12 @@
         var canDelete = pending && can("delete");
         var key = esc(row.doc_key);
 
+        // Lihat selalu tersedia (read-only). Konfirmasi terpisah — jangan else-if
+        // supaya klik mata tidak jatuh ke mode ACC (bug #4 / pola Sales_Order intent).
         if (canConfirm) {
             html += '<a class="btn-action-icon cr-confirm btn-action-approve" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
-        } else if (canView) {
+        }
+        if (canView) {
             html += '<a class="btn-action-icon cr-view btn-action-view" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }
         if (status === 2) {
@@ -1201,18 +1216,32 @@
         $("#customer-return-modal").toggleClass("is-loading", !!isLoading);
     }
 
-    function openRecord(key, mode) {
-        crMode = mode;
+    function openRecord(key, intent) {
+        // Normalize like Sales_Order openSalesOrderDetailModal(intent)
+        if (intent !== "confirm" && intent !== "edit") intent = "view";
+        crMode = intent;
+        hideCrAccButtons();
         setCrModalLoading(true);
         $("#customer-return-modal .modal-title").text(
-            mode === "view" ? "Memuat detail pengembalian..." : "Memuat data pengembalian...",
+            intent === "view" ? "Memuat detail pengembalian..." : "Memuat data pengembalian...",
         );
         $("#customer-return-modal").modal("show");
 
         $.get("/customerReturns/" + encodeURIComponent(key))
             .done(function (record) {
                 resetModal();
-                crMode = mode;
+                var status = parseInt(record.status, 10);
+                // Confirm hanya untuk pending + akses others; ACC/ditolak selalu read-only view
+                var confirmMode =
+                    intent === "confirm" && status === 1 && can("others");
+                if (intent === "confirm" && !confirmMode) {
+                    intent = "view";
+                }
+                if (intent === "edit" && status !== 1) {
+                    intent = "view";
+                }
+                crMode = intent;
+
                 $("#cr-doc-key").val(record.doc_key);
                 $("#cr-date").val(String(record.return_date || "").slice(0, 10));
                 $("#cr-ref-number").val(record.ref_number || "");
@@ -1257,34 +1286,25 @@
                 }
 
                 var number = record.return_number || key;
-                if (mode === "confirm") {
-                    $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
-                    $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
-                    $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
-                    $("#cr-btn-upload-proof").addClass("d-none");
-                    $("#cr-add-strip,#cr-save").addClass("d-none");
-                    $("#cr-print").toggleClass("d-none", parseInt(record.status, 10) !== 2);
-                    if (parseInt(record.status, 10) === 1 && can("others")) {
-                        $("#cr-accept,#cr-decline").removeClass("d-none");
-                        setCrModalMode("confirm");
-                        $("#customer-return-modal .modal-title").text("Konfirmasi Pengembalian " + number);
-                    } else {
-                        $("#cr-accept,#cr-decline").addClass("d-none");
-                        setCrModalMode("form");
-                    }
-                } else if (mode === "view") {
-                    $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
-                    $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
-                    $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
-                    $("#cr-btn-upload-proof").addClass("d-none");
-                    $("#cr-add-strip,#cr-save").addClass("d-none");
-                    $("#cr-accept,#cr-decline").addClass("d-none");
-                    $("#cr-print").toggleClass("d-none", parseInt(record.status, 10) !== 2);
-                    setCrModalMode("form");
-                } else {
+                if (intent === "edit") {
                     $("#customer-return-modal .modal-title").text("Edit Pengembalian " + number);
                     $("#cr-save").text("Update");
                     $("#cr-btn-upload-proof").removeClass("d-none");
+                    hideCrAccButtons();
+                } else {
+                    // view atau confirm (read-only form)
+                    $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
+                    $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
+                    $("#cr-btn-upload-proof").addClass("d-none");
+                    $("#cr-add-strip,#cr-save").addClass("d-none");
+                    $("#cr-print").toggleClass("d-none", status !== 2);
+                    if (confirmMode) {
+                        showCrAccButtons();
+                        $("#customer-return-modal .modal-title").text("Konfirmasi Pengembalian " + number);
+                    } else {
+                        hideCrAccButtons();
+                        $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
+                    }
                 }
                 setCrModalLoading(false);
             })
@@ -1742,22 +1762,41 @@
             if (!key) return;
             window.open("/customerReturns/" + encodeURIComponent(key) + "/print", "_blank");
         }
-        $(document).on("click", ".cr-view", function () { openRecord($(this).data("key"), "view"); });
-        $(document).on("click", ".cr-confirm", function () { openRecord($(this).data("key"), "confirm"); });
+        $(document)
+            .off("click.crView")
+            .on("click.crView", "#tableCustomerReturn-wrap .cr-view", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openRecord($(this).attr("data-key"), "view");
+            });
+        $(document)
+            .off("click.crConfirm")
+            .on("click.crConfirm", "#tableCustomerReturn-wrap .cr-confirm", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                openRecord($(this).attr("data-key"), "confirm");
+            });
         $(document).on("click", ".cr-print", function (event) {
             event.preventDefault();
             event.stopPropagation();
-            printReturn($(this).data("key"));
+            printReturn($(this).attr("data-key") || $(this).data("key"));
         });
         $("#cr-print").on("click", function () {
             printReturn($("#cr-doc-key").val());
         });
-        $(document).on("click", ".cr-edit", function () { openRecord($(this).data("key"), "edit"); });
-        $(document).on("click", ".cr-delete", function () {
-            var key = $(this).data("key");
-            showModalDelete("Hapus pengembalian ini?", "btn-delete-customer-return");
-            $("#btn-delete-customer-return").attr("data-key", key);
-        });
+        $(document)
+            .off("click.crEdit")
+            .on("click.crEdit", "#tableCustomerReturn-wrap .cr-edit", function (e) {
+                e.preventDefault();
+                openRecord($(this).attr("data-key"), "edit");
+            });
+        $(document)
+            .off("click.crDelete")
+            .on("click.crDelete", "#tableCustomerReturn-wrap .cr-delete", function () {
+                var key = $(this).attr("data-key");
+                showModalDelete("Hapus pengembalian ini?", "btn-delete-customer-return");
+                $("#btn-delete-customer-return").attr("data-key", key);
+            });
         $(document).on("click", "#btn-delete-customer-return", function () {
             var key = $(this).attr("data-key");
             $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
@@ -1767,7 +1806,13 @@
                     refreshCustomerReturn();
                 }).fail(notifyError);
         });
-        $("#cr-accept").on("click", function () { processRecord($("#cr-doc-key").val(), "accept", "ACC pengembalian?"); });
-        $("#cr-decline").on("click", function () { processRecord($("#cr-doc-key").val(), "decline", "Tolak pengembalian?"); });
+        $("#cr-accept").off("click.crAccept").on("click.crAccept", function () {
+            if (crMode !== "confirm") return;
+            processRecord($("#cr-doc-key").val(), "accept", "ACC pengembalian?");
+        });
+        $("#cr-decline").off("click.crDecline").on("click.crDecline", function () {
+            if (crMode !== "confirm") return;
+            processRecord($("#cr-doc-key").val(), "decline", "Tolak pengembalian?");
+        });
     });
 })(jQuery);
