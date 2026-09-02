@@ -80,10 +80,14 @@ class CashBesarPresenter
         if ((int) $row->status === 1 && self::can($user, 'others')) {
             $cashId = (int) $row->cash_id;
             $cashTujuan = (int) ($row->cash_tujuan ?? 0);
+            // GitHub #117/#130: bg-success/bg-danger + text-light are Bootstrap utility classes,
+            // which lose to header.blade.php's global `.btn-action-icon { ... !important }` reset
+            // — these rendered plain/uncolored in practice. Use the dedicated
+            // .btn-action-approve/.btn-action-reject classes instead.
             $action =
                 '<div class="d-flex align-items-center gap-1">' .
-                '<a class="btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-check"></i></a>' .
-                '<a class="btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-x"></i></a></div>';
+                '<a class="btn-action-icon btn-action-approve p-2 btn_acc" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-check"></i></a>' .
+                '<a class="btn-action-icon btn-action-reject p-2 btn_decline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-x"></i></a></div>';
         }
 
         return [

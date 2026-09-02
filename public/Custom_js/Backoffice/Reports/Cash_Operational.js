@@ -8,6 +8,27 @@
     var cashTableReady = false;
     var cashPendingDeepLink = null;
 
+    /**
+     * cr_img/cs_img are supposed to be a JSON-encoded array of filenames, but some rows (older
+     * data, or rows inserted by another path such as the External API) store a single bare
+     * filename string instead, or leave the field null/empty. `JSON.parse()` throws on a bare
+     * filename or an empty string, and indexing `img[0]` on the resulting `null` throws too — both
+     * were uncaught, silently aborting the whole click handler before it ever reached
+     * `.modal("show")`, which is why the "Lihat"/"Update" eye/edit icon on Dompet Armada/Sales
+     * appeared to do nothing. Always returns a plain array, empty when there's nothing usable.
+     */
+    function parseCashPhotoList(raw) {
+        if (!raw) return [];
+        try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed) return [parsed];
+            return [];
+        } catch (e) {
+            return [raw];
+        }
+    }
+
     function updateCashOperationalFooter(debits, credits) {
         var sisa = (parseInt(debits, 10) || 0) - (parseInt(credits, 10) || 0);
         $('#tableCash tfoot .debits').html(`Rp ${formatRupiahMinus(debits)}`);
@@ -646,9 +667,29 @@
 
     $(document).on('change', '#customer_id_armada', function(){
         if (mode == 1 && $('#jenis_input_armada').val() == "saldo"){
-            if ($(this).val()){
-                var temp = $('#customer_id_armada').select2("data")[0];
-                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
+            var customerId = $(this).val();
+            if (customerId){
+                // GitHub #130 (item 37): jangan pakai select2("data") di sini — kalau opsi ini
+                // dibuat dari data cache filter halaman (lihat pemanggilan .btn-add-armada di
+                // atas), customer_saldo-nya bisa basi (mis. sudah berubah + gara-gara aktivitas
+                // "Uang Masuk Customer" yang baru saja di-ACC), jadi default nominal pengembalian
+                // salah tanda (minus padahal seharusnya plus). Ambil ulang dari server.
+                $.ajax({
+                    url: '/autocompleteCustomer',
+                    method: 'post',
+                    data: { customer_id: customerId, _token: token },
+                    success: function (res) {
+                        var rows = (res && res.data) ? res.data : [];
+                        var fresh = rows.find(function (r) { return String(r.customer_id) == String(customerId); }) || rows[0];
+                        var saldo = fresh ? fresh.customer_saldo : 0;
+                        $('#oc_nominal_armada').val(formatRupiahMinus(saldo)).attr('disabled', false);
+                    },
+                    error: function () {
+                        // fallback ke data lama daripada mengosongkan field kalau request gagal
+                        var temp = $('#customer_id_armada').select2("data")[0];
+                        $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
+                    }
+                });
             } else {
                 $('#oc_nominal_armada').val("").attr('disabled', false);
             }
@@ -1096,7 +1137,7 @@
             "cad_notes": $('#cad_notes').val(),
             "cad_nominal": convertToAngkaMinus($('#cad_nominal').val()),
         };
-        items.push(data);
+        pgPopupTableInsert(items, data);
 
         var total = 0;
         items.forEach(element => {
@@ -1105,27 +1146,36 @@
         $('.total').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRow();
+        pgPopupTableScrollToEdge($('#tableDetail').closest('.pg-popup-table-scroll'));
 
         $('#cad_notes').val("");
         $('#cad_nominal').val("");
     })
 
     function addRow() {
-        $('#tableDetail tr.row-detail').html(" ");
+        $('#tableDetail tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetail tbody').html('<tr class="pg-popup-table-empty"><td colspan="4">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         items.forEach((e, index) => {
             $('#tableDetail tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
-                </tr>    
+                </tr>
             `);
-        }); 
+        });
+        // Jangan .toggle() seluruh kolom — menyembunyikan <th> tapi tidak <td> (atau sebaliknya)
+        // bikin header/body tidak sejajar lagi. Kolomnya tetap ada, cuma judulnya dikosongkan;
+        // isi selnya sendiri sudah otomatis kosong di mode view lewat ternary di atas.
+        $('#tableDetail thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row", function() {
@@ -1299,7 +1349,7 @@
             "cgd_notes": $('#cgd_notes').val(),
             "cgd_nominal": convertToAngkaMinus($('#cgd_nominal').val()),
         };
-        items.push(data);
+        pgPopupTableInsert(items, data);
 
         var total = 0;
         items.forEach(element => {
@@ -1308,6 +1358,7 @@
         $('.total_gudang').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowGudang();
+        pgPopupTableScrollToEdge($('#tableDetailGudang').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cgd_notes').val("");
@@ -1317,7 +1368,10 @@
     })
 
     function addRowGudang() {
-        $('#tableDetailGudang tr.row-detail').html(" ");
+        $('#tableDetailGudang tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailGudang tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             $('#tableDetailGudang tbody').append(`
@@ -1326,14 +1380,17 @@
                     <td>${e.customer_notes}</td>
                     <td style="width: 25%">${e.cgd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
-                </tr>    
+                </tr>
             `);
-        }); 
+        });
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailGudang thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_gudang", function() {
@@ -1496,19 +1553,19 @@
         };
 
         if (items.length === 0) {
-            items.push(data);
+            pgPopupTableInsert(items, data);
         } else {
             if (
                 (newType == 1 && firstType == 1) ||
                 (newType == 2 && firstType == 2) ||
                 (newType == 3 && firstType == 3)
             ) {
-                items.push(data);
+                pgPopupTableInsert(items, data);
             }
             else {
                 $('#oc_transaksi_armada').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                 return false;
             }
         }
@@ -1520,6 +1577,7 @@
         $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowArmada();
+        pgPopupTableScrollToEdge($('#tableDetailArmada').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cc_id').empty(null);
@@ -1527,7 +1585,10 @@
     })
 
     function addRowArmada() {
-        $('#tableDetailArmada tr.row-detail').html(" ");
+        $('#tableDetailArmada tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailArmada tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             let type = "";
@@ -1542,14 +1603,17 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
                 </tr>
             `);
-        }); 
+        });
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailArmada thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_armada", function() {
@@ -1706,19 +1770,19 @@
         };
 
         if (items.length === 0) {
-            items.push(data);
+            pgPopupTableInsert(items, data);
         } else {
             if (
                 (newType == 1 && firstType == 1) ||
                 (newType == 2 && firstType == 2) ||
                 (newType == 3 && firstType == 3)
             ) {
-                items.push(data);
+                pgPopupTableInsert(items, data);
             }
             else {
                 $('#oc_transaksi_sales').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
+                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
                 return false;
             }
         }
@@ -1730,6 +1794,7 @@
         $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
 
         addRowSales();
+        pgPopupTableScrollToEdge($('#tableDetailSales').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
         $('#cc_id_sales').empty(null);
@@ -1737,7 +1802,10 @@
     })
 
     function addRowSales() {
-        $('#tableDetailSales tr.row-detail').html(" ");
+        $('#tableDetailSales tbody').html("");
+        if (items.length === 0) {
+            $('#tableDetailSales tbody').html('<tr class="pg-popup-table-empty"><td colspan="5">Belum ada aktivitas. Tambahkan lewat form di atas.</td></tr>');
+        }
         console.log(items);
         items.forEach((e, index) => {
             let type = "";
@@ -1750,14 +1818,17 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center">
+                    <td class="text-center d-flex align-items-center col-aksi">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
                 </tr>
             `);
-        }); 
+        });
+        // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
+        $('#tableDetailSales thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
 
     $(document).on("click", ".btn_delete_row_sales", function() {
@@ -1823,6 +1894,19 @@
             ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
             return false;
         };
+
+        // GitHub #130 (item 39): "Setor ke Bank" (aksi_sales==2) defaults its nominal from the
+        // sales rep's current staff_saldo, which can itself be negative — but a bank deposit
+        // itself can never sensibly be negative. This is a NEW, separate guard from the
+        // pengembalian-negative-balance one below (which stays disabled per PM's 2026-08-05
+        // decision that negative balances are allowed by design) — that decision was about letting
+        // an account run into a deficit, not about accepting a literally-negative deposit amount.
+        if ($('#aksi_sales').val() == 2 && jenis_input == "saldo" && convertToAngkaMinus($('#oc_nominal_sales').val()) < 0){
+            notifikasi('error', "Gagal Insert", 'Setor ke Bank tidak boleh minus');
+            ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+            $('#oc_nominal_sales').addClass('is-invalid');
+            return false;
+        }
 
         // if ($('#aksi_sales').val() == 3 && convertToAngkaMinus($('#oc_nominal_sales').val()) < 0){
         //     notifikasi('error', "Gagal Insert", 'Pengembalian tidak boleh kurang dari 0');
@@ -1949,7 +2033,7 @@
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
-            $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
+            $('#oc_nominal').val(formatRupiahMinus(data.ca_nominal)).attr('disabled', false);
             $('#oc_notes').val(data.ca_notes).attr('disabled', false);
             $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
@@ -2004,7 +2088,7 @@
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
-            $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
+            $('#oc_nominal').val(formatRupiahMinus(data.ca_nominal)).attr('disabled', true);
             $('#oc_notes').val(data.ca_notes).attr('disabled', true);
             $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
@@ -2087,7 +2171,7 @@
         else {
             $('#jenis_input_gudang').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
-            $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', false);
+            $('#oc_nominal_gudang').val(formatRupiahMinus(data.cg_nominal)).attr('disabled', false);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', false);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
@@ -2138,7 +2222,7 @@
         else {
             $('#jenis_input_gudang').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
-            $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', true);
+            $('#oc_nominal_gudang').val(formatRupiahMinus(data.cg_nominal)).attr('disabled', true);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', true);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
@@ -2214,16 +2298,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
-            var img = JSON.parse(data.cr_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cr_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-            $('#check_foto_armada').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+                $('#check_foto_armada').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_armada').hide();
+            }
             $('#bukti_armada').val(data.cr_img);
             
         } else {
@@ -2276,16 +2364,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
-            var img = JSON.parse(data.cr_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cr_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-            $('#check_foto_armada').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+                $('#check_foto_armada').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_armada').hide();
+            }
             $('#bukti_armada').val(data.cr_img);
             
         } else {
@@ -2372,16 +2464,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
             $('#btn-lihat-bukti-sales').show();
-            var img = JSON.parse(data.cs_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cs_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-            $('#check_foto_sales').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+                $('#check_foto_sales').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_sales').hide();
+            }
             $('#bukti_sales').val(data.cs_img);
             
         } else {
@@ -2433,16 +2529,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
             $('#btn-lihat-bukti-sales').show();
-            var img = JSON.parse(data.cs_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cs_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-            $('#check_foto_sales').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+                $('#check_foto_sales').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_sales').hide();
+            }
             $('#bukti_sales').val(data.cs_img);
             
         } else {

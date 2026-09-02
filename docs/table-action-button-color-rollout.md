@@ -10,8 +10,9 @@ distinct from the plain edit/view/delete icons next to it.
 icons on that same row were still using the same defeated inline-`style=` pattern (only their color
 was forced, background stayed white per the base rule) — so per-row requests came in to fix those too.
 `.btn-action-view`/`.btn-action-edit`/`.btn-action-delete` were added alongside approve/reject for this
-(see Root cause). Applied so far only to `Customer_Return.js` (Pengiriman → Pengembalian tab); other
-tables' view/edit/delete icons haven't been swept yet — do it opportunistically per-row like the rest
+(see Root cause). Applied so far to `Customer_Return.js` (Pengiriman → Pengembalian tab) and row #8's
+Kas Operasional presenters below; other tables' view/edit/delete icons haven't been swept yet — do it
+opportunistically per-row like the rest
 of this tracker, not as a blanket pass.
 
 ## ⚠️ Root cause (found while fixing row #6, Tanda Terima PO)
@@ -73,8 +74,9 @@ Out of scope (not "di table"):
 | 5 | ~~Product Issue (Produk Bermasalah) list~~ → Terima / Tolak | `Inventory/Product_Issues.js` (`.btn_acc`/`.btn_decline`) | **Miscategorized in the original pass** — the table row only ever renders a "Lihat" icon; Terima/Tolak are static buttons (`#btn-terima`/`#btn-tolak`) inside `add-product-issues.blade.php`'s modal footer, not a table row icon | ➡️ Moved to "Not in scope" below |
 | 6 | Tanda Terima PO (`tt`) list → Terima / Tolak | `Suppliers/tt.js` (`btn_acc_tt` / `btn_decline_tt`) | root-caused here; found the global `!important` override | ✅ Done — `.btn-action-approve`/`.btn-action-reject` classes (defined in `header.blade.php`), gradient matches `.pg-btn-accept`/`.pg-btn-decline`; also got shimmer loading + PG modal styling for its Konfirmasi Terima popup |
 | 7 | Stock Transfer list → ACC Terkirim | `Inventory/Stock_Transfer.js` (`btnAccept`, ~line 664) | was `text-info` only, then inline style (also defeated) | ✅ Done — switched to `.btn-action-approve` class |
+| 8 | Kas Operasional (Admin/Gudang/Armada/Sales) → Terima/Tolak, **plus** Kas → Kas Besar → Terima/Tolak | `app/Support/CashOperasionalPresenter.php` (`adminRow`/`gudangRow`/`armadaRow`/`salesRow`), `app/Support/CashBesarPresenter.php` (`row`) — server-rendered PHP, not JS-built like the other rows here | **Miscategorized as "Modal buttons, not row icons" in the original pass** — these ARE row-level `.btn_acc`/`.btn_decline` icons DataTables renders per row (built server-side by the presenter classes, unlike every other row in this table which builds the `action` HTML in JS); they used the same defeated `bg-success`/`bg-danger text-light` Bootstrap-utility pattern as everything else here. Found while investigating GitHub #130 (2026-09-03). While in there, also swept that same presenter's view/edit/delete icons onto `.btn-action-view`/`.btn-action-edit`/`.btn-action-delete` (all 4 Kas Operasional row types) since they were sitting right next to the now-fixed approve/reject icons on the same row. | ✅ Done — switched to `.btn-action-approve`/`.btn-action-reject` (+ `.btn-action-view`/`.btn-action-edit`/`.btn-action-delete`) |
 
-All 5 real table-row targets (rows #1, #2, #6, #7, plus the two orphaned files #3/#4) are now on the
+All 6 real table-row targets (rows #1, #2, #6, #7, #8, plus the two orphaned files #3/#4) are now on the
 shared `.btn-action-approve`/`.btn-action-reject` classes with the gradient fill from `header.blade.php`.
 
 ### Not in scope (checked, excluded)
@@ -84,7 +86,6 @@ shared `.btn-action-approve`/`.btn-action-reject` classes with the gradient fill
 | Produksi → Terima/Tolak Produksi | `components/modals/production/add-production.blade.php` + `Production.js` | Modal footer button, not a table row icon |
 | Purchase Order Detail → Terima/Tolak PO | `Suppliers/Purchase_Order_Detail.js` (`#btn-acc-po`, `#btn-tolak-po`) | Modal footer button |
 | Stock Opname / Stock Opname Bahan → Konfirmasi ACC | `Inventory/CreateStockOpname(Supplies).js` (`#btn-acc-sto` / `#btn-acc-stob`) | Modal footer button |
-| Kas Operasional (Admin/Gudang/Armada/Sales) → ACC/Tolak | `Reports/Cash.js`, `Reports/Cash_Operational.js` (`.btn_acc`, `.btn_decline`) | Modal buttons, not row icons |
 | Sales Order Detail → Tolak (delivery/invoice) | `Customers/Sales_Order_detail.js` (`.btn-decline`) | Modal footer button |
 | ReportEfisiensiProduksi / ReportProduction "Tolak" | `Reports/ReportEfisiensiProduksi.js`, `Reports/ReportProduction.js` | Read-only status badge, not an action button |
 | Purchase Order list (Suppliers) | `Suppliers/Purchase_Order.js` | Only has Lihat/Hapus row icons; ACC/Tolak happens in the PO Detail modal instead |
