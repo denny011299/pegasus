@@ -2,6 +2,7 @@
     var table;
     var selectedRoleForWidgets = null;
     var protectedRoleIds = [1, 4, 7];
+    var latestRoles = [];
     $(document).ready(function(){
         inisialisasi();
         refreshRole();
@@ -35,6 +36,7 @@
             columns: [
                 { data: "role_id" },
                 { data: "role_name" },
+                { data: "user_count", class: "text-center" },
                 { data: "role_date" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -55,10 +57,12 @@
                     e = e.original || [];
                 }
                 console.log(e);
-                table.clear().draw(); 
+                latestRoles = e;
+                table.clear().draw();
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].role_date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].user_count = e[i].user_count || 0;
                     var rp = "";
                     if (hasAccessAction("Peran & Perizinan", "edit")) {
                         rp +=
@@ -216,28 +220,57 @@
         var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();
         showModalDelete("Apakah yakin ingin menghapus peran ini?", "btn-delete-role");
         $('#btn-delete-role').attr("role_id", data.role_id);
-        $('#btn-delete-role').attr("force", "0");
+        $('#btn-delete-role').attr("role_name", data.role_name);
     });
 
-    function submitDeleteRole(force) {
+    function buildReassignRoleOptions(excludeRoleId) {
+        var options = '<option value="">— Tidak ada peran —</option>';
+        for (var i = 0; i < latestRoles.length; i++) {
+            var r = latestRoles[i];
+            if (parseInt(r.role_id, 10) === parseInt(excludeRoleId, 10)) continue;
+            options += '<option value="' + r.role_id + '">' + $('<div>').text(r.role_name).html() + '</option>';
+        }
+        return options;
+    }
+
+    function openReassignModal(roleId, roleName, users) {
+        $('#reassign_role_name').text(roleName || "-");
+        var optionsHtml = buildReassignRoleOptions(roleId);
+        var rows = '';
+        for (var i = 0; i < users.length; i++) {
+            var u = users[i];
+            rows +=
+                '<tr data-staff-id="' + u.staff_id + '">' +
+                '<td>' + $('<div>').text(u.staff_name).html() + '</td>' +
+                '<td><select class="form-select reassign-role-select">' + optionsHtml + '</select></td>' +
+                '</tr>';
+        }
+        $('#reassign_role_users_body').html(rows);
+        $('#btn-confirm-reassign-delete-role').attr("role_id", roleId);
+        $('#modalDelete').modal("hide");
+        $('#role_reassign_modal').modal("show");
+    }
+
+    function submitDeleteRole(roleId, reassignments) {
+        var payload = {
+            role_id: roleId,
+            _token: token
+        };
+        if (reassignments) payload.reassignments = reassignments;
+
         $.ajax({
             url: "/deleteRole",
-            data: {
-                role_id: $('#btn-delete-role').attr('role_id'),
-                force: force ? 1 : 0,
-                _token: token
-            },
+            data: payload,
             method: "post",
             success: function (e) {
                 if (e && e.status == -1) {
-                    $('.modal').modal("hide");
                     if (e.need_confirmation) {
-                        // Ada pengguna yang masih memakai peran ini, minta konfirmasi
-                        // untuk melepas peran dari pengguna tersebut sekaligus hapus peran.
-                        $('#btn-delete-role').attr("force", "1");
-                        showModalDelete(e.message, "btn-delete-role");
+                        // Ada pengguna yang masih memakai peran ini, minta pilihan
+                        // peran pengganti per pengguna sebelum benar-benar dihapus.
+                        openReassignModal(roleId, $('#btn-delete-role').attr('role_name'), e.users || []);
                         return;
                     }
+                    $('.modal').modal("hide");
                     notifikasi('error', "Gagal Delete", e.message || "Gagal hapus peran");
                     return;
                 }
@@ -254,8 +287,19 @@
     }
 
     $(document).on("click", "#btn-delete-role", function () {
-        var force = $(this).attr("force") === "1";
-        submitDeleteRole(force);
+        submitDeleteRole($(this).attr('role_id'), null);
+    });
+
+    $(document).on("click", "#btn-confirm-reassign-delete-role", function () {
+        var roleId = $(this).attr('role_id');
+        var reassignments = [];
+        $('#reassign_role_users_body tr').each(function () {
+            reassignments.push({
+                staff_id: $(this).data('staff-id'),
+                role_id: $(this).find('.reassign-role-select').val() || null
+            });
+        });
+        submitDeleteRole(roleId, JSON.stringify(reassignments));
     });
 
     $(document).on("click", "#btn_save_dash_widgets", function () {

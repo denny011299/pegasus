@@ -22,6 +22,7 @@
                                         <tr>
                                             <th>ID</th>
                                             <th>Nama Peran</th>
+                                            <th>Jumlah Pengguna</th>
                                             <th>Dibuat Pada</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>
@@ -122,6 +123,39 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Batal</button>
                     <button type="button" class="btn btn-primary" id="btn_save_dash_widgets">Simpan Widget</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="role_reassign_modal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Hapus Peran "<span id="reassign_role_name">-</span>"</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3" id="reassign_role_message">
+                        Peran ini masih dipakai oleh beberapa pengguna. Pilih peran pengganti untuk tiap
+                        pengguna (boleh dikosongkan bila tidak ingin diberi peran lain), lalu hapus peran.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-bordered mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Nama Pengguna</th>
+                                    <th style="min-width: 220px;">Peran Pengganti</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reassign_role_users_body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-danger" id="btn-confirm-reassign-delete-role">Lepas & Hapus Peran</button>
                 </div>
             </div>
         </div>

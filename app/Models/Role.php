@@ -21,9 +21,34 @@ class Role extends Model
         $result = self::where('status', '=', 1);
         if($data["role_name"]) $result->where('role_name','like','%'.$data["role_name"].'%');
         $result->orderBy('created_at', 'asc');
-       
+
         $result = $result->get();
+
+        $userCounts = Staff::query()
+            ->where('status', 1)
+            ->whereNotNull('role_id')
+            ->selectRaw('role_id, count(*) as total')
+            ->groupBy('role_id')
+            ->pluck('total', 'role_id');
+
+        foreach ($result as $role) {
+            $role->user_count = (int) ($userCounts[$role->role_id] ?? 0);
+        }
+
         return $result;
+    }
+
+    /**
+     * Daftar pengguna aktif yang memakai suatu peran, dipakai untuk
+     * mengisi tabel konfirmasi hapus peran (per-user pengalihan peran).
+     */
+    function getRoleUsers($roleId)
+    {
+        return Staff::query()
+            ->where('status', 1)
+            ->where('role_id', $roleId)
+            ->orderBy('staff_name')
+            ->get(['staff_id', 'staff_name']);
     }
 
     function insertRole($data)
@@ -79,28 +104,47 @@ class Role extends Model
             return ['status' => -1, 'message' => 'Peran tidak ditemukan'];
         }
 
-        $force = filter_var($data['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
-
-        $staffCount = Staff::query()
+        $affectedStaff = Staff::query()
             ->where('status', 1)
             ->where('role_id', $roleId)
-            ->count();
+            ->get(['staff_id', 'role_id']);
 
-        if ($staffCount > 0 && !$force) {
+        if ($affectedStaff->count() > 0 && !array_key_exists('reassignments', $data)) {
             return [
                 'status' => -1,
                 'need_confirmation' => true,
-                'staff_count' => $staffCount,
-                'message' => "Masih ada {$staffCount} pengguna yang memakai peran ini. Lepas peran dari pengguna tersebut dan hapus peran?",
+                'staff_count' => $affectedStaff->count(),
+                'users' => (new self())->getRoleUsers($roleId),
+                'message' => "Masih ada {$affectedStaff->count()} pengguna yang memakai peran ini. Pilih peran pengganti untuk tiap pengguna (boleh dikosongkan), lalu hapus peran.",
             ];
         }
 
-        \DB::transaction(function () use ($t, $roleId, $staffCount) {
-            if ($staffCount > 0) {
-                Staff::query()
-                    ->where('status', 1)
-                    ->where('role_id', $roleId)
-                    ->update(['role_id' => null]);
+        $reassignments = $data['reassignments'] ?? [];
+        if (is_string($reassignments)) {
+            $decoded = json_decode($reassignments, true);
+            $reassignments = is_array($decoded) ? $decoded : [];
+        }
+        $validRoleIds = self::where('status', 1)->where('role_id', '!=', $roleId)->pluck('role_id')->all();
+
+        // staff_id => new_role_id (null diperbolehkan)
+        $reassignById = [];
+        foreach ($reassignments as $row) {
+            $staffId = (int) ($row['staff_id'] ?? 0);
+            if ($staffId <= 0) continue;
+            $newRoleId = $row['role_id'] ?? null;
+            $newRoleId = ($newRoleId === '' || $newRoleId === null) ? null : (int) $newRoleId;
+            if ($newRoleId !== null && !in_array($newRoleId, $validRoleIds, true)) {
+                $newRoleId = null; // abaikan peran pengganti yang tidak valid
+            }
+            $reassignById[$staffId] = $newRoleId;
+        }
+
+        \DB::transaction(function () use ($t, $affectedStaff, $reassignById) {
+            foreach ($affectedStaff as $staff) {
+                $staff->role_id = array_key_exists($staff->staff_id, $reassignById)
+                    ? $reassignById[$staff->staff_id]
+                    : null;
+                $staff->save();
             }
 
             $t->status = 0;
