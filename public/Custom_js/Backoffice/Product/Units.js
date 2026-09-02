@@ -138,7 +138,7 @@
                 ResetLoadingButton('.btn-save', mode == 1?"Tambah Satuan" : "Update Satuan");
                 if (handlePermissionError(e)) return;
                 var msg = (e.responseJSON && e.responseJSON.message) || "Silahkan cek kembali inputan anda";
-                showPgErrorModal(mode == 1?"Gagal Insert":"Gagal Update", msg);
+                notifikasi('error', mode == 1?"Gagal Insert":"Gagal Update", msg);
                 console.log(e);
             }
         });
