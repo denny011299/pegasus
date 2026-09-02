@@ -494,6 +494,7 @@ class SupplierController extends Controller
                 $param["data"] = PurchaseOrder::whereIn('po_id', $poIds)->get();
             }
         }
+
         $param["supplier"] = Supplier::find($param["tt"]["supplier_id"]); 
 
         foreach ($param['data'] as $key => $value) {
