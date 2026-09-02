@@ -473,43 +473,70 @@ function doScanAddSoProduct(data, qty) {
         }
     });
 
-    if (idx === -1) {
-        products.push(
-            normalizeProductForActiveWarehouse(
-                applyDefaultMainWarehouse(
-                    applyDefaultRetailWarehouse({
-                        product_variant_id: data.product_variant_id,
-                        product_name: data.pr_name || "-",
-                        product_variant_name: data.product_variant_name,
-                        product_variant_sku: data.product_variant_sku,
-                        product_variant_price: data.product_variant_price || 0,
-                        so_qty: qty,
-                        unit_id: defaultUnitId,
-                        unit_name: defaultUnitName,
-                        pr_unit: data.pr_unit || [],
-                        retail_unit: data.retail_unit || 0,
-                        warehouse_id: null,
-                        warehouse_name: null,
-                    }),
+    function commitScanAdd() {
+        if (idx === -1) {
+            products.push(
+                normalizeProductForActiveWarehouse(
+                    applyDefaultMainWarehouse(
+                        applyDefaultRetailWarehouse({
+                            product_variant_id: data.product_variant_id,
+                            product_name: data.pr_name || "-",
+                            product_variant_name: data.product_variant_name,
+                            product_variant_sku: data.product_variant_sku,
+                            product_variant_price: data.product_variant_price || 0,
+                            so_qty: qty,
+                            unit_id: defaultUnitId,
+                            unit_name: defaultUnitName,
+                            pr_unit: data.pr_unit || [],
+                            retail_unit: data.retail_unit || 0,
+                            warehouse_id: null,
+                            warehouse_name: null,
+                        }),
+                    ),
                 ),
-            ),
+            );
+        } else {
+            products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        }
+
+        toastr.success(
+            "",
+            "Berhasil menambahkan: " +
+                (data.pr_name || "") +
+                " " +
+                data.product_variant_name +
+                " (x" +
+                qty +
+                ")",
         );
-    } else {
-        products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        refreshTableProduct();
+        $("#so_scan_barcode").val("").focus();
     }
 
-    toastr.success(
-        "",
-        "Berhasil menambahkan: " +
-            (data.pr_name || "") +
-            " " +
-            data.product_variant_name +
-            " (x" +
-            qty +
-            ")",
-    );
-    refreshTableProduct();
-    $("#so_scan_barcode").val("").focus();
+    // Sama seperti #btn-add-product-so - lihat catatan GitHub #116 di sana: baris eceran
+    // yang gudangnya belum dipilih langsung masuk daftar tanpa cek, baris lain (gudang
+    // sudah pasti) dicek SATU baris ini saja.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(data.retail_unit || 0, 10) > 0 &&
+        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitScanAdd();
+        return;
+    }
+
+    var whMeta = isActiveRetailWarehouse()
+        ? activeRetailWarehouseMeta()
+        : activeMainWarehouseMeta();
+    var checkQty = idx === -1 ? qty : (parseInt(products[idx].so_qty) || 0) + qty;
+    var checkLine = {
+        product_variant_id: data.product_variant_id,
+        unit_id: defaultUnitId,
+        so_qty: checkQty,
+        warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
+    };
+
+    checkSoStockThenAdd([checkLine], commitScanAdd);
 }
 
 $(document).on("click", "#btn_scan_add_so", function () {
@@ -657,37 +684,124 @@ $(document).on("click", "#btn-add-product-so", function () {
         }
     });
 
-    if (idx == -1) {
-        var data = {
-            product_variant_id: temp.product_variant_id,
-            product_name: temp.product_name || temp.pr_name || "-",
-            product_variant_name: temp.product_variant_name,
-            product_variant_sku: temp.product_variant_sku,
-            product_variant_price: temp.product_variant_price || 0,
-            so_qty: qty,
-            unit_id: unitId,
-            unit_name: unitText,
-            pr_unit: temp.pr_unit || [],
-            retail_unit: temp.retail_unit || 0,
-            warehouse_id: null,
-            warehouse_name: null,
-        };
-        products.push(
-            normalizeProductForActiveWarehouse(
-                applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
-            ),
-        );
-    } else {
-        products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+    function commitSoAdd() {
+        if (idx == -1) {
+            var data = {
+                product_variant_id: temp.product_variant_id,
+                product_name: temp.product_name || temp.pr_name || "-",
+                product_variant_name: temp.product_variant_name,
+                product_variant_sku: temp.product_variant_sku,
+                product_variant_price: temp.product_variant_price || 0,
+                so_qty: qty,
+                unit_id: unitId,
+                unit_name: unitText,
+                pr_unit: temp.pr_unit || [],
+                retail_unit: temp.retail_unit || 0,
+                warehouse_id: null,
+                warehouse_name: null,
+            };
+            products.push(
+                normalizeProductForActiveWarehouse(
+                    applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
+                ),
+            );
+        } else {
+            products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        }
+
+        toastr.success("", "Berhasil menambahkan Produk");
+        refreshTableProduct();
+
+        $("#so_sku").val(null).trigger("change");
+        fillSoUnitInput(null);
+        $("#so_qty_input").val(1);
     }
 
-    toastr.success("", "Berhasil menambahkan Produk");
-    refreshTableProduct();
+    // Satuan eceran, dan staf tidak sedang "berada" di gudang eceran (gudangnya sendiri
+    // sudah pasti) - baris ini belum tahu gudang tujuannya (dipilih belakangan lewat
+    // dropdown per baris), jadi TIDAK ada yang bisa dicek sekarang. Cukup masuk ke daftar;
+    // cek stok baru jalan begitu dropdown gudang eceran baris itu diisi (lihat handler
+    // .so-retail-warehouse) - GitHub #116.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(temp.retail_unit || 0, 10) > 0 &&
+        unitId === parseInt(temp.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitSoAdd();
+        return;
+    }
 
-    $("#so_sku").val(null).trigger("change");
-    fillSoUnitInput(null);
-    $("#so_qty_input").val(1);
+    // Gudangnya sudah pasti di titik ini (gudang utama aktif, atau gudang eceran aktif
+    // kalau staf sedang berada di situ) - cek stok baris INI SAJA, bukan seluruh daftar
+    // (mengecek ulang baris lama tiap kali baris baru ditambah cuma bikin alert lama
+    // nongol lagi berulang-ulang tanpa alasan baru).
+    var whMeta = isActiveRetailWarehouse()
+        ? activeRetailWarehouseMeta()
+        : activeMainWarehouseMeta();
+    var checkQty = idx == -1 ? qty : (parseInt(products[idx].so_qty) || 0) + qty;
+    var checkLine = {
+        product_variant_id: temp.product_variant_id,
+        unit_id: unitId,
+        so_qty: checkQty,
+        warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
+    };
+
+    checkSoStockThenAdd([checkLine], commitSoAdd, "#btn-add-product-so");
 });
+
+/**
+ * Cek stok bahan/produk sebelum baris BENAR-BENAR masuk ke `products` - GitHub #116,
+ * meniru pola continueAddProduct()/checkProductionStock() di Produksi (GitHub #101/#105).
+ * Dipanggil dengan salinan `products` yang SUDAH termasuk baris baru/gabungan; kalau
+ * /checkSalesOrderStock lolos, `onOk()` dijalankan (baris itu dipanggil push oleh caller
+ * ke `products` asli) - kalau tidak, popup error/rekomendasi gudang yang sama seperti ACC
+ * ditampilkan dan baris TIDAK ditambahkan.
+ *
+ * Ini murni peringatan dini di UI (lihat catatan di checkSalesOrderStock() backend) -
+ * submit akhir (Tambah/Update Pengiriman) tetap tidak diblokir oleh stok saat ini, sesuai
+ * keputusan GitHub #99.
+ */
+function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail) {
+    if ($btn) LoadingButton($btn);
+    $.ajax({
+        url: "/checkSalesOrderStock",
+        method: "post",
+        data: {
+            products: JSON.stringify(candidateProducts),
+            _token: token,
+        },
+        headers: {
+            "X-CSRF-TOKEN": token,
+        },
+        success: function (e) {
+            if ($btn) ResetLoadingButton($btn, '<i class="fe fe-plus"></i> Tambah');
+            if (!e || e.status != 1) {
+                if (e && e.recommendations && e.recommendations.length) {
+                    showStockRecommendModal(e);
+                } else {
+                    showSoErrorModal(
+                        (e && e.header) || "Stok tidak cukup",
+                        (e && e.message) || "Stok tidak mencukupi",
+                    );
+                }
+                if (onFail) onFail();
+                return;
+            }
+            onOk();
+        },
+        error: function (a) {
+            if ($btn) ResetLoadingButton($btn, '<i class="fe fe-plus"></i> Tambah');
+            if (handlePermissionError(a)) return;
+            console.log(a);
+            notifikasi(
+                "error",
+                "Gagal Cek Stok",
+                "Terjadi kesalahan saat memeriksa stok. Silakan coba lagi.",
+            );
+            if (onFail) onFail();
+        },
+    });
+}
 
 var soXhr = null;
 
@@ -1540,24 +1654,88 @@ $(document).on("change", ".so_unit", function () {
         }
     }
     products[index].unit_id = unit;
-    if (parseInt(products[index].retail_unit || 0, 10) !== unit) {
-        products[index].warehouse_id = null;
-        products[index].warehouse_name = null;
-    }
+    // Selalu kosongkan gudang baris ini begitu satuannya berubah - termasuk saat BERUBAH
+    // MENJADI satuan eceran, yang sebelumnya luput (kondisinya cuma cek "!== unit", jadi
+    // warehouse_id lama - technicalnya gudang UTAMA dari satuan sebelumnya - malah ikut
+    // kebawa dan tampil ke-pre-select di dropdown gudang eceran, padahal gudang itu bukan
+    // gudang eceran sama sekali). User harus pilih manual lagi, yang otomatis memicu cek
+    // stok baris itu lewat handler .so-retail-warehouse (GitHub #116).
+    products[index].warehouse_id = null;
+    products[index].warehouse_name = null;
     refreshTableProduct();
 });
 
 $(document).on("change", ".so-retail-warehouse", function () {
-    var index = parseInt($(this).data("index"), 10);
+    var $select = $(this);
+    var index = parseInt($select.data("index"), 10);
     if (!products[index]) return;
-    products[index].warehouse_id = parseInt($(this).val(), 10) || null;
-    products[index].warehouse_name =
-        $(this).find("option:selected").text() || null;
-    $(this)
+
+    var newWarehouseId = parseInt($select.val(), 10) || null;
+    var newWarehouseName = $select.find("option:selected").text() || null;
+    var previousWarehouseId = products[index].warehouse_id || null;
+    var previousWarehouseName = products[index].warehouse_name || null;
+
+    if (!newWarehouseId) {
+        products[index].warehouse_id = null;
+        products[index].warehouse_name = null;
+        return;
+    }
+
+    $select
         .next(".select2-container")
         .find(".select2-selection")
         .removeClass("is-invalids");
+
+    // Cek stok baris ini SAJA terhadap gudang eceran yang baru dipilih - GitHub #116.
+    // Kalau gagal, kembalikan dropdown ke pilihan sebelumnya (bukan biarkan tampil
+    // seolah pilihan tadi tersimpan) supaya user harus pilih gudang lain.
+    checkSoStockThenAdd(
+        [
+            {
+                product_variant_id: products[index].product_variant_id,
+                unit_id: products[index].unit_id,
+                so_qty: products[index].so_qty,
+                warehouse_id: newWarehouseId,
+            },
+        ],
+        function () {
+            products[index].warehouse_id = newWarehouseId;
+            products[index].warehouse_name = newWarehouseName;
+        },
+        null,
+        function () {
+            products[index].warehouse_id = previousWarehouseId;
+            products[index].warehouse_name = previousWarehouseName;
+            revertSoRetailWarehouseSelect(
+                $select,
+                previousWarehouseId,
+                previousWarehouseName,
+            );
+        },
+    );
 });
+
+/**
+ * .so-retail-warehouse is an ajax/remote Select2 (autocompleteWarehouse()) - it keeps NO
+ * static <option> list, only whatever was last picked, so a plain $select.val(id) can't find
+ * an option to select back to on revert (silently no-ops, leaving the rejected pick visually
+ * selected - the bug reported after the stock-scoping fix above). Rebuild the option element
+ * for the previous pick instead, same technique Select2 itself recommends for a
+ * programmatic/ajax option: `new Option(text, value, true, true)`.
+ */
+function revertSoRetailWarehouseSelect($select, warehouseId, warehouseName) {
+    if (!warehouseId) {
+        $select.val(null).trigger("change.select2");
+        return;
+    }
+    var option = new Option(
+        warehouseName || "Gudang #" + warehouseId,
+        warehouseId,
+        true,
+        true,
+    );
+    $select.empty().append(option).trigger("change.select2");
+}
 
 function updateTotal() {
     let total = 0;

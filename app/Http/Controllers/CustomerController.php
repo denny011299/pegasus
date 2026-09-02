@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use App\Support\UnitRollUp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class CustomerController extends Controller
@@ -124,6 +125,81 @@ class CustomerController extends Controller
             (new SalesOrderDetail())->insertSalesOrderDetail($value);
         }
         return 1;
+    }
+
+    /**
+     * Endpoint dipanggil dari JS setiap kali user menambah SATU baris produk ke
+     * "Daftar Produk" pada modal Tambah/Update Pengiriman, atau memilih gudang eceran
+     * pada dropdown per baris - GitHub #116, meniru pola checkProductionStock() di
+     * Produksi (GitHub #101/#105) tapi disederhanakan ke SATU baris per panggilan
+     * (bukan seluruh daftar): mengecek ulang seluruh baris lama tiap kali ada baris
+     * baru cuma bikin alert lama nongol lagi berulang-ulang tanpa alasan baru. Client
+     * hanya mengirim baris yang baru mau ditambahkan/diubah, dengan warehouse_id yang
+     * SUDAH pasti (gudang utama aktif, gudang eceran aktif staf, atau gudang eceran
+     * yang baru dipilih di dropdown baris itu) - baris satuan eceran yang gudangnya
+     * belum dipilih sama sekali TIDAK memanggil endpoint ini dulu (lihat catatan di
+     * #btn-add-product-so/.so-retail-warehouse di Sales_Order.js).
+     *
+     * Read-only - hanya mensimulasikan ketersediaan lewat SalesOrderStock::buildPlan(),
+     * TIDAK memutasi stok. Ini murni peringatan dini di UI: insertSalesOrder()/
+     * updateSalesOrder() sendiri SENGAJA tetap tidak diblokir oleh stok saat ini
+     * (lihat catatan GitHub #99 di insertSalesOrder() di atas) - pemotongan +
+     * pengecekan stok yang sesungguhnya tetap terjadi di accSO(). Baris yang lolos
+     * cek ini saat ditambahkan bisa saja tetap gagal di ACC kalau stok berkurang
+     * lagi sebelum diterima, dan sebaliknya baris yang gagal di sini bisa saja
+     * lolos nanti kalau stok bertambah (produksi/PO/transfer) sebelum ACC.
+     *
+     * SENGAJA tidak menjalankan validateRetailWarehouseUnits()/validateRetailSelection() di
+     * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), karena
+     * baris yang gudangnya belum dipilih memang tidak sampai ke sini sama sekali (lihat di
+     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang eceran" tetap
+     * divalidasi & fokus ke dropdown yang kosong saat klik "Tambah/Update Pengiriman".
+     */
+    function checkSalesOrderStock(Request $req)
+    {
+        $productsData = json_decode($req->input('products', '[]'), true);
+        if (! is_array($productsData) || empty($productsData)) {
+            return response()->json(['status' => 1]);
+        }
+
+        $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
+
+        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
+
+        $checkableProducts = [];
+        foreach ($productsData as $p) {
+            $variantId = (int) ($p['product_variant_id'] ?? 0);
+            $unitId = (int) ($p['unit_id'] ?? 0);
+            if ($variantId <= 0 || $unitId <= 0) {
+                continue;
+            }
+            if ($hasRetailCol && (int) ($p['warehouse_id'] ?? 0) <= 0) {
+                $retailUnit = (int) (ProductVariant::where('product_variant_id', $variantId)->value('retail_unit') ?? 0);
+                if ($retailUnit > 0 && $unitId === $retailUnit) {
+                    // Baris eceran tanpa gudang - seharusnya tidak pernah sampai di sini
+                    // (lihat docblock), tapi tetap dilewati alih-alih digagalkan kalau terjadi.
+                    continue;
+                }
+            }
+            $checkableProducts[] = $p;
+        }
+
+        if (empty($checkableProducts)) {
+            return response()->json(['status' => 1]);
+        }
+
+        $plan = SalesOrderStock::buildPlan($checkableProducts, null);
+        if (! ($plan['ok'] ?? false)) {
+            return response()->json([
+                'status' => 0,
+                'header' => $plan['header'] ?? 'Stok tidak cukup',
+                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
+                'products' => $plan['products'] ?? [],
+                'recommendations' => $plan['recommendations'] ?? [],
+            ]);
+        }
+
+        return response()->json(['status' => 1]);
     }
 
     function updateSalesOrder(Request $req)
