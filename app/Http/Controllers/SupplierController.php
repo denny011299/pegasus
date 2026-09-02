@@ -22,6 +22,7 @@ use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Support\UnitRollUp;
+use App\Support\HutangDataTable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -249,6 +250,10 @@ class SupplierController extends Controller
 
     function getPoInvoice(Request $req)
     {
+        if ($req->has('draw')) {
+            return response()->json(HutangDataTable::paginate($req->all()));
+        }
+
         $data = (new PurchaseOrderDetailInvoice())->getPoInvoice($req->all());
         return response()->json($data);
     }

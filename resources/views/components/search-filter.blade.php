@@ -500,30 +500,41 @@
 @endif
 
 @if(Route::is(['payReceive']))
-<!-- Filter Pencarian -->
+<!-- Filter Pencarian & Ringkasan Aksi -->
 <div class="mt-3 px-0">
-    <div class="row g-3">
-        <div class="col-12 col-lg-8">
-            <div class="card p-3 h-100">
-                <h6 class="card-title border-bottom pb-2 mb-3">Filter Pencarian</h6>
+    <div class="row g-3 align-items-stretch">
+        <!-- Card Filter Pencarian -->
+        <div class="col-12 col-xl-8 col-lg-7">
+            <div class="card p-3 h-100 shadow-sm border-0" style="border: 1px solid #e2e8f0 !important; border-radius: 12px;">
+                <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                    <div class="d-flex align-items-center gap-2">
+                        <div style="width: 28px; height: 28px; border-radius: 6px; background: #eff6ff; display: flex; align-items: center; justify-content: center; color: #2563eb;">
+                            <i class="fe fe-filter" style="font-size: 13px;"></i>
+                        </div>
+                        <h6 class="card-title mb-0 fw-bold text-dark" style="font-size: 14px;">Filter Pencarian</h6>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary btn-clear d-inline-flex align-items-center gap-1 px-2.5 py-1" style="border-radius: 6px; font-size: 12px; font-weight: 600;">
+                        <i class="fe fe-rotate-ccw" style="font-size: 11px;"></i> Reset Filter
+                    </button>
+                </div>
                 <div class="row g-3 align-items-end">
                     <div class="col-12 col-md-4">
-                        <div class="input-block">
-                            <label class="form-label mb-1">Bank Account</label>
+                        <div class="input-block mb-0">
+                            <label class="form-label mb-1 fw-semibold text-secondary" style="font-size: 12px;">Bank Account</label>
                             <select class="form-select fill" id="bank_kode"></select>
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
-                        <div class="input-block">
-                            <label class="form-label mb-1">Supplier</label>
+                        <div class="input-block mb-0">
+                            <label class="form-label mb-1 fw-semibold text-secondary" style="font-size: 12px;">Supplier</label>
                             <select class="form-select fill" id="supplier"></select>
                         </div>
                     </div>
                     <div class="col-12 col-md-4">
-                        <div class="input-block">
-                            <label class="form-label mb-1">Status</label>
-                            <select class="form-select fill" id="status">
-                                <option value="" selected>Semua</option>
+                        <div class="input-block mb-0">
+                            <label class="form-label mb-1 fw-semibold text-secondary" style="font-size: 12px;">Status</label>
+                            <select class="form-select fill" id="status" style="height: 40px; font-size: 13px;">
+                                <option value="" selected>Semua Status</option>
                                 <option value="1">Belum Terbayar</option>
                                 <option value="3">Menunggu Tanda Terima</option>
                                 <option value="2">Terbayar</option>
@@ -531,49 +542,74 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="input-block">
-                            <label class="form-label mb-1">Dari</label>
-                            <input type="date" class="form-control" id="start_date">
+                    <div class="col-6 col-md-6">
+                        <div class="input-block mb-0">
+                            <label class="form-label mb-1 fw-semibold text-secondary" style="font-size: 12px;">Dari Tanggal</label>
+                            <input type="date" class="form-control" id="start_date" style="height: 40px; font-size: 13px;">
                         </div>
                     </div>
-                    <div class="col-6 col-md-4">
-                        <div class="input-block">
-                            <label class="form-label mb-1">Sampai</label>
-                            <input type="date" class="form-control" id="end_date">
+                    <div class="col-6 col-md-6">
+                        <div class="input-block mb-0">
+                            <label class="form-label mb-1 fw-semibold text-secondary" style="font-size: 12px;">Sampai Tanggal</label>
+                            <input type="date" class="form-control" id="end_date" style="height: 40px; font-size: 13px;">
                         </div>
-                    </div>
-                    <div class="col-12 col-md-4 text-end">
-                        <button class="btn btn-outline-secondary btn-clear w-100 w-md-auto">
-                            Clear Filter
-                        </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col-12 col-lg-4">
-            <div class="card p-3 h-100">
-                <h6 class="card-title border-bottom pb-2 mb-3">Aksi & Ringkasan</h6>
-                <div class="row g-3">
-                    <div class="col-12 col-md-6 col-lg-12">
-                        <label class="form-label d-block mb-1">Laporan</label>
-                        <button class="btn btn-outline-info btn-print w-100 mt-lg-0 mt-3">
-                            Print Hutang <i class="fa fa-file ms-1"></i>
+        <!-- Card Aksi & Ringkasan -->
+        <div class="col-12 col-xl-4 col-lg-5">
+            <div class="card p-3 h-100 shadow-sm border-0 d-flex flex-column justify-content-between" style="border: 1px solid #e2e8f0 !important; border-radius: 12px;">
+                <div>
+                    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <div style="width: 28px; height: 28px; border-radius: 6px; background: #ecfdf5; display: flex; align-items: center; justify-content: center; color: #059669;">
+                                <i class="fe fe-activity" style="font-size: 13px;"></i>
+                            </div>
+                            <h6 class="card-title mb-0 fw-bold text-dark" style="font-size: 14px;">Ringkasan & Aksi</h6>
+                        </div>
+                        <span id="jumlah_terpilih" class="badge jumlah_terpilih border cursor-pointer" style="background: #eff6ff; color: #2563eb; border-color: #bfdbfe !important; font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 20px;" title="Klik untuk reset pilihan">
+                            0 Selected <i class="fe fe-refresh-cw ms-1"></i>
+                        </span>
+                    </div>
+
+                    <!-- Mini KPI Summary -->
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <div class="rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px;">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <i class="fe fe-file-text text-primary" style="font-size: 13px;"></i>
+                                    <small class="text-muted fw-semibold" style="font-size: 11px;">Jml. Invoice</small>
+                                </div>
+                                <div class="fw-bold text-dark fs-15 mt-1" id="totalInvoice">0</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="rounded-3" style="background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px;">
+                                <div class="d-flex align-items-center gap-1.5">
+                                    <i class="fe fe-dollar-sign text-danger" style="font-size: 13px;"></i>
+                                    <small class="text-muted fw-semibold" style="font-size: 11px;">Total Hutang</small>
+                                </div>
+                                <div class="fw-bold text-danger fs-14 mt-1 text-truncate" id="totalHutang" title="Rp 0">Rp 0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row g-2 mt-auto">
+                    <div class="col-12 col-sm-6 col-lg-6">
+                        <button type="button" class="btn btn-print w-100 d-inline-flex align-items-center justify-content-center fw-semibold" style="height: 40px; font-size: 13px; border-radius: 8px;">
+                            <i class="fe fe-printer me-2" style="font-size: 14px;"></i>
+                            <span>Print Hutang</span>
                         </button>
                     </div>
                     @if ($akses->firstWhere('name', 'Hutang') && in_array('others', $akses->firstWhere('name', 'Hutang')->akses))
-                        <div class="col-12 col-md-6 col-lg-12 text-md-end text-start text-lg-start">
-                            <div class="d-flex justify-content-lg-start justify-content-end gap-2 align-items-center mb-2">
-                                <label class="form-label mb-1">Tanda Terima</label>
-                                <div>
-                                    <span id="jumlah_terpilih" class="badge bg-light text-dark p-2 border cursor-pointer">
-                                        0 Selected <i class="fe fe-refresh-ccw ms-1"></i>
-                                    </span>
-                                </div>
-                            </div>
-                            <button class="btn btn-primary btn-create w-100">
-                                Buat Tanda Terima
+                        <div class="col-12 col-sm-6 col-lg-6">
+                            <button type="button" class="btn btn-create w-100 d-inline-flex align-items-center justify-content-center fw-semibold text-white" style="height: 40px; font-size: 13px; border-radius: 8px;">
+                                <i class="fe fe-file-plus me-2 text-white" style="font-size: 14px;"></i>
+                                <span class="text-white">Buat Tanda Terima</span>
                             </button>
                         </div>
                     @endif

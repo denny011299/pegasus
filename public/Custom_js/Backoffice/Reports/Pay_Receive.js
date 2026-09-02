@@ -31,25 +31,159 @@
         payablesWrap().removeClass('dt-pending is-loading').addClass('dt-ready');
     }
 
+    function abortPayablesLoad() {
+        if (payablesXhr && payablesXhr.readyState !== 4) {
+            payablesXhr.abort();
+        }
+        payablesXhr = null;
+    }
+
+    function beginPayablesTableLoad() {
+        var $wrap = payablesWrap();
+        $wrap.removeClass('dt-pending').addClass('dt-ready');
+        setPayablesTableLoading(true);
+    }
+
+    function getPayablesExtraParams() {
+        return {
+            bank_id: $('#bank_kode').val(),
+            status: $('#status').val(),
+            po_supplier: $('#supplier').val(),
+            dates: dates,
+        };
+    }
+
+    function applyPayablesMeta(json) {
+        var meta = json && json.meta ? json.meta : {};
+        var totalInvoice = meta.total_invoice !== undefined
+            ? meta.total_invoice
+            : (json && json.recordsFiltered !== undefined ? json.recordsFiltered : 0);
+        var totalHutang = meta.total_hutang !== undefined ? meta.total_hutang : 0;
+        $('#totalInvoice').html(totalInvoice);
+        $('#totalHutang').html(`Rp ${formatRupiah(totalHutang)}`);
+        $('#totalHutang').attr('title', `Rp ${formatRupiah(totalHutang)}`);
+    }
+
+    // STATUS badges 1:1 — jangan ubah mapping ini
+    function formatPayableRow(row) {
+        row.can_tt = canSelectForTandaTerima(row);
+        row.check = row.can_tt
+            ? `<input type="checkbox" class="form-check-input chk ch${row.poi_id}" poi_id="${row.poi_id}" style="cursor:pointer;" />`
+            : '';
+        row.date = moment(row.po_date).format('D MMM YYYY');
+        row.date_due_date = moment(row.poi_due).format('D MMM YYYY');
+        row.poi_total_text = formatRupiah(row.poi_total, "Rp ");
+
+        if (row.pembayaran == 1 && row.status == 1) {
+            row.status_text = `<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Belum Terbayar</span>`;
+        } else if (row.pembayaran == 2) {
+            row.status_text = `<span class="badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Terbayar</span>`;
+        } else if (row.pembayaran == 3) {
+            row.status_text = `<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Menunggu Tanda Terima</span>`;
+        } else {
+            row.status_text = `<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Ditolak</span>`;
+        }
+
+        row.action = hasAccessAction("Hutang", "view")
+            ? '<a href="/purchaseOrderDetailHutang/' +
+              row.po_id +
+              '" class="btn-action-icon btn_edit_invoice" style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;color:#2563eb;transition:all 0.2s;" title="Lihat Detail"><i class="fe fe-eye"></i></a>'
+            : '<span class="text-muted small">—</span>';
+
+        return row;
+    }
+
+    function restorePayablesChecks() {
+        $('#tablePayables tbody input.chk').each(function () {
+            var id = String($(this).attr('poi_id'));
+            $(this).prop('checked', tandaTerima.indexOf(id) !== -1);
+        });
+        var $chks = $('#tablePayables tbody input.chk');
+        if ($chks.length) {
+            $('#selectAll').prop('checked', $chks.length > 0 && $chks.filter(':checked').length === $chks.length);
+        } else {
+            $('#selectAll').prop('checked', false);
+        }
+    }
+
+    function payablesAjax(dtData, callback) {
+        abortPayablesLoad();
+        payablesXhr = $.ajax({
+            url: '/getPoInvoice',
+            method: 'get',
+            data: $.extend({}, dtData, getPayablesExtraParams()),
+            beforeSend: function () {
+                beginPayablesTableLoad();
+            },
+            success: function (json) {
+                if (!json || typeof json !== 'object') {
+                    callback({
+                        draw: dtData.draw,
+                        recordsTotal: 0,
+                        recordsFiltered: 0,
+                        data: [],
+                    });
+                    return;
+                }
+                var rows = Array.isArray(json.data) ? json.data : [];
+                for (var i = 0; i < rows.length; i++) {
+                    formatPayableRow(rows[i]);
+                }
+                json.data = rows;
+                applyPayablesMeta(json);
+                callback(json);
+            },
+            error: function (err) {
+                if (err && err.statusText === 'abort') return;
+                if (handlePermissionError(err)) return;
+                console.error('Gagal load:', err);
+                callback({
+                    draw: dtData.draw,
+                    recordsTotal: 0,
+                    recordsFiltered: 0,
+                    data: [],
+                });
+            },
+            complete: function (_xhr, status) {
+                if (status === 'abort') return;
+                hidePayablesSkeleton();
+                if (tablePayables) tablePayables.columns.adjust();
+            },
+        });
+    }
+
+    function refreshPayReceive(resetPaging) {
+        if (!tablePayables) return;
+        showPayablesSkeleton();
+        tablePayables.ajax.reload(null, resetPaging !== false);
+    }
+
     autocompleteRekening("#bank_kode");
     autocompleteSupplier("#supplier");
     $(document).ready(function(){
         showPayablesSkeleton();
         inisialisasi();
-        refreshPayReceive();
     });
     
     function inisialisasi() {
+        if ($.fn.DataTable.isDataTable('#tablePayables')) {
+            $('#tablePayables').DataTable().destroy();
+            $('#tablePayables tbody').empty();
+            payablesTableReady = false;
+        }
+
         tablePayables = $('#tablePayables').DataTable({
+            destroy: true,
             processing: true,
+            serverSide: true,
             deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
             pageLength: 10,
-            ordering: true,
-            order: [], // QC#11: jangan sort kolom checkbox; pertahankan urutan SQL FIELD(pembayaran, 1, 3, 2)
+            ordering: false, // pertahankan urutan SQL FIELD(pembayaran, 1, 3, 2)
             searching: false,
+            autoWidth: false,
             language: {
                 search: ' ',
                 sLengthMenu: '_MENU_',
@@ -81,7 +215,7 @@
                     className: "align-middle text-nowrap",
                     render: function(data, type, row) {
                         if (type === 'sort') {
-                            return row.po_date ?? data; // pakai date_raw kalau ada
+                            return row.po_date ?? data;
                         }
                         return data;
                     }
@@ -91,7 +225,7 @@
                     className: "align-middle text-nowrap",
                     render: function(data, type, row) {
                         if (type === 'sort') {
-                            return row.poi_due ?? data; // pakai date_raw kalau ada
+                            return row.poi_due ?? data;
                         }
                         return data;
                     }
@@ -114,144 +248,70 @@
                 },
                 { data: "action", class: "text-center align-middle" },
             ],
-            initComplete: (settings, json) => {
+            ajax: function (data, callback) {
+                payablesAjax(data, callback);
+            },
+            initComplete: function () {
                 $('.dataTables_filter').appendTo('#tableSearch');
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+                hidePayablesSkeleton();
             },
             drawCallback: function () {
                 if (typeof feather !== 'undefined') feather.replace();
+                restorePayablesChecks();
             },
         });
-
     }
 
-    function refreshPayReceive() {
-        if (payablesXhr && payablesXhr.readyState !== 4) {
-            payablesXhr.abort();
-        }
-
-        showPayablesSkeleton();
-
-        payablesXhr = $.ajax({
-            url: "/getPoInvoice",
-            method: "get",
-            data: {
-                bank_id: $('#bank_kode').val(),
-                status: $('#status').val(),
-                po_supplier: $('#supplier').val(),
-                dates: dates,
-            },
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-                let total = 0;
-                console.log(e);
-                tablePayables.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    // QC#9: checkbox hanya untuk Belum Terbayar (bukan Ditolak/Terbayar/Menunggu TT)
-                    e[i].can_tt = canSelectForTandaTerima(e[i]);
-                    e[i].check = e[i].can_tt
-                        ? `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}" poi_id="${e[i].poi_id}" style="cursor:pointer;" />`
-                        : '';
-                    e[i].date = moment(e[i].po_date).format('D MMM YYYY');
-                    e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
-                    e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
-                    total += parseInt(e[i].poi_total);
-                    
-                    if (e[i].pembayaran == 1 && e[i].status == 1){
-                        e[i].status_text = `<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Belum Terbayar</span>`;
-                    } else if (e[i].pembayaran == 2){
-                        e[i].status_text = `<span class="badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Terbayar</span>`;
-                    } else if (e[i].pembayaran == 3) {
-                        e[i].status_text = `<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Menunggu Tanda Terima</span>`;
-                    } else {
-                        e[i].status_text = `<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Ditolak</span>`;
-                    }
-                    e[i].action = hasAccessAction("Hutang", "view")
-                        ? '<a href="/purchaseOrderDetailHutang/' +
-                          e[i].po_id +
-                          '" class="btn-action-icon btn_edit_invoice" style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;color:#2563eb;transition:all 0.2s;" title="Lihat Detail"><i class="fe fe-eye"></i></a>'
-                        : '<span class="text-muted small">—</span>';
-                }
-
-                tablePayables.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-
-                $('#totalHutang').html(`Rp ${formatRupiah(total)}`);
-                $('#totalInvoice').html(e.length);
-            },
-            error: function (err) {
-                if (err && err.statusText === 'abort') return;
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load:", err);
-            },
-            complete: function (_xhr, status) {
-                if (status === 'abort') return;
-                hidePayablesSkeleton();
-                if (tablePayables) tablePayables.columns.adjust();
-            }
-        });
-    }
     $(document).on("change", "#bank_kode,#status,#supplier", function () {
         $('.jumlah_terpilih').trigger("click");
-        refreshPayReceive();
+        refreshPayReceive(true);
     });
 
     $(document).on("click", ".chk", function () {
-        var kode = $(this).attr("poi_id");
-        var ada=false;
-        tandaTerima.forEach(item => {
-            if(item == kode){
-                ada=true;
-            }
-        });
-        if(ada){
+        var kode = String($(this).attr("poi_id"));
+        var ada = tandaTerima.indexOf(kode) !== -1;
+        if (ada) {
             tandaTerima = tandaTerima.filter(item => item != kode);
         } else {
             tandaTerima.push(kode);
         }
-        console.log(tandaTerima);
         $('#jumlah_terpilih').text(tandaTerima.length + " Selected");
+        restorePayablesChecks();
     });
 
     $(document).on("click", ".jumlah_terpilih", function () {
         tandaTerima=[];
         $('.chk').prop('checked', false);
+        $('#selectAll').prop('checked', false);
         $('#jumlah_terpilih').text("0 Selected");
     });
 
    $(document).on("change", "#selectAll", function () {
-        // Gunakan instance tablePayables yang sudah didefinisikan di awal
-        var rows = tablePayables.rows({ 'search': 'applied' }).nodes();
-        var allData = tablePayables.rows({ 'search': 'applied' }).data();
-        
-        tandaTerima = []; // Reset array agar tidak double saat select all
+        // SS: hanya halaman saat ini
+        var rows = tablePayables.rows({ page: 'current' }).nodes();
+        var pageData = tablePayables.rows({ page: 'current' }).data();
 
         if ($(this).is(":checked")) {
-            // 1. Centang checkbox eligible saja (skip Ditolak / non-TT)
             $('input.chk', rows).prop('checked', true);
-
-            // 2. Masukkan hanya poi_id yang boleh buat TT
-            allData.each(function (data) {
+            pageData.each(function (data) {
                 if (canSelectForTandaTerima(data)) {
-                    tandaTerima.push(data.poi_id.toString());
+                    var id = String(data.poi_id);
+                    if (tandaTerima.indexOf(id) === -1) {
+                        tandaTerima.push(id);
+                    }
                 }
             });
-        } 
-        else {
-            // 1. Uncheck semua secara visual
+        } else {
             $('input.chk', rows).prop('checked', false);
-            
-            // 2. Kosongkan array
-            tandaTerima = [];
+            pageData.each(function (data) {
+                var id = String(data.poi_id);
+                tandaTerima = tandaTerima.filter(item => item != id);
+            });
         }
 
-        // Update label jumlah terpilih
         $('#jumlah_terpilih').text(tandaTerima.length + " Selected");
-        console.log("Current IDs:", tandaTerima);
     });
 
     // Eligible TT = badge Belum Terbayar (pembayaran=1 & invoice status=1). Ditolak: status invoice 0 / PO -1.
@@ -265,11 +325,24 @@
             var row = allData.find(function (r) {
                 return String(r.poi_id) === String(id);
             });
-            return row && !canSelectForTandaTerima(row);
+            if (!row) return false; // di luar halaman saat ini — server yang validasi
+            return !canSelectForTandaTerima(row);
         });
     }
 
+    var BTN_CREATE_HTML = '<i class="fe fe-file-plus me-2 text-white" style="font-size: 14px;"></i><span class="text-white">Buat Tanda Terima</span>';
+    var BTN_PRINT_HTML = '<i class="fe fe-printer me-2" style="font-size: 14px;"></i><span>Print Hutang</span>';
+
+    function resetHutangActionBtn($btn, html) {
+        if (!$btn || !$btn.length) return;
+        $btn.data("busy", false);
+        ResetLoadingButton($btn, html);
+    }
+
     $(document).on("click", ".btn-create", function () {
+        var $btn = $(this);
+        if ($btn.data("busy") || $btn.prop("disabled")) return;
+
        $('.invalid').removeClass('invalid');
 
         if(tandaTerima.length==0){
@@ -280,8 +353,10 @@
             notifikasi("error","Gagal Buat Surat Terima","Invoice ditolak tidak dapat dibuat tanda terima");
             return false;
         }
-        console.log(tandaTerima);
-        
+
+        $btn.data("busy", true);
+        LoadingButton($btn);
+
         var url = '/generateTandaTerimaInvoice';
         $.ajax({
             url:url,
@@ -293,11 +368,14 @@
                 if(e.status&&e.status==-1){
                     notifikasi("error","Gagal Buat Surat Terima",e.message)
                     refreshPayReceive();
+                    resetHutangActionBtn($btn, BTN_CREATE_HTML);
                 }
                 else if(e.status&&e.status==1){
                     notifikasi("success","Berhasil Buat Surat Terima","Surat tanda terima berhasil dibuat");
                     refreshPayReceive();
                     window.location.href = '/viewTandaTerima/' + e.tt_id;
+                } else {
+                    resetHutangActionBtn($btn, BTN_CREATE_HTML);
                 }
 
                 tandaTerima=[];
@@ -306,33 +384,54 @@
                 $('#jumlah_terpilih').text("0 Selected");
             },
             error:function(e){
+                resetHutangActionBtn($btn, BTN_CREATE_HTML);
                 if (handlePermissionError(e)) return;
                 console.log(e);
+            },
+            complete: function (_xhr, textStatus) {
+                if (textStatus === "abort") {
+                    resetHutangActionBtn($btn, BTN_CREATE_HTML);
+                }
             }
         });
     });
 
+    // List filter: partial dates OK (start-only → today; end-only → from beginning)
     function syncHutangDates() {
-        var start = $('#start_date').val();
-        var end = $('#end_date').val();
-        // Filter list/print hanya jika Dari & Sampai keduanya terisi
-        dates = (start && end) ? [start, end] : null;
+        var start = $('#start_date').val() || '';
+        var end = $('#end_date').val() || '';
+        if (!start && !end) {
+            dates = null;
+        } else {
+            dates = [start, end];
+        }
         return { start: start, end: end };
     }
 
     $(document).on('click', '.btn-print', function(){
-        var range = syncHutangDates();
-        if ((range.start && !range.end) || (!range.start && range.end)) {
+        var $btn = $(this);
+        if ($btn.data("busy") || $btn.prop("disabled")) return;
+
+        // Print tetap butuh keduanya (tidak diubah)
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        if ((start && !end) || (!start && end)) {
             notifikasi('error', 'Gagal Print Hutang', 'Isi tanggal Dari dan Sampai terlebih dahulu');
             return;
         }
 
+        var printDates = (start && end) ? [start, end] : null;
         let params = {
             bank_id: $('#bank_kode').val(),
             status: $('#status').val(),
             po_supplier: $('#supplier').val(),
-            dates: dates
+            dates: printDates
         };
+
+        $btn.data("busy", true);
+        LoadingButton($btn);
+        // Outline putih: text-light dari helper tidak terlihat
+        $btn.find(".spinner-border").removeClass("text-light").addClass("text-primary");
 
         $.ajax({
             url: "/checkHutang",
@@ -341,24 +440,31 @@
             success: function(e) {
                 if (e.status === -1) {
                     notifikasi('error', 'Gagal Print Hutang', e.message);
+                    resetHutangActionBtn($btn, BTN_PRINT_HTML);
                     return;
                 }
                 window.open('/generateHutang?' + $.param(params), '_self');
             },
             error: function(e){
+                resetHutangActionBtn($btn, BTN_PRINT_HTML);
                 if (handlePermissionError(e)) return;
                 console.error(e);
+            },
+            complete: function (_xhr, textStatus) {
+                if (textStatus === "abort") {
+                    resetHutangActionBtn($btn, BTN_PRINT_HTML);
+                }
             }
         })
     })
 
     $(document).on('change', '#start_date', function(){
         syncHutangDates();
-        refreshPayReceive();
+        refreshPayReceive(true);
     })
     $(document).on('change', '#end_date', function(){
         syncHutangDates();
-        refreshPayReceive();
+        refreshPayReceive(true);
     })
     $(document).on('click', '.btn-clear', function(){
         dates = null;
@@ -367,10 +473,8 @@
         $('#status').val("");
         $('#bank_kode').empty();
         $('#supplier').empty();
-        refreshPayReceive();
+        tandaTerima = [];
+        $('#selectAll').prop('checked', false);
+        $('#jumlah_terpilih').text("0 Selected");
+        refreshPayReceive(true);
     })
-    /*
-    $(document).on('click', '.row-payables', function(){
-        alert("test")
-        $(this).find('input[type="checkbox"]').trigger('click'); 
-    });*/
