@@ -620,6 +620,7 @@
             showCancelButton: true,
             confirmButtonText: "Ya, lanjutkan",
             cancelButtonText: "Batal",
+            confirmButtonColor: action === "accept" ? undefined : "#dc2626",
         }).then(function (result) {
             if (!result.isConfirmed) return;
             $.post("/customerProductReturns/" + id + "/" + action, { _token: csrf() })

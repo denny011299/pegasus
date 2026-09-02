@@ -1396,6 +1396,7 @@
                     showCancelButton: true,
                     confirmButtonText: "Ya, lanjutkan",
                     cancelButtonText: "Batal",
+                    confirmButtonColor: action === "accept" ? undefined : "#dc2626",
                 }).then(function (result) {
                     if (!result.isConfirmed) return;
                     postProcessRecord(key, action, null);
@@ -1754,7 +1755,7 @@
         $(document).on("click", ".cr-edit", function () { openRecord($(this).data("key"), "edit"); });
         $(document).on("click", ".cr-delete", function () {
             var key = $(this).data("key");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus" })
+            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#dc2626" })
                 .then(function (result) {
                     if (!result.isConfirmed) return;
                     $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
