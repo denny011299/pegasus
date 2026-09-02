@@ -1243,6 +1243,18 @@ class CustomerReturnController extends Controller
 
         $supplyDetails = $this->parseSupplyDetails($request->input('supply_details'));
         $productDetails = $this->parseProductDetails($request->input('product_details'));
+        $activeCtx = $this->activeWarehouseContext();
+        $activeIsMain = ($activeCtx['is_main_warehouse'] ?? 1) === 1;
+        if (! $activeIsMain && $supplyDetails !== []) {
+            throw ValidationException::withMessages([
+                'supply_details' => 'Gudang eceran tidak menerima pengembalian bahan mentah.',
+            ]);
+        }
+        if (! $activeIsMain && $productDetails === []) {
+            throw ValidationException::withMessages([
+                'product_details' => 'Minimal satu produk jadi satuan eceran wajib ditambahkan.',
+            ]);
+        }
         if ($supplyDetails === [] && $productDetails === []) {
             throw ValidationException::withMessages([
                 'supply_details' => 'Minimal satu bahan mentah atau produk jadi harus ditambahkan.',

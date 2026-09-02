@@ -497,6 +497,17 @@
         setupLocalSelect("#cr-supply-unit", "Pilih satuan");
         setupLocalSelect("#cr-product-unit", "Pilih satuan");
         fillQcStaffOptions();
+        syncCrRetailCreateMode();
+    }
+
+    /** Gudang eceran: hanya produk jadi satuan retail — sembunyikan tab bahan mentah. */
+    function syncCrRetailCreateMode() {
+        var retailOnly = isRetailWarehouse(crActiveWarehouseId());
+        var editable = crMode === "create" || crMode === "edit";
+        $("#cr-type-supply").closest(".nav-item").toggleClass("d-none", retailOnly);
+        if (retailOnly && editable && crAddItemType() === "supply") {
+            setCrAddItemType("product");
+        }
         syncCrActiveWarehouseBadge();
     }
 
@@ -1381,7 +1392,7 @@
             setCrModalLoading(false);
         });
         $("#customer-return-modal").on("shown.bs.modal", function () {
-            syncCrActiveWarehouseBadge();
+            syncCrRetailCreateMode();
         });
         $("#customer-return-tab").on("shown.bs.tab", function () {
             $(".btnAdd").addClass("d-none");
@@ -1405,8 +1416,11 @@
         });
 
         $('input[name="cr-item-type"]').on("change", function () {
+            if (isRetailWarehouse(crActiveWarehouseId()) && crAddItemType() === "supply") {
+                $("#cr-type-product").prop("checked", true);
+            }
             setCrAddItemType(crAddItemType());
-            syncCrActiveWarehouseBadge();
+            syncCrRetailCreateMode();
         });
 
         $("#cr-supply").on("change", function () {
