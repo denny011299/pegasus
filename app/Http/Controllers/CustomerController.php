@@ -17,6 +17,7 @@ use Illuminate\Support\Arr;
 use App\Support\UnitRollUp;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
 class CustomerController extends Controller
@@ -142,6 +143,14 @@ class CustomerController extends Controller
      * cek ini saat ditambahkan bisa saja tetap gagal di ACC kalau stok berkurang
      * lagi sebelum diterima, dan sebaliknya baris yang gagal di sini bisa saja
      * lolos nanti kalau stok bertambah (produksi/PO/transfer) sebelum ACC.
+     *
+     * SENGAJA tidak menjalankan validateRetailWarehouseUnits()/validateRetailSelection() di
+     * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), supaya
+     * popup "Gudang eceran wajib" tidak muncul cuma karena user belum sempat pilih gudang
+     * eceran saat baris baru ditambahkan (kolom itu lazimnya diisi belakangan, di footer
+     * form, bukan per baris). Baris satuan eceran yang gudangnya belum jelas cukup dilewati
+     * (tidak ikut disimulasikan) di sini - tetap divalidasi & diperiksa stoknya nanti saat
+     * submit akhir.
      */
     function checkSalesOrderStock(Request $req)
     {
@@ -152,26 +161,33 @@ class CustomerController extends Controller
 
         $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
 
-        $retailErr = SalesOrderStock::validateRetailWarehouseUnits($productsData);
-        if ($retailErr) {
-            return response()->json([
-                'status' => 0,
-                'header' => 'Satuan tidak valid',
-                'message' => $retailErr,
-            ]);
+        $retailWarehouseId = (int) $req->input('retail_warehouse_id');
+        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
+
+        $checkableProducts = [];
+        foreach ($productsData as $p) {
+            $variantId = (int) ($p['product_variant_id'] ?? 0);
+            $unitId = (int) ($p['unit_id'] ?? 0);
+            if ($variantId <= 0 || $unitId <= 0) {
+                continue;
+            }
+            if ($hasRetailCol) {
+                $retailUnit = (int) (ProductVariant::where('product_variant_id', $variantId)->value('retail_unit') ?? 0);
+                $lineWarehouseId = (int) ($p['warehouse_id'] ?? 0);
+                if ($retailUnit > 0 && $unitId === $retailUnit && $lineWarehouseId <= 0 && $retailWarehouseId <= 0) {
+                    // Gudang eceran belum dipilih untuk baris ini - lewati dari simulasi,
+                    // jangan gagalkan add-time check karenanya (lihat catatan di atas).
+                    continue;
+                }
+            }
+            $checkableProducts[] = $p;
         }
 
-        $retailWarehouseId = $req->input('retail_warehouse_id');
-        $retailErr = SalesOrderStock::validateRetailSelection($productsData, $retailWarehouseId);
-        if ($retailErr) {
-            return response()->json([
-                'status' => 0,
-                'header' => 'Gudang eceran wajib',
-                'message' => $retailErr,
-            ]);
+        if (empty($checkableProducts)) {
+            return response()->json(['status' => 1]);
         }
 
-        $plan = SalesOrderStock::buildPlan($productsData, $retailWarehouseId ?: null);
+        $plan = SalesOrderStock::buildPlan($checkableProducts, $retailWarehouseId ?: null);
         if (! ($plan['ok'] ?? false)) {
             return response()->json([
                 'status' => 0,

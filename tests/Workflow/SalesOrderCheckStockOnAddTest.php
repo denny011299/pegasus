@@ -130,6 +130,49 @@ class SalesOrderCheckStockOnAddTest extends TestCase
         $this->assertSame(10, (int) $fx['productStock']->ps_stock, 'the check is read-only and must not touch stock');
     }
 
+    /**
+     * A retail-unit line dropped into the modal before the footer's "gudang eceran" select is
+     * filled in must NOT trip a "Gudang eceran wajib" error on add-row — that gate stays at
+     * final submit (insertSalesOrder()/updateSalesOrder()) only. The add-time check simply
+     * skips such a line (no warehouse to check stock against yet) instead of failing it.
+     */
+    public function test_check_does_not_demand_a_retail_warehouse_yet_on_add(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $category = new Category();
+        $category->category_name = 'SO Check Stock Retail Test Category';
+        $category->status = 1;
+        $category->save();
+
+        $product = new Product();
+        $product->product_name = 'SO Check Stock Retail Test Product';
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([self::UNIT_ID]);
+        $product->unit_id = self::UNIT_ID;
+        $product->status = 1;
+        $product->save();
+
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'SO Check Stock Retail Test Variant';
+        $variant->product_variant_sku = 'RG-SOCHECKRETAIL-'.uniqid();
+        $variant->product_variant_price = 1000;
+        $variant->retail_unit = self::UNIT_ID;
+        $variant->status = 1;
+        $variant->save();
+
+        $line = $this->productLine($variant, 5);
+        // No warehouse_id on the line and no retail_warehouse_id posted — the footer's gudang
+        // eceran select hasn't been touched yet, same as right after clicking "+ Tambah".
+        $response = $this->post('/checkSalesOrderStock', [
+            'products' => json_encode([$line]),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertSame(1, $response->json('status'), 'add-row check must not demand a retail warehouse before final submit');
+    }
+
     public function test_check_still_lets_a_short_document_be_created_per_github_99(): void
     {
         $this->actingAsSuperAdminStaff();
