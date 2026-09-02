@@ -3042,7 +3042,7 @@ $(document).on("click", ".btnViewTransfer", function () {
     $("#view_qc_body_wrap").addClass("d-none");
     $("#view_transfer_approval_block").addClass("d-none");
     $("#tableViewItems tbody").html(
-        '<tr class="empty-row"><td colspan="7" class="text-center text-muted">Memuat data...</td></tr>'
+        '<tr class="empty-row"><td colspan="5" class="text-center text-muted">Memuat data...</td></tr>'
     );
     $("#view_stock_transfer_loading").css("display", "flex");
     $("#view_stock_transfer").modal("show");
@@ -3054,7 +3054,7 @@ $(document).on("click", ".btnViewTransfer", function () {
         success: function (res) {
             if (!res || !res.id) {
                 $("#tableViewItems tbody").html(
-                    '<tr class="empty-row"><td colspan="7" class="text-center text-muted">Data tidak ditemukan.</td></tr>'
+                    '<tr class="empty-row"><td colspan="5" class="text-center text-muted">Data tidak ditemukan.</td></tr>'
                 );
                 if (typeof toastr !== "undefined") toastr.error("", "Data transfer tidak ditemukan");
                 return;
@@ -3073,7 +3073,7 @@ $(document).on("click", ".btnViewTransfer", function () {
             var items = res.items || [];
             if (!items.length) {
                 $("#tableViewItems tbody").html(
-                    '<tr class="empty-row"><td colspan="7" class="text-center text-muted py-5">Belum ada produk.</td></tr>'
+                    '<tr class="empty-row"><td colspan="5" class="text-center text-muted py-5">Belum ada produk.</td></tr>'
                 );
                 return;
             }
@@ -3084,19 +3084,10 @@ $(document).on("click", ".btnViewTransfer", function () {
                 var targetUnitLabel =
                     it.target_unit_name || it.received_unit_name || it.default_unit_name || unitLabel;
                 var qtySend = formatTransferQty(it.qty);
-                var qtyRecvSent =
-                    it.qty_received_sent_unit != null && it.qty_received_sent_unit !== ""
-                        ? formatTransferQty(it.qty_received_sent_unit)
-                        : null;
                 var qtyRecvConv =
                     it.qty_received != null && it.qty_received !== ""
                         ? formatTransferQty(it.qty_received)
                         : "-";
-                var selisihVal =
-                    it.selisih != null && it.selisih !== ""
-                        ? parseFloat(it.selisih)
-                        : null;
-                var selisihHtml = formatTransferSelisih(selisihVal, targetUnitLabel);
                 html +=
                     "<tr data-search=\"" +
                     escapeHtml(
@@ -3123,18 +3114,11 @@ $(document).on("click", ".btnViewTransfer", function () {
                     '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
                     formatTransferQtyWithUnit(qtySend, unitLabel) +
                     "</td>" +
-                    '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
-                    (qtyRecvSent == null
-                        ? "-"
-                        : formatTransferQtyWithUnit(qtyRecvSent, unitLabel)) +
-                    "</td>" +
+                    // Qty Terima & Selisih di-hide di view detail (retail = qty kirim)
                     '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
                     (qtyRecvConv === "-"
                         ? "-"
                         : formatTransferQtyWithUnit(qtyRecvConv, targetUnitLabel)) +
-                    "</td>" +
-                    '<td class="text-center" style="padding: 14px 16px; font-weight: 500;">' +
-                    selisihHtml +
                     "</td>" +
                     "</tr>";
             });
@@ -3142,7 +3126,7 @@ $(document).on("click", ".btnViewTransfer", function () {
         },
         error: function () {
             $("#tableViewItems tbody").html(
-                '<tr class="empty-row"><td colspan="7" class="text-center text-muted py-5">Gagal memuat data.</td></tr>'
+                '<tr class="empty-row"><td colspan="5" class="text-center text-muted py-5">Gagal memuat data.</td></tr>'
             );
             if (typeof toastr !== "undefined") toastr.error("", "Gagal memuat detail transfer");
         },
@@ -3890,7 +3874,7 @@ $(document).on("input keyup", "#search_view_barcode", function () {
     });
     if (!hasMatch) {
         $("#tableViewItems tbody").append(
-            '<tr class="empty-search"><td colspan="7" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
+            '<tr class="empty-search"><td colspan="5" class="text-center py-5"><div style="color:#94a3b8;"><i class="fe fe-search" style="font-size:36px;display:block;margin-bottom:8px;"></i><div class="fw-semibold" style="font-size:14px;">Produk tidak ditemukan</div><div style="font-size:12px;">Pencarian "'+escapeHtml(q)+'" tidak membuahkan hasil.</div></div></td></tr>'
         );
     }
 });

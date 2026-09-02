@@ -170,14 +170,15 @@
                   <th style="width: 15%;">Varian</th>
                   <th style="width: 14%;">SKU</th>
                   <th style="width: 130px;" class="text-center">Kirim (Asli)</th>
-                  <th style="width: 130px;" class="text-center">Qty Terima</th>
+                  {{-- Qty Terima & Selisih: tidak dipakai di view detail (retail = qty kirim) --}}
+                  {{-- <th style="width: 130px;" class="text-center">Qty Terima</th> --}}
                   <th style="width: 140px;" class="text-center">Hasil Konversi</th>
-                  <th style="width: 110px;" class="text-center">Selisih</th>
+                  {{-- <th style="width: 110px;" class="text-center">Selisih</th> --}}
                 </tr>
               </thead>
               <tbody>
                 <tr class="empty-row">
-                  <td colspan="7" class="text-center text-muted py-5" style="font-size: 14px;">Belum ada produk.
+                  <td colspan="5" class="text-center text-muted py-5" style="font-size: 14px;">Belum ada produk.
                   </td>
                 </tr>
               </tbody>
