@@ -245,13 +245,16 @@
 
         if (!canViewUsers) {
             $('#reassign_no_access_count').text(staffCount != null ? staffCount : (users || []).length);
-            $('#reassign_no_access_notice').show();
-            $('#reassign_table_section').hide();
+            // NB: pakai toggleClass('d-none'), bukan .show()/.hide() — elemen ini
+            // punya class Bootstrap "d-flex" (display:flex !important) yang menang
+            // atas inline style non-!important yang dipasang .show()/.hide().
+            $('#reassign_no_access_notice').removeClass('d-none');
+            $('#reassign_table_section').addClass('d-none');
             $('#reassign_role_users_body').html('');
         } else {
-            $('#reassign_no_access_notice').hide();
-            $('#reassign_table_section').show();
-            $('#reassign_col_role_header').toggle(canEditUsers);
+            $('#reassign_no_access_notice').addClass('d-none');
+            $('#reassign_table_section').removeClass('d-none');
+            $('#reassign_col_role_header').toggleClass('d-none', !canEditUsers);
 
             var optionsHtml = canEditUsers ? buildReassignRoleOptions(roleId) : '';
             var rows = '';

@@ -159,8 +159,8 @@
                     <div class="p-4">
                         <!-- Tanpa akses "Pengguna|view": daftar user tidak boleh ditampilkan,
                              cukup jumlahnya saja. -->
-                        <div id="reassign_no_access_notice" class="d-flex align-items-start gap-2 p-3 mb-4 rounded border"
-                            style="display:none; background:#fff7ed; border-color:#fed7aa !important;">
+                        <div id="reassign_no_access_notice" class="d-none d-flex align-items-start gap-2 p-3 mb-4 rounded border"
+                            style="background:#fff7ed; border-color:#fed7aa !important;">
                             <i class="fe fe-alert-triangle text-warning mt-1"></i>
                             <div style="font-size:13px; color:#334155;">
                                 Peran ini masih dipakai oleh <strong id="reassign_no_access_count">0</strong> pengguna.
