@@ -31,8 +31,27 @@ class Category extends Model
         return $result;
     }
 
+    /**
+     * True kalau ada kategori aktif lain dengan nama yang sama (case-insensitive,
+     * trimmed). $excludeId dipakai saat update supaya baris itu sendiri tidak dianggap
+     * bentrok dengan dirinya sendiri.
+     */
+    function isDuplicateName($name, $excludeId = null)
+    {
+        $query = category::where('status', 1)
+            ->whereRaw('LOWER(TRIM(category_name)) = ?', [strtolower(trim($name))]);
+        if ($excludeId) {
+            $query->where('category_id', '!=', $excludeId);
+        }
+        return $query->exists();
+    }
+
     function insertCategory($data)
     {
+        if ($this->isDuplicateName($data["category_name"])) {
+            return response()->json(['message' => 'Nama kategori sudah digunakan'], 422);
+        }
+
         $t = new category();
         $t->category_name = $data["category_name"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
@@ -43,6 +62,12 @@ class Category extends Model
     function updateCategory($data)
     {
         $t = category::find($data["category_id"]);
+        if (!$t) return null;
+
+        if ($this->isDuplicateName($data["category_name"], $t->category_id)) {
+            return response()->json(['message' => 'Nama kategori sudah digunakan'], 422);
+        }
+
         $t->category_name = $data["category_name"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();

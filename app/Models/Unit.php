@@ -64,8 +64,27 @@ class Unit extends Model
             ->select(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
     }
 
+    /**
+     * True kalau ada satuan aktif lain dengan nama yang sama (case-insensitive,
+     * trimmed). $excludeId dipakai saat update supaya baris itu sendiri tidak dianggap
+     * bentrok dengan dirinya sendiri.
+     */
+    function isDuplicateName($name, $excludeId = null)
+    {
+        $query = self::where('status', 1)
+            ->whereRaw('LOWER(TRIM(unit_name)) = ?', [strtolower(trim($name))]);
+        if ($excludeId) {
+            $query->where('unit_id', '!=', $excludeId);
+        }
+        return $query->exists();
+    }
+
     function insertUnit($data)
     {
+        if ($this->isDuplicateName($data["unit_name"])) {
+            return response()->json(['message' => 'Nama satuan sudah digunakan'], 422);
+        }
+
         $t = new self();
         $t->unit_short_name = $data["unit_short_name"];
         $t->unit_name = $data["unit_name"];
@@ -77,6 +96,12 @@ class Unit extends Model
     function updateUnit($data)
     {
         $t = self::find($data["unit_id"]);
+        if (!$t) return null;
+
+        if ($this->isDuplicateName($data["unit_name"], $t->unit_id)) {
+            return response()->json(['message' => 'Nama satuan sudah digunakan'], 422);
+        }
+
         $t->unit_short_name = $data["unit_short_name"];
         $t->unit_name = $data["unit_name"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;

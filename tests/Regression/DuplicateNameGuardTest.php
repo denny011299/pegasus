@@ -4,6 +4,8 @@ namespace Tests\Regression;
 
 use App\Models\Bank;
 use App\Models\CashCategory;
+use App\Models\Category;
+use App\Models\Unit;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -15,6 +17,9 @@ use Tests\TestCase;
  * now reject a duplicate name (case-insensitive, trimmed, scoped to active/`status=1` rows) with a
  * 422 + message, matching the `response()->json(['message' => ...], 422)` convention used
  * elsewhere in this codebase.
+ *
+ * ✅ FIXED (GitHub #128, 2026-09-03): same bug in `Category::insertCategory()`/`updateCategory()`
+ * (Master Kategori) and `Unit::insertUnit()`/`updateUnit()` (Master Satuan) — mirrors the fix above.
  */
 class DuplicateNameGuardTest extends TestCase
 {
@@ -122,6 +127,93 @@ class DuplicateNameGuardTest extends TestCase
         $response->assertStatus(422);
         $categoryB->refresh();
         $this->assertSame('Regression Category B', $categoryB->cc_name);
+    }
+
+    public function test_inserting_a_category_with_a_duplicate_name_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $category = new Category();
+        $category->category_name = 'Regression Master Category Dup';
+        $category->status = 1;
+        $category->save();
+
+        $response = $this->post('/insertCategory', [
+            'category_name' => ' regression master category dup ',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertSame(1, Category::where('category_name', 'Regression Master Category Dup')->where('status', 1)->count());
+    }
+
+    public function test_updating_a_category_into_another_categorys_name_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $categoryA = new Category();
+        $categoryA->category_name = 'Regression Master Category A';
+        $categoryA->status = 1;
+        $categoryA->save();
+
+        $categoryB = new Category();
+        $categoryB->category_name = 'Regression Master Category B';
+        $categoryB->status = 1;
+        $categoryB->save();
+
+        $response = $this->post('/updateCategory', [
+            'category_id' => $categoryB->category_id,
+            'category_name' => 'Regression Master Category A',
+        ]);
+
+        $response->assertStatus(422);
+        $categoryB->refresh();
+        $this->assertSame('Regression Master Category B', $categoryB->category_name);
+    }
+
+    public function test_inserting_a_unit_with_a_duplicate_name_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $unit = new Unit();
+        $unit->unit_name = 'Regression Master Unit Dup';
+        $unit->unit_short_name = 'RMUD';
+        $unit->status = 1;
+        $unit->save();
+
+        $response = $this->post('/insertUnit', [
+            'unit_name' => ' regression master unit dup ',
+            'unit_short_name' => 'RMUD2',
+        ]);
+
+        $response->assertStatus(422);
+        $this->assertSame(1, Unit::where('unit_name', 'Regression Master Unit Dup')->where('status', 1)->count());
+    }
+
+    public function test_updating_a_unit_into_another_units_name_is_rejected(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $unitA = new Unit();
+        $unitA->unit_name = 'Regression Master Unit A';
+        $unitA->unit_short_name = 'RMUA';
+        $unitA->status = 1;
+        $unitA->save();
+
+        $unitB = new Unit();
+        $unitB->unit_name = 'Regression Master Unit B';
+        $unitB->unit_short_name = 'RMUB';
+        $unitB->status = 1;
+        $unitB->save();
+
+        $response = $this->post('/updateUnit', [
+            'unit_id' => $unitB->unit_id,
+            'unit_name' => 'Regression Master Unit A',
+            'unit_short_name' => 'RMUB',
+        ]);
+
+        $response->assertStatus(422);
+        $unitB->refresh();
+        $this->assertSame('Regression Master Unit B', $unitB->unit_name);
     }
 
     public function test_a_soft_deleted_bank_name_can_be_reused(): void
