@@ -353,8 +353,17 @@ class Bom extends Model
             if ($row->product_default_unit) {
                 $unitIdSet[(int) $row->product_default_unit] = true;
             }
+            $retailUnitId = isset($row->retail_unit) ? (int) $row->retail_unit : 0;
+            if ($retailUnitId > 0) {
+                $unitIdSet[$retailUnitId] = true;
+            }
             foreach ((array) (json_decode($row->product_unit, true) ?: []) as $unitId) {
-                $unitIdSet[(int) $unitId] = true;
+                $uid = is_array($unitId)
+                    ? (int) ($unitId['unit_id'] ?? $unitId['id'] ?? 0)
+                    : (int) $unitId;
+                if ($uid > 0) {
+                    $unitIdSet[$uid] = true;
+                }
             }
         }
         $unitsMap = $unitIdSet !== []
@@ -381,9 +390,36 @@ class Bom extends Model
             $row->unit_name = $bomUnit
                 ? ($bomUnit->unit_name ?? $bomUnit->unit_short_name ?? '-')
                 : '-';
-            $unitIds = (array) (json_decode($row->product_unit, true) ?: []);
-            $row->pr_unit = collect($unitIds)
-                ->map(fn ($id) => $unitsMap->get((int) $id))
+            // product_unit bisa kosong/inkonsisten — selalu sertakan default + satuan BOM
+            // supaya FE modal produksi punya opsi + nilai terpilih.
+            $unitIds = [];
+            foreach ((array) (json_decode($row->product_unit, true) ?: []) as $unitId) {
+                $uid = is_array($unitId)
+                    ? (int) ($unitId['unit_id'] ?? $unitId['id'] ?? 0)
+                    : (int) $unitId;
+                if ($uid > 0) {
+                    $unitIds[$uid] = true;
+                }
+            }
+            foreach ([$row->default_unit, $row->unit_id, $row->retail_unit] as $extraId) {
+                $uid = (int) ($extraId ?? 0);
+                if ($uid > 0) {
+                    $unitIds[$uid] = true;
+                }
+            }
+            $row->pr_unit = collect(array_keys($unitIds))
+                ->map(function ($id) use ($unitsMap) {
+                    $u = $unitsMap->get((int) $id);
+                    if (! $u) {
+                        return null;
+                    }
+
+                    return [
+                        'unit_id' => (int) $u->unit_id,
+                        'unit_name' => $u->unit_name ?? $u->unit_short_name ?? '-',
+                        'unit_short_name' => $u->unit_short_name ?? $u->unit_name ?? '-',
+                    ];
+                })
                 ->filter()
                 ->values();
             $row->product_status = (int) ($row->product_status ?? 0);

@@ -2,6 +2,15 @@ function initProductionFormAutocompletes() {
     if (typeof autocompleteBom !== "function") {
         return;
     }
+    var $product = $("#addProduction #product_id");
+    // Jangan destroy+reinit tiap shown — menghapus payload Select2 (pr_unit/bom_id)
+    // sehingga SATUAN kembali ke "Pilih Satuan" setelah buka ulang / pilih ulang.
+    if ($product.hasClass("select2-hidden-accessible")) {
+        if (typeof attachSelect2SearchOpenFix === "function") {
+            attachSelect2SearchOpenFix($product);
+        }
+        return;
+    }
     autocompleteBom("#addProduction #product_id", "body");
 }
 
@@ -11,6 +20,103 @@ function getSelect2FirstData($el) {
     }
     var data = $el.select2("data");
     return data && data.length ? data[0] : null;
+}
+
+function normalizeProductionPrUnitList(raw) {
+    if (Array.isArray(raw)) {
+        return raw;
+    }
+    if (raw && typeof raw === "object") {
+        return Object.keys(raw).map(function (k) {
+            return raw[k];
+        });
+    }
+    return [];
+}
+
+/** Isi #unit_id dari payload BOM; fallback ke default_unit / unit_id resep. */
+function populateProductionUnitSelect(data) {
+    var $unit = $("#addProduction #unit_id");
+    if (!$unit.length) {
+        return;
+    }
+    $unit.empty();
+    $("#production_pallet_hint").text("");
+
+    var seen = {};
+    var units = [];
+    function pushUnit(id, name) {
+        id = parseInt(id, 10);
+        if (!id || seen[id]) {
+            return;
+        }
+        seen[id] = true;
+        units.push({
+            unit_id: id,
+            unit_name: name || "#" + id,
+        });
+    }
+
+    normalizeProductionPrUnitList(data && data.pr_unit).forEach(function (u) {
+        if (!u) {
+            return;
+        }
+        pushUnit(
+            u.unit_id || u.id,
+            u.unit_name || u.unit_short_name || u.text,
+        );
+    });
+    if (data) {
+        pushUnit(data.default_unit, data.default_unit_name);
+        pushUnit(data.unit_id, data.unit_name);
+        pushUnit(data.retail_unit, data.retail_unit_name);
+    }
+
+    if (!units.length) {
+        $unit.append('<option selected value="">Pilih Satuan</option>');
+        syncProductionDestinationControl();
+        return;
+    }
+
+    units.forEach(function (element) {
+        $unit.append(
+            '<option value="' +
+                element.unit_id +
+                '">' +
+                element.unit_name +
+                "</option>",
+        );
+    });
+
+    var qtyPerPallet = parseInt((data && data.qty_per_pallet) || 0, 10) || 0;
+    if (qtyPerPallet > 0) {
+        var defaultUnitName =
+            (data && data.default_unit_name) ||
+            (units[0] && units[0].unit_name) ||
+            "DOS";
+        var defaultUnitId =
+            (data && (data.default_unit || data.unit_id)) || units[0].unit_id;
+        $unit.append(
+            '<option value="__PALLET__" data-qty-per-pallet="' +
+                qtyPerPallet +
+                '" data-default-unit-id="' +
+                defaultUnitId +
+                '" data-default-unit-name="' +
+                defaultUnitName +
+                '">PALLET (1 = ' +
+                qtyPerPallet +
+                " " +
+                defaultUnitName +
+                ")</option>",
+        );
+    }
+
+    var preferred = parseInt(
+        (data && (data.default_unit || data.unit_id)) || 0,
+        10,
+    );
+    var selected = seen[preferred] ? preferred : units[0].unit_id;
+    $unit.val(String(selected)).trigger("change");
 }
 
 $(document).on("shown.bs.modal", "#addProduction", initProductionFormAutocompletes);
@@ -27,6 +133,7 @@ var fixRecipeBahan = [];
 var fixRecipeBomId = null;
 var fixRecipeReturnToProduction = false;
 var fixRecipeOpenSeq = 0;
+var fixRecipeProductMeta = { relasi: [], pr_unit: [] };
 /** Stash when + Tambah gagal karena satuan resep; di-retry setelah Update Resep sukses. */
 var pendingProductionAdd = null;
 
@@ -124,8 +231,9 @@ function syncProductionDestinationControl() {
 }
 
 function resetProductionProductUnitSelect() {
-    $("#unit_id").html("");
-    $("#unit_id").append("<option selected>Pilih Satuan</option>");
+    var $unit = $("#addProduction #unit_id");
+    $unit.html("");
+    $unit.append('<option selected value="">Pilih Satuan</option>');
     $("#production_pallet_hint").text("");
     syncProductionDestinationControl();
 }
@@ -800,11 +908,13 @@ function populateFixRecipeUnitSelect(data) {
             smallestShort = last.pr_unit_name_2;
         }
 
+        // Mismatch: current + terkecil both selectable (no disabled-selected —
+        // that made .val() null / kept wrong unit when field was hidden).
         if (data.unit_name && String(data.unit_id) !== String(smallestId)) {
             $unit.append(
                 '<option value="' +
                     data.unit_id +
-                    '" disabled selected>' +
+                    '" selected>' +
                     data.unit_name +
                     "</option>",
             );
@@ -840,7 +950,17 @@ function populateFixRecipeUnitSelect(data) {
         });
     }
 
-    renderFixRecipeProductUnitInfo(data.relasi, data.unit_name, data.pr_unit);
+    fixRecipeProductMeta = {
+        relasi: data.relasi || [],
+        pr_unit: data.pr_unit || [],
+    };
+    var selectedName =
+        $unit.find("option:selected").text() || data.unit_name || "";
+    renderFixRecipeProductUnitInfo(
+        fixRecipeProductMeta.relasi,
+        selectedName,
+        fixRecipeProductMeta.pr_unit,
+    );
 }
 
 function fillFixRecipeBomModal(data) {
@@ -1224,10 +1344,8 @@ function continueAddProduct(tempBom) {
             }
 
             clearProductionProductSelect();
-            $("#unit_id").empty();
-            $("#unit_id").append("<option selected>Pilih Satuan</option>");
+            resetProductionProductUnitSelect();
             $("#production_qty").val(1);
-            $("#production_pallet_hint").text("");
             $("#production_destination_warehouse_id")
                 .val(null)
                 .trigger("change");
@@ -1273,8 +1391,7 @@ $(document).on("click", ".btnAdd", function () {
     $("#col-production-date").removeClass("col-lg-3").addClass("col-lg-6");
     $("#col-production-desc").removeClass("col-lg-3 col-lg-6 col-lg-9 col-12").addClass("col-lg-6");
     $("#production_status_display").html("");
-    $("#unit_id").html("");
-    $("#unit_id").append("<option selected>Pilih Satuan</option>");
+    resetProductionProductUnitSelect();
     $(".input_table, .add, .btn_delete_row_pr").show();
     setProductionSaveVisible(true, "Tambah Produksi");
     $("#production_desc").attr("disabled", false);
@@ -1315,8 +1432,9 @@ $(document).on("change", "#production_date", function () {
 function updateProductionPalletHint() {
     var $hint = $("#production_pallet_hint");
     if (!$hint.length) return;
-    var selected = $("#unit_id option:selected");
-    if (String($("#unit_id").val()) !== "__PALLET__") {
+    var $unit = $("#addProduction #unit_id");
+    var selected = $unit.find("option:selected");
+    if (String($unit.val()) !== "__PALLET__") {
         $hint.text("");
         return;
     }
@@ -1330,13 +1448,16 @@ function updateProductionPalletHint() {
     $hint.text("= " + qty * per + " " + unitName);
 }
 
-$(document).on("change", "#product_id", function () {
+$(document).on("change", "#addProduction #product_id", function () {
     var data = $(this).select2("data")[0];
+    var bomId = data && (data.bom_id || data.id);
 
-    if (!data || !data.bom_id) {
+    if (!data || !bomId) {
         resetProductionProductUnitSelect();
         return;
     }
+    // Pastikan payload selalu punya bom_id (Select2 kadang hanya set id).
+    data.bom_id = data.bom_id || bomId;
 
     // Blokir jika produk / varian sudah tidak aktif
     if (data.product_status == 0 || data.product_variant_status == 0) {
@@ -1355,30 +1476,11 @@ $(document).on("change", "#product_id", function () {
         return;
     }
 
-    var units = Array.isArray(data.pr_unit) ? data.pr_unit : [];
-    $("#unit_id").html("");
-    units.forEach(function (element) {
-        $("#unit_id").append(
-            `<option value="${element.unit_id}">${element.unit_name}</option>`,
-        );
-    });
-    // Shortcut Produksi: input Pallet → convert ke satuan default (DOS/dll)
-    var qtyPerPallet = parseInt(data.qty_per_pallet, 10) || 0;
-    if (qtyPerPallet > 0) {
-        var defaultUnitName = data.default_unit_name || "DOS";
-        $("#unit_id").append(
-            `<option value="__PALLET__" data-qty-per-pallet="${qtyPerPallet}" data-default-unit-id="${data.default_unit || data.unit_id}" data-default-unit-name="${defaultUnitName}">PALLET (1 = ${qtyPerPallet} ${defaultUnitName})</option>`,
-        );
-    }
-    $("#unit_id")
-        .val(data.default_unit || data.unit_id)
-        .trigger("change");
-    $("#pi_unit option").first().prop("selected", true);
-
+    populateProductionUnitSelect(data);
     $("#production_qty").trigger("keyup");
 });
 
-$(document).on("change", "#unit_id", function () {
+$(document).on("change", "#addProduction #unit_id", function () {
     updateProductionPalletHint();
     syncProductionDestinationControl();
 });
@@ -2436,6 +2538,15 @@ $(document).on("click", ".btn-close-fix-recipe", function () {
     } else {
         $("#fixRecipeBom").modal("hide");
     }
+});
+
+$(document).on("change", "#fix_recipe_unit_id", function () {
+    var selectedName = $(this).find("option:selected").text() || "";
+    renderFixRecipeProductUnitInfo(
+        fixRecipeProductMeta.relasi,
+        selectedName,
+        fixRecipeProductMeta.pr_unit,
+    );
 });
 
 $("#fixRecipeBom").on("hidden.bs.modal", function () {

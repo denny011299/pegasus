@@ -16,6 +16,14 @@
     font-size: 0.95rem;
     line-height: 1.3;
   }
+  #fixRecipeBom #fix_recipe_product_unit_info {
+    font-size: 0.7rem;
+    line-height: 1.25;
+    margin-top: 2px !important;
+  }
+  #fixRecipeBom #fix_recipe_bom_qty {
+    max-width: none;
+  }
   #fixRecipeBom #fix_recipe_tableSupply {
     margin-bottom: 0;
     font-size: 0.875rem;
@@ -112,15 +120,24 @@
         <div class="modal-body">
           <div class="form-groups-item border-0 pb-0">
             <div class="row g-2">
-              <div class="col-12 mb-1">
+              <div class="col-12 col-md-7 mb-1">
                 <div class="input-block mb-0">
-                  <label class="text-muted mb-0" style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:.03em;">Produk</label>
-                  <div id="fix_recipe_product_label" class="fw-semibold"></div>
-                  {{-- Kept for updateProductionBom payload; not shown in fix-from-error flow --}}
+                  <label>Produk<span class="text-danger">*</span></label>
+                  <div id="fix_recipe_product_label" class="fw-semibold form-control-plaintext py-1"></div>
+                  {{-- Product fixed in fix-from-error flow; keep select for updateProductionBom payload --}}
                   <select class="d-none fix-recipe-fill" id="fix_recipe_product_id" disabled></select>
-                  <input type="hidden" class="fix-recipe-fill number-only" id="fix_recipe_bom_qty" value="">
-                  <select class="d-none fix-recipe-fill" id="fix_recipe_unit_id"></select>
-                  <div id="fix_recipe_product_unit_info" class="d-none"></div>
+                </div>
+              </div>
+
+              <div class="col-12 col-md-5 mb-1">
+                <div class="input-block mb-0">
+                  <label>Qty Produksi<span class="text-danger">*</span></label>
+                  <div class="input-group input-group-sm">
+                    <input type="text" class="form-control fix-recipe-fill number-only" id="fix_recipe_bom_qty"
+                      placeholder="Qty" value="">
+                    <select class="form-select fix-recipe-fill" id="fix_recipe_unit_id" style="max-width:42%;"></select>
+                  </div>
+                  <div id="fix_recipe_product_unit_info" class="mt-1" style="display:none;"></div>
                 </div>
               </div>
 
