@@ -637,7 +637,7 @@ class CustomerReturnController extends Controller
      *
      * @return array<int, string>
      */
-    private function returnGroupsForWarehouse(int $warehouseId): array
+    private function returnGroupsForWarehouse(int $warehouseId, bool $activeIsMain): array
     {
         if ($warehouseId <= 0) {
             return [];
@@ -654,12 +654,11 @@ class CustomerReturnController extends Controller
 
         $fromProduct = DB::table('customer_product_return_details as d')
             ->join('customer_product_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNotNull('h.return_group')
-            ->distinct()
-            ->pluck('h.return_group');
+            ->whereNotNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($fromProduct, 'd', $warehouseId, $activeIsMain);
+        $fromProduct = $fromProduct->distinct()->pluck('h.return_group');
 
         return $fromSupply->merge($fromProduct)->filter()->unique()->values()->all();
     }
@@ -688,22 +687,48 @@ class CustomerReturnController extends Controller
     /**
      * @return array<int, int>
      */
-    private function standaloneProductReturnIdsForWarehouse(int $warehouseId): array
+    private function standaloneProductReturnIdsForWarehouse(int $warehouseId, bool $activeIsMain): array
     {
         if ($warehouseId <= 0) {
             return [];
         }
 
-        return DB::table('customer_product_return_details as d')
+        $query = DB::table('customer_product_return_details as d')
             ->join('customer_product_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNull('h.return_group')
-            ->distinct()
+            ->whereNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($query, 'd', $warehouseId, $activeIsMain);
+
+        return $query->distinct()
             ->pluck('d.return_id')
             ->map(fn ($id) => (int) $id)
             ->all();
+    }
+
+    /**
+     * Produk eceran: stok masuk gudang utama (warehouse_id), ST ke eceran (destination_warehouse_id).
+     * Gudang eceran aktif → tampilkan lewat destination; gudang utama → sembunyikan yang punya destinasi eceran.
+     */
+    private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
+    {
+        $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
+        if (! $activeIsMain && $hasDest) {
+            $query->where(function ($scoped) use ($alias, $warehouseId) {
+                $scoped->where("{$alias}.warehouse_id", $warehouseId)
+                    ->orWhere("{$alias}.destination_warehouse_id", $warehouseId);
+            });
+
+            return;
+        }
+
+        $query->where("{$alias}.warehouse_id", $warehouseId);
+        if ($hasDest) {
+            $query->where(function ($scoped) use ($alias) {
+                $scoped->whereNull("{$alias}.destination_warehouse_id")
+                    ->orWhere("{$alias}.destination_warehouse_id", 0);
+            });
+        }
     }
 
     private function applyWarehouseScope($query, string $alias, int $warehouseId): void
@@ -714,10 +739,12 @@ class CustomerReturnController extends Controller
             return;
         }
 
-        $groups = $this->returnGroupsForWarehouse($warehouseId);
+        $activeCtx = $this->activeWarehouseContext();
+        $activeIsMain = ($activeCtx['is_main_warehouse'] ?? 1) === 1;
+        $groups = $this->returnGroupsForWarehouse($warehouseId, $activeIsMain);
         $standaloneIds = $alias === 'csr'
             ? $this->standaloneSupplyReturnIdsForWarehouse($warehouseId)
-            : $this->standaloneProductReturnIdsForWarehouse($warehouseId);
+            : $this->standaloneProductReturnIdsForWarehouse($warehouseId, $activeIsMain);
 
         if ($groups === [] && $standaloneIds === []) {
             $query->whereRaw('1 = 0');

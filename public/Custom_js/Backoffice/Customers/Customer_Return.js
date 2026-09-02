@@ -1062,7 +1062,7 @@
                 }
 
                 var number = record.return_number || key;
-                if (mode === "view") {
+                if (mode === "confirm") {
                     $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
                     $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
                     $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
@@ -1074,8 +1074,18 @@
                         setCrModalMode("confirm");
                         $("#customer-return-modal .modal-title").text("Konfirmasi Pengembalian " + number);
                     } else {
+                        $("#cr-accept,#cr-decline").addClass("d-none");
                         setCrModalMode("form");
                     }
+                } else if (mode === "view") {
+                    $("#customer-return-modal .modal-title").text("Detail Pengembalian " + number);
+                    $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
+                    $("#cr-customer,#cr-qc-staff,#cr-supply,#cr-supply-unit,#cr-product,#cr-product-unit").prop("disabled", true);
+                    $("#cr-btn-upload-proof").addClass("d-none");
+                    $("#cr-add-strip,#cr-save").addClass("d-none");
+                    $("#cr-accept,#cr-decline").addClass("d-none");
+                    $("#cr-print").toggleClass("d-none", parseInt(record.status, 10) !== 2);
+                    setCrModalMode("form");
                 } else {
                     $("#customer-return-modal .modal-title").text("Edit Pengembalian " + number);
                     $("#cr-save").text("Update");
@@ -1191,6 +1201,7 @@
             }
             return;
         }
+        $("#customer-return-modal").modal("hide");
         showModalKonfirmasi(detail, btnId);
         $("#" + btnId)
             .attr("data-key", key)
@@ -1526,7 +1537,8 @@
             if (!key) return;
             window.open("/customerReturns/" + encodeURIComponent(key) + "/print", "_blank");
         }
-        $(document).on("click", ".cr-view, .cr-confirm", function () { openRecord($(this).data("key"), "view"); });
+        $(document).on("click", ".cr-view", function () { openRecord($(this).data("key"), "view"); });
+        $(document).on("click", ".cr-confirm", function () { openRecord($(this).data("key"), "confirm"); });
         $(document).on("click", ".cr-print", function (event) {
             event.preventDefault();
             event.stopPropagation();
