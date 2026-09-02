@@ -2,19 +2,51 @@
     var tablePayables, tableReceiveables;
     var tandaTerima=[];
     var dates = null;
+    var payablesXhr = null;
+    var payablesTableReady = false;
+
+    function payablesWrap() {
+        return $('#tablePayables-wrap');
+    }
+
+    function setPayablesTableLoading(isLoading) {
+        var $wrap = payablesWrap();
+        if (!$wrap.length) return;
+        $wrap.toggleClass('is-loading', !!isLoading);
+    }
+
+    function showPayablesSkeleton() {
+        var $wrap = payablesWrap();
+        if (!payablesTableReady || !tablePayables) {
+            $wrap.removeClass('dt-ready is-loading').addClass('dt-pending');
+        } else {
+            $wrap.removeClass('dt-pending').addClass('dt-ready');
+            setPayablesTableLoading(true);
+        }
+    }
+
+    function hidePayablesSkeleton() {
+        payablesTableReady = true;
+        setPayablesTableLoading(false);
+        payablesWrap().removeClass('dt-pending is-loading').addClass('dt-ready');
+    }
 
     autocompleteRekening("#bank_kode");
     autocompleteSupplier("#supplier");
     $(document).ready(function(){
+        showPayablesSkeleton();
         inisialisasi();
         refreshPayReceive();
     });
     
     function inisialisasi() {
         tablePayables = $('#tablePayables').DataTable({
+            processing: true,
+            deferRender: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
             ordering: true,
             order: [], // QC#11: jangan sort kolom checkbox; pertahankan urutan SQL FIELD(pembayaran, 1, 3, 2)
             searching: false,
@@ -23,6 +55,7 @@
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Hutang",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing: '<div class="d-flex align-items-center gap-2"><span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span><span>Memuat data...</span></div>',
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
@@ -32,10 +65,20 @@
                 $(row).addClass('row-payables');
             },
             columns: [
-                { data: "check", orderable: false },
-                { data: "bank_kode" },
+                { data: "check", orderable: false, className: "text-center align-middle" },
+                { 
+                    data: "bank_kode",
+                    className: "align-middle",
+                    render: function (data) {
+                        if (!data || data === "-") return '<span class="text-muted">-</span>';
+                        return `<div style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:6px;background:#f8fafc;border:1px solid #e2e8f0;font-weight:600;font-size:12px;color:#1e293b;">
+                                    <i class="fe fe-credit-card text-primary" style="font-size:12px;"></i> ${data}
+                                </div>`;
+                    }
+                },
                 { 
                     data: "date",
+                    className: "align-middle text-nowrap",
                     render: function(data, type, row) {
                         if (type === 'sort') {
                             return row.po_date ?? data; // pakai date_raw kalau ada
@@ -45,6 +88,7 @@
                 },
                 { 
                     data: "date_due_date",
+                    className: "align-middle text-nowrap",
                     render: function(data, type, row) {
                         if (type === 'sort') {
                             return row.poi_due ?? data; // pakai date_raw kalau ada
@@ -52,10 +96,22 @@
                         return data;
                     }
                 },
-                { data: "poi_code" },
-                { data: "supplier_name" },
-                { data: "poi_total_text" },
-                { data: "status_text" },
+                { 
+                    data: "poi_code",
+                    className: "align-middle font-monospace fw-semibold text-dark"
+                },
+                { 
+                    data: "supplier_name",
+                    className: "align-middle fw-semibold text-dark"
+                },
+                { 
+                    data: "poi_total_text",
+                    className: "align-middle fw-bold text-dark text-nowrap"
+                },
+                { 
+                    data: "status_text",
+                    className: "align-middle text-center"
+                },
                 { data: "action", class: "text-center align-middle" },
             ],
             initComplete: (settings, json) => {
@@ -63,12 +119,21 @@
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
+            drawCallback: function () {
+                if (typeof feather !== 'undefined') feather.replace();
+            },
         });
 
     }
 
     function refreshPayReceive() {
-         $.ajax({
+        if (payablesXhr && payablesXhr.readyState !== 4) {
+            payablesXhr.abort();
+        }
+
+        showPayablesSkeleton();
+
+        payablesXhr = $.ajax({
             url: "/getPoInvoice",
             method: "get",
             data: {
@@ -89,7 +154,7 @@
                     // QC#9: checkbox hanya untuk Belum Terbayar (bukan Ditolak/Terbayar/Menunggu TT)
                     e[i].can_tt = canSelectForTandaTerima(e[i]);
                     e[i].check = e[i].can_tt
-                        ? `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}" poi_id="${e[i].poi_id}" />`
+                        ? `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}" poi_id="${e[i].poi_id}" style="cursor:pointer;" />`
                         : '';
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
@@ -97,18 +162,18 @@
                     total += parseInt(e[i].poi_total);
                     
                     if (e[i].pembayaran == 1 && e[i].status == 1){
-                        e[i].status_text = `<span class="badge bg-warning" style="font-size: 12px">Belum Terbayar</span>`;
+                        e[i].status_text = `<span class="badge" style="background:#fef3c7;color:#92400e;border:1px solid #fde68a;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Belum Terbayar</span>`;
                     } else if (e[i].pembayaran == 2){
-                        e[i].status_text = `<span class="badge bg-success" style="font-size: 12px">Terbayar</span>`;
+                        e[i].status_text = `<span class="badge" style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Terbayar</span>`;
                     } else if (e[i].pembayaran == 3) {
-                        e[i].status_text = `<span class="badge bg-primary" style="font-size: 12px">Menunggu Tanda Terima</span>`;
+                        e[i].status_text = `<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Menunggu Tanda Terima</span>`;
                     } else {
-                        e[i].status_text = `<span class="badge bg-danger" style="font-size: 12px">Ditolak</span>`;
+                        e[i].status_text = `<span class="badge" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;">Ditolak</span>`;
                     }
                     e[i].action = hasAccessAction("Hutang", "view")
                         ? '<a href="/purchaseOrderDetailHutang/' +
                           e[i].po_id +
-                          '" class="me-2 btn-action-icon p-2 btn_edit_invoice"><i class="fe fe-eye"></i></a>'
+                          '" class="btn-action-icon btn_edit_invoice" style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:inline-flex;align-items:center;justify-content:center;color:#2563eb;transition:all 0.2s;" title="Lihat Detail"><i class="fe fe-eye"></i></a>'
                         : '<span class="text-muted small">—</span>';
                 }
 
@@ -119,8 +184,14 @@
                 $('#totalInvoice').html(e.length);
             },
             error: function (err) {
+                if (err && err.statusText === 'abort') return;
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
+            },
+            complete: function (_xhr, status) {
+                if (status === 'abort') return;
+                hidePayablesSkeleton();
+                if (tablePayables) tablePayables.columns.adjust();
             }
         });
     }
