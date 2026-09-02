@@ -1001,7 +1001,17 @@
         crContext = null;
         crExistingProofUrl = "";
         $("#cr-doc-key,#cr-ref-number,#cr-notes,#cr-supply-qty,#cr-product-qty").val("");
-        $("#cr-date").val(new Date().toISOString().slice(0, 10));
+        // Lokal (WIB), bukan toISOString/UTC — dini hari UTC+7 jangan jadi kemarin.
+        $("#cr-date").val(
+            typeof moment === "function"
+                ? moment().format("YYYY-MM-DD")
+                : (function () {
+                      var d = new Date();
+                      var mm = String(d.getMonth() + 1).padStart(2, "0");
+                      var dd = String(d.getDate()).padStart(2, "0");
+                      return d.getFullYear() + "-" + mm + "-" + dd;
+                  })()
+        );
         $("#cr-proof-camera,#cr-proof-file").val("");
         $("#cr-check-foto,#cr-btn-view-proof").addClass("d-none");
         $("#cr-proof-preview").attr("src", "");

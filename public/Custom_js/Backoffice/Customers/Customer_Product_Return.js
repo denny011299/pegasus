@@ -368,7 +368,16 @@
         cprContext = null;
         cprExistingProofUrl = "";
         $("#cpr-id,#cpr-ref-number,#cpr-notes,#cpr-qty").val("");
-        $("#cpr-date").val(new Date().toISOString().slice(0, 10));
+        $("#cpr-date").val(
+            typeof moment === "function"
+                ? moment().format("YYYY-MM-DD")
+                : (function () {
+                      var d = new Date();
+                      var mm = String(d.getMonth() + 1).padStart(2, "0");
+                      var dd = String(d.getDate()).padStart(2, "0");
+                      return d.getFullYear() + "-" + mm + "-" + dd;
+                  })()
+        );
         $("#cpr-proof-camera,#cpr-proof-file").val("");
         $("#cpr-check-foto,#cpr-btn-view-proof").addClass("d-none");
         $("#cpr-proof-preview").attr("src", "");

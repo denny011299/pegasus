@@ -366,7 +366,16 @@
         csrContext = null;
         csrExistingProofUrl = "";
         $("#csr-id,#csr-ref-number,#csr-notes,#csr-qty").val("");
-        $("#csr-date").val(new Date().toISOString().slice(0, 10));
+        $("#csr-date").val(
+            typeof moment === "function"
+                ? moment().format("YYYY-MM-DD")
+                : (function () {
+                      var d = new Date();
+                      var mm = String(d.getMonth() + 1).padStart(2, "0");
+                      var dd = String(d.getDate()).padStart(2, "0");
+                      return d.getFullYear() + "-" + mm + "-" + dd;
+                  })()
+        );
         $("#csr-proof-camera,#csr-proof-file").val("");
         $("#csr-check-foto,#csr-btn-view-proof").addClass("d-none");
         $("#csr-proof-preview").attr("src", "");
