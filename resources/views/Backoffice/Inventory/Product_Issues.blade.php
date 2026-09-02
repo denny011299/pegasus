@@ -125,18 +125,22 @@
                         @endslot
                 @endcomponent
             <!-- /Page Header -->
-             <ul class="nav nav-pills navtab-bg mt-md-0 mt-3">
-                    <li class="nav-item nav-jenis" tipe="1" >
-                        <a href="#return" data-bs-toggle="tab" class="nav-link active"style="border-radius: 10px">
-                            Dikembalikan
-                        </a>
+            <div class="d-flex mb-2">
+                <ul class="nav custom-premium-tabs" id="product-issue-tabs" role="tablist">
+                    <li class="nav-item nav-jenis" tipe="1" role="presentation">
+                        <button class="nav-link nav-jenis active d-flex align-items-center gap-2" tipe="1" id="return-tab" data-bs-toggle="tab"
+                            data-bs-target="#return" type="button" role="tab">
+                            <i class="fe fe-corner-down-left"></i> Dikembalikan
+                        </button>
                     </li>
-                    <li class="nav-item nav-jenis"  tipe="2">
-                        <a href="#damage" data-bs-toggle="tab" class="nav-link" style="border-radius: 10px">
-                            Rusak / Hangus
-                        </a>
+                    <li class="nav-item nav-jenis" tipe="2" role="presentation">
+                        <button class="nav-link nav-jenis d-flex align-items-center gap-2" tipe="2" id="damage-tab" data-bs-toggle="tab"
+                            data-bs-target="#damage" type="button" role="tab">
+                            <i class="fe fe-alert-triangle"></i> Rusak / Hangus
+                        </button>
                     </li>
                 </ul>
+            </div>
             <!-- Search Filter -->
             @component('components.search-filter')
             @endcomponent
