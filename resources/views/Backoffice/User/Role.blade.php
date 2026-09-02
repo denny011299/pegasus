@@ -157,26 +157,39 @@
                 </div>
                 <div class="modal-body p-0 bg-light">
                     <div class="p-4">
-                        <div class="d-flex align-items-center gap-2 mb-3">
-                            <i class="fe fe-users text-primary"></i>
-                            <span class="fw-bold text-dark" style="font-size:14px;">Pengguna yang memakai peran ini</span>
+                        <!-- Tanpa akses "Pengguna|view": daftar user tidak boleh ditampilkan,
+                             cukup jumlahnya saja. -->
+                        <div id="reassign_no_access_notice" class="d-flex align-items-start gap-2 p-3 rounded border"
+                            style="display:none; background:#fff7ed; border-color:#fed7aa !important;">
+                            <i class="fe fe-alert-triangle text-warning mt-1"></i>
+                            <div style="font-size:13px; color:#334155;">
+                                Peran ini masih dipakai oleh <strong id="reassign_no_access_count">0</strong> pengguna.
+                                Menghapus peran akan melepas peran tersebut dari pengguna-pengguna itu.
+                            </div>
                         </div>
-                        <div class="table-responsive rounded border bg-white">
-                            <table class="table table-center custom-table-scroll mb-0" id="tableReassignRoleUsers">
-                                <thead style="background: #f1f5f9;">
-                                    <tr>
-                                        <th style="width: 45%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">
-                                            Nama Pengguna</th>
-                                        <th style="width: 55%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">
-                                            Peran Pengganti</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="reassign_role_users_body">
-                                    <tr class="pg-popup-table-empty">
-                                        <td colspan="2">Memuat daftar pengguna...</td>
-                                    </tr>
-                                </tbody>
-                            </table>
+
+                        <div id="reassign_table_section">
+                            <div class="d-flex align-items-center gap-2 mb-3">
+                                <i class="fe fe-users text-primary"></i>
+                                <span class="fw-bold text-dark" style="font-size:14px;">Pengguna yang memakai peran ini</span>
+                            </div>
+                            <div class="table-responsive rounded border bg-white">
+                                <table class="table table-center custom-table-scroll mb-0" id="tableReassignRoleUsers">
+                                    <thead style="background: #f1f5f9;">
+                                        <tr>
+                                            <th id="reassign_col_name_header" style="width: 45%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                                Nama Pengguna</th>
+                                            <th id="reassign_col_role_header" style="width: 55%; padding: 12px 16px; color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">
+                                                Peran Pengganti</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="reassign_role_users_body">
+                                        <tr class="pg-popup-table-empty">
+                                            <td colspan="2">Memuat daftar pengguna...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

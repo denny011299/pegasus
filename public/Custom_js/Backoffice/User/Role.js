@@ -233,22 +233,43 @@
         return options;
     }
 
-    function openReassignModal(roleId, roleName, users) {
+    function openReassignModal(roleId, roleName, users, staffCount) {
         $('#reassign_role_name').text(roleName || "-");
-        var optionsHtml = buildReassignRoleOptions(roleId);
-        var rows = '';
-        for (var i = 0; i < users.length; i++) {
-            var u = users[i];
-            rows +=
-                '<tr data-staff-id="' + u.staff_id + '">' +
-                '<td>' + $('<div>').text(u.staff_name).html() + '</td>' +
-                '<td><select class="form-select reassign-role-select">' + optionsHtml + '</select></td>' +
-                '</tr>';
+
+        // Kontrol akses (GitHub #124): tanpa "Pengguna|view" daftar user tidak
+        // boleh ditampilkan sama sekali, hanya jumlahnya. Dengan "view" tapi
+        // tanpa "edit", daftar boleh tampil tapi kolom Peran Pengganti tidak
+        // (user tidak boleh mengubah peran pengguna lain tanpa akses edit).
+        var canViewUsers = hasAccessAction("Pengguna", "view");
+        var canEditUsers = hasAccessAction("Pengguna", "edit");
+
+        if (!canViewUsers) {
+            $('#reassign_no_access_count').text(staffCount != null ? staffCount : (users || []).length);
+            $('#reassign_no_access_notice').show();
+            $('#reassign_table_section').hide();
+            $('#reassign_role_users_body').html('');
+        } else {
+            $('#reassign_no_access_notice').hide();
+            $('#reassign_table_section').show();
+            $('#reassign_col_role_header').toggle(canEditUsers);
+
+            var optionsHtml = canEditUsers ? buildReassignRoleOptions(roleId) : '';
+            var rows = '';
+            for (var i = 0; i < users.length; i++) {
+                var u = users[i];
+                rows += '<tr data-staff-id="' + u.staff_id + '">';
+                rows += '<td>' + $('<div>').text(u.staff_name).html() + '</td>';
+                if (canEditUsers) {
+                    rows += '<td><select class="form-select reassign-role-select">' + optionsHtml + '</select></td>';
+                }
+                rows += '</tr>';
+            }
+            if (!rows) {
+                rows = '<tr class="pg-popup-table-empty"><td colspan="2">Tidak ada pengguna yang memakai peran ini.</td></tr>';
+            }
+            $('#reassign_role_users_body').html(rows);
         }
-        if (!rows) {
-            rows = '<tr class="pg-popup-table-empty"><td colspan="2">Tidak ada pengguna yang memakai peran ini.</td></tr>';
-        }
-        $('#reassign_role_users_body').html(rows);
+
         $('#btn-confirm-reassign-delete-role').attr("role_id", roleId);
         $('.modal').modal("hide");
         $('#role_reassign_modal').modal("show");
@@ -256,7 +277,8 @@
 
     // Dropdown peran pengganti dibuat searchable (select2), sama seperti pola
     // #staff_position di insertStaff.js — lokal, bukan AJAX, karena daftar
-    // peran sudah dimuat lewat refreshRole().
+    // peran sudah dimuat lewat refreshRole(). Hanya ada kalau user punya akses
+    // "Pengguna|edit" (lihat openReassignModal).
     $('#role_reassign_modal').on('shown.bs.modal', function () {
         $('#reassign_role_users_body .reassign-role-select').each(function () {
             if (!$(this).hasClass('select2-hidden-accessible')) {
@@ -292,7 +314,7 @@
                     if (e.need_confirmation) {
                         // Ada pengguna yang masih memakai peran ini, minta pilihan
                         // peran pengganti per pengguna sebelum benar-benar dihapus.
-                        openReassignModal(roleId, $('#btn-delete-role').attr('role_name'), e.users || []);
+                        openReassignModal(roleId, $('#btn-delete-role').attr('role_name'), e.users || [], e.staff_count);
                         return;
                     }
                     $('.modal').modal("hide");

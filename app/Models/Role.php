@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RoleAccess;
 use App\Support\RoleIds;
 use Illuminate\Database\Eloquent\Model;
 
@@ -109,17 +110,24 @@ class Role extends Model
             ->where('role_id', $roleId)
             ->get(['staff_id', 'role_id']);
 
+        // GitHub #124: siapa yang boleh melihat/mengganti daftar pengguna terdampak
+        // mengikuti akses modul "Pengguna" milik SI PENGHAPUS peran, bukan "Peran &
+        // Perizinan" (yang dia jelas punya, karena sedang menghapus peran).
+        $currentUser = RoleAccess::userFromSession();
+        $canViewUsers = RoleAccess::can($currentUser, 'Pengguna', 'view');
+        $canEditUsers = RoleAccess::can($currentUser, 'Pengguna', 'edit');
+
         if ($affectedStaff->count() > 0 && !array_key_exists('reassignments', $data)) {
             return [
                 'status' => -1,
                 'need_confirmation' => true,
                 'staff_count' => $affectedStaff->count(),
-                'users' => (new self())->getRoleUsers($roleId),
+                'users' => $canViewUsers ? (new self())->getRoleUsers($roleId) : [],
                 'message' => "Masih ada {$affectedStaff->count()} pengguna yang memakai peran ini. Pilih peran pengganti untuk tiap pengguna (boleh dikosongkan), lalu hapus peran.",
             ];
         }
 
-        $reassignments = $data['reassignments'] ?? [];
+        $reassignments = $canEditUsers ? ($data['reassignments'] ?? []) : [];
         if (is_string($reassignments)) {
             $decoded = json_decode($reassignments, true);
             $reassignments = is_array($decoded) ? $decoded : [];
