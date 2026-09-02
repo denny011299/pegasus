@@ -20,7 +20,11 @@ class PurchaseOrderDetailInvoice extends Model
     ];
 
     // === GET DATA ===
-    function getPoInvoice($data = [])
+    /**
+     * Base Hutang/invoice list query (filters only — no order/select/get).
+     * Date semantics: only start → through today; only end → from beginning; both → range; neither → no date filter.
+     */
+    public static function queryPoInvoice(array $data = [])
     {
         $data = array_merge([
             "poi_id" => null,
@@ -31,10 +35,10 @@ class PurchaseOrderDetailInvoice extends Model
             "dates" => null,
         ], $data);
 
-        $result = PurchaseOrderDetailInvoice::where('purchase_order_detail_invoices.status','>=',0);
-        $result->join('purchase_orders','purchase_orders.po_id','=','purchase_order_detail_invoices.po_id');
-        $result->where('purchase_orders.status','>=',-1)->where('purchase_orders.status', '!=', 0);
-        
+        $result = PurchaseOrderDetailInvoice::where('purchase_order_detail_invoices.status', '>=', 0);
+        $result->join('purchase_orders', 'purchase_orders.po_id', '=', 'purchase_order_detail_invoices.po_id');
+        $result->where('purchase_orders.status', '>=', -1)->where('purchase_orders.status', '!=', 0);
+
         if ($data["poi_id"]) {
             $result->where("purchase_order_detail_invoices.poi_id", "=", $data["poi_id"]);
         }
@@ -42,44 +46,84 @@ class PurchaseOrderDetailInvoice extends Model
         if ($data["po_id"]) {
             $result->where("purchase_order_detail_invoices.po_id", "=", $data["po_id"]);
         }
-        
+
         if ($data["bank_id"]) {
             $result->where("purchase_order_detail_invoices.bank_id", "=", $data["bank_id"]);
         }
-        
+
         if ($data["status"]) {
-            if ($data["status"] == 5){
+            if ($data["status"] == 5) {
                 $result->where('purchase_orders.status', -1);
-            } else{
+            } else {
                 $result->where("purchase_orders.pembayaran", "=", $data["status"])->where("purchase_orders.status", '>', 0);
             }
         }
-        
+
         if ($data["po_supplier"]) {
             $result->where("purchase_orders.po_supplier", "=", $data["po_supplier"]);
         }
 
-        if ($data["dates"]) {
-            if (is_array($data["dates"]) && count($data["dates"]) === 2) {
-                $startDate = \Carbon\Carbon::parse($data["dates"][0])->startOfDay();
-                $endDate   = \Carbon\Carbon::parse($data["dates"][1])->endOfDay();
+        self::applyPoInvoiceDateFilter($result, $data["dates"] ?? null);
 
-                $result->whereDate('purchase_orders.po_date', '>=', $startDate->toDateString())
-                        ->whereDate('purchase_orders.po_date', '<=', $endDate->toDateString());
-            } else {
-                $date = \Carbon\Carbon::parse($data["dates"])->toDateString();
-                $result->whereDate('purchase_orders.po_date', $date);
-            }
+        return $result;
+    }
+
+    public static function applyPoInvoiceDateFilter($query, $dates): void
+    {
+        if (!$dates) {
+            return;
         }
 
-        $result->select('purchase_order_detail_invoices.*');
-        $result->orderByRaw('FIELD(purchase_orders.status, 1, 2, 3, -1)')
-                ->orderByRaw('FIELD(purchase_orders.pembayaran, 1, 3, 2)')
-                ->orderBy("purchase_orders.po_date", "asc")
-                ->orderBy("purchase_order_detail_invoices.poi_date", "asc");
-        $result = $result->get();
-        
-        foreach ($result as $key => $value) {
+        if (is_array($dates)) {
+            $start = trim((string) ($dates[0] ?? ''));
+            $end = trim((string) ($dates[1] ?? ''));
+
+            if ($start === '' && $end === '') {
+                return;
+            }
+
+            if ($start !== '') {
+                $query->whereDate(
+                    'purchase_orders.po_date',
+                    '>=',
+                    \Carbon\Carbon::parse($start)->toDateString()
+                );
+            }
+
+            if ($end !== '') {
+                $query->whereDate(
+                    'purchase_orders.po_date',
+                    '<=',
+                    \Carbon\Carbon::parse($end)->toDateString()
+                );
+            } elseif ($start !== '') {
+                // Only Dari Tanggal → through today
+                $query->whereDate(
+                    'purchase_orders.po_date',
+                    '<=',
+                    \Carbon\Carbon::today()->toDateString()
+                );
+            }
+
+            return;
+        }
+
+        $date = \Carbon\Carbon::parse($dates)->toDateString();
+        $query->whereDate('purchase_orders.po_date', $date);
+    }
+
+    public static function applyPoInvoiceOrder($query)
+    {
+        return $query
+            ->orderByRaw('FIELD(purchase_orders.status, 1, 2, 3, -1)')
+            ->orderByRaw('FIELD(purchase_orders.pembayaran, 1, 3, 2)')
+            ->orderBy("purchase_orders.po_date", "asc")
+            ->orderBy("purchase_order_detail_invoices.poi_date", "asc");
+    }
+
+    public static function enrichPoInvoiceRows($rows): void
+    {
+        foreach ($rows as $value) {
             $po = PurchaseOrder::find($value->po_id);
             $value->supplier_name = Supplier::find($po->po_supplier)->supplier_name;
             $value->po_code = $po->po_number;
@@ -87,8 +131,41 @@ class PurchaseOrderDetailInvoice extends Model
             $value->pembayaran = $po->pembayaran;
 
             $b = Bank::find($value->bank_id);
-            $value->bank_kode = $b->bank_kode??"-";
+            $value->bank_kode = $b->bank_kode ?? "-";
         }
+    }
+
+    /**
+     * Print/PDF path: same row shape as enrichPoInvoiceRows, via join (no per-row find).
+     * Does not change list/DataTable getPoInvoice + enrichPoInvoiceRows.
+     */
+    public static function getPoInvoiceForPrint(array $data = [])
+    {
+        $result = self::queryPoInvoice($data);
+        $result
+            ->leftJoin('suppliers', 'suppliers.supplier_id', '=', 'purchase_orders.po_supplier')
+            ->leftJoin('banks', 'banks.bank_id', '=', 'purchase_order_detail_invoices.bank_id')
+            ->select(
+                'purchase_order_detail_invoices.*',
+                'purchase_orders.po_number as po_code',
+                'purchase_orders.po_date',
+                'purchase_orders.pembayaran',
+                'suppliers.supplier_name',
+                \DB::raw('COALESCE(banks.bank_kode, "-") as bank_kode')
+            );
+        self::applyPoInvoiceOrder($result);
+
+        return $result->get();
+    }
+
+    function getPoInvoice($data = [])
+    {
+        $result = self::queryPoInvoice($data);
+        $result->select('purchase_order_detail_invoices.*');
+        self::applyPoInvoiceOrder($result);
+        $result = $result->get();
+
+        self::enrichPoInvoiceRows($result);
         return $result;
     }
 

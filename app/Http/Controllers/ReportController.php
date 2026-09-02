@@ -514,9 +514,11 @@ class ReportController extends Controller
         }
         $data['dates'] = $norm['dates'];
 
-        $detail = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+        // Count-only: check tidak butuh rows/enrich (hindari N+1 × full dataset sebelum generate).
+        $count = PurchaseOrderDetailInvoice::queryPoInvoice($data)
+            ->count('purchase_order_detail_invoices.poi_id');
 
-        if (count($detail) <= 0) {
+        if ($count <= 0) {
             return response()->json([
                 'status' => -1,
                 'message' => 'Minimal ada 1 data hutang'
@@ -536,7 +538,8 @@ class ReportController extends Controller
         }
         $data['dates'] = $norm['dates'];
 
-        $param["detail"] = (new PurchaseOrderDetailInvoice())->getPoInvoice($data);
+        // Join enrich (print only) — hindari N+1 PurchaseOrder/Supplier/Bank::find per baris.
+        $param["detail"] = PurchaseOrderDetailInvoice::getPoInvoiceForPrint($data);
 
         $total = 0;
         foreach ($param['detail'] as $key => $value) {
