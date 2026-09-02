@@ -78,10 +78,12 @@ class CashBesarPresenter
 
         $action = '';
         if ((int) $row->status === 1 && self::can($user, 'others')) {
+            $cashId = (int) $row->cash_id;
+            $cashTujuan = (int) ($row->cash_tujuan ?? 0);
             $action =
                 '<div class="d-flex align-items-center gap-1">' .
-                '<a class="btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-check"></i></a>' .
-                '<a class="btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-x"></i></a></div>';
+                '<a class="btn-action-icon p-2 btn_acc bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-check"></i></a>' .
+                '<a class="btn-action-icon p-2 btn_decline bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . $cashId . '" cash_tujuan="' . $cashTujuan . '"><i class="fe fe-x"></i></a></div>';
         }
 
         return [

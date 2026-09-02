@@ -660,6 +660,10 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/acceptCashSales', [ReportController::class, 'acceptCashSales'])->name('acceptCashSales');
         Route::post('/declineCashSales', [ReportController::class, 'declineCashSales'])->name('declineCashSales');
     });
+    Route::middleware('check.access.any:Kas,Kas Operasional,others')->group(function () {
+        Route::post('/acceptCashBesar', [ReportController::class, 'acceptCashBesar'])->name('acceptCashBesar');
+        Route::post('/declineCashBesar', [ReportController::class, 'declineCashBesar'])->name('declineCashBesar');
+    });
 
     Route::middleware('check.access:Pemasok|view')->group(function () {
         Route::get('/getSupplier', [SupplierController::class, 'getSupplier'])->name('getSupplier');
