@@ -1,43 +1,58 @@
-  <div class="modal modal-lg custom-modal fade" id="add_cash_category" role="dialog" data-bs-backdrop="static"
+  <div class="modal modal-lg custom-modal fade pg-modal--form" id="add_cash_category" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-md">
-      <div class="modal-content">
-        <div class="modal-header border-0 pb-0">
-          <div class="form-header modal-header-title  text-start mb-0">
-            <h4 class="mb-0 modal-title">Tambah Kategori Kas</h4>
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content d-flex flex-column" style="border-radius:16px;overflow:hidden;border:none;">
+        {{-- ── HEADER ── --}}
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-3">
+            <div class="pg-modal-icon">
+              <i class="fe fe-dollar-sign"></i>
+            </div>
+            <div>
+              <h5 class="mb-0 fw-bold modal-title">Tambah Kategori Kas</h5>
+              <small class="text-muted modal-subtitle">Input data kategori kas baru</small>
+            </div>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
-          </button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+            aria-label="Close"></button>
         </div>
+
         <form action="#">
-          <div class="modal-body">
-            <div class="form-groups-item border-0 pb-0">
-              <div class="row">
-                <div class="col-lg-6 col-12">
-                  <div class="input-block mb-3">
-                    <label>Nama Kategori<span class="text-danger">*</span></label>
-                    <input type="text" class="form-control fill" id="cc_name" placeholder="ex Makan Siang">
-                  </div>
+          <div class="modal-body p-4" style="background:#f8fafc;">
+            <div class="row">
+              <div class="col-lg-6 col-12">
+                {{-- Nama Kategori --}}
+                <div class="mb-3">
+                  <label class="text-muted mb-2"
+                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Nama
+                    Kategori <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control fill" id="cc_name" placeholder="ex Makan Siang"
+                    style="font-size:14px;border-radius:8px;height:42px;">
                 </div>
-                <div class="col-lg-6 col-12">
-                  <div class="input-block mb-3">
-                    <label>Tipe Kategori<span class="text-danger">*</span></label>
-                    <select class="form-select fill" id="cc_type">
-                      <option value="" selected disabled>Pilih Tipe Kategori</option>
-                      <option value="Keluar">Keluar</option>
-                      <option value="Keluar 1">Keluar 1</option>
-                      <option value="Masuk">Masuk / Setoran Tunai</option>
-                    </select>
-                  </div>
+              </div>
+              <div class="col-lg-6 col-12">
+                {{-- Tipe Kategori --}}
+                <div class="mb-3">
+                  <label class="text-muted mb-2"
+                    style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Tipe
+                    Kategori <span class="text-danger">*</span></label>
+                  <select class="form-select fill" id="cc_type" style="font-size:14px;border-radius:8px;height:42px;">
+                    <option value="" selected disabled>Pilih Tipe Kategori</option>
+                    <option value="Keluar">Keluar</option>
+                    <option value="Keluar 1">Keluar 1</option>
+                    <option value="Masuk">Masuk / Setoran Tunai</option>
+                  </select>
                 </div>
               </div>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2">Batal</button>
-            <button type="button" class="btn btn-primary paid-continue-btn btn-save">Tambah Kategori Kas</button>
-          </div>
-        </form>
-      </div>
+
+          {{-- ── FOOTER ── --}}
+        <div class="modal-footer pg-modal-footer">
+          <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+          <button type="button" class="btn pg-btn-save btn-save"><i class="fe fe-save me-1"></i>Tambah Kategori Kas</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
