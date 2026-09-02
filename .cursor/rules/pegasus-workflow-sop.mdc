@@ -1,5 +1,5 @@
 ---
-description: SOP git fase2 (ruben→main) + DataTables wajib server-side + skeleton loading
+description: SOP git fase2 (ruben only; merge main eksplisit) + DataTables server-side + skeleton loading
 alwaysApply: true
 ---
 
@@ -7,19 +7,40 @@ alwaysApply: true
 
 ## Git (fase-2)
 
-- **Fitur besar**: buat branch baru dari `fase2/main`, kerjakan di situ.
-- **Kerja rutin**: branch `fase2/ruben`.
-- **Selesai**: merge/push ke `fase2/main` — jangan commit langsung ke `fase2/main` kecuali user minta eksplisit.
-- Sebelum merge besar yang menyentuh stok/modal: ikuti juga `.cursor/rules/fase2-merge-inventory.mdc`.
+### Default (agent)
+
+- **Kerja rutin**: branch `fase2/ruben` — commit dan push **`fase2/ruben` saja**.
+- **Fitur besar**: buat branch baru dari `fase2/main`, kerjakan di situ, commit + push branch fitur saja.
+
+### JANGAN tanpa permintaan eksplisit user
+
+- **Jangan** `git merge fase2/ruben` ke `fase2/main`.
+- **Jangan** `git push origin fase2/main`.
+- **Jangan** commit langsung ke `fase2/main`.
+- Merge/push ke `fase2/main` **hanya** jika user minta eksplisit (mis. "push ke fase2/main", "merge ke main").
+
+### Worktree `pegasus-fase2-main`
+
+- Untuk deploy manual user — **bukan** langkah agent rutin.
+- Agent hanya merge/push lewat worktree itu jika user minta eksplisit.
+
+### Merge besar (stok/modal)
+
+Sebelum merge ke `fase2/main` yang menyentuh stok/modal (saat user sudah minta): ikuti `.cursor/rules/fase2-merge-inventory.mdc`.
 
 ```
-# rutin
+# rutin — agent selesai di sini
 git checkout fase2/ruben
 # ... commit ...
-git checkout fase2/main && git merge fase2/ruben && git push
+git push origin fase2/ruben
 
 # fitur besar
 git checkout -b fase2/feature-xyz fase2/main
+# ... commit ...
+git push -u origin fase2/feature-xyz
+
+# merge ke main — HANYA jika user minta eksplisit
+git checkout fase2/main && git merge fase2/ruben && git push origin fase2/main
 ```
 
 ## DataTables UI
