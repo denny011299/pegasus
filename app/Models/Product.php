@@ -204,9 +204,17 @@ class Product extends Model
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 
+        $variantIds = ProductVariant::where("product_id", "=", $data["product_id"])
+            ->where("status", 1)
+            ->pluck("product_variant_id")
+            ->all();
+
         ProductVariant::where("product_id", "=", $data["product_id"])->update(["status" => 0]);
         ProductStock::withoutGlobalScope('active_warehouse')
             ->where("product_id", "=", $data["product_id"])
             ->update(["status" => 0]);
+
+        // QC19: cascade soft-delete resep BOM untuk semua varian produk ini
+        (new Bom())->softDeleteByVariantIds($variantIds);
     }
 }

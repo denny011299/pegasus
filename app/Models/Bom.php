@@ -459,4 +459,36 @@ class Bom extends Model
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
     }
+
+    /**
+     * Soft-delete resep (header + detail) untuk product_variant_id tertentu.
+     * Catatan: kolom boms.product_id menyimpan product_variant_id.
+     *
+     * @param  array<int|string>  $variantIds
+     */
+    public function softDeleteByVariantIds(array $variantIds): void
+    {
+        $variantIds = array_values(array_unique(array_filter(array_map('intval', $variantIds))));
+        if ($variantIds === []) {
+            return;
+        }
+
+        $staffId = Session::get('user') ? Session::get('user')->staff_id : null;
+        $bomIds = self::where('status', 1)
+            ->whereIn('product_id', $variantIds)
+            ->pluck('bom_id');
+        if ($bomIds->isEmpty()) {
+            return;
+        }
+
+        self::whereIn('bom_id', $bomIds)->update([
+            'status' => 0,
+            'created_by' => $staffId,
+        ]);
+        BomDetail::whereIn('bom_id', $bomIds)->where('status', 1)->update([
+            'status' => 0,
+            'created_by' => $staffId,
+        ]);
+    }
 }
+

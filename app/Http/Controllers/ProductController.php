@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Bom;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductCategory;
@@ -492,7 +493,16 @@ class ProductController extends Controller
             }
             array_push($id, $t);
         }
-        ProductVariant::where('product_id', '=', $data["product_id"])->whereNotIn("product_variant_id", $id)->update(["status" => 0]);
+        // Varian yang dihapus dari form edit → soft delete + cascade BOM (QC19)
+        $removedVariantIds = ProductVariant::where('product_id', '=', $data["product_id"])
+            ->whereNotIn("product_variant_id", $id)
+            ->where('status', 1)
+            ->pluck('product_variant_id')
+            ->all();
+        if ($removedVariantIds !== []) {
+            ProductVariant::whereIn('product_variant_id', $removedVariantIds)->update(["status" => 0]);
+            (new Bom())->softDeleteByVariantIds($removedVariantIds);
+        }
         $id = [];
         foreach (json_decode($data['product_relasi'], true) as $keyRelasi => $value) {
             $pvr_id = $variant[$keyRelasi]['product_variant_id'] ?? 0;

@@ -530,6 +530,9 @@ class ProductVariant extends Model
         $t->status = 0; // soft delete
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
+
+        // QC19: cascade soft-delete resep BOM untuk varian ini
+        (new Bom())->softDeleteByVariantIds([(int) $t->product_variant_id]);
     }
     function generateBarcode()
     {
