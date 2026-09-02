@@ -557,6 +557,50 @@ class ReportController extends Controller
         return response()->json($data);
     }
 
+    function acceptCashBesar(Request $req)
+    {
+        $data = $req->all();
+        $cash = Cash::find($data['cash_id'] ?? null);
+        if (! $cash || (int) $cash->status !== 1) {
+            $staff = ($cash && $cash->acc_by) ? Staff::find($cash->acc_by) : null;
+
+            return response()->json([
+                'status' => -2,
+                'header' => 'Gagal ACC',
+                'message' => 'Pengajuan sudah diterima/ditolak oleh ' . ($staff->staff_name ?? 'staff lain'),
+            ]);
+        }
+
+        $uid = Session::get('user')->staff_id ?? null;
+        $cash->status = 2;
+        $cash->acc_by = $uid;
+        $cash->save();
+
+        return 1;
+    }
+
+    function declineCashBesar(Request $req)
+    {
+        $data = $req->all();
+        $cash = Cash::find($data['cash_id'] ?? null);
+        if (! $cash || (int) $cash->status !== 1) {
+            $staff = ($cash && $cash->acc_by) ? Staff::find($cash->acc_by) : null;
+
+            return response()->json([
+                'status' => -2,
+                'header' => 'Gagal Tolak',
+                'message' => 'Pengajuan sudah diterima/ditolak oleh ' . ($staff->staff_name ?? 'staff lain'),
+            ]);
+        }
+
+        $uid = Session::get('user')->staff_id ?? null;
+        $cash->status = 3;
+        $cash->acc_by = $uid;
+        $cash->save();
+
+        return 1;
+    }
+
     function insertCash(Request $req){
         $data = $req->all();
         $cash_id = (new Cash())->insertCash($data);

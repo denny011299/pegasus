@@ -670,34 +670,82 @@
         }
     })
 
+    function cashRowFromActionBtn($btn) {
+        if (!table) return null;
+        var $tr = $btn.closest("tr");
+        if ($tr.hasClass("child")) {
+            $tr = $tr.prev();
+        }
+        try {
+            return table.row($tr).data() || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function cashActionMeta($btn) {
+        var row = cashRowFromActionBtn($btn) || {};
+        var cashId = parseInt(row.cash_id || $btn.attr("cash_id") || 0, 10);
+        var tujuan = parseInt(
+            row.cash_tujuan != null ? row.cash_tujuan : $btn.attr("cash_tujuan"),
+            10,
+        );
+        if (isNaN(tujuan)) tujuan = -1;
+        return { cash_id: cashId, cash_tujuan: tujuan };
+    }
+
+    function cashAcceptUrl(tujuan) {
+        if (tujuan === 1) return "/acceptCashAdmin";
+        if (tujuan === 2) return "/acceptCashGudang";
+        if (tujuan === 3) return "/acceptCashArmada";
+        if (tujuan === 4) return "/acceptCashSales";
+        if (tujuan === 0) return "/acceptCashBesar";
+        return "";
+    }
+
+    function cashDeclineUrl(tujuan) {
+        if (tujuan === 1) return "/declineCashAdmin";
+        if (tujuan === 2) return "/declineCashGudang";
+        if (tujuan === 3) return "/declineCashArmada";
+        if (tujuan === 4) return "/declineCashSales";
+        if (tujuan === 0) return "/declineCashBesar";
+        return "";
+    }
+
+    function isCashApiError(resp) {
+        return !!(
+            resp &&
+            typeof resp === "object" &&
+            resp.status !== undefined &&
+            parseInt(resp.status, 10) < 0
+        );
+    }
+
     $(document).on('click', '.btn_acc', function(){
-        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var meta = cashActionMeta($(this));
+        if (!meta.cash_id) {
+            notifikasi("error", "Gagal", "Data kas tidak ditemukan.");
+            return;
+        }
         showModalKonfirmasi(
             "Apakah yakin ingin Approve pencatatan kas ini?",
             "btn-accept-kas"
         );
-        console.log(data);
-        $('#btn-accept-kas').attr("cash_id", data.cash_id);
-        $('#btn-accept-kas').attr("cash_tujuan", data.cash_tujuan);
+        $('#btn-accept-kas')
+            .attr("cash_id", meta.cash_id)
+            .attr("cash_tujuan", meta.cash_tujuan);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
         LoadingButton(this);
-        let tujuan = $('#btn-accept-kas').attr('cash_tujuan');
-        console.log(tujuan);
-        let url = "";
-        if (tujuan == 1) url = "/acceptCashAdmin";
-        // tujuan == 2 (gudang): this page only ever knows the row's cash_id, never a cg_id — that's
-        // intentional, not missing data. This is the "Kas Besar" table, and only "saldo"-type
-        // CashGudang entries ever get a real cash_id/appear here (see
-        // ReportController::insertCashGudang()'s "saldo" branch); "operasional"-type ("Kas Gudang")
-        // entries always have cash_id = 0 and never show up in this table at all. On the backend,
-        // acceptCashGudang() uses isset($data['cg_id']) specifically to tell these two entry kinds
-        // apart — don't "fix" this call to also send a cg_id, there isn't one for this row's kind.
-        else if (tujuan == 2) url = "/acceptCashGudang";
-        else if (tujuan == 3) url = "/acceptCashArmada";
-        else if (tujuan == 4) url = "/acceptCashSales";
+        let tujuan = parseInt($('#btn-accept-kas').attr('cash_tujuan'), 10);
+        let url = cashAcceptUrl(tujuan);
+        if (!url) {
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            notifikasi("error", "Gagal", "Tipe kas tidak dikenali (tujuan: " + tujuan + ").");
+            return;
+        }
         $.ajax({
             url:url,
             data:{
@@ -706,42 +754,47 @@
             },
             method:"post",
             success:function(e){
-                if (typeof e === "object"){
-                    notifikasi('error', e.header, e.message);
+                if (isCashApiError(e)){
+                    notifikasi('error', e.header || 'Gagal ACC', e.message || 'Konfirmasi gagal.');
                     ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");   
-                    return false;
-                } else {
-                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
-                    refreshCash();
-                    $('.modal').modal("hide");
-                    notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
+                    return;
                 }
-                
+                ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                refreshCash();
+                $('.modal').modal("hide");
+                notifikasi('success', "Berhasil Terima", "Berhasil Terima Pencatatan Kas");
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 if (handlePermissionError(e)) return;
                 console.log(e);
+                notifikasi("error", "Gagal", "Konfirmasi kas gagal. Coba lagi.");
             }
         });
     })
 
     $(document).on('click', '.btn_decline', function(){
-        var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        var meta = cashActionMeta($(this));
+        if (!meta.cash_id) {
+            notifikasi("error", "Gagal", "Data kas tidak ditemukan.");
+            return;
+        }
         showModalDelete("Apakah yakin ingin tolak pencatatan kas ini?","btn-decline-kas");
-        $('#btn-decline-kas').attr("cash_id", data.cash_id);
-        $('#btn-decline-kas').attr("cash_tujuan", data.cash_tujuan);
+        $('#btn-decline-kas')
+            .attr("cash_id", meta.cash_id)
+            .attr("cash_tujuan", meta.cash_tujuan);
         $('#btn-decline-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-decline-kas', function(){
         LoadingButton(this);
-        let tujuan = $('#btn-decline-kas').attr('cash_tujuan');
-        let url = "";
-        if (tujuan == 1) url = "/declineCashAdmin";
-        else if (tujuan == 2) url = "/declineCashGudang";
-        else if (tujuan == 3) url = "/declineCashArmada";
-        else if (tujuan == 4) url = "/declineCashSales";
+        let tujuan = parseInt($('#btn-decline-kas').attr('cash_tujuan'), 10);
+        let url = cashDeclineUrl(tujuan);
+        if (!url) {
+            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            notifikasi("error", "Gagal", "Tipe kas tidak dikenali (tujuan: " + tujuan + ").");
+            return;
+        }
         $.ajax({
             url:url,
             data:{
@@ -750,16 +803,21 @@
             },
             method:"post",
             success:function(e){
+                if (isCashApiError(e)) {
+                    notifikasi('error', e.header || 'Gagal Tolak', e.message || 'Penolakan gagal.');
+                    ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                    return;
+                }
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 refreshCash();
                 $('.modal').modal("hide");
                 notifikasi('success', "Berhasil Tolak", "Berhasil Tolak Pencatatan Kas");
-                
             },
             error:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
                 if (handlePermissionError(e)) return;
                 console.log(e);
+                notifikasi("error", "Gagal", "Penolakan kas gagal. Coba lagi.");
             }
         });
     })
