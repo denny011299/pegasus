@@ -16,13 +16,14 @@ use Symfony\Component\HttpFoundation\Response;
  */
 class checkAccessAny
 {
-    public function handle(Request $request, Closure $next, string $spec = ''): Response
+    public function handle(Request $request, Closure $next, string ...$segments): Response
     {
-        if ($spec === '') {
+        if ($segments === []) {
             return $next($request);
         }
 
-        $parts = array_values(array_filter(array_map('trim', explode(',', $spec)), static fn ($p) => $p !== ''));
+        // Laravel passes `check.access.any:A,B,C,ability` as separate middleware args.
+        $parts = array_values(array_filter(array_map('trim', $segments), static fn ($p) => $p !== ''));
         if ($parts === []) {
             return $next($request);
         }
