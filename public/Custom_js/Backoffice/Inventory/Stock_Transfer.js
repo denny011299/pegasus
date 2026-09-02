@@ -3482,72 +3482,88 @@ function approveStockTransfer(type) {
     var label = type === "qc" ? "QC" : "Kepala Operasional";
     var $confirmBtn = $("#modalKonfirmasi #btn-approve-" + type + "-stock-transfer");
     if ($confirmBtn.data("busy")) return;
-    $confirmBtn.data("busy", true);
-    if (typeof LoadingButton === "function") LoadingButton($confirmBtn);
-    $.ajax({
-        url: "/approveStockTransfer",
-        method: "post",
-        data: {
-            id: id,
-            type: type,
-            _token: token || $('meta[name="csrf-token"]').attr("content"),
-        },
-        success: function (res) {
-            $confirmBtn.data("busy", false);
-            if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton(
-                    $confirmBtn,
-                    '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
-                );
-            }
-            if (!res || res.status != 1) {
+
+    // UX pre-check stok (QC22); gate wajib tetap di BE approveStockTransfer + shipLockedTransfer.
+    function runApprove() {
+        $confirmBtn.data("busy", true);
+        if (typeof LoadingButton === "function") LoadingButton($confirmBtn);
+        $.ajax({
+            url: "/approveStockTransfer",
+            method: "post",
+            data: {
+                id: id,
+                type: type,
+                _token: token || $('meta[name="csrf-token"]').attr("content"),
+            },
+            success: function (res) {
+                $confirmBtn.data("busy", false);
+                if (typeof ResetLoadingButton === "function") {
+                    ResetLoadingButton(
+                        $confirmBtn,
+                        '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                    );
+                }
+                if (!res || res.status != 1) {
+                    if (typeof closeModalConfirm === "function") closeModalConfirm();
+                    if (typeof toastr !== "undefined") {
+                        toastr.error("", (res && res.message) || "Gagal approve " + label);
+                    }
+                    return;
+                }
+                markTransferOverlayDone();
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
                 if (typeof toastr !== "undefined") {
-                    toastr.error("", (res && res.message) || "Gagal approve " + label);
+                    toastr.success("", res.message || "Approval " + label + " berhasil");
                 }
+                if (type === "qc") {
+                    transferCanApproveQc = false;
+                    transferQcApproved = true;
+                } else {
+                    transferCanApproveOps = false;
+                    transferOpsApproved = true;
+                    transferCanReject = false;
+                }
+                if (res.auto_shipped == 1 || res.auto_shipped === true) {
+                    transferCanShip = false;
+                    transferCanReject = false;
+                }
+                if (table) table.ajax.reload(null, false);
+                // Auto-Kirim setelah Ops Acc: jangan buka ulang detail (status sudah Kirim).
+                if (res.auto_shipped == 1 || res.auto_shipped === true) {
+                    $("#add_stock_transfer").modal("hide");
+                    return;
+                }
+                // QC saja: buka ulang detail supaya tombol Ops muncul
+                loadTransferDetailForEdit(id);
+            },
+            error: function (xhr) {
+                $confirmBtn.data("busy", false);
+                if (typeof ResetLoadingButton === "function") {
+                    ResetLoadingButton(
+                        $confirmBtn,
+                        '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                    );
+                }
+                if (typeof closeModalConfirm === "function") closeModalConfirm();
+                var msg =
+                    (xhr.responseJSON && xhr.responseJSON.message) ||
+                    "Gagal approve " + label;
+                if (typeof toastr !== "undefined") toastr.error("", msg);
+            },
+        });
+    }
+
+    if (typeof validateCurrentTransferMatrix === "function" && transferItems.length) {
+        validateCurrentTransferMatrix(function (ok) {
+            if (!ok) {
+                if (typeof closeModalConfirm === "function") closeModalConfirm();
                 return;
             }
-            markTransferOverlayDone();
-            if (typeof closeModalConfirm === "function") closeModalConfirm();
-            if (typeof toastr !== "undefined") {
-                toastr.success("", res.message || "Approval " + label + " berhasil");
-            }
-            if (type === "qc") {
-                transferCanApproveQc = false;
-                transferQcApproved = true;
-            } else {
-                transferCanApproveOps = false;
-                transferOpsApproved = true;
-                transferCanReject = false;
-            }
-            if (res.auto_shipped == 1 || res.auto_shipped === true) {
-                transferCanShip = false;
-                transferCanReject = false;
-            }
-            if (table) table.ajax.reload(null, false);
-            // Auto-Kirim setelah Ops Acc: jangan buka ulang detail (status sudah Kirim).
-            if (res.auto_shipped == 1 || res.auto_shipped === true) {
-                $("#add_stock_transfer").modal("hide");
-                return;
-            }
-            // QC saja: buka ulang detail supaya tombol Ops muncul
-            loadTransferDetailForEdit(id);
-        },
-        error: function (xhr) {
-            $confirmBtn.data("busy", false);
-            if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton(
-                    $confirmBtn,
-                    '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
-                );
-            }
-            if (typeof closeModalConfirm === "function") closeModalConfirm();
-            var msg =
-                (xhr.responseJSON && xhr.responseJSON.message) ||
-                "Gagal approve " + label;
-            if (typeof toastr !== "undefined") toastr.error("", msg);
-        },
-    });
+            runApprove();
+        });
+        return;
+    }
+    runApprove();
 }
 
 $(document).on("click", ".btn-approve-qc-transfer", function () {

@@ -1537,6 +1537,36 @@ class StockTransferController extends Controller
                 if (! $locked) {
                     throw new \RuntimeException('Transfer sudah diproses');
                 }
+
+                // QC22: cek stok gudang asal sebelum ACC QC/Ops (gate 1).
+                // Gate 2 tetap di shipLockedTransfer saat Kirim / auto-Kirim.
+                $approveDetails = StockTransferDetail::query()
+                    ->where('st_id', $stId)
+                    ->where('status', 1)
+                    ->get();
+                if ($approveDetails->isEmpty()) {
+                    throw new \RuntimeException('Detail transfer kosong');
+                }
+                $approveItems = $this->normalizeItems($approveDetails->map(fn ($d) => [
+                    'product_variant_id' => (int) $d->product_variant_id,
+                    'unit_id' => (int) $d->unit_id,
+                    'qty' => (float) $d->qty,
+                ])->values()->all());
+                $approveIsProduction = $locked->source_type === 'production';
+                ProductUnitStock::clearCache();
+                $approveCheck = ProductUnitStock::checkItems(
+                    $fromWh,
+                    $this->applySourceAvailabilityMode(
+                        $approveItems,
+                        $this->warehouseIsMain($fromWh),
+                        $approveIsProduction
+                    )
+                );
+                if (! $approveCheck['ok']) {
+                    $names = array_map(fn ($s) => $s['label'], $approveCheck['shortages']);
+                    throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
+                }
+
                 if ($type === 'qc') {
                     if (StockTransferApproval::isQcApproved($locked)) {
                         throw new \RuntimeException('QC sudah approve');
