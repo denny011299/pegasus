@@ -4,6 +4,27 @@
     var grand = 0;
     var dates = null;
 var compressedImageFile = null;
+    var ttXhr = null;
+
+    function ttWrap() {
+        return $("#tableTTPurchaseOrder-wrap");
+    }
+
+    function setTtTableLoading(isLoading) {
+        var $wrap = ttWrap();
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
+    function showTtSkeleton() {
+        ttWrap().removeClass("dt-ready").addClass("dt-pending");
+        setTtTableLoading(true);
+    }
+
+    function hideTtSkeleton() {
+        setTtTableLoading(false);
+        ttWrap().removeClass("dt-pending").addClass("dt-ready");
+    }
     autocompleteSupplier("#filter_supplier");
 function resetTtUploadProgress() {
     $("#tt_upload_progress")
@@ -67,7 +88,13 @@ function updateTtUploadProgress(percent) {
     }
 
     function refreshPurchaseOrder() {
-        $.ajax({
+        if (ttXhr && ttXhr.readyState !== 4) {
+            ttXhr.abort();
+        }
+
+        showTtSkeleton();
+
+        ttXhr = $.ajax({
             url: "/getTt",
             method: "get",
             data: {
@@ -102,9 +129,9 @@ function updateTtUploadProgress(percent) {
                     e[i].action = tta;
                     if (e[i].status == 1 && hasAccessAction("Tanda Terima PO", "others")) {
                         e[i].action +=
-                            '<a class="me-2 btn-action-icon p-2 btn_acc_tt bg-success text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  tt_id = "' +
+                            '<a class="me-2 btn-action-icon p-2 btn_acc_tt btn-action-approve" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima"  tt_id = "' +
                             e[i].tt_id +
-                            '"><i class="fe fe-check"></i></a><a  class="me-2 btn-action-icon p-2 btn_decline_tt bg-danger text-light" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  tt_id = "' +
+                            '"><i class="fe fe-check"></i></a><a  class="me-2 btn-action-icon p-2 btn_decline_tt btn-action-reject" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak"  tt_id = "' +
                             e[i].tt_id +
                             '"><i class="fe fe-x"></i></a>';
                     }
@@ -123,8 +150,14 @@ function updateTtUploadProgress(percent) {
                 feather.replace(); // Biar icon feather muncul lagi
             },
             error: function (err) {
+                if (err && err.statusText === "abort") return;
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load so:", err);
+            },
+            complete: function (xhr, status) {
+                if (status === "abort") return;
+                hideTtSkeleton();
+                if (table) table.columns.adjust();
             }
         });
     }

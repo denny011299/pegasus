@@ -1,12 +1,18 @@
-  <div class="modal modal-lg custom-modal fade" id="add_acc_tt" role="dialog" data-bs-backdrop="static"
+  <div class="modal modal-lg custom-modal fade pg-modal--confirm" id="add_acc_tt" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-md">
-      <div class="modal-content">
-        <div class="modal-header border-0 pb-0">
-          <div class="form-header modal-header-title  text-start mb-0">
-            <h4 class="mb-0 modal-title">Konfirmasi Terima</h4>
+      <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none;">
+        <div class="modal-header">
+          <div class="d-flex align-items-center gap-3">
+            <div class="pg-modal-icon">
+              <i class="fe fe-check-circle"></i>
+            </div>
+            <div>
+              <h5 class="mb-0 fw-bold modal-title">Konfirmasi Terima</h5>
+              <small class="text-muted modal-subtitle">Konfirmasi pembayaran dan pelunasan invoice terkait</small>
+            </div>
           </div>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close">
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close">
           </button>
         </div>
         <form action="#">
@@ -29,7 +35,7 @@
                   <h5 class="mb-1">Unggah Foto Bukti Transaksi</h5>
                   <p class="text-muted small mb-3" id="file_name">xx.jpg</p>
                   <div class="img-upload">
-                    <label class="btn btn-primary px-5 shadow-sm">
+                    <label class="btn pg-btn-save px-5 shadow-sm">
                       Unggah <input type="file" class="d-none input-gambar" accept="image/png, image/jpeg"
                         id="image">
                     </label>
@@ -51,9 +57,9 @@
               <textarea class="form-control" rows="3" id="keterangan" placeholder="Masukkan keterangan tambahan..."></textarea>
             </div>
           </div>
-          <div class="modal-footer">
-            <button type="button" data-bs-dismiss="modal" class="btn btn-back cancel-btn me-2">Batal</button>
-            <button type="button" class="btn btn-primary paid-continue-btn btn-save">Konfirmasi</button>
+          <div class="modal-footer pg-modal-footer">
+            <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel cancel-btn">Batal</button>
+            <button type="button" class="btn pg-btn-confirm paid-continue-btn btn-save"><i class="fe fe-check-circle me-1"></i>Konfirmasi</button>
           </div>
         </form>
       </div>
