@@ -351,6 +351,7 @@ Route::middleware(checkLogin::class)->group(function () {
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
+        Route::post('/checkSalesOrderStock', [CustomerController::class, 'checkSalesOrderStock'])->name('checkSalesOrderStock');
         Route::post('/insertSoDelivery', [CustomerController::class, 'insertSoDelivery'])->name('insertSoDelivery');
         Route::post('/insertInvoiceSO', [CustomerController::class, 'insertInvoiceSO'])->name('insertInvoiceSO');
         Route::post('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'store'])->name('customerSupplyReturns.store');

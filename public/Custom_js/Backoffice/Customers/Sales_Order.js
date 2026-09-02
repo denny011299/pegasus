@@ -462,8 +462,13 @@ function doScanAddSoProduct(data, qty) {
         });
     }
 
+    // Salinan dulu, sama seperti alur manual - lihat catatan GitHub #116 di atas
+    // #btn-add-product-so.
+    var candidateProducts = products.map(function (element) {
+        return $.extend({}, element);
+    });
     var idx = -1;
-    products.forEach(function (el, i) {
+    candidateProducts.forEach(function (el, i) {
         if (
             parseInt(el.product_variant_id) ===
                 parseInt(data.product_variant_id) &&
@@ -474,7 +479,7 @@ function doScanAddSoProduct(data, qty) {
     });
 
     if (idx === -1) {
-        products.push(
+        candidateProducts.push(
             normalizeProductForActiveWarehouse(
                 applyDefaultMainWarehouse(
                     applyDefaultRetailWarehouse({
@@ -495,21 +500,25 @@ function doScanAddSoProduct(data, qty) {
             ),
         );
     } else {
-        products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        candidateProducts[idx].so_qty =
+            (parseInt(candidateProducts[idx].so_qty) || 0) + qty;
     }
 
-    toastr.success(
-        "",
-        "Berhasil menambahkan: " +
-            (data.pr_name || "") +
-            " " +
-            data.product_variant_name +
-            " (x" +
-            qty +
-            ")",
-    );
-    refreshTableProduct();
-    $("#so_scan_barcode").val("").focus();
+    checkSoStockThenAdd(candidateProducts, function () {
+        products = candidateProducts;
+        toastr.success(
+            "",
+            "Berhasil menambahkan: " +
+                (data.pr_name || "") +
+                " " +
+                data.product_variant_name +
+                " (x" +
+                qty +
+                ")",
+        );
+        refreshTableProduct();
+        $("#so_scan_barcode").val("").focus();
+    });
 }
 
 $(document).on("click", "#btn_scan_add_so", function () {
@@ -646,8 +655,13 @@ $(document).on("click", "#btn-add-product-so", function () {
     $("#so_unit_input").removeClass("is-invalid");
 
     var unitText = $("#so_unit_input option:selected").text();
+    // Kerja di atas salinan `products` dulu (bukan `products` asli) - baris baru/gabungan
+    // baru benar-benar masuk ke daftar kalau cek stok di bawah (GitHub #116) lolos.
+    var candidateProducts = products.map(function (element) {
+        return $.extend({}, element);
+    });
     var idx = -1;
-    products.forEach((element, index) => {
+    candidateProducts.forEach((element, index) => {
         if (
             parseInt(element.product_variant_id) ==
                 parseInt(temp.product_variant_id) &&
@@ -672,22 +686,83 @@ $(document).on("click", "#btn-add-product-so", function () {
             warehouse_id: null,
             warehouse_name: null,
         };
-        products.push(
+        candidateProducts.push(
             normalizeProductForActiveWarehouse(
                 applyDefaultMainWarehouse(applyDefaultRetailWarehouse(data)),
             ),
         );
     } else {
-        products[idx].so_qty = (parseInt(products[idx].so_qty) || 0) + qty;
+        candidateProducts[idx].so_qty =
+            (parseInt(candidateProducts[idx].so_qty) || 0) + qty;
     }
 
-    toastr.success("", "Berhasil menambahkan Produk");
-    refreshTableProduct();
+    checkSoStockThenAdd(
+        candidateProducts,
+        function () {
+            products = candidateProducts;
+            toastr.success("", "Berhasil menambahkan Produk");
+            refreshTableProduct();
 
-    $("#so_sku").val(null).trigger("change");
-    fillSoUnitInput(null);
-    $("#so_qty_input").val(1);
+            $("#so_sku").val(null).trigger("change");
+            fillSoUnitInput(null);
+            $("#so_qty_input").val(1);
+        },
+        "#btn-add-product-so",
+    );
 });
+
+/**
+ * Cek stok bahan/produk sebelum baris BENAR-BENAR masuk ke `products` - GitHub #116,
+ * meniru pola continueAddProduct()/checkProductionStock() di Produksi (GitHub #101/#105).
+ * Dipanggil dengan salinan `products` yang SUDAH termasuk baris baru/gabungan; kalau
+ * /checkSalesOrderStock lolos, `onOk()` dijalankan (baris itu dipanggil push oleh caller
+ * ke `products` asli) - kalau tidak, popup error/rekomendasi gudang yang sama seperti ACC
+ * ditampilkan dan baris TIDAK ditambahkan.
+ *
+ * Ini murni peringatan dini di UI (lihat catatan di checkSalesOrderStock() backend) -
+ * submit akhir (Tambah/Update Pengiriman) tetap tidak diblokir oleh stok saat ini, sesuai
+ * keputusan GitHub #99.
+ */
+function checkSoStockThenAdd(candidateProducts, onOk, $btn) {
+    if ($btn) LoadingButton($btn);
+    $.ajax({
+        url: "/checkSalesOrderStock",
+        method: "post",
+        data: {
+            products: JSON.stringify(candidateProducts),
+            retail_warehouse_id: firstRetailWarehouseId(),
+            _token: token,
+        },
+        headers: {
+            "X-CSRF-TOKEN": token,
+        },
+        success: function (e) {
+            if ($btn) ResetLoadingButton($btn, '<i class="fe fe-plus"></i> Tambah');
+            if (!e || e.status != 1) {
+                if (e && e.recommendations && e.recommendations.length) {
+                    showStockRecommendModal(e);
+                } else {
+                    showSoErrorModal(
+                        (e && e.header) || "Stok tidak cukup",
+                        (e && e.message) || "Stok tidak mencukupi",
+                    );
+                }
+                return;
+            }
+            onOk();
+        },
+        error: function (a) {
+            if ($btn) ResetLoadingButton($btn, '<i class="fe fe-plus"></i> Tambah');
+            if (handlePermissionError(a)) return;
+            console.log(a);
+            notifikasi(
+                "error",
+                "Gagal Cek Stok",
+                "Terjadi kesalahan saat memeriksa stok. Silakan coba lagi.",
+            );
+        },
+    });
+}
 
 var soXhr = null;
 

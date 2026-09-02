@@ -126,6 +126,65 @@ class CustomerController extends Controller
         return 1;
     }
 
+    /**
+     * Endpoint dipanggil dari JS setiap kali user menambah baris produk ke
+     * "Daftar Produk" pada modal Tambah/Update Pengiriman - GitHub #116, meniru
+     * pola checkProductionStock() di Produksi (GitHub #101/#105). Menerima
+     * `products` yang SUDAH termasuk baris yang baru mau ditambahkan (client
+     * kirim seluruh array setelah push/merge), supaya simulasi stok per gudang
+     * dihitung dari kondisi akhir yang benar.
+     *
+     * Read-only - hanya mensimulasikan ketersediaan lewat SalesOrderStock::buildPlan(),
+     * TIDAK memutasi stok. Ini murni peringatan dini di UI: insertSalesOrder()/
+     * updateSalesOrder() sendiri SENGAJA tetap tidak diblokir oleh stok saat ini
+     * (lihat catatan GitHub #99 di insertSalesOrder() di atas) - pemotongan +
+     * pengecekan stok yang sesungguhnya tetap terjadi di accSO(). Baris yang lolos
+     * cek ini saat ditambahkan bisa saja tetap gagal di ACC kalau stok berkurang
+     * lagi sebelum diterima, dan sebaliknya baris yang gagal di sini bisa saja
+     * lolos nanti kalau stok bertambah (produksi/PO/transfer) sebelum ACC.
+     */
+    function checkSalesOrderStock(Request $req)
+    {
+        $productsData = json_decode($req->input('products', '[]'), true);
+        if (! is_array($productsData) || empty($productsData)) {
+            return response()->json(['status' => 1]);
+        }
+
+        $productsData = SalesOrderStock::assignBulkWarehouseToProducts($productsData);
+
+        $retailErr = SalesOrderStock::validateRetailWarehouseUnits($productsData);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Satuan tidak valid',
+                'message' => $retailErr,
+            ]);
+        }
+
+        $retailWarehouseId = $req->input('retail_warehouse_id');
+        $retailErr = SalesOrderStock::validateRetailSelection($productsData, $retailWarehouseId);
+        if ($retailErr) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang eceran wajib',
+                'message' => $retailErr,
+            ]);
+        }
+
+        $plan = SalesOrderStock::buildPlan($productsData, $retailWarehouseId ?: null);
+        if (! ($plan['ok'] ?? false)) {
+            return response()->json([
+                'status' => 0,
+                'header' => $plan['header'] ?? 'Stok tidak cukup',
+                'message' => $plan['message'] ?? 'Stok tidak mencukupi',
+                'products' => $plan['products'] ?? [],
+                'recommendations' => $plan['recommendations'] ?? [],
+            ]);
+        }
+
+        return response()->json(['status' => 1]);
+    }
+
     function updateSalesOrder(Request $req)
     {
         $data = $req->all();
