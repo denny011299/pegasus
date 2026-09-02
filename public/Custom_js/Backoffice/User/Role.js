@@ -216,19 +216,28 @@
         var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();
         showModalDelete("Apakah yakin ingin menghapus peran ini?", "btn-delete-role");
         $('#btn-delete-role').attr("role_id", data.role_id);
+        $('#btn-delete-role').attr("force", "0");
     });
 
-    $(document).on("click", "#btn-delete-role", function () {
+    function submitDeleteRole(force) {
         $.ajax({
             url: "/deleteRole",
             data: {
                 role_id: $('#btn-delete-role').attr('role_id'),
+                force: force ? 1 : 0,
                 _token: token
             },
             method: "post",
             success: function (e) {
                 if (e && e.status == -1) {
                     $('.modal').modal("hide");
+                    if (e.need_confirmation) {
+                        // Ada pengguna yang masih memakai peran ini, minta konfirmasi
+                        // untuk melepas peran dari pengguna tersebut sekaligus hapus peran.
+                        $('#btn-delete-role').attr("force", "1");
+                        showModalDelete(e.message, "btn-delete-role");
+                        return;
+                    }
                     notifikasi('error', "Gagal Delete", e.message || "Gagal hapus peran");
                     return;
                 }
@@ -242,6 +251,11 @@
                 notifikasi('error', "Gagal Delete", "Gagal hapus peran");
             }
         });
+    }
+
+    $(document).on("click", "#btn-delete-role", function () {
+        var force = $(this).attr("force") === "1";
+        submitDeleteRole(force);
     });
 
     $(document).on("click", "#btn_save_dash_widgets", function () {

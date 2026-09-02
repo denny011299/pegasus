@@ -79,19 +79,33 @@ class Role extends Model
             return ['status' => -1, 'message' => 'Peran tidak ditemukan'];
         }
 
+        $force = filter_var($data['force'] ?? false, FILTER_VALIDATE_BOOLEAN);
+
         $staffCount = Staff::query()
             ->where('status', 1)
             ->where('role_id', $roleId)
             ->count();
-        if ($staffCount > 0) {
+
+        if ($staffCount > 0 && !$force) {
             return [
                 'status' => -1,
-                'message' => "Masih ada {$staffCount} pengguna yang memakai peran ini",
+                'need_confirmation' => true,
+                'staff_count' => $staffCount,
+                'message' => "Masih ada {$staffCount} pengguna yang memakai peran ini. Lepas peran dari pengguna tersebut dan hapus peran?",
             ];
         }
 
-        $t->status = 0;
-        $t->save();
+        \DB::transaction(function () use ($t, $roleId, $staffCount) {
+            if ($staffCount > 0) {
+                Staff::query()
+                    ->where('status', 1)
+                    ->where('role_id', $roleId)
+                    ->update(['role_id' => null]);
+            }
+
+            $t->status = 0;
+            $t->save();
+        });
 
         return 1;
     }
