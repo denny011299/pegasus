@@ -1755,15 +1755,17 @@
         $(document).on("click", ".cr-edit", function () { openRecord($(this).data("key"), "edit"); });
         $(document).on("click", ".cr-delete", function () {
             var key = $(this).data("key");
-            Swal.fire({ icon: "warning", title: "Hapus pengembalian?", showCancelButton: true, confirmButtonText: "Hapus", confirmButtonColor: "#dc2626" })
-                .then(function (result) {
-                    if (!result.isConfirmed) return;
-                    $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
-                        .done(function (response) {
-                            if (typeof toastr !== "undefined") toastr.success(response.message);
-                            refreshCustomerReturn();
-                        }).fail(notifyError);
-                });
+            showModalDelete("Hapus pengembalian ini?", "btn-delete-customer-return");
+            $("#btn-delete-customer-return").attr("data-key", key);
+        });
+        $(document).on("click", "#btn-delete-customer-return", function () {
+            var key = $(this).attr("data-key");
+            $.post("/customerReturns/" + encodeURIComponent(key) + "/delete", { _token: csrf() })
+                .done(function (response) {
+                    $(".modal").modal("hide");
+                    if (typeof toastr !== "undefined") toastr.success(response.message);
+                    refreshCustomerReturn();
+                }).fail(notifyError);
         });
         $("#cr-accept").on("click", function () { processRecord($("#cr-doc-key").val(), "accept", "ACC pengembalian?"); });
         $("#cr-decline").on("click", function () { processRecord($("#cr-doc-key").val(), "decline", "Tolak pengembalian?"); });
