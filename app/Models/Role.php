@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\RoleIds;
 use Illuminate\Database\Eloquent\Model;
 
 class Role extends Model
@@ -63,8 +64,35 @@ class Role extends Model
 
     function deleteRole($data)
     {
-        $t = self::find($data["role_id"]);
+        $roleId = (int) ($data['role_id'] ?? 0);
+        if ($roleId <= 0) {
+            return ['status' => -1, 'message' => 'Peran tidak valid'];
+        }
+
+        $protected = [RoleIds::DIREKSI, RoleIds::DEVELOPER, RoleIds::QC_GUDANG];
+        if (in_array($roleId, $protected, true)) {
+            return ['status' => -1, 'message' => 'Peran sistem tidak boleh dihapus'];
+        }
+
+        $t = self::find($roleId);
+        if (!$t || (int) $t->status !== 1) {
+            return ['status' => -1, 'message' => 'Peran tidak ditemukan'];
+        }
+
+        $staffCount = Staff::query()
+            ->where('status', 1)
+            ->where('role_id', $roleId)
+            ->count();
+        if ($staffCount > 0) {
+            return [
+                'status' => -1,
+                'message' => "Masih ada {$staffCount} pengguna yang memakai peran ini",
+            ];
+        }
+
         $t->status = 0;
         $t->save();
+
+        return 1;
     }
 }

@@ -1,6 +1,7 @@
     var mode=1;
     var table;
     var selectedRoleForWidgets = null;
+    var protectedRoleIds = [1, 4, 7];
     $(document).ready(function(){
         inisialisasi();
         refreshRole();
@@ -70,6 +71,13 @@
                             '" class="btn btn-greys me-2"><i class="fa fa-shield me-1"></i> Perizinan</a>';
                         rp +=
                             '<a class="btn btn-greys me-2 btn_dashboard_widgets"><i class="fa fa-th-large me-1"></i> Widget Dashboard</a>';
+                    }
+                    if (
+                        hasAccessAction("Peran & Perizinan", "delete") &&
+                        protectedRoleIds.indexOf(parseInt(e[i].role_id, 10)) === -1
+                    ) {
+                        rp +=
+                            '<a href="javascript:void(0);" class="btn btn-greys me-2 btn_delete"><i class="fa fa-trash me-1"></i> Hapus Peran</a>';
                     }
                     e[i].action =
                         rp ||
@@ -202,6 +210,38 @@
 
     $(document).on("change", ".dash-widget-checkbox", function () {
         syncDashboardCheckAll();
+    });
+
+    $(document).on("click", ".btn_delete", function () {
+        var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();
+        showModalDelete("Apakah yakin ingin menghapus peran ini?", "btn-delete-role");
+        $('#btn-delete-role').attr("role_id", data.role_id);
+    });
+
+    $(document).on("click", "#btn-delete-role", function () {
+        $.ajax({
+            url: "/deleteRole",
+            data: {
+                role_id: $('#btn-delete-role').attr('role_id'),
+                _token: token
+            },
+            method: "post",
+            success: function (e) {
+                if (e && e.status == -1) {
+                    $('.modal').modal("hide");
+                    notifikasi('error', "Gagal Delete", e.message || "Gagal hapus peran");
+                    return;
+                }
+                $('.modal').modal("hide");
+                refreshRole();
+                notifikasi('success', "Berhasil Delete", "Berhasil hapus peran");
+            },
+            error: function (e) {
+                if (handlePermissionError(e)) return;
+                console.log(e);
+                notifikasi('error', "Gagal Delete", "Gagal hapus peran");
+            }
+        });
     });
 
     $(document).on("click", "#btn_save_dash_widgets", function () {
