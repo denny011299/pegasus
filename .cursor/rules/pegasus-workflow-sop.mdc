@@ -1,0 +1,43 @@
+---
+description: SOP git fase2 (ruben→main) + DataTables wajib server-side + skeleton loading
+alwaysApply: true
+---
+
+# Pegasus Workflow SOP
+
+## Git (fase-2)
+
+- **Fitur besar**: buat branch baru dari `fase2/main`, kerjakan di situ.
+- **Kerja rutin**: branch `fase2/ruben`.
+- **Selesai**: merge/push ke `fase2/main` — jangan commit langsung ke `fase2/main` kecuali user minta eksplisit.
+- Sebelum merge besar yang menyentuh stok/modal: ikuti juga `.cursor/rules/fase2-merge-inventory.mdc`.
+
+```
+# rutin
+git checkout fase2/ruben
+# ... commit ...
+git checkout fase2/main && git merge fase2/ruben && git push
+
+# fitur besar
+git checkout -b fase2/feature-xyz fase2/main
+```
+
+## DataTables UI
+
+Semua tabel DataTables baru atau refactor **wajib**:
+
+1. **Server-side pagination** — `serverSide: true`, `processing: true`, `deferRender: true`, `pageLength`/`lengthMenu` eksplisit.
+2. **Skeleton loading** — wrapper `#tableX-wrap` dengan class `dt-pending` / `dt-ready` / `is-loading`; helper `showXSkeleton()` / `hideXSkeleton()`.
+
+### Pola referensi repo
+
+| Layer | File | Pola |
+|-------|------|------|
+| Backend | `app/Support/CashBesarDataTable.php` | `::paginate($req->all())` → JSON `draw`, `recordsTotal`, `recordsFiltered`, `data` |
+| Frontend | `public/Custom_js/Backoffice/Reports/Cash.js` | `serverSide: true` + `showCashSkeleton()` saat init + `hideCashSkeleton()` di `initComplete`/`complete` ajax |
+| Frontend | `public/Custom_js/Backoffice/Customers/Sales_Order.js` | `inisialisasi()` dengan `serverSide: true`, `searchDelay`, `language.processing` spinner |
+
+### Jangan
+
+- Load semua baris ke client (`serverSide: false`) untuk list operasional.
+- Tampilkan tabel kosong tanpa skeleton saat first load atau reload ajax.
