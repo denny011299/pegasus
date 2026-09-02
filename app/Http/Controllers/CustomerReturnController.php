@@ -707,17 +707,16 @@ class CustomerReturnController extends Controller
     }
 
     /**
-     * Produk eceran: stok masuk gudang utama (warehouse_id), ST ke eceran (destination_warehouse_id).
-     * Gudang eceran aktif → tampilkan lewat destination; gudang utama → sembunyikan yang punya destinasi eceran.
+     * Filter baris produk per gudang aktif.
+     * - Gudang eceran: hanya baris dengan warehouse_id = eceran (retur langsung).
+     *   Baris utama + destination_warehouse_id (ST setelah ACC) tidak tampil di eceran.
+     * - Gudang utama: warehouse_id = utama tanpa destination eceran (retail lewat ST disembunyikan).
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
         $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
-        if (! $activeIsMain && $hasDest) {
-            $query->where(function ($scoped) use ($alias, $warehouseId) {
-                $scoped->where("{$alias}.warehouse_id", $warehouseId)
-                    ->orWhere("{$alias}.destination_warehouse_id", $warehouseId);
-            });
+        if (! $activeIsMain) {
+            $query->where("{$alias}.warehouse_id", $warehouseId);
 
             return;
         }
