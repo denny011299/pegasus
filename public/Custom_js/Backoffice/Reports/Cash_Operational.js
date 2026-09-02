@@ -8,6 +8,27 @@
     var cashTableReady = false;
     var cashPendingDeepLink = null;
 
+    /**
+     * cr_img/cs_img are supposed to be a JSON-encoded array of filenames, but some rows (older
+     * data, or rows inserted by another path such as the External API) store a single bare
+     * filename string instead, or leave the field null/empty. `JSON.parse()` throws on a bare
+     * filename or an empty string, and indexing `img[0]` on the resulting `null` throws too — both
+     * were uncaught, silently aborting the whole click handler before it ever reached
+     * `.modal("show")`, which is why the "Lihat"/"Update" eye/edit icon on Dompet Armada/Sales
+     * appeared to do nothing. Always returns a plain array, empty when there's nothing usable.
+     */
+    function parseCashPhotoList(raw) {
+        if (!raw) return [];
+        try {
+            var parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) return parsed;
+            if (parsed) return [parsed];
+            return [];
+        } catch (e) {
+            return [raw];
+        }
+    }
+
     function updateCashOperationalFooter(debits, credits) {
         var sisa = (parseInt(debits, 10) || 0) - (parseInt(credits, 10) || 0);
         $('#tableCash tfoot .debits').html(`Rp ${formatRupiahMinus(debits)}`);
@@ -2277,16 +2298,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
-            var img = JSON.parse(data.cr_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cr_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-            $('#check_foto_armada').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+                $('#check_foto_armada').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_armada').hide();
+            }
             $('#bukti_armada').val(data.cr_img);
             
         } else {
@@ -2339,16 +2364,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
             $('#btn-lihat-bukti-armada').show();
-            var img = JSON.parse(data.cr_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cr_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-            $('#check_foto_armada').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+                $('#check_foto_armada').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_armada').hide();
+            }
             $('#bukti_armada').val(data.cr_img);
             
         } else {
@@ -2435,16 +2464,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
             $('#btn-lihat-bukti-sales').show();
-            var img = JSON.parse(data.cs_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cs_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-            $('#check_foto_sales').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+                $('#check_foto_sales').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_sales').hide();
+            }
             $('#bukti_sales').val(data.cs_img);
             
         } else {
@@ -2496,16 +2529,20 @@
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
             $('#btn-lihat-bukti-sales').show();
-            var img = JSON.parse(data.cs_img);
-            list_photo = img || null;
+            var img = parseCashPhotoList(data.cs_img);
+            list_photo = img;
             console.log(list_photo);
-    
-            $('#modalViewPhoto .modal-footer').show();
-            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-            $('#fotoProduksiImage').attr('index', 0);
-            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-            $('#check_foto_sales').show();
-            $('#jumlahFoto').html(list_photo.length);
+
+            if (img.length) {
+                $('#modalViewPhoto .modal-footer').show();
+                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+                $('#fotoProduksiImage').attr('index', 0);
+                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+                $('#check_foto_sales').show();
+                $('#jumlahFoto').html(list_photo.length);
+            } else {
+                $('#check_foto_sales').hide();
+            }
             $('#bukti_sales').val(data.cs_img);
             
         } else {
