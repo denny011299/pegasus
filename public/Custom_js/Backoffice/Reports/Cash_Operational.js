@@ -1119,13 +1119,14 @@
                     <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
-                </tr>    
+                </tr>
             `);
-        }); 
+        });
     }
 
     $(document).on("click", ".btn_delete_row", function() {
@@ -1327,13 +1328,14 @@
                     <td style="width: 25%">${e.cgd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
-                </tr>    
+                </tr>
             `);
-        }); 
+        });
     }
 
     $(document).on("click", ".btn_delete_row_gudang", function() {
@@ -1543,13 +1545,14 @@
                     <td style="width: 25%">${e.crd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
                 </tr>
             `);
-        }); 
+        });
     }
 
     $(document).on("click", ".btn_delete_row_armada", function() {
@@ -1751,9 +1754,10 @@
                     <td style="width: 25%">${e.csd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
                     <td class="text-center d-flex align-items-center">
+                        ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
-                        </a>
+                        </a>`}
                     </td>
                 </tr>
             `);
@@ -1949,7 +1953,7 @@
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
-            $('#oc_nominal').val(data.ca_nominal).attr('disabled', false);
+            $('#oc_nominal').val(formatRupiahMinus(data.ca_nominal)).attr('disabled', false);
             $('#oc_notes').val(data.ca_notes).attr('disabled', false);
             $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
@@ -2004,7 +2008,7 @@
         else {
             $('#jenis_input').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi').val(data.ca_aksi).attr('disabled', true);
-            $('#oc_nominal').val(data.ca_nominal).attr('disabled', true);
+            $('#oc_nominal').val(formatRupiahMinus(data.ca_nominal)).attr('disabled', true);
             $('#oc_notes').val(data.ca_notes).attr('disabled', true);
             $('#oc_date').val(data.ca_date).attr('disabled', true);
         }
@@ -2087,7 +2091,7 @@
         else {
             $('#jenis_input_gudang').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
-            $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', false);
+            $('#oc_nominal_gudang').val(formatRupiahMinus(data.cg_nominal)).attr('disabled', false);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', false);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);
@@ -2138,7 +2142,7 @@
         else {
             $('#jenis_input_gudang').val("saldo").trigger('change').attr('disabled', true);
             $('#oc_transaksi_gudang').val(data.cg_aksi).attr('disabled', true);
-            $('#oc_nominal_gudang').val(data.cg_nominal).attr('disabled', true);
+            $('#oc_nominal_gudang').val(formatRupiahMinus(data.cg_nominal)).attr('disabled', true);
             $('#oc_notes_gudang').val(data.cg_notes).attr('disabled', true);
         }
         $('#staff_id_gudang').append(`<option value="${data.staff_id}">${data.staff_name}</option>`).attr('disabled', true);

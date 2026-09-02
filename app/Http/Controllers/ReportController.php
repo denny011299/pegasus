@@ -1226,12 +1226,18 @@ class ReportController extends Controller
         } else {
             $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
         }
-        if ($q->status != 1) {
-            $staff = Staff::find($q->acc_by)->staff_name;
+        // GitHub #130: kalau pengajuan/pengembaliannya sudah dihapus (mis. staff yang
+        // mengajukan menghapusnya sendiri sebelum sempat di-ACC), $q null dan
+        // `$q->status` dulu crash 500 — muncul di UI sebagai error generik tanpa
+        // penjelasan. Sekarang ditangani seperti acceptCashGudang().
+        if (!$q || $q->status != 1) {
+            $staff = ($q && $q->acc_by) ? Staff::find($q->acc_by) : null;
             return response()->json([
                 "status" => -2,
                 "header" => "Gagal ACC",
-                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+                "message" => !$q
+                    ? "Pengajuan tidak ditemukan, kemungkinan sudah dihapus"
+                    : "Pengajuan sudah diterima/ditolak oleh " . ($staff->staff_name ?? 'staff lain')
             ]);
         }
         return (new CashAdmin())->acceptCashAdmin($data);
@@ -1245,12 +1251,15 @@ class ReportController extends Controller
         } else {
             $q = CashAdmin::where('cash_id', $data['cash_id'])->first();
         }
-        if ($q->status != 1) {
-            $staff = Staff::find($q->acc_by)->staff_name;
+        // GitHub #130: lihat catatan yang sama di acceptCashAdmin() di atas.
+        if (!$q || $q->status != 1) {
+            $staff = ($q && $q->acc_by) ? Staff::find($q->acc_by) : null;
             return response()->json([
                 "status" => -2,
                 "header" => "Gagal ACC",
-                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+                "message" => !$q
+                    ? "Pengajuan tidak ditemukan, kemungkinan sudah dihapus"
+                    : "Pengajuan sudah diterima/ditolak oleh " . ($staff->staff_name ?? 'staff lain')
             ]);
         }
         return (new CashAdmin())->declineCashAdmin($data);
@@ -1600,12 +1609,16 @@ class ReportController extends Controller
         } else {
             $cg = CashGudang::where('cash_id', $data["cash_id"])->first();
         }
-        if ($cg->status != 1) {
-            $staff = Staff::find($cg->acc_by)->staff_name;
+        // GitHub #130: sama seperti acceptCashAdmin/declineCashAdmin — $cg bisa null
+        // kalau pengajuannya sudah dihapus, jangan crash 500.
+        if (!$cg || $cg->status != 1) {
+            $staff = ($cg && $cg->acc_by) ? Staff::find($cg->acc_by) : null;
             return response()->json([
                 "status" => -2,
                 "header" => "Gagal ACC",
-                "message" => "Pengajuan sudah diterima/ditolak oleh " . $staff
+                "message" => !$cg
+                    ? "Pengajuan tidak ditemukan, kemungkinan sudah dihapus"
+                    : "Pengajuan sudah diterima/ditolak oleh " . ($staff->staff_name ?? 'staff lain')
             ]);
         }
         return (new CashGudang())->declineCashGudang($data);
