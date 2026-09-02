@@ -35,14 +35,18 @@
         cashLoadXhr = null;
     }
 
+    function cashChildHas(rows) {
+        return Array.isArray(rows) && rows.length > 0;
+    }
+
     function cashHasChildRow(rowData) {
         return !!(
-            rowData.armada_operasional?.length ||
-            rowData.armada_penyerahan?.length ||
-            rowData.sales_operasional?.length ||
-            rowData.sales_penyerahan?.length ||
-            rowData.admin_operasional?.length ||
-            rowData.admin_penyerahan?.length
+            cashChildHas(rowData.armada_operasional) ||
+            cashChildHas(rowData.armada_penyerahan) ||
+            cashChildHas(rowData.sales_operasional) ||
+            cashChildHas(rowData.sales_penyerahan) ||
+            cashChildHas(rowData.admin_operasional) ||
+            cashChildHas(rowData.admin_penyerahan)
         );
     }
 
@@ -244,13 +248,13 @@
         let rowData = row.data();
         if (!cashHasChildRow(rowData)) return;
 
-        if (rowData.armada_operasional || rowData.armada_penyerahan) {
+        if (cashChildHas(rowData.armada_operasional) || cashChildHas(rowData.armada_penyerahan)) {
             row.child(formatArmada(rowData)).show();
         }
-        else if (rowData.sales_operasional || rowData.sales_penyerahan) {
+        else if (cashChildHas(rowData.sales_operasional) || cashChildHas(rowData.sales_penyerahan)) {
             row.child(formatSales(rowData)).show();
         }
-        else if (rowData.admin_operasional || rowData.admin_penyerahan) {
+        else if (cashChildHas(rowData.admin_operasional) || cashChildHas(rowData.admin_penyerahan)) {
             row.child(formatAdmin(rowData)).show();
         }
         tr.addClass('shown');
