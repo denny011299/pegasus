@@ -2,6 +2,7 @@
     var table;
     var selectedRoleForWidgets = null;
     var protectedRoleIds = [1, 4, 7];
+    var latestRoles = [];
     $(document).ready(function(){
         inisialisasi();
         refreshRole();
@@ -35,6 +36,7 @@
             columns: [
                 { data: "role_id" },
                 { data: "role_name" },
+                { data: "user_count", class: "text-center" },
                 { data: "role_date" },
                 { data: "action", class: "d-flex align-items-center" },
             ],
@@ -55,10 +57,12 @@
                     e = e.original || [];
                 }
                 console.log(e);
-                table.clear().draw(); 
+                latestRoles = e;
+                table.clear().draw();
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
                     e[i].role_date = moment(e[i].created_at).format('D MMM YYYY');
+                    e[i].user_count = e[i].user_count || 0;
                     var rp = "";
                     if (hasAccessAction("Peran & Perizinan", "edit")) {
                         rp +=
@@ -216,18 +220,106 @@
         var data = $('#tableRole').DataTable().row($(this).parents('tr')).data();
         showModalDelete("Apakah yakin ingin menghapus peran ini?", "btn-delete-role");
         $('#btn-delete-role').attr("role_id", data.role_id);
+        $('#btn-delete-role').attr("role_name", data.role_name);
     });
 
-    $(document).on("click", "#btn-delete-role", function () {
+    function buildReassignRoleOptions(excludeRoleId) {
+        var options = '<option value="">— Tidak ada peran —</option>';
+        for (var i = 0; i < latestRoles.length; i++) {
+            var r = latestRoles[i];
+            if (parseInt(r.role_id, 10) === parseInt(excludeRoleId, 10)) continue;
+            options += '<option value="' + r.role_id + '">' + $('<div>').text(r.role_name).html() + '</option>';
+        }
+        return options;
+    }
+
+    function openReassignModal(roleId, roleName, users, staffCount) {
+        $('#reassign_role_name').text(roleName || "-");
+
+        // Kontrol akses (GitHub #124): tanpa "Pengguna|view" daftar user tidak
+        // boleh ditampilkan sama sekali, hanya jumlahnya. Dengan "view" tapi
+        // tanpa "edit", daftar boleh tampil tapi kolom Peran Pengganti tidak
+        // (user tidak boleh mengubah peran pengguna lain tanpa akses edit).
+        var canViewUsers = hasAccessAction("Pengguna", "view");
+        var canEditUsers = hasAccessAction("Pengguna", "edit");
+
+        if (!canViewUsers) {
+            $('#reassign_no_access_count').text(staffCount != null ? staffCount : (users || []).length);
+            // NB: pakai toggleClass('d-none'), bukan .show()/.hide() — elemen ini
+            // punya class Bootstrap "d-flex" (display:flex !important) yang menang
+            // atas inline style non-!important yang dipasang .show()/.hide().
+            $('#reassign_no_access_notice').removeClass('d-none');
+            $('#reassign_table_section').addClass('d-none');
+            $('#reassign_role_users_body').html('');
+        } else {
+            $('#reassign_no_access_notice').addClass('d-none');
+            $('#reassign_table_section').removeClass('d-none');
+            $('#reassign_col_role_header').toggleClass('d-none', !canEditUsers);
+
+            var optionsHtml = canEditUsers ? buildReassignRoleOptions(roleId) : '';
+            var rows = '';
+            for (var i = 0; i < users.length; i++) {
+                var u = users[i];
+                rows += '<tr data-staff-id="' + u.staff_id + '">';
+                rows += '<td>' + $('<div>').text(u.staff_name).html() + '</td>';
+                if (canEditUsers) {
+                    rows += '<td><select class="form-select reassign-role-select">' + optionsHtml + '</select></td>';
+                }
+                rows += '</tr>';
+            }
+            if (!rows) {
+                rows = '<tr class="pg-popup-table-empty"><td colspan="2">Tidak ada pengguna yang memakai peran ini.</td></tr>';
+            }
+            $('#reassign_role_users_body').html(rows);
+        }
+
+        $('#btn-confirm-reassign-delete-role').attr("role_id", roleId);
+        $('.modal').modal("hide");
+        $('#role_reassign_modal').modal("show");
+    }
+
+    // Dropdown peran pengganti dibuat searchable (select2), sama seperti pola
+    // #staff_position di insertStaff.js — lokal, bukan AJAX, karena daftar
+    // peran sudah dimuat lewat refreshRole(). Hanya ada kalau user punya akses
+    // "Pengguna|edit" (lihat openReassignModal).
+    $('#role_reassign_modal').on('shown.bs.modal', function () {
+        $('#reassign_role_users_body .reassign-role-select').each(function () {
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({
+                    placeholder: "Pilih Peran Pengganti",
+                    allowClear: true,
+                    width: "100%",
+                    dropdownParent: $('body'),
+                });
+            }
+        });
+    });
+
+    $('#role_reassign_modal').on('hidden.bs.modal', function () {
+        $('#reassign_role_users_body .reassign-role-select.select2-hidden-accessible').each(function () {
+            $(this).select2("destroy");
+        });
+    });
+
+    function submitDeleteRole(roleId, reassignments) {
+        var payload = {
+            role_id: roleId,
+            _token: token
+        };
+        if (reassignments) payload.reassignments = reassignments;
+
         $.ajax({
             url: "/deleteRole",
-            data: {
-                role_id: $('#btn-delete-role').attr('role_id'),
-                _token: token
-            },
+            data: payload,
             method: "post",
             success: function (e) {
                 if (e && e.status == -1) {
+                    if (e.need_confirmation) {
+                        // Ada pengguna yang masih memakai peran ini, minta pilihan
+                        // peran pengganti per pengguna sebelum benar-benar dihapus.
+                        openReassignModal(roleId, $('#btn-delete-role').attr('role_name'), e.users || [], e.staff_count);
+                        return;
+                    }
                     $('.modal').modal("hide");
                     notifikasi('error', "Gagal Delete", e.message || "Gagal hapus peran");
                     return;
@@ -242,6 +334,22 @@
                 notifikasi('error', "Gagal Delete", "Gagal hapus peran");
             }
         });
+    }
+
+    $(document).on("click", "#btn-delete-role", function () {
+        submitDeleteRole($(this).attr('role_id'), null);
+    });
+
+    $(document).on("click", "#btn-confirm-reassign-delete-role", function () {
+        var roleId = $(this).attr('role_id');
+        var reassignments = [];
+        $('#reassign_role_users_body tr').each(function () {
+            reassignments.push({
+                staff_id: $(this).data('staff-id'),
+                role_id: $(this).find('.reassign-role-select').val() || null
+            });
+        });
+        submitDeleteRole(roleId, JSON.stringify(reassignments));
     });
 
     $(document).on("click", "#btn_save_dash_widgets", function () {
