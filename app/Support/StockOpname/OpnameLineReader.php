@@ -101,20 +101,30 @@ class OpnameLineReader
         }
 
         $pending = (int) $sto->status === self::STATUS_MENUNGGU;
-        // Stok live selalu diambil: dipakai sebagai stok sistem saat dokumen masih menunggu, dan
-        // sebagai petunjuk placeholder di halaman input untuk satuan yang belum dihitung. Dipin ke
-        // gudang dokumen ini (bukan gudang aktif sesi pembaca) -- lihat liveStockMap().
-        $live = $this->liveStockMap($lines, $sto->warehouse_id ?: null);
+        // GitHub #115: draft belum apa-apa -- jangan ambil/lihatkan stok sistem sama sekali,
+        // cuma angka yang benar-benar sudah diinput staf sendiri yang boleh tampil. Beda dari
+        // "menunggu" (sudah diajukan): itu tetap baca live seperti sebelumnya di bawah.
+        $isDraft = (bool) $sto->is_draft;
+        // Stok live selalu diambil (kecuali draft): dipakai sebagai stok sistem saat dokumen masih
+        // menunggu, dan sebagai petunjuk placeholder di halaman input untuk satuan yang belum
+        // dihitung. Dipin ke gudang dokumen ini (bukan gudang aktif sesi pembaca) -- lihat
+        // liveStockMap().
+        $live = $isDraft ? collect() : $this->liveStockMap($lines, $sto->warehouse_id ?: null);
 
         return $lines
             ->groupBy('product_variant_id')
-            ->map(function ($group) use ($pending, $live) {
+            ->map(function ($group) use ($pending, $live, $isDraft) {
                 $first = $group->first();
                 $units = [];
 
                 foreach ($group as $line) {
-                    $liveQty = (int) ($live->get($line->product_variant_id.'-'.$line->unit_id) ?? 0);
-                    $system = $pending ? $liveQty : (int) ($line->sol_system_qty_final ?? 0);
+                    if ($isDraft) {
+                        $liveQty = null;
+                        $system = null;
+                    } else {
+                        $liveQty = (int) ($live->get($line->product_variant_id.'-'.$line->unit_id) ?? 0);
+                        $system = $pending ? $liveQty : (int) ($line->sol_system_qty_final ?? 0);
+                    }
 
                     $units[] = [
                         'unit' => $line->sol_unit_short_name ?? ('unit#'.$line->unit_id),
@@ -122,7 +132,7 @@ class OpnameLineReader
                         'system' => $system,
                         'live' => $liveQty,
                         'counted' => $line->sol_counted_qty === null ? null : (int) $line->sol_counted_qty,
-                        'selisih' => $line->selisih($system),
+                        'selisih' => $isDraft ? null : $line->selisih($system),
                     ];
                 }
 
@@ -240,6 +250,11 @@ class OpnameLineReader
      * halaman edit (legacyItems()) tetap null apa adanya -- cuma string yang dicetak di sini
      * yang dihumanisasi. Untuk dokumen lama humanisasinya sudah terjadi lebih awal di
      * readLegacy() (di dalam $units itu sendiri), jadi di sini jadi no-op untuknya.
+     *
+     * GitHub #115: draft tidak pernah membawa stok sistem ($u['system'] === null, lihat
+     * readCurrent()) -- fallback di bawah TIDAK ADA apa pun untuk dijadikan pegangan, jadi
+     * "tidak dihitung" tercetak "-" apa adanya (bukan angka sistem yang memang tidak pernah
+     * diambil sama sekali).
      */
     private function text(array $units, string $key): string
     {
@@ -247,9 +262,9 @@ class OpnameLineReader
         foreach ($units as $u) {
             $value = $u[$key];
             if ($value === null) {
-                $value = $key === 'selisih' ? 0 : $u['system'];
+                $value = ($key === 'selisih' && $u['system'] !== null) ? 0 : $u['system'];
             }
-            $parts[] = $value.' '.$u['unit'];
+            $parts[] = ($value === null ? '-' : $value).' '.$u['unit'];
         }
 
         return implode(', ', $parts);

@@ -245,6 +245,13 @@ class StockController extends Controller
         if (!$sto) {
             abort(404);
         }
+        // GitHub #115: getStockOpname() sengaja TIDAK memfilter by-id lookup (komentar di
+        // model-nya) supaya buka-lewat-menu tetap kefilter dengan benar tapi buka-lewat-URL-
+        // langsung tidak diam-diam 404 untuk dokumen sendiri -- makanya draft milik staff lain
+        // baru diblok di sini, bukan lewat query itu.
+        if ($sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
+            abort(404);
+        }
 
         // Dokumen versi baru: isi $items dari stock_opname_lines lewat adaptor, dalam struktur
         // yang sama persis -- sisa method ini (urutan, $data, view) dipakai bersama, dan
@@ -1060,6 +1067,12 @@ class StockController extends Controller
                 abort(404);
             }
             $param['data'] = $rows[0];
+
+            // GitHub #115: kembaran guard DetailStockOpname() -- draft milik staff lain tidak
+            // boleh terbuka lewat URL langsung.
+            if ($param['data']->is_draft && !$this->canManageStockOpnameBahanDraft($param['data'])) {
+                abort(404);
+            }
 
             // Dokumen versi baru: ->item di atas datang dari getStockOpnameBahan() yang membaca
             // stock_opname_detail_bahans -- tabel itu tidak lagi ditulis untuk dokumen ini. Timpa
