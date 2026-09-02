@@ -186,8 +186,13 @@ class ProductIssuesDetail extends Model
 
             // Level di atasnya dijamin punya baris stok aktif — UnitRollUp hanya menaikkan ke
             // satuan yang sudah punya baris (lihat allowedSuppliesUnitIds()).
+            //
+            // GitHub #87 fix (2026-08-30): plan() sekarang existing-aware, jadi kredit di sini bisa
+            // NEGATIF (stok lama di level itu ikut naik satuan bersama retur ini) -- dulu "<= 0"
+            // salah membuang kredit negatif itu. "+=" tetap benar untuk delta negatif, jadi cukup
+            // skip yang benar-benar nol.
             foreach ($naikLevel as $credit) {
-                if ($credit['qty'] <= 0) continue;
+                if ($credit['qty'] === 0) continue;
 
                 $row = SuppliesStock::where('supplies_id', $m->supplies_id)
                     ->where('unit_id', $credit['unit_id'])
@@ -203,6 +208,11 @@ class ProductIssuesDetail extends Model
             // stok "pindah" satuan tanpa penjelasan. Pola log-nya sama dengan bongkar di
             // stockCheck(): satuan asal keluar (cat 2), satuan hasil masuk (cat 1). Caller tetap
             // menulis log utamanya sendiri.
+            //
+            // $naik ($t->pid_qty - $base['qty']) tetap valid dan tetap >= 0 walau $base['qty'] kini
+            // bisa negatif (existing-aware): plan()'s conservation property menjamin
+            // qty - base['qty'] == jumlah gabungan naikLevel dalam satuan dasar, dan carry hasil
+            // pembagian selalu >= 0 -- lihat UnitRollUp::plan()'s docblock.
             if ($naikLevel !== []) {
                 $naik = (int) $t->pid_qty - (int) $base['qty'];
                 if ($naik > 0) {
@@ -212,13 +222,26 @@ class ProductIssuesDetail extends Model
                         'log_jumlah' => $naik, 'unit_id' => (int) $t->unit_id,
                     ]);
                 }
+                // Level PERANTARA (bukan base, bukan puncak) juga bisa punya kredit negatif kini --
+                // itu berarti stok lama DI LEVEL ITU ikut tergulung naik lagi ke level berikutnya,
+                // bukan cuma menyerap carry dari bawah. Catat sebagai keluar (cat 2) di level itu
+                // juga, supaya ledger konsisten di setiap level yang tersentuh, tidak cuma level
+                // base dan level yang bertambah.
                 foreach ($naikLevel as $credit) {
-                    if ($credit['qty'] <= 0) continue;
-                    (new LogStock())->insertLog([
-                        'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
-                        'log_item_id' => $m->supplies_id, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
-                        'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
-                    ]);
+                    if ($credit['qty'] === 0) continue;
+                    if ($credit['qty'] > 0) {
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
+                            'log_item_id' => $m->supplies_id, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
+                            'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
+                        ]);
+                    } else {
+                        (new LogStock())->insertLog([
+                            'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
+                            'log_item_id' => $m->supplies_id, 'log_notes' => 'Konversi unit (Naik satuan)',
+                            'log_jumlah' => abs($credit['qty']), 'unit_id' => $credit['unit_id'],
+                        ]);
+                    }
                 }
             }
 

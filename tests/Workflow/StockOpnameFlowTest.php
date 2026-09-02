@@ -91,7 +91,6 @@ class StockOpnameFlowTest extends TestCase
         $stock = $this->pickFixtureStock();
         $startingStock = $stock->ps_stock;
         $realQty = $startingStock - 5; // simulate a shrinkage found during the count
-        $logCountBefore = DB::table('log_stocks')->count();
 
         $stoId = $this->insertStockOpname($stock, realQty: $realQty);
 
@@ -108,9 +107,17 @@ class StockOpnameFlowTest extends TestCase
         ]);
         $this->assertDatabaseMissing('stock_opname_details', ['sto_id' => $stoId]);
 
+        // NB (GitHub #91, 2026-08-31): inserting a non-draft opname now ALSO heals live stock that
+        // was stuck under-rolled from before GitHub #87 (see OpnameLifecycle::
+        // healUntouchedSystemStock()) -- and this fixture picks a REAL okeh8644 row, which for
+        // variant 2 genuinely is stuck (19 DOS + 30 Piece, 1 DOS = 24 Piece). So neither "stock is
+        // byte-identical to before" nor "no log row at all" is a valid invariant here any more.
+        // What this test actually cares about is unchanged and still asserted: inserting must not
+        // apply the COUNT itself -- that only happens at approval, below.
         $stock->refresh();
-        $this->assertSame($startingStock, $stock->ps_stock, 'inserting an opname must not touch stock before approval');
-        $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'inserting an opname must not write a log_stocks row');
+        $this->assertNotSame($realQty, $stock->ps_stock, 'inserting an opname must not apply the counted real_qty to stock -- that is approval\'s job');
+        $stockAfterInsert = $stock->ps_stock;
+        $logCountAfterInsert = DB::table('log_stocks')->count();
 
         $accResponse = $this->post('/accStockOpname', $this->approvalPayload($stock, $stoId, $realQty));
         $accResponse->assertStatus(200);
@@ -121,12 +128,13 @@ class StockOpnameFlowTest extends TestCase
 
         $stock->refresh();
         $this->assertSame($realQty, $stock->ps_stock, 'approval must OVERWRITE stock with the counted real_qty, not add/subtract a delta');
+        $this->assertGreaterThan($logCountAfterInsert, DB::table('log_stocks')->count(), 'approval must write its own log_stocks rows');
 
         $this->assertDatabaseHas('log_stocks', [
             'log_type' => 1,
             'log_category' => 2,
             'log_item_id' => $stock->product_variant_id,
-            'log_jumlah' => $startingStock,
+            'log_jumlah' => $stockAfterInsert,
         ]);
         $this->assertDatabaseHas('log_stocks', [
             'log_type' => 1,

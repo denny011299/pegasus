@@ -1043,14 +1043,20 @@ class ProductUnitStock
     /**
      * Tambah stok di gudang (satuan yang sama, kecuali $rollUp). Buat baris stok jika belum ada.
      *
-     * $rollUp (merged from main's GH #19 + PR #75, 2026-08-28): kalau true, $qty di $unitId
-     * dinaikkan berjenjang lewat UnitRollUp::planProduct() sebelum dikredit -- 24 Piece yang
-     * exact-multiple dari rasio DOS/Sak masuk sebagai DOS/Sak, bukan menumpuk sebagai Piece.
-     * UnitRollUp hanya menaikkan ke satuan yang SUDAH punya baris ProductStock aktif, jadi tidak
-     * ada baris baru yang dibuat diam-diam oleh roll-up itu sendiri -- baris di satuan awal
-     * ($unitId) tetap dibuat otomatis seperti biasa kalau belum ada (lihat di bawah). Default
-     * false supaya caller lain (Stock Transfer, retur SO, dll -- lihat pemanggil addQty()
-     * lainnya) tetap kredit flat persis di satuan yang diminta, tanpa reinterpretasi.
+     * $rollUp (merged from main's GH #19 + PR #75, 2026-08-28; existing-aware since GH #87,
+     * 2026-08-30): kalau true, $qty di $unitId dinaikkan berjenjang lewat UnitRollUp::plan()
+     * sebelum dikredit -- 24 Piece yang exact-multiple dari rasio DOS/Sak masuk sebagai DOS/Sak,
+     * bukan menumpuk sebagai Piece. Sejak GH #87, plan() juga membaca stok yang SUDAH ada di tiap
+     * level (bukan cuma $qty transaksi ini): 20 Piece yang sudah ada + 4 Piece baru = 24 Piece
+     * digabung dan naik jadi 1 DOS, bukan diam-diam menumpuk lewat rasio selamanya. Itu bisa membuat
+     * kredit di satu level jadi NEGATIF (stok lama di level itu ikut naik bersama kredit baru) --
+     * ditangani di bawah dengan mencatatnya sebagai konversi satuan (keluar), bukan sebagai
+     * penambahan biasa. UnitRollUp hanya menaikkan ke satuan yang SUDAH punya baris ProductStock
+     * aktif secara default, jadi tidak ada baris baru yang dibuat diam-diam oleh roll-up itu
+     * sendiri -- baris di satuan awal ($unitId) tetap dibuat otomatis seperti biasa kalau belum ada
+     * (lihat di bawah). Default false supaya caller lain (Stock Transfer, retur SO, dll -- lihat
+     * pemanggil addQty() lainnya) tetap kredit flat persis di satuan yang diminta, tanpa
+     * reinterpretasi.
      *
      * @return array{ok: bool, message?: string}
      */
@@ -1069,36 +1075,59 @@ class ProductUnitStock
             return ['ok' => true];
         }
 
-        // Daftar "satuan yang boleh dikredit" (lihat UnitRollUp's design notes):
-        //  - default (null): HANYA satuan yang sudah punya baris stok DI GUDANG INI. $warehouseId
-        //    wajib diteruskan -- dihitung dari gudang aktif sesi malah bisa meloloskan satuan yang
-        //    tak punya baris di gudang tujuan, dan creditOneProductUnit() akan MEMBUAT baris itu
-        //    (persis yang dicegah allow-list-nya).
+        // Satu query melayani baik daftar "satuan yang boleh dikredit" (lihat UnitRollUp's design
+        // notes) MAUPUN stok yang sudah ada di tiap level (GH #87):
+        //  - default (null): HANYA satuan yang sudah punya baris stok DI GUDANG INI (kunci hasil
+        //    lookup ini). $warehouseId wajib diteruskan -- dihitung dari gudang aktif sesi malah
+        //    bisa meloloskan satuan yang tak punya baris di gudang tujuan, dan
+        //    creditOneProductUnit() akan MEMBUAT baris itu (persis yang dicegah allow-list-nya).
         //  - eksplisit: caller yang memang sengaja menyediakan baris baru dengan konfirmasi user
         //    lebih dulu (accProduction() + confirm_create_stock) meneruskan seluruh tangga satuan
-        //    lewat UnitRollUp::ladderUnitIds().
+        //    lewat UnitRollUp::ladderUnitIds() sebagai $rollUpAllowedUnitIds -- existing map di
+        //    bawah tetap dipakai untuk pembacaannya, hanya allow-list-nya yang berbeda.
+        $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
         $credits = $rollUp
             ? UnitRollUp::plan(
                 UnitRollUp::productChain($productVariantId),
                 $unitId,
                 (int) $qty,
-                $rollUpAllowedUnitIds ?? UnitRollUp::allowedProductUnitIds($productVariantId, $warehouseId)
+                $rollUpAllowedUnitIds ?? array_keys($existing),
+                $existing
             )
             : [['unit_id' => $unitId, 'qty' => $qty]];
 
         foreach ($credits as $credit) {
-            if ($credit['qty'] <= 0) {
+            $creditQty = (float) $credit['qty'];
+            if ($creditQty === 0.0) {
                 continue;
             }
-            self::creditOneProductUnit(
-                $warehouseId,
-                $productId,
-                $productVariantId,
-                (int) $credit['unit_id'],
-                (float) $credit['qty'],
-                $logCode,
-                $logNotes
-            );
+            if ($creditQty > 0) {
+                self::creditOneProductUnit(
+                    $warehouseId,
+                    $productId,
+                    $productVariantId,
+                    (int) $credit['unit_id'],
+                    $creditQty,
+                    $logCode,
+                    $logNotes
+                );
+            } else {
+                // GH #87: stok LAMA di level ini ikut tergulung naik ke level berikutnya bersama
+                // kredit baru -- catat sebagai konversi satuan keluar, bukan $logNotes asli (yang
+                // berarti "masuk"), supaya ledger tetap jelas kenapa baris ini turun tanpa transaksi
+                // keluar yang sebenarnya. Pasangannya (masuk di level atas) tercatat oleh iterasi
+                // lain di $credits lewat cabang di atas.
+                self::creditOneProductUnit(
+                    $warehouseId,
+                    $productId,
+                    $productVariantId,
+                    (int) $credit['unit_id'],
+                    $creditQty,
+                    $logCode,
+                    'Konversi unit (naik satuan)',
+                    2
+                );
+            }
         }
 
         self::clearCache();
@@ -1113,7 +1142,8 @@ class ProductUnitStock
         int $unitId,
         float $qty,
         string $logCode,
-        string $logNotes
+        string $logNotes,
+        int $logCategory = 1
     ): void {
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
@@ -1149,10 +1179,10 @@ class ProductUnitStock
             'log_date' => now(),
             'log_kode' => $logCode,
             'log_type' => 1,
-            'log_category' => 1,
+            'log_category' => $logCategory,
             'log_item_id' => $productVariantId,
             'log_notes' => $logNotes,
-            'log_jumlah' => $qty,
+            'log_jumlah' => abs($qty),
             'log_saldo' => (float) $row->ps_stock,
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,

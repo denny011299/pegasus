@@ -50,8 +50,6 @@ class StockOpnameApprovalAtomicityTest extends TestCase
         $this->actingAsSuperAdminStaff();
 
         [$stockA, $stockB] = $this->pickTwoFixtureStocks();
-        $startingA = $stockA->ps_stock;
-        $startingB = $stockB->ps_stock;
         $bogusUnitId = 999999; // guaranteed to match no product_stocks row for stockB's variant
 
         $insertResponse = $this->post('/insertStockOpname', [
@@ -87,6 +85,18 @@ class StockOpnameApprovalAtomicityTest extends TestCase
         ]);
         $insertResponse->assertStatus(200);
         $stoId = (int) $insertResponse->json('sto_id');
+
+        // Baseline taken AFTER the insert on purpose (GitHub #91, 2026-08-31): inserting a
+        // non-draft opname now also heals live stock that was stuck under-rolled from before
+        // GitHub #87 (OpnameLifecycle::healUntouchedSystemStock()), and this fixture picks REAL
+        // okeh8644 rows -- variant 2 genuinely is stuck, so the heal legitimately rewrites both
+        // rows here before ACC is ever called. That heal is a separate, already-committed step; it
+        // is NOT part of the accStockOpname() transaction this test is about, so the post-insert
+        // state is the correct baseline for "did the rejected approval touch anything".
+        $stockA->refresh();
+        $stockB->refresh();
+        $startingA = $stockA->ps_stock;
+        $startingB = $stockB->ps_stock;
 
         $logCountBefore = DB::table('log_stocks')->count();
 
