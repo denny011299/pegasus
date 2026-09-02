@@ -265,5 +265,5 @@
         var public = "{{ asset('') }}"; 
         var sessionUser = @json(Session::get('user'));   
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Cash_Operational.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Cash_Operational.js')}}?v={{ time() }}"></script>
 @endsection

@@ -112,5 +112,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Pay_Receive.js')}}?v=1"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Pay_Receive.js')}}?v={{ time() }}"></script>
 @endsection

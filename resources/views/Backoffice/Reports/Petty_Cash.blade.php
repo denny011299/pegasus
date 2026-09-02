@@ -64,5 +64,5 @@
     <script>
         var public = "{{ asset('') }}";    
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Reports/Petty_Cash.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Reports/Petty_Cash.js')}}?v={{ time() }}"></script>
 @endsection
