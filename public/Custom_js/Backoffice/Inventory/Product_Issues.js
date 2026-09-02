@@ -4,11 +4,32 @@
     var items = [];
     var ids = []; // Untuk get data dari invoice (by po_id)
     var suppliesIds = []; // untuk get data dari PO detail (by supplies_variant_id)
+    var productIssuesXhr = null;
 
     $(document).ready(function(){
         inisialisasi();
         refreshProductIssues();
     });
+
+    function productIssuesWraps() {
+        return $("#tableReturn-wrap, #tableDamage-wrap");
+    }
+
+    function setProductIssuesTableLoading(isLoading) {
+        var $wraps = productIssuesWraps();
+        if (!$wraps.length) return;
+        $wraps.toggleClass("is-loading", !!isLoading);
+    }
+
+    function showProductIssuesSkeleton() {
+        productIssuesWraps().removeClass("dt-ready").addClass("dt-pending");
+        setProductIssuesTableLoading(true);
+    }
+
+    function hideProductIssuesSkeleton() {
+        setProductIssuesTableLoading(false);
+        productIssuesWraps().removeClass("dt-pending").addClass("dt-ready");
+    }
     
     $(document).on("click", ".nav-jenis", function () {
         type = $(this).attr("tipe");
@@ -73,6 +94,7 @@
 
     function inisialisasi() {
         tableReturn = $('#tableReturn').DataTable({
+            processing: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
@@ -84,6 +106,8 @@
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Produk Dikembalikan",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing:
+                    '<div><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span>Memuat data produk bermasalah...</span></div>',
                 paginate: {
                     next: ' <i class="fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
@@ -103,9 +127,14 @@
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
             },
+            drawCallback: function () {
+                setProductIssuesTableLoading(false);
+                if (typeof feather !== 'undefined') feather.replace();
+            },
         });
 
         tableDamage = $('#tableDamage').DataTable({
+            processing: true,
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
@@ -117,6 +146,8 @@
                 sLengthMenu: '_MENU_',
                 searchPlaceholder: "Cari Produk Rusak",
                 info: "_START_ - _END_ of _TOTAL_ items",
+                processing:
+                    '<div><span class="spinner-border spinner-border-sm text-primary" role="status"></span><span>Memuat data produk bermasalah...</span></div>',
                 paginate: {
                     next: ' <i class="fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> '
@@ -137,11 +168,21 @@
                 $('.dataTables_filter').appendTo('.search-input');
                 $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> '  );
             },
+            drawCallback: function () {
+                setProductIssuesTableLoading(false);
+                if (typeof feather !== 'undefined') feather.replace();
+            },
         });
     }
 
     function refreshProductIssues() {
-        $.ajax({
+        if (productIssuesXhr && productIssuesXhr.readyState !== 4) {
+            productIssuesXhr.abort();
+        }
+
+        showProductIssuesSkeleton();
+
+        productIssuesXhr = $.ajax({
             url: "/getProductIssue",
             method: "get",
             success: function (e) {
@@ -237,12 +278,20 @@
                 tableReturn.clear().rows.add(returnProduct).draw();
                 tableDamage.clear().rows.add(damageProduct).draw();
                 
-                feather.replace(); // Biar icon feather muncul lagi
                 openProductIssueFromDashboardLink();
             },
             error: function (err) {
+                if (err && err.statusText === "abort") return;
                 if (handlePermissionError(err)) return;
                 console.error("Gagal load:", err);
+            },
+            complete: function (xhr, status) {
+                if (status === "abort") return;
+                hideProductIssuesSkeleton();
+                if (tableReturn) tableReturn.columns.adjust();
+                if (tableDamage && $("#damage").hasClass("active")) {
+                    tableDamage.columns.adjust();
+                }
             }
         });
     }

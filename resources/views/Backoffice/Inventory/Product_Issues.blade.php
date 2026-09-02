@@ -46,6 +46,73 @@
         display: inline-flex !important;
         align-items: center;
     }
+
+    #tableReturn-wrap,
+    #tableDamage-wrap {
+        position: relative;
+        border: none !important;
+        border-radius: 0 !important;
+        background: transparent !important;
+        box-shadow: none !important;
+    }
+
+    #tableReturn-wrap .dt-skeleton,
+    #tableDamage-wrap .dt-skeleton {
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    #tableReturn_wrapper .dataTables_processing,
+    #tableDamage_wrapper .dataTables_processing {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72) !important;
+        box-shadow: none !important;
+        z-index: 20;
+        align-items: center;
+        justify-content: center;
+        color: #1e293b;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    #tableReturn-wrap:not(.is-loading) .dataTables_processing,
+    #tableDamage-wrap:not(.is-loading) .dataTables_processing {
+        display: none !important;
+    }
+
+    #tableReturn-wrap.is-loading .dataTables_processing,
+    #tableDamage-wrap.is-loading .dataTables_processing {
+        display: flex !important;
+    }
+
+    #tableReturn_wrapper .dataTables_processing > div,
+    #tableDamage_wrapper .dataTables_processing > div {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 16px;
+        border-radius: 10px;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    #tableReturn-wrap.is-loading tbody,
+    #tableDamage-wrap.is-loading tbody {
+        opacity: 0.45;
+        pointer-events: none;
+    }
 </style>
     <!-- Page Wrapper -->
     <div class="page-wrapper">
@@ -82,7 +149,34 @@
                         <div class="card-body">
 							<div class="tab-content">
 								<div class="tab-pane show active" id="return">
-									<div class="table-responsive">
+									<div class="table-responsive dt-pending" id="tableReturn-wrap">
+                                        <div class="dt-skeleton" aria-hidden="true">
+                                            <div style="padding: 16px 25px;">
+                                                <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
+                                            </div>
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 10% 10% 40% 15% 10% 10% 5%;">
+                                                <span style="width:60%"></span>
+                                                <span style="width:50%"></span>
+                                                <span style="width:40%"></span>
+                                                <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
+                                                <span style="width:55%"></span>
+                                                <span style="width:40%"></span>
+                                            </div>
+                                            <div class="dt-skeleton-body">
+                                                @for ($i = 0; $i < 5; $i++)
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 10% 10% 40% 15% 10% 10% 5%;">
+                                                        <span class="skel-text" style="width:70%"></span>
+                                                        <span class="skel-text" style="width:55%"></span>
+                                                        <span class="skel-text" style="width:85%"></span>
+                                                        <span class="skel-badge" style="width:55%;justify-self:center"></span>
+                                                        <span class="skel-text" style="width:60%"></span>
+                                                        <span class="skel-text" style="width:60%"></span>
+                                                        <span class="skel-badge" style="width:40%;justify-self:center"></span>
+                                                    </div>
+                                                @endfor
+                                            </div>
+                                        </div>
                                         <table class="table table-center table-hover" id="tableReturn">
                                             <thead class="thead-light">
                                                 <tr>
@@ -102,7 +196,36 @@
                                     </div>
 								</div>
 								<div class="tab-pane" id="damage">
-									<div class="table-responsive">
+									<div class="table-responsive dt-pending" id="tableDamage-wrap">
+                                        <div class="dt-skeleton" aria-hidden="true">
+                                            <div style="padding: 16px 25px;">
+                                                <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
+                                            </div>
+                                            <div class="dt-skeleton-head" style="grid-template-columns: 10% 10% 10% 25% 15% 10% 10% 10%;">
+                                                <span style="width:60%"></span>
+                                                <span style="width:50%"></span>
+                                                <span style="width:50%"></span>
+                                                <span style="width:40%"></span>
+                                                <span style="width:50%"></span>
+                                                <span style="width:55%"></span>
+                                                <span style="width:55%"></span>
+                                                <span style="width:40%"></span>
+                                            </div>
+                                            <div class="dt-skeleton-body">
+                                                @for ($i = 0; $i < 5; $i++)
+                                                    <div class="dt-skeleton-row" style="grid-template-columns: 10% 10% 10% 25% 15% 10% 10% 10%;">
+                                                        <span class="skel-text" style="width:70%"></span>
+                                                        <span class="skel-text" style="width:55%"></span>
+                                                        <span class="skel-badge" style="width:55%;justify-self:center"></span>
+                                                        <span class="skel-text" style="width:85%"></span>
+                                                        <span class="skel-badge" style="width:55%;justify-self:center"></span>
+                                                        <span class="skel-text" style="width:60%"></span>
+                                                        <span class="skel-text" style="width:60%"></span>
+                                                        <span class="skel-badge" style="width:40%;justify-self:center"></span>
+                                                    </div>
+                                                @endfor
+                                            </div>
+                                        </div>
                                         <table class="table table-center table-hover" id="tableDamage">
                                             <thead class="thead-light">
                                                 <tr>
@@ -138,5 +261,5 @@
     <script>
         var public = "{{ asset('') }}";
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/Product_Issues.js')}}"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/Product_Issues.js')}}?v={{ time() }}"></script>
 @endsection
