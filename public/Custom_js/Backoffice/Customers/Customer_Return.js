@@ -9,6 +9,8 @@
     var crExistingProofUrl = "";
     var crXhr = null;
     var crScanMode = false;
+    var crFilterState = { date_from: "", date_to: "" };
+    var crFilterClearing = false;
 
     function can(action) {
         return typeof hasAccessAction === "function" && hasAccessAction("Pengiriman", action);
@@ -97,6 +99,8 @@
         $search.find(".dataTables_filter").not(".cr-table-filter").addClass("shipping-table-filter");
         $(".cr-table-filter").toggle(active === "customer-return");
         $(".shipping-table-filter").toggle(active === "shipping");
+        $(".sales-order-filter").toggle(active === "shipping");
+        $(".customer-return-filter").toggle(active === "customer-return");
     }
 
     function setTableLoading(loading) {
@@ -111,12 +115,105 @@
         }, true);
     }
 
+    function initCustomerReturnFilters() {
+        if (!$("#cr_filter_date").length) return;
+
+        var $date = $("#cr_filter_date");
+        if (typeof $date.daterangepicker === "function" && typeof moment === "function") {
+            $date.daterangepicker(
+                {
+                    autoUpdateInput: false,
+                    alwaysShowCalendars: true,
+                    showDropdowns: true,
+                    locale: {
+                        format: "DD-MM-YYYY",
+                        separator: " — ",
+                        applyLabel: "Terapkan",
+                        cancelLabel: "Hapus",
+                        fromLabel: "Dari",
+                        toLabel: "Sampai",
+                        customRangeLabel: "Kustom",
+                        daysOfWeek: ["Mg", "Sn", "Sl", "Rb", "Km", "Jm", "Sb"],
+                        monthNames: [
+                            "Januari",
+                            "Februari",
+                            "Maret",
+                            "April",
+                            "Mei",
+                            "Juni",
+                            "Juli",
+                            "Agustus",
+                            "September",
+                            "Oktober",
+                            "November",
+                            "Desember",
+                        ],
+                        firstDay: 1,
+                    },
+                    ranges: {
+                        "Hari Ini": [moment(), moment()],
+                        Kemarin: [moment().subtract(1, "days"), moment().subtract(1, "days")],
+                        "7 Hari Terakhir": [moment().subtract(6, "days"), moment()],
+                        "30 Hari Terakhir": [moment().subtract(29, "days"), moment()],
+                        "Bulan Ini": [moment().startOf("month"), moment().endOf("month")],
+                        "Bulan Lalu": [
+                            moment().subtract(1, "month").startOf("month"),
+                            moment().subtract(1, "month").endOf("month"),
+                        ],
+                    },
+                },
+                function (startDate, endDate) {
+                    crFilterState.date_from = startDate.format("YYYY-MM-DD");
+                    crFilterState.date_to = endDate.format("YYYY-MM-DD");
+                }
+            );
+            $date.on("apply.daterangepicker", function (ev, picker) {
+                crFilterState.date_from = picker.startDate.format("YYYY-MM-DD");
+                crFilterState.date_to = picker.endDate.format("YYYY-MM-DD");
+                $(this).val(
+                    picker.startDate.format("DD-MM-YYYY") +
+                        " — " +
+                        picker.endDate.format("DD-MM-YYYY")
+                );
+                refreshCustomerReturn();
+            });
+            $date.on("cancel.daterangepicker", function () {
+                crFilterState.date_from = "";
+                crFilterState.date_to = "";
+                $(this).val("");
+                refreshCustomerReturn();
+            });
+            $date.val("");
+        }
+
+        $(document).on("change", "#cr_filter_status, #cr_filter_type", function () {
+            if (crFilterClearing) return;
+            refreshCustomerReturn();
+        });
+        $(document).on("click", ".btn-clear-cr-filter", function (e) {
+            e.preventDefault();
+            crFilterClearing = true;
+            crFilterState.date_from = "";
+            crFilterState.date_to = "";
+            $("#cr_filter_status").val("");
+            $("#cr_filter_type").val("");
+            $("#cr_filter_date").val("");
+            crFilterClearing = false;
+            refreshCustomerReturn();
+        });
+    }
+
     function customerReturnAjax(data, callback) {
         if (crXhr && crXhr.readyState !== 4) crXhr.abort();
         crXhr = $.ajax({
             url: "/customerReturns",
             type: "GET",
-            data: data,
+            data: $.extend({}, data, {
+                date_from: crFilterState.date_from || "",
+                date_to: crFilterState.date_to || "",
+                status: $("#cr_filter_status").val() || "",
+                return_type: $("#cr_filter_type").val() || "",
+            }),
             beforeSend: function () { setTableLoading(true); },
             success: callback,
             error: function (xhr) {
@@ -503,7 +600,7 @@
     /** Gudang eceran: hanya produk jadi satuan retail — sembunyikan tab bahan mentah. */
     function syncCrRetailCreateMode() {
         var retailOnly = isRetailWarehouse(crActiveWarehouseId());
-        var editable = crMode === "create" || crMode === "edit";
+        var editable = isCrEditable();
         $("#cr-type-supply").closest(".nav-item").toggleClass("d-none", retailOnly);
         if (retailOnly && editable && crAddItemType() === "supply") {
             setCrAddItemType("product");
@@ -585,7 +682,7 @@
     }
 
     function doScanAddCr() {
-        if (crMode === "view") return;
+        if (crMode === "view" || crMode === "confirm") return;
         var barcode = ($("#cr_scan_barcode").val() || "").trim();
         var qty = parseInt($("#cr_scan_qty").val(), 10) || 1;
         if (qty < 1) qty = 1;
@@ -683,8 +780,12 @@
         $("#cr-total-count").text((supplyLines.length + productLines.length) + " item");
     }
 
+    function isCrEditable() {
+        return crMode === "create" || crMode === "edit";
+    }
+
     function qtyCell(type, index, qty, unitName) {
-        if (crMode === "view") {
+        if (!isCrEditable()) {
             return esc(qty) + (unitName ? " " + esc(unitName) : "");
         }
         return '<div class="input-group input-group-sm" style="width: 140px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">' +
@@ -697,7 +798,7 @@
 
     function lineActionCell(type, index, editable) {
         if (!editable) {
-            return '<td class="text-center text-muted">—</td>';
+            return "";
         }
         return '<td class="text-center">' +
             '<a href="javascript:void(0);" class="btn-action-icon cr-remove-line" data-type="' + type + '" data-index="' + index + '" title="Hapus">' +
@@ -721,9 +822,10 @@
 
     function renderAllLines() {
         var html = "";
-        var editable = crMode !== "view";
+        var editable = isCrEditable();
+        var colSpan = editable ? 5 : 4;
         supplyLines.forEach(function (line, index) {
-            html += "<tr" + (editable ? "" : "") + ">" +
+            html += "<tr>" +
                 '<td class="px-4">' + lineTypeBadge("supply") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.supplies_name) + '</td>' +
                 "<td>" + qtyCell("supply", index, line.qty, line.unit_name) + "</td>" +
@@ -741,8 +843,9 @@
                 "</tr>";
         });
         if (!html) {
-            html = '<tr><td colspan="5" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
+            html = '<tr><td colspan="' + colSpan + '" class="text-center text-muted py-3">Belum ada item. Tambahkan dari form di atas.</td></tr>';
         }
+        $("#cr-items-pane thead th:last-child").toggle(editable);
         $("#cr-all-lines").html(html);
         updateCounts();
         initCrRetailWarehouseSelects();
@@ -872,7 +975,7 @@
 
     function syncCrSaveEnabled() {
         var $btn = $("#cr-save");
-        if (!$btn.length || $btn.hasClass("d-none") || crMode === "view") return;
+        if (!$btn.length || $btn.hasClass("d-none") || !isCrEditable()) return;
         $btn.prop("disabled", missingRetailDestinations());
     }
 
@@ -1456,6 +1559,8 @@
 
         setupCustomerSelect();
         setCrAddItemType("supply");
+        setActiveTableFilter("shipping");
+        initCustomerReturnFilters();
         $("#customer-return-modal").on("hidden.bs.modal", function () {
             setCrModalLoading(false);
         });
@@ -1522,7 +1627,7 @@
         });
 
         $(document).on("click", "#btn_toggle_scan_cr", function () {
-            if (crMode === "view" || crAddItemType() !== "product") return;
+            if (!isCrEditable() || crAddItemType() !== "product") return;
             setCrProductScanMode(!crScanMode);
         });
 
@@ -1547,7 +1652,7 @@
         });
 
         $(document).on("change blur", ".cr-line-qty", function () {
-            if (crMode === "view") return;
+            if (crMode === "view" || crMode === "confirm") return;
             var type = $(this).data("type");
             var index = parseInt($(this).data("index"), 10);
             var qty = parseInt($(this).val(), 10);
@@ -1563,7 +1668,7 @@
         });
 
         $(document).on("click", ".cr-remove-line", function () {
-            if (crMode === "view") return;
+            if (crMode === "view" || crMode === "confirm") return;
             var type = $(this).data("type");
             var index = parseInt($(this).data("index"), 10);
             removeLineAt(type, index, $(this).closest("tr"));

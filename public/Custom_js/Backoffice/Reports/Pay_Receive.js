@@ -15,7 +15,8 @@
             bFilter: true,
             sDom: 'fBtlpi',
             lengthMenu: [10, 25, 50, 100],
-            order: [[0, 'asc']],
+            ordering: true,
+            order: [], // QC#11: jangan sort kolom checkbox; pertahankan urutan SQL FIELD(pembayaran, 1, 3, 2)
             searching: false,
             language: {
                 search: ' ',
@@ -31,7 +32,7 @@
                 $(row).addClass('row-payables');
             },
             columns: [
-                { data: "check" },
+                { data: "check", orderable: false },
                 { data: "bank_kode" },
                 { 
                     data: "date",
@@ -85,7 +86,11 @@
                 tablePayables.clear().draw(); 
                 // Manipulasi data sebelum masuk ke tabel
                 for (let i = 0; i < e.length; i++) {
-                    e[i].check = `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}"  poi_id="${e[i].poi_id}" />`;
+                    // QC#9: checkbox hanya untuk Belum Terbayar (bukan Ditolak/Terbayar/Menunggu TT)
+                    e[i].can_tt = canSelectForTandaTerima(e[i]);
+                    e[i].check = e[i].can_tt
+                        ? `<input type="checkbox" class="form-check-input chk ch${e[i].poi_id}" poi_id="${e[i].poi_id}" />`
+                        : '';
                     e[i].date = moment(e[i].po_date).format('D MMM YYYY');
                     e[i].date_due_date = moment(e[i].poi_due).format('D MMM YYYY');
                     e[i].poi_total_text = formatRupiah(e[i].poi_total,"Rp ");
@@ -155,12 +160,14 @@
         tandaTerima = []; // Reset array agar tidak double saat select all
 
         if ($(this).is(":checked")) {
-            // 1. Centang semua checkbox secara visual (termasuk di page lain)
+            // 1. Centang checkbox eligible saja (skip Ditolak / non-TT)
             $('input.chk', rows).prop('checked', true);
 
-            // 2. Masukkan semua poi_id ke dalam array tandaTerima
+            // 2. Masukkan hanya poi_id yang boleh buat TT
             allData.each(function (data) {
-                tandaTerima.push(data.poi_id.toString());
+                if (canSelectForTandaTerima(data)) {
+                    tandaTerima.push(data.poi_id.toString());
+                }
             });
         } 
         else {
@@ -176,11 +183,30 @@
         console.log("Current IDs:", tandaTerima);
     });
 
+    // Eligible TT = badge Belum Terbayar (pembayaran=1 & invoice status=1). Ditolak: status invoice 0 / PO -1.
+    function canSelectForTandaTerima(row) {
+        return row && String(row.pembayaran) === '1' && String(row.status) === '1';
+    }
+
+    function hasDitolakInSelection() {
+        var allData = tablePayables.rows().data().toArray();
+        return tandaTerima.some(function (id) {
+            var row = allData.find(function (r) {
+                return String(r.poi_id) === String(id);
+            });
+            return row && !canSelectForTandaTerima(row);
+        });
+    }
+
     $(document).on("click", ".btn-create", function () {
        $('.invalid').removeClass('invalid');
 
         if(tandaTerima.length==0){
             notifikasi("error","Gagal Buat Surat Terima","Silahkan pilih minimal 1 faktur!");
+            return false;
+        }
+        if (hasDitolakInSelection()) {
+            notifikasi("error","Gagal Buat Surat Terima","Invoice ditolak tidak dapat dibuat tanda terima");
             return false;
         }
         console.log(tandaTerima);
@@ -215,7 +241,21 @@
         });
     });
 
+    function syncHutangDates() {
+        var start = $('#start_date').val();
+        var end = $('#end_date').val();
+        // Filter list/print hanya jika Dari & Sampai keduanya terisi
+        dates = (start && end) ? [start, end] : null;
+        return { start: start, end: end };
+    }
+
     $(document).on('click', '.btn-print', function(){
+        var range = syncHutangDates();
+        if ((range.start && !range.end) || (!range.start && range.end)) {
+            notifikasi('error', 'Gagal Print Hutang', 'Isi tanggal Dari dan Sampai terlebih dahulu');
+            return;
+        }
+
         let params = {
             bank_id: $('#bank_kode').val(),
             status: $('#status').val(),
@@ -242,19 +282,11 @@
     })
 
     $(document).on('change', '#start_date', function(){
-        dates = [];
-        var start = $('#start_date').val();
-        var end = $('#end_date').val();
-        dates.push(start);
-        dates.push(end);
+        syncHutangDates();
         refreshPayReceive();
     })
     $(document).on('change', '#end_date', function(){
-        dates = [];
-        var start = $('#start_date').val();
-        var end = $('#end_date').val();
-        dates.push(start);
-        dates.push(end);
+        syncHutangDates();
         refreshPayReceive();
     })
     $(document).on('click', '.btn-clear', function(){

@@ -60,8 +60,9 @@ Saat edit Select2 / render baris produk: **jangan** hanya set HTML kosong tanpa 
 ## Warehouse & ACC
 
 - Active warehouse (`window.activeWarehouse`) filter list (utama vs eceran); lihat `applyProductDetailWarehouseFilter` / `applyWarehouseScope`.
+- Filter produk: **utama** = `warehouse_id = main` (stay + dest eceran); **eceran** = `warehouse_id = eceran` saja (9ffd3a09 — jangan OR destination).
 - Produk return di gudang utama dengan `destination_warehouse_id` eceran: setelah ACC, ST retail dibuat (`createRetailStockTransfers`).
-- Baris dengan dest eceran **tidak** ditampilkan di filter eceran yang sama (lihat komentar di controller).
+- Baris ST-style (warehouse_id=main, dest=eceran) **tidak** tampil di list eceran.
 - Supply vs product: unified row by `return_group` / doc key; type supply / product / mixed.
 
 ## Controller ↔ JS contract
@@ -69,7 +70,8 @@ Saat edit Select2 / render baris produk: **jangan** hanya set HTML kosong tanpa 
 Jaga sync:
 
 - Payload detail produk: `destination_warehouse_id`, `destination_warehouse_name`, units, qty, warehouse sumber.
-- Modes openRecord: `view` / `confirm` / edit — tombol Hapus disembunyikan di view/confirm (pola SO).
+- Modes openRecord: `view` / `confirm` / edit — tombol Hapus baris item **dan** kolom Aksi disembunyikan di view/confirm (`isCrEditable()` = create|edit saja; pola SO mode===3).
+- List filter (pola Stock Transfer): `#cr_filter_date` / `#cr_filter_status` / `#cr_filter_type` → ajax `date_from`/`date_to`/`status`/`return_type`; panel `.customer-return-filter` toggle bareng tab.
 - DataTable: `#tableCustomerReturn` server/client patterns di `Customer_Return.js` + skeleton wrap di blade.
 - Soft delete / ACC / decline endpoints: POST delete, accept, decline.
 

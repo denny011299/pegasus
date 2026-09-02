@@ -44,7 +44,14 @@ class CustomerReturnController extends Controller
             ? 'asc'
             : 'desc';
 
-        $rows = $this->buildUnifiedRows($search);
+        $filters = [
+            'date_from' => trim((string) $request->input('date_from', '')),
+            'date_to' => trim((string) $request->input('date_to', '')),
+            'status' => trim((string) $request->input('status', '')),
+            'return_type' => trim((string) $request->input('return_type', '')),
+        ];
+
+        $rows = $this->applyListFilters($this->buildUnifiedRows($search), $filters);
         $recordsTotal = $this->countUnifiedRows('');
         $recordsFiltered = count($rows);
 
@@ -591,6 +598,42 @@ class CustomerReturnController extends Controller
         return count($this->buildUnifiedRows($search));
     }
 
+    /**
+     * Filter list setelah unify (tipe campuran dihitung di merge).
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     * @param  array{date_from: string, date_to: string, status: string, return_type: string}  $filters
+     * @return array<int, array<string, mixed>>
+     */
+    private function applyListFilters(array $rows, array $filters): array
+    {
+        $dateFrom = $filters['date_from'] ?? '';
+        $dateTo = $filters['date_to'] ?? '';
+        $status = $filters['status'] ?? '';
+        $type = $filters['return_type'] ?? '';
+        if ($dateFrom === '' && $dateTo === '' && $status === '' && $type === '') {
+            return $rows;
+        }
+
+        return array_values(array_filter($rows, function ($row) use ($dateFrom, $dateTo, $status, $type) {
+            $date = substr((string) ($row['return_date'] ?? ''), 0, 10);
+            if ($dateFrom !== '' && ($date === '' || $date < $dateFrom)) {
+                return false;
+            }
+            if ($dateTo !== '' && ($date === '' || $date > $dateTo)) {
+                return false;
+            }
+            if ($status !== '' && ctype_digit($status) && (int) ($row['status'] ?? 0) !== (int) $status) {
+                return false;
+            }
+            if ($type !== '' && (string) ($row['return_type'] ?? '') !== $type) {
+                return false;
+            }
+
+            return true;
+        }));
+    }
+
     private function activeWarehouseId(): int
     {
         return (int) (Session::get('active_warehouse_id') ?? 0);
@@ -708,13 +751,15 @@ class CustomerReturnController extends Controller
 
     /**
      * Filter baris produk per gudang aktif.
-     * - Gudang eceran: hanya baris dengan warehouse_id = eceran (retur langsung).
-     *   Baris utama + destination_warehouse_id (ST setelah ACC) tidak tampil di eceran.
-     * - Gudang utama: warehouse_id = utama tanpa destination eceran (retail lewat ST disembunyikan).
+     * - Gudang eceran: hanya warehouse_id = eceran (retur langsung ke gudang itu).
+     *   Baris utama + destination eceran (ST setelah ACC) tidak tampil di eceran (9ffd3a09).
+     * - Gudang utama: warehouse_id = utama — mencakup stay (dest=utama/null) dan
+     *   mixed destinasi eceran (dest=eceran). Dokumen tampil jika ada detail di utama.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
-        $hasDest = Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
+        // Kedua cabang: filter warehouse_id saja. Perbedaan perilaku dari data shape:
+        // baris ST-ke-eceran tetap warehouse_id=utama → muncul di utama, tidak di eceran.
         if (! $activeIsMain) {
             $query->where("{$alias}.warehouse_id", $warehouseId);
 
@@ -722,12 +767,6 @@ class CustomerReturnController extends Controller
         }
 
         $query->where("{$alias}.warehouse_id", $warehouseId);
-        if ($hasDest) {
-            $query->where(function ($scoped) use ($alias) {
-                $scoped->whereNull("{$alias}.destination_warehouse_id")
-                    ->orWhere("{$alias}.destination_warehouse_id", 0);
-            });
-        }
     }
 
     private function applyWarehouseScope($query, string $alias, int $warehouseId): void

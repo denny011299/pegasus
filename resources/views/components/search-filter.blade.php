@@ -501,7 +501,7 @@
 
 @if(Route::is(['payReceive']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 px-0">
+<div class="mt-3 px-0">
     <div class="row g-3">
         <div class="col-12 col-lg-8">
             <div class="card p-3 h-100">
@@ -897,6 +897,92 @@
         </div>
     </div>
     <!-- /Filter Pencarian -->
+@endif
+
+@if(Route::is(['salesOrder']))
+{{-- Tab Pengiriman: Tanggal + Status + Reset --}}
+<div class="profit-menu card sales-order-filter">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tanggal</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="form-control" id="so_filter_date"
+                        placeholder="Pilih rentang / hari" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Status</label>
+                <select class="form-select" id="so_filter_status">
+                    <option value="">Semua Status</option>
+                    <option value="1">Pending</option>
+                    <option value="2">Diterima</option>
+                    <option value="3">Ditolak</option>
+                    <option value="4">Dijadwalkan</option>
+                    <option value="5">Belum Terkirim</option>
+                    <option value="6">Sudah Terkirim</option>
+                    <option value="7">Dibatalkan</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary w-100 btn-clear-so-filter d-flex align-items-center justify-content-center gap-1.5"
+                    style="height: 42px; border-radius: 8px; font-size: 13px; font-weight: 600;" title="Reset Filter">
+                    <i class="fe fe-rotate-ccw" style="font-size: 13px;"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{{-- Tab Pengembalian: Tanggal + Status + Tipe + Reset --}}
+<div class="profit-menu card customer-return-filter" style="display:none;">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tanggal</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="form-control" id="cr_filter_date"
+                        placeholder="Pilih rentang / hari" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Status</label>
+                <select class="form-select" id="cr_filter_status">
+                    <option value="">Semua Status</option>
+                    <option value="1">Pending</option>
+                    <option value="2">Diterima</option>
+                    <option value="3">Ditolak</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tipe</label>
+                <select class="form-select" id="cr_filter_type">
+                    <option value="">Semua Tipe</option>
+                    <option value="product">Produk Jadi</option>
+                    <option value="supply">Bahan Mentah</option>
+                    <option value="mixed">Campuran</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary w-100 btn-clear-cr-filter d-flex align-items-center justify-content-center gap-1.5"
+                    style="height: 42px; border-radius: 8px; font-size: 13px; font-weight: 600;" title="Reset Filter">
+                    <i class="fe fe-rotate-ccw" style="font-size: 13px;"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 @endif
 
 @if(Route::is(['stockTransfer']))

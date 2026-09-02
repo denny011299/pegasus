@@ -736,6 +736,18 @@ class SupplierController extends Controller
 
         DB::beginTransaction();
         try {
+            // QC-3: retur pembelian aktif harus dibatalkan dulu (PI → Ditolak + stok retur
+            // dikembalikan) sebelum reverse stok ACC PO. Tanpa ini, PI tetap Diterima setelah
+            // tolakPO, dan reverse ACC pakai qty penuh padahal stok sudah berkurang retur.
+            // Pola sama dengan hapus retur di detail PO → deleteReturnSupplies().
+            $activeReturns = ReturnSupplies::where('po_id', $data['po_id'])->where('status', 1)->get();
+            foreach ($activeReturns as $rs) {
+                $this->deleteReturnSupplies(new Request([
+                    'rs_id' => $rs->rs_id,
+                    'po_id' => $data['po_id'],
+                ]));
+            }
+
             //liat sebelumnya status apa
             if ($p->status == 2) {
                 $details = PurchaseOrderDetail::where('po_id', '=', $data["po_id"])->get();
