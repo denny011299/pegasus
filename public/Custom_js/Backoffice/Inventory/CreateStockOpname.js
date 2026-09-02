@@ -160,15 +160,19 @@ function refreshStockOpname(callback) {
                     // on an EXISTING document being re-edited (mode 2, e.g. a draft reload) -- a
                     // brand-new create form (mode 1) stays fully blank, per the user's explicit
                     // request.
+                    // GitHub #115: draft murni cuma boleh menampilkan apa yang sudah diinput
+                    // sendiri -- stok sistem TIDAK ditampilkan sama sekali selama masih draft.
                     let createPlaceholder =
-                        mode == 2 ? ` placeholder="${element.ps_stock}"` : "";
+                        mode == 2 && !data.is_draft
+                            ? ` placeholder="${element.ps_stock}"`
+                            : "";
                     rl_stock += `
                         <input type="text"
                             class="form-control real-stock nominal_only text-end"
                             value=""${createPlaceholder}
                             data-unit-id="${element.unit_id}"
                             data-unit-name="${element.unit_short_name}"
-                            data-system-qty="${element.ps_stock}">
+                            data-system-qty="${data.is_draft ? "" : element.ps_stock}">
                         <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
                     `;
                 });
@@ -252,9 +256,13 @@ function renderMode2(items) {
             // dihitung) di histori dokumen, tidak menghidupkan lagi bug fallback lama.
             let untouched = element.real_qty === null || element.real_qty === undefined;
             let prefill = untouched ? "" : formatRupiah(String(element.real_qty));
-            let placeholderAttr = untouched
-                ? ` placeholder="${formatRupiah(String(element.live_qty ?? element.system_qty ?? 0))}"`
-                : "";
+            // GitHub #115: draft tidak membawa live_qty/system_qty sama sekali (backend sengaja
+            // tidak mengambilnya) -- tidak ada placeholder untuk ditampilkan.
+            let systemHint = element.live_qty ?? element.system_qty;
+            let placeholderAttr =
+                untouched && systemHint !== null && systemHint !== undefined
+                    ? ` placeholder="${formatRupiah(String(systemHint))}"`
+                    : "";
             rl_stock += `
                 <input type="text"
                     class="form-control real-stock nominal_only text-end"

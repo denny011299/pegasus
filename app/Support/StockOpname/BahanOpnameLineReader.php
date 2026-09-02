@@ -47,18 +47,26 @@ class BahanOpnameLineReader
         }
 
         $pending = (int) $stob->status === self::STATUS_MENUNGGU;
+        // GitHub #115: kembaran OpnameLineReader::readCurrent() -- draft tidak boleh membaca stok
+        // sistem sama sekali, cuma angka yang benar-benar sudah diinput staf sendiri.
+        $isDraft = (bool) $stob->is_draft;
         // Dipin ke gudang dokumen ini, bukan gudang aktif sesi pembaca -- lihat liveStockMap().
-        $live = $this->liveStockMap($lines, $stob->warehouse_id ?: null);
+        $live = $isDraft ? collect() : $this->liveStockMap($lines, $stob->warehouse_id ?: null);
 
         return $lines
             ->groupBy('supplies_id')
-            ->map(function ($group) use ($pending, $live) {
+            ->map(function ($group) use ($pending, $live, $isDraft) {
                 $first = $group->first();
                 $units = [];
 
                 foreach ($group as $line) {
-                    $liveQty = (int) ($live->get($line->supplies_id.'-'.$line->unit_id) ?? 0);
-                    $system = $pending ? $liveQty : (int) ($line->sobl_system_qty_final ?? 0);
+                    if ($isDraft) {
+                        $liveQty = null;
+                        $system = null;
+                    } else {
+                        $liveQty = (int) ($live->get($line->supplies_id.'-'.$line->unit_id) ?? 0);
+                        $system = $pending ? $liveQty : (int) ($line->sobl_system_qty_final ?? 0);
+                    }
 
                     $units[] = [
                         'unit' => $line->sobl_unit_short_name ?? ('unit#'.$line->unit_id),
@@ -66,7 +74,7 @@ class BahanOpnameLineReader
                         'system' => $system,
                         'live' => $liveQty,
                         'counted' => $line->sobl_counted_qty === null ? null : (int) $line->sobl_counted_qty,
-                        'selisih' => $line->selisih($system),
+                        'selisih' => $isDraft ? null : $line->selisih($system),
                     ];
                 }
 
@@ -145,15 +153,21 @@ class BahanOpnameLineReader
             ? Unit::whereIn('unit_id', array_keys($allUnitIds))->get()->keyBy('unit_id')
             : collect();
 
+        // GitHub #115: draft -- 'stock' di sini murni buat placeholder hint di halaman input,
+        // yang justru harus KOSONG untuk draft (lihat readCurrent()). Jangan ambil sama sekali.
         // Dipin ke gudang dokumen ini -- lihat liveStockMap()'s doc.
         $warehouseId = $stob->warehouse_id ?: null;
-        $liveStocks = ($warehouseId !== null
-                ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
-                : SuppliesStock::query())
-            ->where('status', 1)
-            ->whereIn('supplies_id', $suppliesIds)
-            ->get()
-            ->groupBy('supplies_id');
+        if ($stob->is_draft) {
+            $liveStocks = collect();
+        } else {
+            $liveStocks = ($warehouseId !== null
+                    ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                    : SuppliesStock::query())
+                ->where('status', 1)
+                ->whereIn('supplies_id', $suppliesIds)
+                ->get()
+                ->groupBy('supplies_id');
+        }
 
         return $rows->map(function (array $row) use ($supplies, $unitsMap, $liveStocks) {
             $supply = $supplies->get($row['supplies_id']);
@@ -214,15 +228,19 @@ class BahanOpnameLineReader
      * GitHub #78 follow-up (lihat OpnameLineReader::text()): satuan tak dihitung tercetak "cocok
      * dengan sistem", bukan tanda hubung telanjang. Murni kosmetik tampilan.
      */
+    /**
+     * GitHub #115: kembaran OpnameLineReader::text() -- draft tidak membawa stok sistem
+     * ($u['system'] === null), jadi tidak ada fallback untuk dipegang: "-" apa adanya.
+     */
     private function text(array $units, string $key): string
     {
         $parts = [];
         foreach ($units as $u) {
             $value = $u[$key];
             if ($value === null) {
-                $value = $key === 'selisih' ? 0 : $u['system'];
+                $value = ($key === 'selisih' && $u['system'] !== null) ? 0 : $u['system'];
             }
-            $parts[] = $value.' '.$u['unit'];
+            $parts[] = ($value === null ? '-' : $value).' '.$u['unit'];
         }
 
         return implode(', ', $parts);
