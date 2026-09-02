@@ -304,6 +304,51 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertSame(10, (int) $lines->first()->sobl_counted_qty);
     }
 
+    /**
+     * Bug dilaporkan user (2026-09-02): draft tidak pernah lewat publish() (lihat
+     * BahanOpnameLifecycle::publish()'s guard), jadi sobl_unit_short_name masih NULL selama masih
+     * draft. legacyItems() DULU jatuh ke fallback literal "unit#12" untuk label satuan yang
+     * dicetak ke stobd_real/stobd_system -- padahal 'units' (katalog) di payload yang SAMA tetap
+     * memuat nama asli ("pcs"). CreateStockOpnameSupplies.js (seedSavedValuesFromItems()) mem-
+     * PARSE ULANG stobd_real lalu mencocokkan namanya ke katalog itu untuk mengisi ulang form saat
+     * draft dibuka lagi -- "unit#12" vs "pcs" tidak pernah cocok, jadi angka yang barusan diinput
+     * staf hilang dari tampilan (walau tetap tersimpan benar di DB). Simulasikan persis logika
+     * JS itu di sini supaya regresi ini tertangkap tanpa perlu test browser.
+     */
+    public function test_draft_legacy_items_unit_label_matches_the_catalog_name_it_will_be_matched_against(): void
+    {
+        [$supplies, $dos, $pcs, $dosUnit, $pcsUnit] = $this->makeFixture();
+        $stob = $this->makeDocument(isDraft: true);
+        $this->addLines($stob, $supplies, [$dos->unit_id => 8, $pcs->unit_id => null]);
+
+        $items = (new BahanOpnameLineReader())->legacyItems($stob);
+        $this->assertCount(1, $items);
+        $item = $items[0];
+
+        // Baris di stobd_real cuma boleh mencetak nama satuan katalog asli -- tidak pernah lagi
+        // fallback "unit#N" selama unit-nya sendiri masih ada di database.
+        $this->assertStringContainsString('8 '.$dosUnit->unit_short_name, $item['stobd_real']);
+        $this->assertStringNotContainsString('unit#', $item['stobd_real']);
+
+        // Simulasi persis seedSavedValuesFromItems() (CreateStockOpnameSupplies.js): urai
+        // stobd_real jadi peta nama->qty, lalu cocokkan tiap unit katalog ke peta itu.
+        $realMap = [];
+        foreach (explode(', ', $item['stobd_real']) as $part) {
+            [$qty, $name] = array_pad(explode(' ', trim($part), 2), 2, '');
+            $realMap[$name] = $qty;
+        }
+
+        $restored = [];
+        foreach ($item['units'] as $u) {
+            if (array_key_exists($u['unit_short_name'], $realMap) && $realMap[$u['unit_short_name']] !== '-') {
+                $restored[$u['unit_id']] = (int) $realMap[$u['unit_short_name']];
+            }
+        }
+
+        $this->assertSame(8, $restored[$dosUnit->unit_id] ?? null, 'nilai yang sudah diinput harus berhasil dipulihkan ke form saat draft dibuka lagi');
+        $this->assertArrayNotHasKey($pcsUnit->unit_id, $restored, 'satuan yang belum diisi tidak boleh ikut "dipulihkan"');
+    }
+
     // ---------------------------------------------------------------- laporan
 
     public function test_selisih_report_includes_new_version_bahan_documents(): void
