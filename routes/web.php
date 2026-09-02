@@ -656,7 +656,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/acceptCashArmada', [ReportController::class, 'acceptCashArmada'])->name('acceptCashArmada');
         Route::post('/declineCashArmada', [ReportController::class, 'declineCashArmada'])->name('declineCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas,Kas Operasional Sales,Kas Sales,Kas Operasional,others')->group(function () {
         Route::post('/acceptCashSales', [ReportController::class, 'acceptCashSales'])->name('acceptCashSales');
         Route::post('/declineCashSales', [ReportController::class, 'declineCashSales'])->name('declineCashSales');
     });

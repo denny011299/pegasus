@@ -2071,7 +2071,9 @@ class ReportController extends Controller
         //     ]);
         // }
         $sales->save();
-        return (new CashSales())->acceptCashSales($data);
+        (new CashSales())->acceptCashSales($data);
+
+        return 1;
     }
 
     function declineCashSales(Request $req)
@@ -2092,7 +2094,9 @@ class ReportController extends Controller
             ]);
         }
 
-        return (new CashSales())->declineCashSales($data);
+        (new CashSales())->declineCashSales($data);
+
+        return 1;
     }
     
     function reportBahanBaku(){

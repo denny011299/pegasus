@@ -7,5 +7,9 @@ namespace App\Support;
  */
 class RoleIds
 {
+    public const DIREKSI = 1;
+
+    public const DEVELOPER = 4;
+
     public const QC_GUDANG = 7;
 }

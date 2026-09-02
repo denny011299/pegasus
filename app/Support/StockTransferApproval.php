@@ -112,6 +112,32 @@ class StockTransferApproval
             && ! self::isQcApproved($header);
     }
 
+    /** Direksi / Okejob (Developer) — bypass QC & Kepala Ops gudang asal. */
+    public static function isElevatedApprover($user): bool
+    {
+        if (! $user) {
+            return false;
+        }
+
+        $roleId = (int) ($user->role_id ?? 0);
+
+        return in_array($roleId, [RoleIds::DIREKSI, RoleIds::DEVELOPER], true);
+    }
+
+    public static function isAtOriginForApproval($user, int $fromWarehouseId, int $activeWarehouseId): bool
+    {
+        if ($activeWarehouseId <= 0 || $activeWarehouseId !== $fromWarehouseId) {
+            return false;
+        }
+        if (self::isElevatedApprover($user)) {
+            return true;
+        }
+
+        $assignedWh = Staff::assignedWarehouseIds($user);
+
+        return $assignedWh === [] || in_array($fromWarehouseId, $assignedWh, true);
+    }
+
     public static function canApproveOps($header, int $fromWarehouseId): bool
     {
         if (! self::opsRequiredAtWarehouse($fromWarehouseId)) {
@@ -222,6 +248,17 @@ class StockTransferApproval
 
         $staffId = (int) ($user->staff_id ?? 0);
         if ($staffId <= 0) {
+            return null;
+        }
+
+        if (self::isElevatedApprover($user) && $header !== null) {
+            if (self::qcRequiredAtWarehouse($warehouseId) && ! self::isQcApproved($header)) {
+                return 'qc';
+            }
+            if (self::opsRequiredAtWarehouse($warehouseId) && ! self::isOpsApproved($header)) {
+                return 'ops';
+            }
+
             return null;
         }
 
