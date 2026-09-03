@@ -1549,11 +1549,32 @@ $(document).on(
 );
 
 var productionXhr = null;
+var productionTableReady = false;
 
 function setProductionTableLoading(isLoading) {
     var $wrap = $("#tableProduction-wrap");
     if (!$wrap.length) return;
     $wrap.toggleClass("is-loading", !!isLoading);
+}
+
+// Skeleton hanya first load (wrap sudah dt-pending di Blade). Refresh berikutnya: overlay is-loading.
+function showProductionRefreshLoading() {
+    var $wrap = $("#tableProduction-wrap");
+    if (!$wrap.length) return;
+    if (!productionTableReady || !table) {
+        $wrap.removeClass("dt-ready is-loading").addClass("dt-pending");
+        return;
+    }
+    $wrap.removeClass("dt-pending").addClass("dt-ready");
+    setProductionTableLoading(true);
+}
+
+function hideProductionRefreshLoading() {
+    productionTableReady = true;
+    $("#tableProduction-wrap")
+        .removeClass("dt-pending is-loading")
+        .addClass("dt-ready");
+    setProductionTableLoading(false);
 }
 
 function renderProductionStatus(status) {
@@ -1743,13 +1764,15 @@ function inisialisasi() {
             if (!$filter.find("label .fa-search").length) {
                 $filter.find("label").prepend('<i class="fa fa-search"></i> ');
             }
-            $("#tableProduction-wrap")
-                .removeClass("dt-pending")
-                .addClass("dt-ready");
+            // Jangan buka dt-ready di sini: first ajax masih jalan, skeleton Blade harus tetap.
+            if (productionTableReady) {
+                $("#tableProduction-wrap")
+                    .removeClass("dt-pending")
+                    .addClass("dt-ready");
+            }
             if (table) table.columns.adjust();
         },
         drawCallback: function () {
-            setProductionTableLoading(false);
             if (typeof feather !== "undefined") feather.replace();
             if (table) table.columns.adjust();
         },
@@ -1761,8 +1784,7 @@ function refreshProduction() {
         productionXhr.abort();
     }
 
-    $("#tableProduction-wrap").removeClass("dt-ready").addClass("dt-pending");
-    setProductionTableLoading(true);
+    showProductionRefreshLoading();
 
     productionXhr = $.ajax({
         url: "/getProduction",
@@ -1800,11 +1822,9 @@ function refreshProduction() {
             if (handlePermissionError(err)) return;
             console.error("Gagal load produksi:", err);
         },
-        complete: function () {
-            setProductionTableLoading(false);
-            $("#tableProduction-wrap")
-                .removeClass("dt-pending")
-                .addClass("dt-ready");
+        complete: function (_xhr, status) {
+            if (status === "abort") return;
+            hideProductionRefreshLoading();
         },
     });
 }
