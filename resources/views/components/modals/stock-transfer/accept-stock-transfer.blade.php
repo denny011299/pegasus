@@ -59,6 +59,16 @@
                         class="fe fe-file-text me-1 text-primary"></i>Catatan Pengiriman</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_ship_note">-</div>
                   </div>
+                  {{-- Bukti foto pengiriman (GitHub #140) --}}
+                  <div class="col-6" id="accept-ship-proof-slot" style="display:none;">
+                    <div class="text-muted"
+                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                        class="fe fe-camera me-1 text-primary"></i>Bukti Foto</div>
+                    <a href="javascript:void(0);" id="accept-ship-proof-link" target="_blank" rel="noopener">
+                      <img id="accept-ship-proof-thumb" src="" alt="Bukti foto pengiriman"
+                        style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;margin-top:2px;">
+                    </a>
+                  </div>
                 </div>
               </div>
             </div>

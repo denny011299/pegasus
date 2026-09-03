@@ -19,6 +19,10 @@ var transferQcRequired = false;
 var transferOpsRequired = false;
 var transferQcApproved = false;
 var transferOpsApproved = false;
+var transferPhotoProofRequired = false; // bukti foto wajib (GitHub #140) di #modalKonfirmasi saat ini
+var transferKeepPhotoProofOnClose = false; // true = #modalKonfirmasi ditutup sementara untuk buka kamera
+var transferThenShipProofBase64 = ""; // bukti foto utk kombo Simpan+Kirim (edit mode, tanpa #modalKonfirmasi)
+var transferPendingThenShip = false; // true = habis ambil foto, lanjutkan otomatis Simpan+Kirim
 var transferCreateRequestMode = false; // eceran create: label request / penerima = aktif
 var transferIsRetailRequest = false; // create ATAU edit retail_request
 var transferScanMode = false;
@@ -99,7 +103,7 @@ function restoreTransferOverlayIfNeeded() {
 }
 
 /** Konfirmasi di atas detail ST / accept: hide parent → show konfirmasi; cancel → buka lagi parent. */
-function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, danger) {
+function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, danger, requirePhoto) {
     transferOverlayState.done = false;
     var wasOpen = beginTransferOverlay(parentSelector || "#add_stock_transfer");
     function openConfirm() {
@@ -111,6 +115,11 @@ function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, dan
             $("#modalKonfirmasi #" + buttonId).attr("data-id", dataId);
             $("#modalKonfirmasi").attr("data-transfer-id", dataId);
         }
+        if (requirePhoto) {
+            showKonfirmasiPhotoProof();
+        } else {
+            hideKonfirmasiPhotoProof();
+        }
     }
     if (wasOpen) {
         $(transferOverlayState.parent).one("hidden.bs.modal", openConfirm);
@@ -118,6 +127,71 @@ function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, dan
         openConfirm();
     }
 }
+
+/**
+ * Bukti foto wajib saat Pending → Kirim (GitHub #140) — manual (tombol Kirim) maupun
+ * auto-Kirim (approval terakhir request eceran). Field disuntik ke #modalKonfirmasi
+ * yang dipakai bersama banyak halaman lain, jadi selalu di-reset & disembunyikan lagi
+ * setelah dipakai supaya tidak "nempel" ke konfirmasi lain yang tidak terkait.
+ */
+function resetKonfirmasiPhotoProof() {
+    $("#konfirmasi_photo_proof_base64").val("");
+    $("#konfirmasi-photo-preview").addClass("d-none").attr("src", "");
+    $("#konfirmasi-photo-proof-error").hide();
+}
+function showKonfirmasiPhotoProof() {
+    transferPhotoProofRequired = true;
+    resetKonfirmasiPhotoProof();
+    $("#konfirmasi-photo-proof").removeClass("d-none");
+}
+function hideKonfirmasiPhotoProof() {
+    transferPhotoProofRequired = false;
+    $("#konfirmasi-photo-proof").addClass("d-none");
+    resetKonfirmasiPhotoProof();
+}
+function getKonfirmasiPhotoProof() {
+    return $("#konfirmasi_photo_proof_base64").val() || "";
+}
+function assertKonfirmasiPhotoProof() {
+    if (!transferPhotoProofRequired) return true;
+    if (getKonfirmasiPhotoProof()) return true;
+    $("#konfirmasi-photo-proof-error").show();
+    if (typeof toastr !== "undefined") {
+        toastr.error("", "Bukti foto wajib diunggah sebelum Kirim");
+    }
+    return false;
+}
+
+/** Request eceran: apakah approval `type` ini yang melengkapi approval → auto-Kirim. */
+function willTransferAutoShip(type) {
+    var qcOk = !transferQcRequired || type === "qc" || transferQcApproved;
+    var opsOk = !transferOpsRequired || type === "ops" || transferOpsApproved;
+    return qcOk && opsOk;
+}
+
+$(document).on("click", "#btn-konfirmasi-photo-proof", function () {
+    modeCamera = 5;
+    rotationAngle = 0;
+    camRotation = 0;
+    photoData = "";
+    inputFile = "#konfirmasi_photo_proof_base64";
+    cameraReturnModal = "#modalKonfirmasi";
+    $("#video").removeClass("rot90 rot180 rot270");
+    $("#preview-box").hide();
+    $("#camera").show();
+    startCamera();
+    transferKeepPhotoProofOnClose = true;
+    $("#modalKonfirmasi").modal("hide");
+    $("#modalPhoto").modal("show");
+});
+
+$(document).on("shown.bs.modal", "#modalKonfirmasi", function () {
+    var val = getKonfirmasiPhotoProof();
+    if (val) {
+        $("#konfirmasi-photo-preview").attr("src", val).removeClass("d-none");
+        $("#konfirmasi-photo-proof-error").hide();
+    }
+});
 
 function showProductionRejectOverTransfer(id) {
     transferOverlayState.done = false;
@@ -137,6 +211,11 @@ function showProductionRejectOverTransfer(id) {
 $(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
     $("#modalKonfirmasi").removeAttr("data-transfer-id");
     $("#modalKonfirmasi .btn-konfirmasi").removeAttr("data-id");
+    if (transferKeepPhotoProofOnClose) {
+        transferKeepPhotoProofOnClose = false;
+    } else {
+        hideKonfirmasiPhotoProof();
+    }
     restoreTransferOverlayIfNeeded();
 });
 
@@ -535,7 +614,13 @@ function inisialisasi() {
                         return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
                     }
                     if (data == 2) {
-                        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Kirim</span>';
+                        // Bukti foto pengiriman (GitHub #140) — hanya muncul saat status Kirim.
+                        var proofBtn = row && row.ship_proof_url
+                            ? ' <a href="javascript:void(0);" class="btnViewShipProof" data-url="' +
+                              row.ship_proof_url +
+                              '" title="Lihat bukti foto pengiriman"><i class="fe fe-camera" style="color:#1d4ed8;vertical-align:middle;"></i></a>'
+                            : "";
+                        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Kirim</span>' + proofBtn;
                     }
                     if (data == 3) {
                         return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Cancel</span>';
@@ -2348,6 +2433,10 @@ function resetTransferForm() {
     transferCreateRequestMode = false;
     transferIsRetailRequest = false;
     transferScanMode = false;
+    transferThenShipProofBase64 = "";
+    transferPendingThenShip = false;
+    $("#st-ship-proof-slot").addClass("d-none");
+    $("#st-ship-proof-thumb").attr("src", "");
     clearTransferStockLoads();
     retailUnitValidationPending = 0;
     retailValidationRun++;
@@ -3373,10 +3462,13 @@ $(document).on("click", ".btn-save-transfer", function () {
             method: "post",
             data: {
                 id: stId,
+                proof_base64: transferThenShipProofBase64,
                 _token: token || $('meta[name="csrf-token"]').attr("content"),
             },
             success: function (shipRes) {
                 resetSaveBtn();
+                transferThenShipProofBase64 = "";
+                $("#transfer_then_ship_proof_base64").val("");
                 if (!shipRes || shipRes.status != 1) {
                     if (typeof toastr !== "undefined") {
                         toastr.error("", (shipRes && shipRes.message) || "Gagal ACC kirim");
@@ -3462,12 +3554,42 @@ $(document).on("click", ".btn-acc-transfer", function () {
         showTransferModalKonfirmasi(
             "Kirim transfer ini? Stok gudang asal akan dipotong dan status menjadi Kirim.",
             "btn-ship-stock-transfer",
-            id
+            id,
+            null,
+            false,
+            true
         );
+        return;
+    }
+    // Simpan + Kirim langsung (edit mode, tanpa konfirmasi teks) — bukti foto tetap wajib
+    // (GitHub #140): ambil dulu lewat kamera, baru lanjutkan Simpan+Kirim otomatis.
+    if (!transferThenShipProofBase64) {
+        modeCamera = 5;
+        rotationAngle = 0;
+        camRotation = 0;
+        photoData = "";
+        inputFile = "#transfer_then_ship_proof_base64";
+        cameraReturnModal = "#add_stock_transfer";
+        $("#video").removeClass("rot90 rot180 rot270");
+        $("#preview-box").hide();
+        $("#camera").show();
+        startCamera();
+        transferPendingThenShip = true;
+        $("#add_stock_transfer").modal("hide");
+        $("#modalPhoto").modal("show");
         return;
     }
     $("#add_stock_transfer").data("then-ship", true);
     $(".btn-save-transfer").trigger("click");
+});
+
+$(document).on("shown.bs.modal", "#add_stock_transfer", function () {
+    transferThenShipProofBase64 = $("#transfer_then_ship_proof_base64").val() || "";
+    if (transferPendingThenShip && transferThenShipProofBase64) {
+        transferPendingThenShip = false;
+        $("#add_stock_transfer").data("then-ship", true);
+        $(".btn-save-transfer").trigger("click");
+    }
 });
 
 function approveStockTransfer(type) {
@@ -3482,6 +3604,7 @@ function approveStockTransfer(type) {
     var label = type === "qc" ? "QC" : "Kepala Operasional";
     var $confirmBtn = $("#modalKonfirmasi #btn-approve-" + type + "-stock-transfer");
     if ($confirmBtn.data("busy")) return;
+    if (!assertKonfirmasiPhotoProof()) return;
 
     // UX pre-check stok (QC22); gate wajib tetap di BE approveStockTransfer + shipLockedTransfer.
     function runApprove() {
@@ -3493,6 +3616,7 @@ function approveStockTransfer(type) {
             data: {
                 id: id,
                 type: type,
+                proof_base64: getKonfirmasiPhotoProof(),
                 _token: token || $('meta[name="csrf-token"]').attr("content"),
             },
             success: function (res) {
@@ -3575,7 +3699,10 @@ $(document).on("click", ".btn-approve-qc-transfer", function () {
     showTransferModalKonfirmasi(
         "Setujui request ini (QC)? Setelah disetujui, menunggu approval Kepala Operasional.",
         "btn-approve-qc-stock-transfer",
-        id
+        id,
+        null,
+        false,
+        willTransferAutoShip("qc")
     );
 });
 $(document).on("click", ".btn-approve-ops-transfer", function () {
@@ -3587,7 +3714,10 @@ $(document).on("click", ".btn-approve-ops-transfer", function () {
     showTransferModalKonfirmasi(
         "Setujui request ini (Kepala Operasional)? Stok gudang asal akan dipotong dan status menjadi Kirim — gudang eceran dapat menerima.",
         "btn-approve-ops-stock-transfer",
-        id
+        id,
+        null,
+        false,
+        willTransferAutoShip("ops")
     );
 });
 
@@ -3712,6 +3842,16 @@ function loadTransferDetailForEdit(id) {
                 $("#transfer_date").data("DateTimePicker").date(res.transfer_date);
             }
             $("#transfer_note").val(res.note || "");
+            // Bukti foto pengiriman (GitHub #140) — hanya muncul saat status Kirim.
+            if (res.ship_proof_url) {
+                $("#st-ship-proof-thumb").attr("src", res.ship_proof_url);
+                $("#st-ship-proof-link").attr("href", res.ship_proof_url);
+                $("#st-ship-proof-slot").removeClass("d-none");
+            } else {
+                $("#st-ship-proof-slot").addClass("d-none");
+                $("#st-ship-proof-thumb").attr("src", "");
+                $("#st-ship-proof-link").attr("href", "javascript:void(0);");
+            }
             setDefaultSender();
             fillSelectOption($("#transfer_from_warehouse_id"), res.from_warehouse_id, res.from_warehouse_name);
             fillSelectOption($("#transfer_to_warehouse_id"), res.to_warehouse_id, res.to_warehouse_name);
@@ -4022,6 +4162,12 @@ $(document).on("click", "#btn-delete-stock-transfer", function () {
     });
 });
 
+$(document).on("click", ".btnViewShipProof", function (e) {
+    e.stopPropagation();
+    var url = $(this).attr("data-url");
+    if (url) window.open(url, "_blank");
+});
+
 $(document).on("click", ".btnShipTransfer", function () {
     var id = $(this).attr("data-id");
     if (!id) return;
@@ -4044,6 +4190,7 @@ $(document).on("click", ".btnShipTransfer", function () {
         "btn-ship-stock-transfer"
     );
     $("#modalKonfirmasi #btn-ship-stock-transfer").attr("data-id", id);
+    showKonfirmasiPhotoProof();
 });
 
 $(document).on("click", "#btn-ship-stock-transfer", function () {
@@ -4056,6 +4203,7 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         }
         return;
     }
+    if (!assertKonfirmasiPhotoProof()) return;
     $confirmBtn.data("busy", true);
     LoadingButton($confirmBtn);
     $.ajax({
@@ -4063,6 +4211,7 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
         method: "post",
         data: {
             id: id,
+            proof_base64: getKonfirmasiPhotoProof(),
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
@@ -4304,6 +4453,8 @@ $(document).on("click", ".btnAccept", function () {
     $("#accept_stock_transfer input, #accept_stock_transfer textarea").val("");
     $("#accept_stock_transfer select").val(null).trigger("change");
     $("#lbl_accept_sender, #lbl_accept_from, #lbl_accept_date, #lbl_accept_to, #lbl_accept_ship_note").text("-");
+    $("#accept-ship-proof-slot").hide();
+    $("#accept-ship-proof-thumb").attr("src", "");
     renderAcceptItems([]);
     // Jangan init autocomplete — penerima dikunci ke user login
     var $recv = $("#accept_receiver_id");
@@ -4336,6 +4487,14 @@ $(document).on("click", ".btnAccept", function () {
             $("#lbl_accept_date").text(res.transfer_date || "-");
             $("#lbl_accept_to").text(res.to_warehouse_name || "-");
             $("#lbl_accept_ship_note").text(res.note || "-");
+            // Bukti foto pengiriman (GitHub #140) — muncul hanya saat status Kirim (jaminan di atas).
+            if (res.ship_proof_url) {
+                $("#accept-ship-proof-thumb").attr("src", res.ship_proof_url);
+                $("#accept-ship-proof-link").attr("href", res.ship_proof_url);
+                $("#accept-ship-proof-slot").show();
+            } else {
+                $("#accept-ship-proof-slot").hide();
+            }
             $("#accept_note").val(res.accept_note || "");
             // Penerima ACC = user login, dikunci (tidak bisa diganti)
             var $recv = $("#accept_receiver_id");

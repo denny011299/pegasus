@@ -22,6 +22,7 @@
 /public/customer_product_returns/
 /public/customer_supply_returns/
 /public/customer_returns/
+/public/stock_transfers/
 /storage/*.key
 /storage/pail
 /vendor

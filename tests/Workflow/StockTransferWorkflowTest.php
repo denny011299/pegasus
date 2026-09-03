@@ -33,6 +33,8 @@ class StockTransferWorkflowTest extends TestCase
     private const RETAIL_WAREHOUSE_ID = 2;
     private const PIECE_UNIT_ID = 9;
     private const DOS_UNIT_ID = 7;
+    /** Bukti foto wajib saat Kirim (GitHub #140). */
+    private const PROOF_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
     /** Second main warehouse — needed for item #4's "utama -> utama" scenario. */
     private function createSecondMainWarehouse(): Warehouse
@@ -223,7 +225,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
-        $this->post('/shipStockTransfer', ['id' => $header->st_id])
+        $this->post('/shipStockTransfer', ['id' => $header->st_id, 'proof_base64' => self::PROOF_BASE64])
             ->assertStatus(200)
             ->assertJson(['status' => 1]);
 
@@ -275,7 +277,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
-        $this->post('/shipStockTransfer', ['id' => $header->st_id])
+        $this->post('/shipStockTransfer', ['id' => $header->st_id, 'proof_base64' => self::PROOF_BASE64])
             ->assertStatus(200)
             ->assertJson(['status' => 1]);
 
@@ -338,7 +340,7 @@ class StockTransferWorkflowTest extends TestCase
 
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
-        $this->post('/shipStockTransfer', ['id' => $header->st_id])
+        $this->post('/shipStockTransfer', ['id' => $header->st_id, 'proof_base64' => self::PROOF_BASE64])
             ->assertStatus(200)
             ->assertJson(['status' => -1]);
 
@@ -377,7 +379,7 @@ class StockTransferWorkflowTest extends TestCase
         );
 
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
-        $this->post('/shipStockTransfer', ['id' => $header->st_id])->assertJson(['status' => 1]);
+        $this->post('/shipStockTransfer', ['id' => $header->st_id, 'proof_base64' => self::PROOF_BASE64])->assertJson(['status' => 1]);
 
         $this->withActiveWarehouse($retailWarehouseId);
         $this->post('/accStockTransfer', ['id' => $header->st_id])
@@ -437,7 +439,7 @@ class StockTransferWorkflowTest extends TestCase
         );
 
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
-        $this->post('/shipStockTransfer', ['id' => $header->st_id])->assertJson(['status' => 1]);
+        $this->post('/shipStockTransfer', ['id' => $header->st_id, 'proof_base64' => self::PROOF_BASE64])->assertJson(['status' => 1]);
 
         $sourcePieceStock->refresh();
         $this->assertSame(0.0, (float) $sourcePieceStock->ps_stock, 'all 50 Piece left the source warehouse');

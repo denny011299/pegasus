@@ -30,6 +30,7 @@ class StockTransfer extends Model
         'status',
         'created_by',
         'acc_by',
+        'ship_proof_path',
         'qc_approved_by',
         'qc_approved_at',
         'ops_approved_by',
