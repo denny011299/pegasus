@@ -181,6 +181,18 @@ function productionActiveWarehouseName() {
     return wh.name || wh.warehouse_name || "Gudang utama aktif";
 }
 
+var productionDestMode = "retail";
+
+function setProductionDestMode(mode) {
+    productionDestMode = mode === "stock" ? "stock" : "retail";
+    var $switch = $("#production-dest-mode-switch");
+    $switch.find("[data-dest-mode]").each(function () {
+        var active = $(this).data("dest-mode") === productionDestMode;
+        $(this).toggleClass("is-active", active).attr("aria-pressed", active);
+    });
+    syncProductionDestinationControl();
+}
+
 function syncProductionDestinationControl() {
     var $product = $("#addProduction #product_id");
     var product = getSelect2FirstData($product) || {};
@@ -191,13 +203,15 @@ function syncProductionDestinationControl() {
     var $badge = $("#production-main-warehouse-badge");
     var $dest = $("#addProduction #production_destination_warehouse_id");
     var $destSelect2 = $dest.next(".select2-container");
+    var $modeSwitch = $("#production-dest-mode-switch");
+    var useStock = !isRetail || productionDestMode === "stock";
 
     $badge.find("span").text(
-        isRetail ? productionActiveWarehouseName() : productionNonRetailDestinationName(),
+        useStock ? productionNonRetailDestinationName() : productionActiveWarehouseName(),
     );
+    $modeSwitch.toggleClass("d-none", !isRetail);
 
-    if (isRetail) {
-        // Satuan eceran → pilih gudang eceran (d-none, bukan .hide — badge pakai d-flex !important)
+    if (isRetail && productionDestMode === "retail") {
         $badge.addClass("d-none").removeClass("d-flex");
         if (
             typeof autocompleteWarehouse === "function" &&
@@ -215,20 +229,36 @@ function syncProductionDestinationControl() {
         } else {
             $dest.show();
         }
-    } else {
-        if ($dest.hasClass("select2-hidden-accessible")) {
-            $dest.val(null).trigger("change");
-            $dest.select2("destroy");
-        } else {
-            $dest.val(null);
-        }
-        if ($destSelect2.length) {
-            $destSelect2.hide();
-        }
-        $dest.hide();
-        $badge.removeClass("d-none").addClass("d-flex");
+        return;
     }
+
+    if ($dest.hasClass("select2-hidden-accessible")) {
+        $dest.val(null).trigger("change");
+        $dest.select2("destroy");
+    } else {
+        $dest.val(null);
+    }
+    $destSelect2 = $dest.next(".select2-container");
+    if ($destSelect2.length) {
+        $destSelect2.hide();
+    }
+    $dest.hide();
+    $badge.removeClass("d-none").addClass("d-flex");
 }
+
+$(document).on("click", "#production-dest-mode-switch [data-dest-mode]", function () {
+    setProductionDestMode($(this).data("dest-mode"));
+});
+
+$(document).on("keydown", "#production-dest-mode-switch .pg-dest-toggle__btn", function (e) {
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        e.preventDefault();
+        var $btns = $("#production-dest-mode-switch .pg-dest-toggle__btn");
+        var nextIdx = $(this).is($btns.first()) ? 1 : 0;
+        var $target = $btns.eq(nextIdx);
+        $target.focus().trigger("click");
+    }
+});
 
 function resetProductionProductUnitSelect() {
     var $unit = $("#addProduction #unit_id");
@@ -327,6 +357,7 @@ $("#addProduction").on("hidden.bs.modal", function () {
     ) {
         return;
     }
+    setProductionDestMode("retail");
     resetProductionApprovalActions();
     setProductionModalMode("form");
     setProductionSaveVisible(true, "Simpan");
@@ -535,12 +566,14 @@ function stashPendingProductionAdd(tempBom) {
         product_variant_id: product.product_variant_id || null,
         qty: $("#production_qty").val(),
         unit_id: $("#unit_id").val(),
-        destination_warehouse_id: isRetailOutput
-            ? $("#production_destination_warehouse_id").val() || null
-            : productionNonRetailDestinationId() || null,
-        destination_warehouse_name: isRetailOutput
-            ? destData.text || productionActiveWarehouseName()
-            : productionNonRetailDestinationName(),
+        destination_warehouse_id:
+            isRetailOutput && productionDestMode === "retail"
+                ? $("#production_destination_warehouse_id").val() || null
+                : productionNonRetailDestinationId() || null,
+        destination_warehouse_name:
+            isRetailOutput && productionDestMode === "retail"
+                ? destData.text || productionActiveWarehouseName()
+                : productionNonRetailDestinationName(),
     };
 }
 
@@ -1224,9 +1257,10 @@ function continueAddProduct(tempBom) {
     var isRetailOutput =
         parseInt(temp.retail_unit || 0, 10) > 0 &&
         parseInt(resolved.unit_id || 0, 10) === parseInt(temp.retail_unit, 10);
-    var destinationId = isRetailOutput
-        ? parseInt($("#production_destination_warehouse_id").val() || 0, 10)
-        : productionNonRetailDestinationId();
+    var destinationId =
+        isRetailOutput && productionDestMode === "retail"
+            ? parseInt($("#production_destination_warehouse_id").val() || 0, 10)
+            : productionNonRetailDestinationId();
 
     // Kerja di atas salinan `items` dulu (bukan `items` asli) - baris baru/gabungan
     // baru benar-benar masuk ke daftar kalau cek stok di bawah (GitHub #101) lolos.
@@ -1292,10 +1326,9 @@ function continueAddProduct(tempBom) {
             default_unit: parseInt(temp.default_unit || 0, 10) || null,
             destination_warehouse_id: destinationId || null,
             destination_warehouse_name:
-                destinationData.text ||
-                (isRetailOutput
-                    ? productionActiveWarehouseName()
-                    : productionNonRetailDestinationName()),
+                isRetailOutput && productionDestMode === "retail"
+                    ? destinationData.text || productionActiveWarehouseName()
+                    : productionNonRetailDestinationName(),
             bom_id: temp.bom_id,
         };
         // Posisi baris baru (atas/bawah) ikut konstanta bersama PG_POPUP_TABLE
@@ -2169,18 +2202,33 @@ function attemptAddProductionProduct(options) {
         parseInt(tempBom.retail_unit || 0, 10) > 0 &&
         parseInt($("#unit_id").val() || 0, 10) ===
             parseInt(tempBom.retail_unit, 10);
-    if (
+    if (isRetailOutput && productionDestMode === "retail") {
+        if (
+            !parseInt(
+                $("#production_destination_warehouse_id").val() || 0,
+                10,
+            )
+        ) {
+            $("#production_destination_warehouse_id")
+                .next(".select2-container")
+                .find(".select2-selection")
+                .addClass("is-invalid");
+            notifikasi(
+                "error",
+                "Gudang Tujuan Wajib",
+                "Pilih gudang eceran untuk hasil produksi bersatuan eceran.",
+            );
+            return false;
+        }
+    } else if (
         isRetailOutput &&
-        !parseInt($("#production_destination_warehouse_id").val() || 0, 10)
+        productionDestMode === "stock" &&
+        !productionNonRetailDestinationId()
     ) {
-        $("#production_destination_warehouse_id")
-            .next(".select2-container")
-            .find(".select2-selection")
-            .addClass("is-invalid");
         notifikasi(
             "error",
             "Gudang Tujuan Wajib",
-            "Pilih gudang eceran untuk hasil produksi bersatuan eceran.",
+            "Gudang stok (gudang utama aktif) belum terdeteksi. Pilih gudang utama di top bar.",
         );
         return false;
     }
