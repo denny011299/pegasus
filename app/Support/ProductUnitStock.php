@@ -531,7 +531,8 @@ class ProductUnitStock
         string $logCode,
         string $logNotes = 'Stock Transfer - keluar',
         bool $allowPacking = false,
-        bool $allowUnpack = true
+        bool $allowUnpack = true,
+        ?string $unpackNotePrefix = null
     ): array {
         if ($qty <= 0) {
             return ['ok' => true];
@@ -585,13 +586,19 @@ class ProductUnitStock
         $relations = self::relations($productVariantId);
         /** @var list<array{unit_id:int, qty:float, category:int, note:string}> $logs */
         $logs = [];
+        // Prefix "Stock Transfer" cuma benar kalau deduct ini memang lewat alur Stock Transfer.
+        // Caller lain yang juga bisa memicu bongkar satuan (mis. pembatalan produksi mode stok
+        // gudang, GitHub #134) wajib kirim $unpackNotePrefix miliknya sendiri, supaya Log Stock
+        // tidak salah menyebut transaksi gudang sebagai Stock Transfer.
+        $unpackPrefix = $unpackNotePrefix ?? 'Stock Transfer';
 
         $ensure = function (int $targetUnitId, float $need) use (
             &$ensure,
             &$virtual,
             &$logs,
             $relations,
-            $byUnit
+            $byUnit,
+            $unpackPrefix
         ): bool {
             if (($virtual[$targetUnitId] ?? 0) + 1e-9 >= $need) {
                 return true;
@@ -635,14 +642,14 @@ class ProductUnitStock
                 'unit_id' => $parentId,
                 'qty' => (float) $takeParent,
                 'category' => 2,
-                'note' => 'Stock Transfer - bongkar satuan',
+                'note' => $unpackPrefix . ' - bongkar satuan',
                 'saldo' => round((float) ($virtual[$parentId] ?? 0), 4),
             ];
             $logs[] = [
                 'unit_id' => $targetUnitId,
                 'qty' => (float) $got,
                 'category' => 1,
-                'note' => 'Stock Transfer - hasil bongkar',
+                'note' => $unpackPrefix . ' - hasil bongkar',
                 'saldo' => round((float) ($virtual[$targetUnitId] ?? 0), 4),
             ];
 
