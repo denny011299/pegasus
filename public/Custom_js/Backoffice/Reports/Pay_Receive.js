@@ -444,6 +444,7 @@
                     return;
                 }
                 window.open('/generateHutang?' + $.param(params), '_self');
+                resetHutangActionBtn($btn, BTN_PRINT_HTML);
             },
             error: function(e){
                 resetHutangActionBtn($btn, BTN_PRINT_HTML);
