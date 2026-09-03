@@ -18,6 +18,7 @@ alwaysApply: true
 - **Jangan** `git push origin fase2/main`.
 - **Jangan** commit langsung ke `fase2/main`.
 - Merge/push ke `fase2/main` **hanya** jika user minta eksplisit (mis. "push ke fase2/main", "merge ke main").
+- Commit **per fitur** (bisa `git revert` satu SHA). Lihat `.cursor/rules/pegasus-git-revert-safe.mdc`.
 
 ### Worktree `pegasus-fase2-main`
 

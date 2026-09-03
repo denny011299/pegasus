@@ -1,0 +1,45 @@
+﻿---
+description: SSH paths and artisan migrate/clear for DEV and production Pegasus servers
+alwaysApply: true
+---
+
+# Pegasus Deploy Paths
+
+User SSH: `pegasuso`
+
+| Env | Path |
+|-----|------|
+| DEV / staging | `/home/pegasuso/dev.mypegasus.online` |
+| Production | `/home/pegasuso/mypegasus.online` |
+
+Prefer path-specific migrate when shipping one migration. Generic pattern:
+
+```bash
+php artisan migrate --path=database/migrations/<file>.php --force
+```
+
+Alternative clear: `php artisan optimize:clear`
+
+Merge ke `fase2/main` hanya jika user minta; catatan ini untuk server **setelah** deploy.
+
+## DEV — migrate QC7 + clear cache
+
+```bash
+cd /home/pegasuso/dev.mypegasus.online
+php artisan migrate --path=database/migrations/2026_09_03_013700_add_declined_po_ids_to_purchase_order_tts_table.php --force
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
+```
+
+## Production — migrate QC7 + clear cache
+
+```bash
+cd /home/pegasuso/mypegasus.online
+php artisan migrate --path=database/migrations/2026_09_03_013700_add_declined_po_ids_to_purchase_order_tts_table.php --force
+php artisan config:clear
+php artisan cache:clear
+php artisan view:clear
+php artisan route:clear
+```

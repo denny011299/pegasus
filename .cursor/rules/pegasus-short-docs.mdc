@@ -1,0 +1,31 @@
+---
+description: Dokumentasi singkat di kode dan chat — WHY/HOW 1–2 baris, bukan essay. Selalu berlaku.
+alwaysApply: true
+---
+
+# Dokumentasi singkat (bukan yap)
+
+Setiap kerja: tulis catatan yang **pendek, rapi, bisa dibaca user**. Bukan essay. Tidak mengganti `response-rule` (NO YAP) — docs = 1–2 baris, bukan filler.
+
+## Komentar di kode
+
+- Tulis **WHY** atau HOW yang tidak jelas dari kode. Maks 1–2 baris.
+- Jangan narasikan yang sudah terlihat (`i++`, `return $data`).
+- Jangan komentar di setiap baris. Jangan README panjang kecuali user minta.
+
+```js
+// ❌ BAD
+// Set status ke 1
+$data.status = 1;
+
+// ✅ GOOD
+// 1 = aktif; 0 = soft-delete (kolom status, bukan SoftDeletes)
+$data.status = 1;
+```
+
+## Chat / commit ke user
+
+Setelah kerja, 1–3 kalimat: **apa yang berubah** + **cara pakai** jika perlu. Bahasa Indonesia, jelas, tidak kripto.
+
+- Jangan: "Updated handler."
+- Ya: "Terima transfer sekarang wajib foto. Di modal Terima, lampirkan foto lalu klik Terima."

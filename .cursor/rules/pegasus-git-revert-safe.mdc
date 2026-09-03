@@ -1,0 +1,31 @@
+---
+description: Commit/push per fitur supaya mudah di-revert. Jangan campur fitur; jangan rewrite history yang sudah di-push.
+alwaysApply: true
+---
+
+# Git: commit aman, bisa revert
+
+Satu **fitur/bugfix = satu commit** (boleh beberapa file, asal satu alasan). Jangan campur Produksi + Hutang + ST dalam satu SHA.
+
+## Commit
+
+- Pesan: `feat|fix|chore(scope): kenapa` — scope = modul (`stock-transfer`, `produksi`, `hutang`).
+- Atomic: `git revert <sha>` mengembalikan **hanya** itu, tanpa merusak fitur lain.
+- Jangan commit `storage/framework/views`, `.env`, foto uji, compiled cache.
+- Jangan `--amend` commit yang sudah di-push. Jangan `--force` ke `fase2/main` / `main`.
+
+## Push / merge
+
+- Rutin: push **`fase2/ruben` saja**. Merge `fase2/main` hanya jika user minta eksplisit.
+- Merge: **jangan squash** beberapa fitur jadi satu commit (rollback jadi tidak selektif). Fast-forward atau merge commit biasa.
+- Rollback produksi: `git revert <sha>` + push branch yang sama — bukan `reset --hard` di remote.
+
+```
+# ❌ BAD — satu commit campur 3 fitur
+git add -A && git commit -m "fix various"
+
+# ✅ GOOD — 3 SHA, revert satu-satu
+git commit  # fix(produksi): spinner refresh, skeleton first load
+git commit  # feat(stock-transfer): lihat foto di detail/terima
+git commit  # fix(hutang): spinner sampai PDF selesai
+```
