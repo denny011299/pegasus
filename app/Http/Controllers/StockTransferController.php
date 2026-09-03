@@ -17,7 +17,9 @@ use App\Support\StockTransferApproval;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -554,6 +556,10 @@ class StockTransferController extends Controller
                 'source_id' => $row->source_id ? (int) $row->source_id : null,
                 'disposition' => $row->disposition,
                 'status' => $status,
+                // Bukti foto Kirim (GitHub #140): hanya relevan/ditampilkan saat status Kirim.
+                'ship_proof_url' => $status === 2 && $row->ship_proof_path
+                    ? asset($row->ship_proof_path)
+                    : null,
                 'selisih' => $status === 4 ? $selisihMeta['selisih'] : null,
                 'has_selisih' => $status === 4 ? $selisihMeta['has_selisih'] : false,
                 'selisih_lines' => $status === 4 ? $selisihMeta['lines'] : 0,
@@ -826,6 +832,10 @@ class StockTransferController extends Controller
             'source_id' => $header->source_id ? (int) $header->source_id : null,
             'disposition' => $header->disposition,
             'status' => $status,
+            // Bukti foto Kirim (GitHub #140): hanya relevan/ditampilkan saat status Kirim.
+            'ship_proof_url' => $status === 2 && $header->ship_proof_path
+                ? asset($header->ship_proof_path)
+                : null,
             'is_retail_request' => $isRetailRequest ? 1 : 0,
             'requires_approval' => $requiresApproval ? 1 : 0,
             'qc_required' => StockTransferApproval::qcRequiredAtWarehouse($fromWh) ? 1 : 0,
@@ -1525,10 +1535,29 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => 'Kepala Operasional sudah approve']);
         }
 
+        // Approval terakhir (QC bila Ops tidak ada di gudang asal, atau Ops) langsung memotong
+        // stok & set status Kirim — bukti foto wajib diunggah di sini juga (GitHub #140).
+        $qcApprovedAfter = $type === 'qc' ? true : StockTransferApproval::isQcApproved($header);
+        $opsApprovedAfter = $type === 'ops' ? true : StockTransferApproval::isOpsApproved($header);
+        $willAutoShip = (! StockTransferApproval::qcRequiredAtWarehouse($fromWh) || $qcApprovedAfter)
+            && (! StockTransferApproval::opsRequiredAtWarehouse($fromWh) || $opsApprovedAfter);
+
+        $proofPath = null;
+        if ($willAutoShip) {
+            try {
+                $proofPath = $this->storeShipProof($req);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $e->getMessage() ?: 'Bukti foto wajib diunggah',
+                ]);
+            }
+        }
+
         $before = $this->snapshotTransfer($stId);
         $autoShipped = false;
         try {
-            DB::transaction(function () use ($stId, $type, $staffId, $fromWh, &$autoShipped) {
+            DB::transaction(function () use ($stId, $type, $staffId, $fromWh, $proofPath, &$autoShipped) {
                 $locked = StockTransfer::query()
                     ->where('st_id', $stId)
                     ->where('status', 1)
@@ -1594,15 +1623,22 @@ class StockTransferController extends Controller
                     $this->warehouseIsMain((int) $locked->to_warehouse_id)
                 );
                 if ($isRetail && StockTransferApproval::isFullyApproved($locked, $fromWh)) {
-                    $this->shipLockedTransfer($locked, $staffId);
+                    $this->shipLockedTransfer($locked, $staffId, $proofPath);
                     $autoShipped = true;
                 }
             });
         } catch (Throwable $e) {
+            $this->deleteShipProof($proofPath);
+
             return response()->json([
                 'status' => -1,
                 'message' => $e->getMessage() ?: 'Gagal approve stock transfer',
             ]);
+        }
+
+        // Prediksi auto-ship di atas tidak tercapai (mis. race lockForUpdate) → jangan simpan file yatim.
+        if ($proofPath && ! $autoShipped) {
+            $this->deleteShipProof($proofPath);
         }
 
         $after = $this->snapshotTransfer($stId);
@@ -1649,12 +1685,21 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => $gate]);
         }
 
+        try {
+            $proofPath = $this->storeShipProof($req);
+        } catch (Throwable $e) {
+            return response()->json([
+                'status' => -1,
+                'message' => $e->getMessage() ?: 'Bukti foto wajib diunggah',
+            ]);
+        }
+
         $user = Session::get('user');
         $accBy = (int) ($user->staff_id ?? 0);
 
         $before = $this->snapshotTransfer((int) $header->st_id);
         try {
-            DB::transaction(function () use ($stId, $accBy) {
+            DB::transaction(function () use ($stId, $accBy, $proofPath) {
                 $lockedHeader = StockTransfer::query()
                     ->where('st_id', $stId)
                     ->where('status', 1)
@@ -1667,9 +1712,11 @@ class StockTransferController extends Controller
                 if ($gateLocked !== true) {
                     throw new \RuntimeException($gateLocked);
                 }
-                $this->shipLockedTransfer($lockedHeader, $accBy);
+                $this->shipLockedTransfer($lockedHeader, $accBy, $proofPath);
             });
         } catch (Throwable $e) {
+            $this->deleteShipProof($proofPath);
+
             return response()->json([
                 'status' => -1,
                 'message' => $e->getMessage() ?: 'Gagal kirim stock transfer',
@@ -1690,7 +1737,7 @@ class StockTransferController extends Controller
     /**
      * Potong stok + set status=2. Caller harus sudah lockForUpdate header status=1.
      */
-    protected function shipLockedTransfer(StockTransfer $lockedHeader, int $accBy): void
+    protected function shipLockedTransfer(StockTransfer $lockedHeader, int $accBy, ?string $shipProofPath = null): void
     {
         $stId = (int) $lockedHeader->st_id;
         $details = StockTransferDetail::query()
@@ -1751,7 +1798,69 @@ class StockTransferController extends Controller
         if ($accBy > 0) {
             $lockedHeader->acc_by = $accBy;
         }
+        if ($shipProofPath) {
+            $lockedHeader->ship_proof_path = $shipProofPath;
+        }
         $lockedHeader->save();
+    }
+
+    /**
+     * Simpan bukti foto pengiriman (GitHub #140) — wajib saat Pending → Kirim, baik lewat
+     * tombol Kirim manual maupun approval terakhir yang auto-Kirim (request eceran). Terima
+     * file multipart (`proof`) ATAU data URI base64 (`proof_base64`), sama seperti pola bukti
+     * foto pengembalian pelanggan (App\Support\CustomerReturnCreation::storeProofFromInput).
+     */
+    private function storeShipProof(Request $req): string
+    {
+        $file = $req->hasFile('proof') ? $req->file('proof') : null;
+        $base64 = $req->filled('proof_base64') ? (string) $req->input('proof_base64') : null;
+
+        $binary = null;
+        if ($file !== null) {
+            $binary = File::get($file->getRealPath());
+        } elseif ($base64) {
+            if (! preg_match('/^data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+\/=\r\n]+)$/', $base64, $matches)) {
+                throw new \RuntimeException('Format bukti foto tidak valid');
+            }
+            $binary = base64_decode($matches[2], true);
+            if ($binary === false || strlen($binary) > 5 * 1024 * 1024) {
+                throw new \RuntimeException('Ukuran bukti foto maksimal 5 MB');
+            }
+        }
+        if ($binary === null) {
+            throw new \RuntimeException('Bukti foto wajib diunggah sebelum Kirim');
+        }
+
+        $imageInfo = @getimagesizefromstring($binary);
+        $mime = $imageInfo['mime'] ?? '';
+        $extensions = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+        if (! isset($extensions[$mime])) {
+            throw new \RuntimeException('Isi file bukti bukan gambar JPEG, PNG, atau WebP yang valid');
+        }
+
+        $directory = public_path('stock_transfers');
+        File::ensureDirectoryExists($directory);
+        $filename = now()->format('YmdHis') . '_' . Str::random(24) . '.' . $extensions[$mime];
+        if (File::put($directory . DIRECTORY_SEPARATOR . $filename, $binary) === false) {
+            throw new \RuntimeException('Bukti foto gagal disimpan');
+        }
+
+        return 'stock_transfers/' . $filename;
+    }
+
+    /**
+     * Hapus berkas bukti foto pengiriman — dipanggil saat aksi Kirim/approve gagal setelah file
+     * tersimpan, supaya tidak ada berkas yatim. Hanya path folder fitur ini yang boleh dihapus.
+     */
+    private function deleteShipProof(?string $path): void
+    {
+        if (! $path || ! str_starts_with($path, 'stock_transfers/')) {
+            return;
+        }
+        $full = public_path($path);
+        if (File::exists($full)) {
+            File::delete($full);
+        }
     }
 
     public function accStockTransfer(Request $req)
@@ -2981,6 +3090,7 @@ class StockTransferController extends Controller
                 'disposition' => $header->disposition,
                 'status' => (int) $header->status,
                 'acc_by' => $header->acc_by ? (int) $header->acc_by : null,
+                'ship_proof_path' => $header->ship_proof_path,
                 'qc_approved_by' => $header->qc_approved_by ? (int) $header->qc_approved_by : null,
                 'qc_approved_at' => $header->qc_approved_at ? (string) $header->qc_approved_at : null,
                 'ops_approved_by' => $header->ops_approved_by ? (int) $header->ops_approved_by : null,

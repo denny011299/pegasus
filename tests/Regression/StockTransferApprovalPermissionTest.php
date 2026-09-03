@@ -26,6 +26,9 @@ class StockTransferApprovalPermissionTest extends TestCase
 {
     use ActingAsStaff;
 
+    /** Bukti foto wajib saat approval yang auto-Kirim (GitHub #140). */
+    private const PROOF_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
 
     /** @var int */
     private int $pieceUnitId = 0;
@@ -196,7 +199,11 @@ class StockTransferApprovalPermissionTest extends TestCase
             ->assertJsonPath('can_approve_qc', false)
             ->assertJsonPath('can_approve_ops', true);
 
-        $this->post('/approveStockTransfer', ['id' => $header->st_id, 'type' => 'ops'])
+        $this->post('/approveStockTransfer', [
+            'id' => $header->st_id,
+            'type' => 'ops',
+            'proof_base64' => self::PROOF_BASE64,
+        ])
             ->assertOk()
             ->assertJson(['status' => 1]);
 
