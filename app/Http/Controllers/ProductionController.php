@@ -2269,18 +2269,20 @@ class ProductionController extends Controller
                 continue;
             }
 
+            // Satuan eceran: boleh gudang eceran (ST) ATAU gudang utama/aktif (stok tanpa ST).
             $destinationId = (int) ($item['destination_warehouse_id'] ?? 0);
-            $validRetail = $destinationId > 0
-                && Warehouse::query()
-                ->active()
-                ->whereKey($destinationId)
-                ->whereHas('type', fn($query) => $query->where('is_main_warehouse', 0))
-                ->exists();
-            if (! $validRetail) {
+            $destWh = $destinationId > 0
+                ? Warehouse::query()->active()->with('type')->whereKey($destinationId)->first()
+                : null;
+            if (! $destWh) {
                 return [
                     'ok' => false,
-                    'message' => 'Pilih gudang eceran aktif untuk setiap hasil produksi bersatuan eceran.',
+                    'message' => 'Pilih gudang tujuan aktif untuk hasil produksi bersatuan eceran.',
                 ];
+            }
+            $destIsMain = (int) ($destWh->type->is_main_warehouse ?? 0) === 1;
+            if ($destIsMain || $destinationId === (int) $mainWarehouse->id) {
+                $item['destination_warehouse_id'] = (int) $mainWarehouse->id;
             }
         }
         unset($item);
@@ -2333,13 +2335,10 @@ class ProductionController extends Controller
             $isRetail = (int) ($variant->retail_unit ?? 0) > 0
                 && $inputUnitId === (int) $variant->retail_unit;
             if ($isRetail) {
+                // Eceran → gudang eceran (ST). Eceran → gudang utama = stok di asal, tanpa ST.
                 $destIsMain = (int) ($destWh->type->is_main_warehouse ?? 0) === 1;
                 if ($destIsMain || $destinationId === $mainWarehouseId) {
-                    return [
-                        'ok' => false,
-                        'message' => 'Hasil produksi bersatuan eceran harus menuju gudang eceran aktif.',
-                        'groups' => [],
-                    ];
+                    $destinationId = $mainWarehouseId;
                 }
             } else {
                 $destinationId = $mainWarehouseId;

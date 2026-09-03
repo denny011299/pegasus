@@ -45,6 +45,63 @@
   #addProduction .pg-popup-table-input {
     padding-bottom: 24px;
   }
+  #production-dest-mode-switch.pg-dest-toggle {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    border-radius: 999px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+    gap: 2px;
+  }
+  #production-dest-mode-switch.pg-dest-toggle.d-none {
+    display: none !important;
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn {
+    border: 0;
+    background: transparent;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 999px;
+    line-height: 1.2;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn:hover:not(.is-active) {
+    color: #1e293b;
+    background: rgba(255, 255, 255, 0.6);
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn:focus-visible {
+    outline: 2px solid #2563eb !important;
+    outline-offset: 1px !important;
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn i,
+  #production-dest-mode-switch .pg-dest-toggle__btn svg {
+    font-size: 10px;
+    width: 10px;
+    height: 10px;
+    flex-shrink: 0;
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn.is-active {
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12), 0 1px 2px rgba(15, 23, 42, 0.08);
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn[data-dest-mode="stock"].is-active {
+    color: #2563eb;
+  }
+  #production-dest-mode-switch .pg-dest-toggle__btn[data-dest-mode="retail"].is-active {
+    color: #059669;
+  }
   /* Nama Produk / Gudang Tujuan autocompletes are appended to <body> (not
      .modal-content) so their dropdown can't get clipped by the modal's own
      overflow:hidden. Bootstrap's .modal is z-index 1055, above select2's
@@ -186,9 +243,22 @@
                 </div>
                 <div class="col-12 col-lg-4 add">
                   <div class="input-block mb-0">
-                    <label class="text-muted mb-2"
-                      style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
-                      Tujuan <span class="text-danger">*</span></label>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <label class="text-muted mb-0"
+                        style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px;">Gudang
+                        Tujuan <span class="text-danger">*</span></label>
+                      <div id="production-dest-mode-switch" class="pg-dest-toggle d-none ms-1" role="group"
+                        aria-label="Mode gudang tujuan">
+                        <button type="button" class="pg-dest-toggle__btn" data-dest-mode="stock"
+                          aria-pressed="false" tabindex="0">
+                          <i class="fe fe-home"></i> Stok
+                        </button>
+                        <button type="button" class="pg-dest-toggle__btn is-active" data-dest-mode="retail"
+                          aria-pressed="true" tabindex="0">
+                          <i class="fe fe-repeat"></i> Transfer
+                        </button>
+                      </div>
+                    </div>
                     @php
                       $prodDestWh = $activeWarehouse ?? null;
                       $prodDestWhName = $prodDestWh
