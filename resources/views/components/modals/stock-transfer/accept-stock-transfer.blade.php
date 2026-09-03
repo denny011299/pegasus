@@ -22,7 +22,7 @@
 
         {{-- ── ROUTE INFO PANEL ── --}}
         <div class="border-bottom" style="background:#ffffff;padding:24px 28px 16px 28px;">
-          <div class="row g-3 align-items-center">
+          <div class="row g-3 align-items-start">
 
             {{-- Info Asal --}}
             <div class="col-md-5">
@@ -38,14 +38,14 @@
                   <div class="col-6">
                     <div class="text-muted"
                       style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
-                        class="fe fe-user me-1 text-primary"></i>Pengirim</div>
-                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_sender">-</div>
+                        class="fe fe-box me-1 text-primary"></i>Gudang Asal</div>
+                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_from">-</div>
                   </div>
                   <div class="col-6">
                     <div class="text-muted"
                       style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
-                        class="fe fe-box me-1 text-primary"></i>Gudang Asal</div>
-                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_from">-</div>
+                        class="fe fe-user me-1 text-primary"></i>Pengirim</div>
+                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_sender">-</div>
                   </div>
                   <div class="col-6">
                     <div class="text-muted"
@@ -53,28 +53,29 @@
                         class="fe fe-calendar me-1 text-primary"></i>Tanggal Pengiriman</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_date">-</div>
                   </div>
-                  <div class="col-6">
+                  {{-- Bukti foto pengiriman (GitHub #140) --}}
+                  <div class="col-6 d-none" id="accept-ship-proof-slot">
+                    <div class="text-muted"
+                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                        class="fe fe-camera me-1 text-primary"></i>Bukti Foto Kirim</div>
+                    <button type="button" class="btn btn-sm w-100 btn-view-st-ship-proof mt-0.5 d-flex align-items-center justify-content-center gap-1.5 fw-semibold" id="accept-ship-proof-link"
+                      data-parent="#accept_stock_transfer"
+                      style="border-radius:6px;height:30px;font-size:12px;border:1px solid #bfdbfe;color:#1d4ed8;background:#eff6ff;transition:all 0.2s ease-in-out;">
+                      <i class="fe fe-image" style="font-size:12px;"></i> <span>Lihat Foto</span>
+                    </button>
+                  </div>
+                  <div class="col-12">
                     <div class="text-muted"
                       style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                         class="fe fe-file-text me-1 text-primary"></i>Catatan Pengiriman</div>
-                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_ship_note">-</div>
-                  </div>
-                  {{-- Bukti foto pengiriman (GitHub #140) --}}
-                  <div class="col-6" id="accept-ship-proof-slot" style="display:none;">
-                    <div class="text-muted"
-                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
-                        class="fe fe-camera me-1 text-primary"></i>Bukti Foto</div>
-                    <a href="javascript:void(0);" id="accept-ship-proof-link" target="_blank" rel="noopener">
-                      <img id="accept-ship-proof-thumb" src="" alt="Bukti foto pengiriman"
-                        style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;margin-top:2px;">
-                    </a>
+                    <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;word-break:break-word;" id="lbl_accept_ship_note">-</div>
                   </div>
                 </div>
               </div>
             </div>
 
             {{-- Arrow --}}
-            <div class="col-md-2 d-flex align-items-center justify-content-center">
+            <div class="col-md-2 d-flex align-items-center justify-content-center" style="padding-top: 40px;">
               <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
                 <div
                   style="width:34px;height:34px;background:linear-gradient(135deg,#059669,#10b981);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 8px rgba(5,150,105,.25);">
@@ -97,14 +98,15 @@
                 </div>
                 <div class="row g-2 mt-0 flex-grow-1">
                   <div class="col-6">
-                    <label class="text-muted mb-0.5"
-                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">Gudang
-                      Tujuan</label>
+                    <div class="text-muted"
+                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                        class="fe fe-box me-1 text-success"></i>Gudang Tujuan</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_to">-</div>
                   </div>
                   <div class="col-6">
-                    <label class="text-muted mb-0.5"
-                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">Penerima</label>
+                    <div class="text-muted"
+                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                        class="fe fe-user-check me-1 text-success"></i>Penerima</div>
                     <select class="form-select form-control fill select2 mt-0.5" id="accept_receiver_id"
                       style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;" disabled>
                       <option value="">-</option>

@@ -56,6 +56,20 @@
             word-break: normal;
             white-space: normal;
         }
+        #accept_stock_transfer .btn-view-st-ship-proof,
+        #view_stock_transfer .btn-view-st-ship-proof,
+        #konfirmasi-photo-view-btn {
+            transition: filter 0.15s ease-in-out;
+        }
+        #accept_stock_transfer .btn-view-st-ship-proof:hover,
+        #view_stock_transfer .btn-view-st-ship-proof:hover {
+            background: #dbeafe !important;
+            border-color: #93c5fd !important;
+            color: #1e40af !important;
+        }
+        #konfirmasi-photo-view-btn:hover {
+            filter: brightness(0.95);
+        }
         .stock-transfer-filter .form-control,
         .stock-transfer-filter .form-select {
             height: 42px !important;

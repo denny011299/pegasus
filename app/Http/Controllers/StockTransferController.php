@@ -556,10 +556,8 @@ class StockTransferController extends Controller
                 'source_id' => $row->source_id ? (int) $row->source_id : null,
                 'disposition' => $row->disposition,
                 'status' => $status,
-                // Bukti foto Kirim (GitHub #140): hanya relevan/ditampilkan saat status Kirim.
-                'ship_proof_url' => $status === 2 && $row->ship_proof_path
-                    ? asset($row->ship_proof_path)
-                    : null,
+                // Ada path = sudah pernah Kirim (status 2 atau 4+) — jangan filter status===2 saja.
+                'ship_proof_url' => $this->shipProofPublicUrl($row->ship_proof_path ?? null),
                 'selisih' => $status === 4 ? $selisihMeta['selisih'] : null,
                 'has_selisih' => $status === 4 ? $selisihMeta['has_selisih'] : false,
                 'selisih_lines' => $status === 4 ? $selisihMeta['lines'] : 0,
@@ -832,10 +830,7 @@ class StockTransferController extends Controller
             'source_id' => $header->source_id ? (int) $header->source_id : null,
             'disposition' => $header->disposition,
             'status' => $status,
-            // Bukti foto Kirim (GitHub #140): hanya relevan/ditampilkan saat status Kirim.
-            'ship_proof_url' => $status === 2 && $header->ship_proof_path
-                ? asset($header->ship_proof_path)
-                : null,
+            'ship_proof_url' => $this->shipProofPublicUrl($header->ship_proof_path ?? null),
             'is_retail_request' => $isRetailRequest ? 1 : 0,
             'requires_approval' => $requiresApproval ? 1 : 0,
             'qc_required' => StockTransferApproval::qcRequiredAtWarehouse($fromWh) ? 1 : 0,
@@ -1846,6 +1841,14 @@ class StockTransferController extends Controller
         }
 
         return 'stock_transfers/' . $filename;
+    }
+
+    /** URL publik bukti Kirim — ada path = tampilkan, termasuk setelah Terima (status 4). */
+    private function shipProofPublicUrl(?string $path): ?string
+    {
+        $path = trim((string) $path);
+
+        return $path !== '' ? asset($path) : null;
     }
 
     /**

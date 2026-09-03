@@ -1,4 +1,4 @@
-<div class="modal fade pg-modal--form custom-modal" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false">
+<div class="modal fade pg-modal--form custom-modal" id="modalPhoto" tabindex="-1" role="dialog" data-bs-backdrop="static" data-bs-keyboard="false" style="z-index: 1075;">
   <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content d-flex flex-column" style="border-radius:16px;overflow:hidden;border:none;">
 

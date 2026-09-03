@@ -1669,8 +1669,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   function showCameraReturnModal(defaultSelector) {
     var selector = cameraReturnModal || defaultSelector;
-    if (selector) $(selector).modal("show");
     cameraReturnModal = null;
+    if (!selector) return;
+    var $photo = $("#modalPhoto");
+    function openReturn() {
+      $(selector).modal("show");
+    }
+    if ($photo.hasClass("show") || $photo.hasClass("showing")) {
+      $photo.one("hidden.bs.modal", openReturn);
+      return;
+    }
+    openReturn();
   }
 
   function stopCameraStream() {
@@ -1704,6 +1713,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     if (modeCamera == 3) return "#add_sales_order";
     if (modeCamera == 4) return "#add_purchase_order";
     if (modeCamera == 2) return "#add-product-issues";
+    if (modeCamera == 5) return "#modalKonfirmasi";
     return null;
   }
 
@@ -1967,6 +1977,12 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       stopCameraStream();
       resetCameraModalUi();
       showCameraReturnModal("#add_purchase_order");
+      $('#modalPhoto').modal('hide');
+    } else if (modeCamera == 5) {
+      if (inputFile) $(inputFile).val(photoData);
+      stopCameraStream();
+      resetCameraModalUi();
+      showCameraReturnModal("#modalKonfirmasi");
       $('#modalPhoto').modal('hide');
     } else {
       if (inputFile) $(inputFile).val(photoData);

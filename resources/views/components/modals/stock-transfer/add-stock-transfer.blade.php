@@ -115,17 +115,18 @@
                         </select>
                       </div>
                       <div class="col-12 d-none" id="st-date-slot-tujuan"></div>
-                      {{-- Bukti foto pengiriman (GitHub #140) — muncul hanya saat status Kirim --}}
+                      {{-- Bukti foto pengiriman (GitHub #140) — muncul hanya jika ada foto --}}
                       <div class="col-12 d-none" id="st-ship-proof-slot">
                         <label class="text-muted mb-0.5"
                           style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                             class="fe fe-camera me-1 text-primary"></i>Bukti Foto Kirim</label>
-                        <div>
-                          <a href="javascript:void(0);" id="st-ship-proof-link" target="_blank" rel="noopener">
-                            <img id="st-ship-proof-thumb" src="" alt="Bukti foto pengiriman"
-                              style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;">
-                          </a>
-                        </div>
+                        <button type="button" class="btn w-100 p-0 btn-view-st-ship-proof" id="st-ship-proof-link"
+                          data-parent="#add_stock_transfer"
+                          style="border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+                          <div class="d-flex align-items-center justify-content-center w-100 h-100">
+                            <i class="fe fe-image me-1"></i> Lihat Foto
+                          </div>
+                        </button>
                       </div>
                       <div class="col-12" id="st-note-slot-tujuan">
                         <div id="st-note-block" class="d-flex flex-column">

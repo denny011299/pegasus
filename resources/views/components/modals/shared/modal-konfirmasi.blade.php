@@ -29,6 +29,24 @@
           </div>
           <input type="hidden" id="konfirmasi_photo_proof_base64">
         </div>
+        {{-- Terima ST: lihat bukti Kirim yang sudah ada (bukan capture) --}}
+        <div id="konfirmasi-photo-view" class="mt-3 d-none">
+          <label class="form-label fw-semibold text-muted mb-2"
+                 style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">
+            Bukti Foto Kirim
+          </label>
+          <div class="d-flex align-items-center gap-2">
+            <img id="konfirmasi-photo-view-preview" src="" alt="Bukti foto kirim" class="d-none"
+                 style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0;">
+            <button type="button" class="btn w-100 p-0 btn-view-st-ship-proof" id="konfirmasi-photo-view-btn"
+              data-parent="#modalKonfirmasi"
+              style="border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
+              <div class="d-flex align-items-center justify-content-center w-100 h-100">
+                <i class="fe fe-image me-1"></i> Lihat Foto
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer pg-modal-footer">
         <button type="button" class="btn pg-btn-cancel btn-cancel">Batal</button>

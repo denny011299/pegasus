@@ -51,7 +51,7 @@
             <div class="text-muted fw-semibold" style="font-size:13px;">Memuat detail transfer…</div>
           </div>
           <div class="border-bottom" style="background:#ffffff; padding: 14px 24px 10px 24px;">
-            <div class="row g-3 align-items-center">
+            <div class="row g-3 align-items-start">
               {{-- Section Asal --}}
               <div class="col-md-5">
                 <div class="d-flex flex-column h-100">
@@ -65,43 +65,48 @@
                   <div class="row g-2 mt-0">
                     <div class="col-6">
                       <div class="text-muted"
-                        style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">
-                        <i class="fe fe-user me-1 text-primary" id="icon_view_person"></i>
-                        <span id="lbl_view_person_label">Pengirim</span>
-                      </div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_sender" style="font-size:12.5px;">-</div>
-                    </div>
-                    <div class="col-6 d-none" id="view_qc_body_wrap">
-                      <div class="text-muted"
-                        style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">
-                        <i class="fe fe-check me-1 text-primary"></i> Acc QC
-                      </div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_qc_body" style="font-size:12.5px;">-</div>
-                    </div>
-                    <div class="col-6">
-                      <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-box me-1 text-primary"></i> Gudang Asal</div>
                       <div class="fw-bold text-dark mt-0.5" id="lbl_view_from" style="font-size:12.5px;">-</div>
                     </div>
                     <div class="col-6">
                       <div class="text-muted"
+                        style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">
+                        <i class="fe fe-user me-1 text-primary" id="icon_view_person"></i>
+                        <span id="lbl_view_person_label">Pengirim</span>
+                      </div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_sender" style="font-size:12.5px;">-</div>
+                    </div>
+
+                    <div class="col-6">
+                      <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-calendar me-1 text-primary"></i> Tanggal Pengiriman</div>
                       <div class="fw-bold text-dark mt-0.5" id="lbl_view_date" style="font-size:12.5px;">-</div>
                     </div>
-                    <div class="col-6">
+                    {{-- Detail ST = #view_stock_transfer (bukan modal edit) --}}
+                    <div class="col-6 d-none" id="view-ship-proof-slot">
+                      <div class="text-muted"
+                        style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                          class="fe fe-camera me-1 text-primary"></i> Bukti Foto Kirim</div>
+                      <button type="button" class="btn btn-sm w-100 btn-view-st-ship-proof mt-0.5 d-flex align-items-center justify-content-center gap-1.5 fw-semibold" id="view-ship-proof-link"
+                        data-parent="#view_stock_transfer"
+                        style="border-radius:6px;height:30px;font-size:12px;border:1px solid #bfdbfe;color:#1d4ed8;background:#eff6ff;transition:all 0.2s ease-in-out;">
+                        <i class="fe fe-image" style="font-size:12px;"></i> <span>Lihat Foto</span>
+                      </button>
+                    </div>
+                    <div class="col-12">
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-file-text me-1 text-primary"></i> Catatan Pengiriman</div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_ship_note" style="font-size:12.5px;">-</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_ship_note" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {{-- Arrow --}}
-              <div class="col-md-2 d-flex align-items-center justify-content-center">
+              <div class="col-md-2 d-flex align-items-center justify-content-center" style="padding-top: 40px;">
                 <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
                   <div
                     style="width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 8px rgba(59,130,246,.25);">
@@ -138,8 +143,8 @@
                     <div class="col-12">
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
-                          class="fe fe-check-square me-1 text-success"></i> Catatan Penerimaan</div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_accept_note" style="font-size:12.5px;">-</div>
+                          class="fe fe-file-text me-1 text-success"></i> Catatan Penerimaan</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_accept_note" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
                   </div>
                 </div>
