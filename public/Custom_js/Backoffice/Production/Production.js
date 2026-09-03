@@ -137,6 +137,18 @@ var fixRecipeProductMeta = { relasi: [], pr_unit: [] };
 /** Stash when + Tambah gagal karena satuan resep; di-retry setelah Update Resep sukses. */
 var pendingProductionAdd = null;
 
+/**
+ * GitHub #134: "+Tambah" (checkProductionStock, async) dan "Tambah Produksi"
+ * (insertProduction) bisa saling balapan — user klik "Tambah Produksi" cepat-cepat
+ * sebelum checkProductionStock selesai mendorong baris produk yang baru diisi ke
+ * `items`. Kuncian silang: selama salah satu masih diproses, tombol yang lain
+ * dinonaktifkan (bukan LoadingButton — biar label/spinner milik tombol itu sendiri
+ * tidak ikut berubah).
+ */
+function setProductionOtherButtonBusy(otherSelector, busy) {
+    $(otherSelector).prop("disabled", busy);
+}
+
 function productionMainWarehouseName() {
     if (typeof getMainWarehouseName === "function") {
         var main = getMainWarehouseName();
@@ -1341,6 +1353,7 @@ function continueAddProduct(tempBom) {
     // daftar - dulu cek ini cuma jalan pas klik "Tambah Produksi" di akhir, jadi
     // user baru tahu stok kurang setelah menyusun seluruh daftar. GitHub #101.
     LoadingButton(".btn-add-product");
+    setProductionOtherButtonBusy(".btn-save", true);
     $.ajax({
         url: "/checkProductionStock",
         method: "post",
@@ -1353,6 +1366,7 @@ function continueAddProduct(tempBom) {
         },
         success: function (e) {
             resetAddProductButton();
+            setProductionOtherButtonBusy(".btn-save", false);
             if (!e || e.status != 1) {
                 handleProductionValidationError(e, temp.bom_id);
                 return;
@@ -1387,6 +1401,7 @@ function continueAddProduct(tempBom) {
         },
         error: function (a) {
             resetAddProductButton();
+            setProductionOtherButtonBusy(".btn-save", false);
             if (handlePermissionError(a)) return;
             console.log(a);
             notifikasi(
@@ -1406,6 +1421,10 @@ $(document).ready(function () {
 
 $(document).on("click", ".btnAdd", function () {
     resetProductionApprovalActions();
+    // Jaga-jaga: kalau modal sebelumnya ditutup di tengah salah satu ajax (add-product /
+    // save) sehingga kuncian silang setProductionOtherButtonBusy() sempat nyantol disabled.
+    setProductionOtherButtonBusy(".btn-save", false);
+    setProductionOtherButtonBusy(".btn-add-product", false);
     setProductionModalMode("form");
     mode = 1;
     modeBahan = 1;
@@ -2024,6 +2043,7 @@ $(document).on("click", ".btn-save", function () {
         param.revision_source_production_id = revisionSourceId;
     }
     LoadingButton($(this));
+    setProductionOtherButtonBusy(".btn-add-product", true);
     $.ajax({
         url: url,
         data: param,
@@ -2036,6 +2056,7 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
+            setProductionOtherButtonBusy(".btn-add-product", false);
             if (!e || e.status != 1) {
                 handleProductionValidationError(
                     e,
@@ -2050,6 +2071,7 @@ $(document).on("click", ".btn-save", function () {
                 ".btn-save",
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
+            setProductionOtherButtonBusy(".btn-add-product", false);
             if (handlePermissionError(a)) return;
             console.log(a);
         },
@@ -2828,6 +2850,11 @@ $(document).on("click", "#btn-delete-production", function () {
         },
         method: "post",
         success: function (e) {
+            // GitHub #134: modal harus ditutup dulu sebelum body-nya dikosongkan, baik sukses
+            // maupun gagal — dulu cuma ditutup di jalur sukses, jadi kalau gagal (mis. ST sudah
+            // dikirim) modal nyantol kebuka dengan body kosong walau notifikasi errornya sudah
+            // muncul dengan benar.
+            $(".modal").modal("hide");
             $("#modalDelete .modal-body").html(
                 `<p id="text-delete" style="font-size:10pt"></p>`,
             );
@@ -2841,7 +2868,6 @@ $(document).on("click", "#btn-delete-production", function () {
                 refreshProduction();
                 return false;
             }
-            $(".modal").modal("hide");
             afterInsert();
             notifikasi(
                 "success",

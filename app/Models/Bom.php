@@ -390,8 +390,12 @@ class Bom extends Model
             $row->unit_name = $bomUnit
                 ? ($bomUnit->unit_name ?? $bomUnit->unit_short_name ?? '-')
                 : '-';
-            // product_unit bisa kosong/inkonsisten — selalu sertakan default + satuan BOM
-            // supaya FE modal produksi punya opsi + nilai terpilih.
+            // product_unit = satuan yang benar-benar dikonfigurasi di Daftar Produk — itu yang
+            // wajib jadi sumber pilihan satuan di modal produksi (GitHub #134: UNICAL cuma
+            // punya Pail di Daftar Produk, tapi dulu bisa pilih pcs juga karena baris di bawah
+            // ini selalu menambahkan satuan resep BOM (boms.unit_id) apa pun isi product_unit-nya
+            // -- BOM boleh dihitung dalam satuan lain buat kebutuhan bahan, tapi itu bukan berarti
+            // produk boleh DIPRODUKSI dalam satuan itu).
             $unitIds = [];
             foreach ((array) (json_decode($row->product_unit, true) ?: []) as $unitId) {
                 $uid = is_array($unitId)
@@ -401,7 +405,18 @@ class Bom extends Model
                     $unitIds[$uid] = true;
                 }
             }
-            foreach ([$row->default_unit, $row->unit_id, $row->retail_unit] as $extraId) {
+            if ($unitIds === []) {
+                // product_unit kosong/rusak — fallback ke satuan default produk, lalu satuan
+                // resep BOM, supaya dropdown FE tetap punya minimal 1 opsi yang valid.
+                $fallbackId = (int) ($row->default_unit ?? 0);
+                if ($fallbackId <= 0) {
+                    $fallbackId = (int) ($row->unit_id ?? 0);
+                }
+                if ($fallbackId > 0) {
+                    $unitIds[$fallbackId] = true;
+                }
+            }
+            foreach ([$row->default_unit, $row->retail_unit] as $extraId) {
                 $uid = (int) ($extraId ?? 0);
                 if ($uid > 0) {
                     $unitIds[$uid] = true;

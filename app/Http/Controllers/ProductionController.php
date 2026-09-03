@@ -163,6 +163,18 @@ class ProductionController extends Controller
         }
         $item = json_decode($req->detail, true);
         $bahan = json_decode($req->list_bahan, true);
+        // GitHub #134: harus ada minimal 1 produk. Validasi array kosong lolos begitu saja lewat
+        // validateProductionItems() di bawah (loop kosong = tidak ada yang gagal), jadi tanpa
+        // guard ini submit yang detail-nya kosong (mis. klik "Tambah Produksi" race dengan
+        // checkProductionStock yang belum selesai mendorong baris ke `items`) tetap membuat
+        // baris Production tanpa satu pun ProductionDetails — transaksi "kosongan" di tabel.
+        if (! is_array($item) || count($item) === 0) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'message' => 'Harus ada 1 produk dipilih',
+            ]);
+        }
         $destinationValidation = $this->normalizeProductionDestinations($item);
         if (! $destinationValidation['ok']) {
             return response()->json([
@@ -1546,7 +1558,13 @@ class ProductionController extends Controller
                 $output['unit_id'],
                 $output['qty'],
                 $p->production_code,
-                'Pembatalan produksi ' . $p->production_code
+                'Pembatalan produksi ' . $p->production_code,
+                false,
+                true,
+                // GitHub #134: reversal produksi mode stok gudang bukan alur Stock Transfer —
+                // kalau butuh bongkar satuan, Log Stock harus menyebut ini pembatalan produksi,
+                // bukan ikut default "Stock Transfer - bongkar satuan".
+                'Pembatalan produksi'
             );
             if (! $cut['ok']) {
                 DB::rollBack();
