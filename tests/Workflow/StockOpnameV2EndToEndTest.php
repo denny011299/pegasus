@@ -736,8 +736,12 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertStringContainsString('2 '.$this->units['dos']->unit_short_name, $row);
     }
 
-    /** "Baik draft maupun langsung menunggu" (keputusan PM) -- draft lewat /insertStockOpname juga harus tergulung. */
-    public function test_insert_endpoint_rolls_up_on_a_draft_document_too(): void
+    /**
+     * GANTI keputusan (GitHub #132, 2026-09-03): draft lewat /insertStockOpname TIDAK BOLEH
+     * tergulung -- angka mentah dibiarkan apa adanya sampai benar-benar diajukan/terbit. Lihat
+     * OpnameLifecycle::rollUpUnits() untuk alasan lengkap (kasus nyata SP0110).
+     */
+    public function test_insert_endpoint_leaves_a_draft_document_unrolled(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -751,12 +755,17 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertTrue((bool) $sto->is_draft);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
-        $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
-        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft pun harus tergulung, bukan cuma dokumen yang langsung menunggu');
+        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
+        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
     }
 
-    /** Mengedit dokumen yang sudah ada (menunggu) lewat /updateStockOpname juga harus menggulung ulang. */
-    public function test_update_endpoint_rolls_up_after_editing_the_count(): void
+    /**
+     * GANTI keputusan (GitHub #132, 2026-09-03): /updateStockOpname TIDAK BOLEH lagi menggulung
+     * ulang -- koreksi sebelum ACC/tolak harus tersimpan persis seperti yang diketik staf. Gulung
+     * cuma terjadi sekali, saat dokumen terbit (insert langsung non-draft, atau /submitStockOpname
+     * saat draft diajukan) -- lihat StockController::submitStockOpname().
+     */
+    public function test_update_endpoint_no_longer_rolls_up(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -783,7 +792,7 @@ class StockOpnameV2EndToEndTest extends TestCase
         $updateResponse->assertStatus(200);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
-        $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
-        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'edit yang menaikkan hitungan harus ikut menggulung ulang');
+        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'update tidak boleh menggulung, angka mentah harus tersimpan apa adanya');
+        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'update tidak boleh menggulung, angka mentah harus tersimpan apa adanya');
     }
 }

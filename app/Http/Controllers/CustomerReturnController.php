@@ -7,12 +7,12 @@ use App\Models\CustomerProductReturnDetail;
 use App\Models\CustomerSupplyReturn;
 use App\Models\CustomerSupplyReturnDetail;
 use App\Models\LogStock;
-use App\Models\ProductStock;
 use App\Models\Staff;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
 use App\Models\SuppliesStock;
 use App\Support\CustomerReturnCreation;
+use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -466,6 +466,17 @@ class CustomerReturnController extends Controller
             })->all();
         $this->validateProductDetails($details);
 
+        // GitHub #132 (2026-09-03): kembaran persis CustomerProductReturnController::accept() --
+        // lihat komentarnya untuk alasan lengkap kenapa ini sekarang lewat ProductUnitStock::
+        // addQty() dengan roll-up khusus gudang utama.
+        $mainWarehouseIds = DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->whereIn('w.id', collect($details)->pluck('warehouse_id')->unique()->all())
+            ->where('wt.is_main_warehouse', 1)
+            ->pluck('w.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
         foreach ($details as $detail) {
             $variant = DB::table('product_variants')
                 ->where('product_variant_id', $detail['product_variant_id'])
@@ -477,39 +488,16 @@ class CustomerReturnController extends Controller
                 ]);
             }
 
-            $stock = ProductStock::withoutGlobalScope('active_warehouse')
-                ->where('product_variant_id', $detail['product_variant_id'])
-                ->where('unit_id', $detail['unit_id'])
-                ->where('warehouse_id', $detail['warehouse_id'])
-                ->lockForUpdate()
-                ->first();
-            if (! $stock) {
-                $stock = new ProductStock([
-                    'product_id' => (int) $variant->product_id,
-                    'product_variant_id' => $detail['product_variant_id'],
-                    'unit_id' => $detail['unit_id'],
-                    'warehouse_id' => $detail['warehouse_id'],
-                    'ps_stock' => 0,
-                    'status' => 1,
-                    'created_by' => $this->userId(),
-                ]);
-            }
-            $stock->status = 1;
-            $stock->ps_stock = (float) $stock->ps_stock + $detail['qty'];
-            $stock->created_by = $this->userId();
-            $stock->save();
-
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode' => $record->return_group ?: $record->return_number,
-                'log_type' => 1,
-                'log_category' => 1,
-                'log_item_id' => $detail['product_variant_id'],
-                'log_notes' => 'Pengembalian produk jadi dari armada ' . $customerName,
-                'log_jumlah' => $detail['qty'],
-                'unit_id' => $detail['unit_id'],
-                'warehouse_id' => $detail['warehouse_id'],
-            ]);
+            ProductUnitStock::addQty(
+                $detail['warehouse_id'],
+                (int) $variant->product_id,
+                $detail['product_variant_id'],
+                $detail['unit_id'],
+                (float) $detail['qty'],
+                $record->return_group ?: $record->return_number,
+                'Pengembalian produk jadi dari armada ' . $customerName,
+                rollUp: in_array($detail['warehouse_id'], $mainWarehouseIds, true)
+            );
         }
 
         $createdTransferIds = $this->createRetailStockTransfers($record, $details, $customerName);

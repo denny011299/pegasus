@@ -24,6 +24,57 @@ out which variant is dominant and which is legacy-only.
   plain `<script src>` tag, no `import`/`export`, no npm packages beyond axios (present but not the AJAX
   pattern actually used — see below).
 
+## ⚠️ Touching any stock-mutating logic — check unit roll-up FIRST, before writing code
+If the change you're about to write reads or writes `product_stocks.ps_stock` /
+`supplies_stocks.ss_stock` — directly, via a model's `insertX`/`updateX`, or via a helper —
+**stop and reason about unit roll-up before writing the mutation, and say so to the user.** Don't
+silently pick flat-vs-rolled-up on your own judgment when the flow could plausibly want either.
+
+Why this matters: a product/bahan can have a unit ladder (`product_relations`/`supplies_relations`,
+e.g. 1 DOS = 12 pcs) and the SAME physical stock is represented completely differently depending on
+which unit a flow happens to credit/debit in. Two real, shipped bugs came from exactly this
+(GitHub #19, #132): a flow that flat-credits `+= qty` at whatever unit it was handed, instead of
+rolling a full multiple up the ladder, leaves the bigger unit's row missing/stale — and that stale
+row then corrupts whatever reads it next (Stock Opname finding no DOS row to opname; another
+flow's `allowedProductUnitIds()` gate silently refusing to roll into a unit that "doesn't exist").
+
+**Before writing the mutation, work out and state to the user:**
+1. Does this product/bahan actually have a unit ladder here (`ProductRelation`/`SuppliesRelation`),
+   or is this always a single-unit item? If always single-unit, roll-up is moot — say so and move on.
+2. Is this warehouse a **retail warehouse**? Retail warehouses are only ever supposed to hold their
+   `retail_unit` row (`ProductVariant::retail_unit`) — never roll up there, never provision a
+   bigger-unit row there. See `App\Support\StockOpname\OpnameLifecycle::isRetailWarehouse()` for the
+   canonical check.
+3. Is this flow a **credit** (stock coming IN — production output, PO receipt, return, restore) or a
+   **full snapshot/replace** (Stock Opname setting the counted value directly)? These need different
+   tools:
+   - Credit → `App\Support\ProductUnitStock::addQty(..., rollUp: true, ...)` (products) — the
+     established helper (GH #19/PR #75), used by `ProductionController::accProduction()` and
+     `CustomerProductReturnController::accept()`. Pass `rollUp: false` explicitly (or omit it) only
+     when you've confirmed with the user that this specific flow should stay flat.
+   - Snapshot/replace → `App\Support\UnitRollUp::collapseProduct()`/`collapseSupplies()`, the pattern
+     `App\Support\StockOpname\OpnameLifecycle`/`BahanOpnameLifecycle::rollUpUnits()` use.
+   - There is currently **no** Supplies/Bahan equivalent of `ProductUnitStock::addQty()` — a
+     Bahan-side credit flow needing roll-up has no helper to reuse yet (flagged, not built, in
+     `cdocs/testing/KNOWN_ISSUES.md`'s GitHub #132 entry). Say so rather than silently leaving it
+     flat or building a one-off inline version.
+4. Does rolling up risk **silently creating a stock row nobody asked for**? Default to only crediting
+   units that already have an active `ProductStock`/`SuppliesStock` row at that warehouse
+   (`UnitRollUp::allowedProductUnitIds()`/`allowedSuppliesUnitIds()`, both take `$warehouseId` —
+   always pass the flow's OWN warehouse, never rely on the ambient "active session warehouse"
+   scope). Only pass the permissive `ladderUnitIds()` (which allows provisioning new rows) if the
+   flow already has an explicit user-confirmation step before writing, matching
+   `ProductionController::accProduction()`'s `confirm_create_stock` round-trip.
+5. **When does the roll-up actually happen** — every save, or only once at a specific transition?
+   Get this wrong and a flow that lets a user save progress repeatedly (a draft, a multi-step form)
+   will re-collapse and blank out raw in-progress input on every intermediate save — this is exactly
+   what GitHub #132 was. If the flow has any "save progress without finalizing" step, roll-up must
+   happen only once, at the point of finalizing, never on an interim save.
+
+Read `app/Support/UnitRollUp.php`'s class docblock and `app/Support/ProductUnitStock.php`'s
+`addQty()` docblock in full before implementing — they carry the reasoning for points 3-4 above in
+much more detail than fits here.
+
 ## Adding a new CRUD feature — end-to-end recipe
 This is the most common task shape in this repo. Do these steps together, in this order:
 
