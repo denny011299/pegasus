@@ -23,16 +23,19 @@ use App\Support\UnitRollUp;
  *   menunggu           -> tidak menulis apa pun; stok sistem dibaca live saat ditampilkan.
  *   disetujui/ditolak  -> snapshot STOK SISTEM (sol_system_qty_final) + nama pemutus + waktu.
  *
- * >>> PERHATIAN alur UI SEKARANG <<<
- * CreateStockOpname.blade.php cuma memasang tombol .btn-save, yang memanggil insertData() TANPA
- * isDraft -- artinya dokumen dibuat LANGSUNG non-draft (is_draft = 0), tidak pernah lewat
- * /submitStockOpname. Handler .btn-save-draft / .btn-ajukan sudah ada di CreateStockOpname.js
- * tapi markup-nya belum dipasang, jadi jalur draft masih tidur.
+ * >>> PERBARUI 2026-09-03: jalur draft SUDAH hidup, bukan lagi "tidur" <<<
+ * CreateStockOpname.blade.php sekarang memasang KETIGA tombol -- .btn-save-draft, .btn-ajukan,
+ * DAN .btn-save -- jadi staf yang menghitung dokumen besar (banyak produk) bisa betul-betul
+ * menyimpan sebagai draft berkali-kali sambil terus menghitung, baru menekan .btn-ajukan kalau
+ * sudah selesai. Catatan lama di sini bilang draft "masih tidur" dan itulah yang membuat
+ * rollUpUnits() dulu dipanggil dari SETIAP simpan (insert+update) tanpa peduli is_draft -- begitu
+ * jalur draft hidup, itu jadi bug nyata (GitHub #132, kasus SP0110): tiap simpan-antara draft
+ * langsung menggulung angka mentah yang belum selesai diketik staf. Sekarang rollUpUnits() cuma
+ * jalan SATU KALI, pas dokumen benar-benar terbit -- lihat docblock method itu sendiri.
  *
- * Karena itu publish() dipicu oleh KEADAAN ("dokumen ini sudah bukan draft dan identitasnya
+ * publish() sendiri TETAP dipicu oleh KEADAAN ("dokumen ini sudah bukan draft dan identitasnya
  * belum dibekukan"), bukan oleh peristiwa tombol tertentu, dan aman dipanggil berkali-kali.
- * Panggil dari SEMUA pintu: insert, update, dan submit. Saat tombol draft nanti dipasang, tidak
- * ada satu baris pun di kelas ini yang perlu berubah.
+ * Panggil dari SEMUA pintu: insert, update, dan submit.
  */
 class OpnameLifecycle
 {
@@ -127,12 +130,26 @@ class OpnameLifecycle
 
     /**
      * Gulung REKURSIF hasil hitung tiap produk ke tangga satuannya (App\Support\UnitRollUp::
-     * collapseProduct()) -- keputusan PM 2026-08-27: isi satuan kecil, satuan besar yang belum
-     * disentuh ikut naik otomatis (mis. 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs).
+     * collapseProduct()) -- isi satuan kecil, satuan besar yang belum disentuh ikut naik otomatis
+     * (mis. 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs).
      *
-     * Dipanggil dari SETIAP simpan (insert MAUPUN update) -- draft ataupun langsung menunggu,
-     * bukan cuma saat diajukan/diputuskan. Aman dipanggil berkali-kali: collapse() idempoten,
-     * menjalankan ulang pada dokumen yang sudah tergulung tidak mengubah apa pun lagi.
+     * >>> GANTI KEPUTUSAN 2026-09-03 (GitHub #132) <<<
+     * Keputusan PM 2026-08-27 tadinya "gulung di SETIAP simpan" (insert MAUPUN update, draft
+     * ataupun langsung menunggu). Itu ternyata SALAH pada dokumen banyak-baris: tiap simpan
+     * antara (staf menghitung produk lain lalu simpan lagi, atau sekadar menyimpan draft)
+     * langsung menggulung angka mentah yang baru saja diketik dan MENGOSONGKAN kembali kolom
+     * satuan kecilnya -- staf yang belum selesai menghitung melihat isiannya "hilang"/berubah
+     * jadi satuan lain di tengah jalan (kasus nyata: SP0110, RCHK5LH 4 pcs berulang kali tergulung
+     * jadi angka DOS yang jauh berbeda karena banyak simpan-antara sebelum diajukan).
+     *
+     * Sekarang: TIDAK PERNAH dipanggil dari update (StockController::updateStockOpname()) --
+     * angka yang diketik staf dibiarkan APA ADANYA selama dokumen masih bisa diedit (draft
+     * maupun koreksi sebelum ACC/tolak). Hanya dipanggil SATU KALI, pas dokumen baru benar-benar
+     * "terbit" (bukan draft lagi): StockController::insertStockOpname() saat dibuat LANGSUNG
+     * non-draft (satu-satunya jalur UI hari ini), dan StockController::submitStockOpname() saat
+     * draft diajukan (.btn-ajukan, jalur yang belum dipasang di UI tapi sudah disiapkan).
+     * Guard is_draft di bawah membuat panggilan dari insert saat draft (kalau UI draft-nya nanti
+     * dipasang) jadi no-op dengan aman, konsisten dengan aturan ini.
      *
      * TIDAK PERNAH mengisi satuan yang lebih kecil dari satuan terkecil yang benar-benar diisi --
      * lihat UnitRollUp::collapse() untuk alasan lengkap (setara GitHub #78: jangan mengarang data
@@ -140,7 +157,7 @@ class OpnameLifecycle
      */
     public function rollUpUnits($sto): void
     {
-        if (! $sto || $sto->is_old_version) {
+        if (! $sto || $sto->is_old_version || $sto->is_draft) {
             return;
         }
 

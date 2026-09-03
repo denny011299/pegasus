@@ -89,11 +89,13 @@ class BahanOpnameLifecycle
 
     /**
      * Kembaran persis OpnameLifecycle::rollUpUnits() (Produk), untuk Supplies. Lihat kelas itu
-     * untuk alasan lengkap.
+     * untuk alasan lengkap -- termasuk GANTI KEPUTUSAN 2026-09-03 (GitHub #132): tidak lagi
+     * dipanggil dari update, hanya sekali saat dokumen benar-benar terbit (insert langsung
+     * non-draft, atau submitStockOpnameBahan() saat draft diajukan). Guard is_draft di bawah.
      */
     public function rollUpUnits($stob): void
     {
-        if (! $stob || $stob->is_old_version) {
+        if (! $stob || $stob->is_old_version || $stob->is_draft) {
             return;
         }
 

@@ -407,20 +407,32 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty);
     }
 
-    /** "Baik draft maupun langsung menunggu" -- keputusan PM eksplisit, keduanya harus tergulung. */
-    public function test_roll_up_applies_equally_to_draft_and_pending_documents(): void
+    /**
+     * GANTI keputusan (GitHub #132, 2026-09-03): kembaran persis
+     * StockOpnameV2LifecycleTest::test_roll_up_only_applies_to_a_published_document_never_a_draft()
+     * -- lihat komentarnya untuk alasan lengkap.
+     */
+    public function test_roll_up_only_applies_to_a_published_document_never_a_draft(): void
     {
-        foreach ([true, false] as $isDraft) {
-            [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
-            $stob = $this->makeDocument(isDraft: $isDraft);
-            $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+        [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
+        $draft = $this->makeDocument(isDraft: true);
+        $this->addLines($draft, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
-            (new BahanOpnameLifecycle())->rollUpUnits($stob);
+        (new BahanOpnameLifecycle())->rollUpUnits($draft);
 
-            $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
-            $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'is_draft='.($isDraft ? '1' : '0'));
-            $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'is_draft='.($isDraft ? '1' : '0'));
-        }
+        $lines = StockOpnameBahanLine::getLines($draft->stob_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'draft tidak boleh tergulung sama sekali');
+        $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty, 'draft tidak boleh tergulung sama sekali');
+
+        [$supplies2, $dos2, $pcs2] = $this->makeFixtureWithLadder(dosStock: 0);
+        $pending = $this->makeDocument(isDraft: false);
+        $this->addLines($pending, $supplies2, [$pcs2->unit_id => 30, $dos2->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($pending);
+
+        $lines2 = StockOpnameBahanLine::getLines($pending->stob_id)->keyBy('unit_id');
+        $this->assertSame(2, (int) $lines2[$dos2->unit_id]->sobl_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
+        $this->assertSame(6, (int) $lines2[$pcs2->unit_id]->sobl_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
     }
 
     /** Setara GitHub #78: satuan besar diisi 0 tidak boleh membuat satuan kecil ikut disimpulkan. */

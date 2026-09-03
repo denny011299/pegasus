@@ -406,20 +406,34 @@ class StockOpnameV2LifecycleTest extends TestCase
         $this->assertSame(2, (int) $lines[$dos->unit_id]->sol_counted_qty, 'DOS harus ikut terisi otomatis dari kelebihan pcs');
     }
 
-    /** "Baik draft maupun langsung menunggu" -- keputusan PM eksplisit, keduanya harus tergulung. */
-    public function test_roll_up_applies_equally_to_draft_and_pending_documents(): void
+    /**
+     * GANTI keputusan (GitHub #132, 2026-09-03): dokumen draft TIDAK BOLEH tergulung -- angka
+     * mentah yang diketik staf harus dibiarkan apa adanya selama masih bisa diedit. Hanya dokumen
+     * yang sudah terbit (bukan draft) yang tergulung di sini. Dulu tesnya menuntut sebaliknya
+     * ("baik draft maupun menunggu") -- itulah persis akar bug SP0110/GitHub #132 (simpan-antara
+     * di dokumen draft diam-diam menggulung isian staf yang belum selesai menghitung).
+     */
+    public function test_roll_up_only_applies_to_a_published_document_never_a_draft(): void
     {
-        foreach ([true, false] as $isDraft) {
-            [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
-            $sto = $this->makeDocument(isDraft: $isDraft);
-            $this->addLines($sto, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
+        $draft = $this->makeDocument(isDraft: true);
+        $this->addLines($draft, $variant, [$pcs->unit_id => 30, $dos->unit_id => null]);
 
-            (new OpnameLifecycle())->rollUpUnits($sto);
+        (new OpnameLifecycle())->rollUpUnits($draft);
 
-            $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
-            $this->assertSame(2, (int) $lines[$dos->unit_id]->sol_counted_qty, 'is_draft='.($isDraft ? '1' : '0'));
-            $this->assertSame(6, (int) $lines[$pcs->unit_id]->sol_counted_qty, 'is_draft='.($isDraft ? '1' : '0'));
-        }
+        $lines = StockOpnameLine::getLines($draft->sto_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
+        $this->assertNull($lines[$dos->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
+
+        [$variant2, $dos2, $pcs2] = $this->makeFixtureWithLadder(dosStock: 0);
+        $pending = $this->makeDocument(isDraft: false);
+        $this->addLines($pending, $variant2, [$pcs2->unit_id => 30, $dos2->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($pending);
+
+        $lines2 = StockOpnameLine::getLines($pending->sto_id)->keyBy('unit_id');
+        $this->assertSame(2, (int) $lines2[$dos2->unit_id]->sol_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
+        $this->assertSame(6, (int) $lines2[$pcs2->unit_id]->sol_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
     }
 
     /**
