@@ -337,6 +337,54 @@
         if (!$btn || !$btn.length) return;
         $btn.data("busy", false);
         ResetLoadingButton($btn, html);
+        $btn.css({ height: "40px" });
+        if (typeof feather !== "undefined") feather.replace();
+    }
+
+    function hutangPdfFilename(xhr) {
+        var fallback = "Hutang_" + moment().format("YYYY-MM-DD_HH-mm-ss") + ".pdf";
+        if (!xhr || typeof xhr.getResponseHeader !== "function") return fallback;
+        var cd = xhr.getResponseHeader("Content-Disposition") || "";
+        var match = cd.match(/filename\*?=(?:UTF-8''|")?([^\";]+)/i);
+        if (!match) return fallback;
+        try {
+            return decodeURIComponent(match[1].replace(/"/g, "").trim());
+        } catch (err) {
+            return match[1].replace(/"/g, "").trim() || fallback;
+        }
+    }
+
+    function downloadHutangPdf(params, $btn) {
+        $.ajax({
+            url: "/generateHutang",
+            data: params,
+            method: "get",
+            xhrFields: { responseType: "blob" },
+            success: function (blob, _status, xhr) {
+                var type = (blob && blob.type) || "";
+                if (!blob || blob.size <= 0 || (type && type.indexOf("pdf") === -1 && type.indexOf("octet-stream") === -1)) {
+                    notifikasi("error", "Gagal Print Hutang", "PDF gagal dibuat. Coba lagi.");
+                    resetHutangActionBtn($btn, BTN_PRINT_HTML);
+                    return;
+                }
+                var url = window.URL.createObjectURL(blob);
+                var a = document.createElement("a");
+                a.href = url;
+                a.download = hutangPdfFilename(xhr);
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.setTimeout(function () {
+                    window.URL.revokeObjectURL(url);
+                }, 1500);
+                resetHutangActionBtn($btn, BTN_PRINT_HTML);
+            },
+            error: function (e) {
+                resetHutangActionBtn($btn, BTN_PRINT_HTML);
+                if (handlePermissionError(e)) return;
+                notifikasi("error", "Gagal Print Hutang", "Gagal membuat PDF.");
+            },
+        });
     }
 
     $(document).on("click", ".btn-create", function () {
@@ -443,8 +491,7 @@
                     resetHutangActionBtn($btn, BTN_PRINT_HTML);
                     return;
                 }
-                window.open('/generateHutang?' + $.param(params), '_self');
-                resetHutangActionBtn($btn, BTN_PRINT_HTML);
+                downloadHutangPdf(params, $btn);
             },
             error: function(e){
                 resetHutangActionBtn($btn, BTN_PRINT_HTML);
