@@ -9,6 +9,13 @@ var confirmAutoOpened = false;
 var soXhr = null;
 var soFilterState = { date_from: "", date_to: "" };
 var soFilterClearing = false;
+// GitHub #136: select yang HARUS luput dari `$(".form-select").not(...).empty()` tiap kali
+// modal Tambah/Update/Detail Pengiriman dibuka/direset - selain #so_payment/#retail_warehouse_id
+// (bagian form modal itu sendiri), turut ditambahkan select filter status/tipe di kartu filter
+// halaman (#so_filter_status utk tab Pengiriman, #cr_filter_status/#cr_filter_type utk tab
+// Pengembalian) karena sama-sama pakai class .form-select tapi BUKAN bagian modal.
+var SO_MODAL_FORM_SELECT_KEEP =
+    "#so_payment, #retail_warehouse_id, #so_filter_status, #cr_filter_status, #cr_filter_type";
 
 function soHasAccess(moduleName, action) {
     return (
@@ -138,7 +145,7 @@ function openSalesOrderRevisionModal(data) {
     $("#so_discount").val(0).trigger("blur");
     $("#so_cost").val(0).trigger("blur");
     $("#so_ppn").val(0).trigger("blur");
-    $(".form-select").not("#so_payment, #retail_warehouse_id").empty();
+    $(".form-select").not(SO_MODAL_FORM_SELECT_KEEP).empty();
 
     $("#btn_bukti_foto").hide();
     $("#btn-lihat-bukti").show();
@@ -239,7 +246,7 @@ function openSalesOrderDetailModal(data, intent) {
     $("#add_sales_order .modal-title").html("Detail Pengiriman");
     $("#add_sales_order input").empty().val("");
     $("#so_customer, #sales_id").empty();
-    $(".form-select").not("#so_payment, #retail_warehouse_id").empty();
+    $(".form-select").not(SO_MODAL_FORM_SELECT_KEEP).empty();
     $("#btn_bukti_foto").hide();
     $("#btn-lihat-bukti").show();
 
@@ -571,7 +578,7 @@ $(document).on("click", ".btnAdd", function () {
     $("#so_cost").val(0).trigger("blur");
     $("#so_ppn").val(0).trigger("blur");
     $(".form-select")
-        .not("#so_payment, #retail_warehouse_id")
+        .not(SO_MODAL_FORM_SELECT_KEEP)
         .empty()
         .attr("disabled", false);
     $("#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input").attr(
@@ -1753,19 +1760,59 @@ function initSalesOrderWarehouseSelects() {
     });
 }
 
+/**
+ * GitHub #136: qty baris SEBELUMNYA cuma ditulis ke `products[index].so_qty` di sini tanpa
+ * cek stok sama sekali - staf bisa pilih gudang eceran dulu (lolos cek lewat handler
+ * .so-retail-warehouse di atas, GitHub #116, pakai qty saat itu), lalu edit qty langsung di
+ * kolom tabel jadi lebih besar dari stok, dan baris tetap masuk ke `products` tanpa
+ * peringatan apa pun (submit akhir sendiri sengaja tidak mengecek stok, GitHub #99). Kalau
+ * baris sudah punya gudang pasti (warehouse_id terisi) dan qty-nya berubah, cek ulang stok
+ * baris ini saja - gagal berarti qty dikembalikan ke nilai sebelumnya, sama seperti pola
+ * revert di handler .so-retail-warehouse.
+ */
 $(document).on("blur", ".so_qty", function () {
-    const index = $(this).data("index");
-    let qty = parseInt($(this).val());
-    let price = parseInt($(this).data("price"));
-    let subtotal = qty * price;
+    const $input = $(this);
+    const index = $input.data("index");
+    if (!products[index]) return;
 
-    $(this).closest("tr").find(".subtotal").html(subtotal);
-    products[index].so_qty = qty;
-    products[index].so_subtotal = subtotal;
-    if (qty == 0) {
+    let qty = parseInt($input.val());
+    let price = parseInt($input.data("price"));
+    const previousQty = parseInt(products[index].so_qty) || 0;
+
+    if (!qty || qty <= 0) {
         products.splice(index, 1);
         refreshTableProduct();
+        return;
     }
+
+    let subtotal = qty * price;
+
+    if (products[index].warehouse_id && qty !== previousQty) {
+        checkSoStockThenAdd(
+            [
+                {
+                    product_variant_id: products[index].product_variant_id,
+                    unit_id: products[index].unit_id,
+                    so_qty: qty,
+                    warehouse_id: products[index].warehouse_id,
+                },
+            ],
+            function () {
+                $input.closest("tr").find(".subtotal").html(subtotal);
+                products[index].so_qty = qty;
+                products[index].so_subtotal = subtotal;
+            },
+            null,
+            function () {
+                $input.val(previousQty);
+            },
+        );
+        return;
+    }
+
+    $input.closest("tr").find(".subtotal").html(subtotal);
+    products[index].so_qty = qty;
+    products[index].so_subtotal = subtotal;
     // updateTotal();
 });
 
@@ -2195,7 +2242,7 @@ function openSalesOrderEditModal(data) {
     $("#so_discount").val(0).trigger("blur");
     $("#so_cost").val(0).trigger("blur");
     $("#so_ppn").val(0).trigger("blur");
-    $(".form-select").not("#so_payment, #retail_warehouse_id").empty();
+    $(".form-select").not(SO_MODAL_FORM_SELECT_KEEP).empty();
 
     $("#btn_bukti_foto").hide();
     $("#btn-lihat-bukti").show();
