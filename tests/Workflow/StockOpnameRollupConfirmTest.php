@@ -181,6 +181,9 @@ class StockOpnameRollupConfirmTest extends TestCase
         $response = $this->preview($this->dosOnlyItemPayload($v, 93));
         $response->assertStatus(200);
 
+        // Deteksi SELALU jalan apa adanya, tidak pernah dipengaruhi ROLLUP_PROJECTION_ENABLED --
+        // flag itu cuma soal tampilan popup (lihat show_popup di bawah), bukan deteksi/gulungnya
+        // sendiri (koreksi 2026-09-06 setelah salah paham pertama).
         $candidates = $response->json('rollup_candidates');
         $this->assertCount(1, $candidates);
         $this->assertSame($v->product_variant_id, $candidates[0]['product_variant_id']);
@@ -265,17 +268,19 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame(104, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
     }
 
-    public function test_insert_without_rollup_decision_applies_no_rollup_at_all(): void
+    public function test_insert_with_explicit_skip_decision_applies_no_rollup_at_all(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
         $items = $this->dosOnlyItemPayload($v, 93);
 
-        // Tidak ada rollup_decision dikirim -- pemanggil yang tidak lewat preview sama sekali
-        // (mis. panggilan API langsung) tidak pernah diam-diam menggulung apa pun, bahkan yang
-        // dulu "otomatis aman" sekalipun (keputusan user 2026-09-06).
-        $response = $this->insertOpname($items);
+        // rollup_decision='skip' EKSPLISIT (beda dari tidak membawa rollup_decision sama sekali,
+        // yang perilakunya bergantung OpnameLifecycle::ROLLUP_PROJECTION_ENABLED -- lihat
+        // test_insert_without_an_explicit_decision_follows_the_show_popup_flag) -- tidak pernah
+        // diam-diam menggulung apa pun, bahkan yang dulu "otomatis aman" sekalipun (keputusan
+        // user 2026-09-06).
+        $response = $this->insertOpname($items, ['rollup_decision' => 'skip']);
         $response->assertStatus(200);
         $response->assertJson(['status' => 1]);
         $stoId = (int) $response->json('sto_id');
@@ -329,8 +334,11 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame(1000, $changes[$this->units['pcs']->unit_id]['before']);
         $this->assertSame(4, $changes[$this->units['pcs']->unit_id]['after']);
 
-        // Tanpa konfirmasi ('full'), TIDAK ADA gulung sama sekali -- 1000 pcs tersimpan apa adanya.
-        $noConfirm = $this->insertOpname($items);
+        // Staf klik "Batal" secara eksplisit (rollup_decision='skip') -- TIDAK ADA gulung sama
+        // sekali, 1000 pcs tersimpan apa adanya. Ini beda dari "tidak membawa rollup_decision
+        // sama sekali", yang perilakunya bergantung OpnameLifecycle::ROLLUP_PROJECTION_ENABLED
+        // (lihat test_insert_without_an_explicit_decision_follows_the_show_popup_flag).
+        $noConfirm = $this->insertOpname($items, ['rollup_decision' => 'skip']);
         $noConfirmId = (int) $noConfirm->json('sto_id');
         $lines = StockOpnameLine::getLines($noConfirmId)->keyBy('unit_id');
         $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'Dos TETAP null tanpa konfirmasi -- tidak ada gulung otomatis lagi');
@@ -534,21 +542,55 @@ class StockOpnameRollupConfirmTest extends TestCase
     }
 
     /**
-     * Saklar utama popup (keputusan user 2026-09-06): OpnameLifecycle::ROLLUP_PROJECTION_ENABLED
-     * const biasa (bukan config/.env), jadi tidak bisa di-toggle aman di dalam test PHPUnit tanpa
-     * menulis ulang file sumbernya -- perilaku "false = popup tidak pernah tampil apa pun
-     * kondisinya" sudah diverifikasi manual sebelum commit ini (di percakapan, bukan lewat test
-     * otomatis): dengan const-nya sementara diset false, detectRollupOpportunitiesFromPayload()
-     * untuk skenario Piece=1000 (yang jelas-jelas punya peluang gulung, lihat
-     * test_filling_only_the_smallest_unit_now_also_requires_confirmation) membalas [] -- tidak
-     * ada satu kandidat pun. Test ini cuma memastikan flag-nya tidak sengaja ke-nonaktifkan lagi
-     * di kemudian hari (default harus tetap true).
+     * KOREKSI 2026-09-06 (salah paham pertama, dibetulkan user pada percakapan yang sama):
+     * ROLLUP_PROJECTION_ENABLED CUMA mengatur apakah popup DITAMPILKAN -- bukan apakah
+     * deteksi/gulungnya jalan. Deteksi SELALU jalan (lihat test-test di atas, tidak satu pun
+     * dibungkus kondisi flag lagi) -- yang berubah sesuai flag ini HANYA `show_popup` di respons
+     * /previewStockOpnameRollup. const biasa (bukan config/.env) per permintaan user, jadi
+     * test ini membaca nilainya APA ADANYA saat ini, tidak mengasumsikan true atau false.
      */
-    public function test_rollup_projection_flag_defaults_to_enabled(): void
+    public function test_preview_reports_the_current_show_popup_flag(): void
     {
-        $this->assertTrue(
+        $this->actingAsSuperAdminStaff();
+
+        $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        $response = $this->preview($this->dosOnlyItemPayload($v, 93));
+        $response->assertStatus(200);
+
+        $this->assertNotEmpty($response->json('rollup_candidates'), 'sanity: skenario ini memang punya peluang gulung');
+        $this->assertSame(
             \App\Support\StockOpname\OpnameLifecycle::ROLLUP_PROJECTION_ENABLED,
-            'ROLLUP_PROJECTION_ENABLED harus true secara default -- kalau memang mau dimatikan, ubah nilainya langsung di kode dan verifikasi manual seperti dijelaskan di docblock test ini',
+            $response->json('show_popup'),
+            'show_popup di respons preview harus persis mengikuti nilai const-nya saat ini',
         );
+    }
+
+    /**
+     * Tidak membawa rollup_decision SAMA SEKALI (beda dari 'skip' eksplisit, lihat test lain di
+     * atas) berarti pemanggil tidak pernah lewat preview -- defaultnya mengikuti
+     * ROLLUP_PROJECTION_ENABLED: kalau flag-nya false ("jangan tampilkan popup, langsung anggap
+     * staf klik Lanjut"), gulung PENUH tetap diterapkan otomatis walau tidak ada rollup_decision
+     * apa pun yang dikirim. Kalau flag-nya true, tetap default aman ('skip', tidak digulung)
+     * seperti sebelum flag ini ada.
+     */
+    public function test_insert_without_an_explicit_decision_follows_the_show_popup_flag(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        $items = $this->dosOnlyItemPayload($v, 93);
+
+        $response = $this->insertOpname($items);
+        $response->assertStatus(200);
+        $stoId = (int) $response->json('sto_id');
+        $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
+
+        if (\App\Support\StockOpname\OpnameLifecycle::ROLLUP_PROJECTION_ENABLED) {
+            $this->assertSame(93, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'flag ON -> default aman, tidak digulung tanpa keputusan eksplisit');
+            $this->assertNull($lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+        } else {
+            $this->assertSame(101, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'flag OFF -> otomatis "Lanjut", tetap tergulung penuh walau tidak ada rollup_decision');
+            $this->assertSame(8, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+        }
     }
 }

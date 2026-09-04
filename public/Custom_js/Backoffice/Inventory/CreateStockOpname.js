@@ -624,6 +624,13 @@ function previewStockOpnameRollup(items, onProceed, onCancel) {
                 onProceed("skip");
                 return;
             }
+            // show_popup: OpnameLifecycle::ROLLUP_PROJECTION_ENABLED (backend) CUMA mengatur
+            // tampilan popup, bukan deteksi/gulungnya sendiri (koreksi 2026-09-06) -- kalau
+            // false, langsung anggap staf sudah klik "Lanjut" tanpa menampilkan modal sama sekali.
+            if (e && e.show_popup === false) {
+                onProceed("full");
+                return;
+            }
             showRollupConfirm(candidates, function (decision) {
                 if (decision === "full") {
                     onProceed("full");

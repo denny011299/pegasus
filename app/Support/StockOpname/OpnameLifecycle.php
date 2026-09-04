@@ -40,17 +40,35 @@ use App\Support\UnitRollUp;
 class OpnameLifecycle
 {
     /**
-     * Saklar utama popup konfirmasi gulung (keputusan user 2026-09-06): false = popup TIDAK
-     * PERNAH tampil, apa pun kondisinya -- detectRollupOpportunities()/
-     * detectRollupOpportunitiesFromPayload() keluar duluan sebelum logika deteksi apa pun jalan,
-     * jadi tidak ada satu pun cara lain (rollup_decision, gudang, isi form) untuk memaksanya
-     * tetap muncul selama flag ini false. true = ikuti kondisi deteksi yang sudah dibangun
-     * (lihat buildRollupOpportunity()/computeFullProjectionChanges()) -- perilaku hari ini.
+     * Saklar TAMPILAN popup konfirmasi gulung (keputusan user 2026-09-06, DIPERBAIKI SETELAH
+     * salah paham pertama pada hari yang sama -- lihat catatan di bawah):
+     *
+     * >>> INI BUKAN saklar "matikan deteksi/gulungnya" <<< Deteksi (detectRollupOpportunities()/
+     * detectRollupOpportunitiesFromPayload()) dan penulisan hasilnya (rollUpUnitsFull()) SELALU
+     * jalan apa adanya, TIDAK PERNAH dipengaruhi flag ini -- proyeksi & gulungnya tetap terjadi
+     * persis seperti yang sudah disepakati sebelumnya. Flag ini CUMA menentukan apakah staf
+     * masih perlu melihat & menjawab popup-nya:
+     *
+     *   true  -> tampilkan popup seperti biasa, staf klik Lanjut/Batal sendiri.
+     *   false -> popup TIDAK ditampilkan sama sekali, tapi alurnya berjalan SEAKAN staf sudah
+     *            klik "Lanjut" secara otomatis -- kalau ada peluang gulung, tetap digulung penuh
+     *            tanpa staf perlu konfirmasi apa pun.
+     *
+     * Dipakai di StockController::previewStockOpnameRollup() (dikirim ke frontend sebagai
+     * `show_popup` supaya CreateStockOpname.js tahu harus menampilkan modal atau langsung
+     * lanjut) dan sebagai default rollup_decision di insertStockOpname()/submitStockOpname()
+     * untuk pemanggil yang tidak membawa keputusan eksplisit sama sekali.
+     *
+     * >>> SALAH PAHAM PERTAMA (dikoreksi user pada percakapan yang sama) <<< Versi awal flag ini
+     * dipasang sebagai guard paling atas detectRollupOpportunities()/
+     * detectRollupOpportunitiesFromPayload(), membuat false berarti "tidak ada kandidat sama
+     * sekali, tidak ada apa pun yang tergulung" -- itu SALAH. Sudah diperbaiki: kedua method
+     * deteksi itu TIDAK LAGI mengecek flag ini sama sekali.
      *
      * Ubah nilai ini secara langsung di kode (bukan .env/config) -- sengaja "constant var" biasa
      * per permintaan user, bukan config yang bisa di-override runtime.
      */
-    public const ROLLUP_PROJECTION_ENABLED = true;
+    public const ROLLUP_PROJECTION_ENABLED = false;
 
     /**
      * Bekukan identitas dokumen kalau (dan hanya kalau) dokumen sudah keluar dari draft.
@@ -233,10 +251,6 @@ class OpnameLifecycle
      */
     public function detectRollupOpportunities($sto): array
     {
-        if (! self::ROLLUP_PROJECTION_ENABLED) {
-            return [];
-        }
-
         if (! $sto || $sto->is_old_version) {
             return [];
         }
@@ -294,10 +308,6 @@ class OpnameLifecycle
      */
     public function detectRollupOpportunitiesFromPayload(array $items, ?int $warehouseId): array
     {
-        if (! self::ROLLUP_PROJECTION_ENABLED) {
-            return [];
-        }
-
         if (self::isRetailWarehouse($warehouseId)) {
             return [];
         }

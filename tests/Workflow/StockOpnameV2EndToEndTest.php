@@ -752,9 +752,12 @@ class StockOpnameV2EndToEndTest extends TestCase
 
         $v = $this->withLadder($this->makeCatalogItem('HIKARI SUPER GREASE B', '18 X 450 GR', 'HSG450GRB', dosStock: 0, pcsStock: 0));
 
+        // rollup_decision='skip' EKSPLISIT -- beda dari tidak membawanya sama sekali, yang
+        // perilakunya bergantung OpnameLifecycle::ROLLUP_PROJECTION_ENABLED (lihat
+        // StockOpnameRollupConfirmTest::test_insert_without_an_explicit_decision_follows_the_show_popup_flag).
         $stoId = $this->insertOpname([[
             'variant' => $v, 'dos' => null, 'pcs' => 30,
-        ]]);
+        ]], rollupDecision: 'skip');
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'pcs tersimpan apa adanya tanpa konfirmasi');

@@ -117,7 +117,15 @@ class StockController extends Controller
 
         $candidates = (new OpnameLifecycle())->detectRollupOpportunitiesFromPayload($items, $warehouseId ?: null);
 
-        return response()->json(['rollup_candidates' => $candidates]);
+        // show_popup: OpnameLifecycle::ROLLUP_PROJECTION_ENABLED CUMA mengatur tampilan popup,
+        // bukan deteksi/gulungnya sendiri (keputusan user 2026-09-06, diperbaiki setelah salah
+        // paham pertama hari yang sama -- lihat docblock const itu). false berarti
+        // CreateStockOpname.js harus langsung lanjut dengan rollup_decision=full TANPA
+        // menampilkan modal, kalau ada kandidat.
+        return response()->json([
+            'rollup_candidates' => $candidates,
+            'show_popup' => OpnameLifecycle::ROLLUP_PROJECTION_ENABLED,
+        ]);
     }
 
     function insertStockOpname(Request $req)
@@ -136,10 +144,16 @@ class StockController extends Controller
         // satuan TERKECIL sendirian (mis. 1000 pcs, Dos kosong) dulu digulung otomatis lewat
         // rollUpUnits() TANPA pernah lewat popup, karena hasilnya kebetulan identik dengan
         // rollUpUnitsFull(). Sekarang SETIAP gulung nyata (apa pun bentuknya) wajib terdeteksi di
-        // /previewStockOpnameRollup dulu dan staf klik "Lanjut" -- rollup_decision yang bukan
-        // 'full' (default kalau pemanggil tidak lewat preview sama sekali, mis. panggilan API
-        // langsung) berarti TIDAK ADA gulung apa pun, angka tersimpan PERSIS seperti yang dikirim.
-        $decision = $req->input('rollup_decision', 'skip');
+        // /previewStockOpnameRollup dulu dan staf klik "Lanjut".
+        //
+        // Default kalau pemanggil tidak membawa rollup_decision eksplisit sama sekali (mis.
+        // panggilan API langsung yang tidak lewat preview): ikuti OpnameLifecycle::
+        // ROLLUP_PROJECTION_ENABLED -- flag itu CUMA mengatur tampilan popup, bukan gulungnya
+        // (koreksi 2026-09-06 yang sama), jadi kalau flag-nya false berarti "selalu langsung
+        // Lanjut" -- defaultnya 'full', bukan 'skip'. Gulung tetap hanya diterapkan untuk produk
+        // yang benar-benar punya perubahan nyata (lihat computeFullProjectionChanges()), jadi
+        // aman dijadikan default tanpa konfirmasi eksplisit.
+        $decision = $req->input('rollup_decision') ?? (OpnameLifecycle::ROLLUP_PROJECTION_ENABLED ? 'skip' : 'full');
 
         return DB::transaction(function () use ($data, $items, $decision) {
             $id = (new StockOpname())->insertStockOpname($data);
@@ -254,17 +268,26 @@ class StockController extends Controller
         // tawarkan dulu gulung PENUH kalau ada peluangnya -- staf memutuskan lewat popup di
         // frontend. is_draft masih true sampai staf menjawab, jadi memanggil endpoint ini dua kali
         // (sekali untuk melihat popup, sekali lagi membawa rollup_decision) aman/idempoten.
+        //
+        // OpnameLifecycle::ROLLUP_PROJECTION_ENABLED CUMA mengatur tampilan popup, bukan
+        // deteksi/gulungnya (koreksi 2026-09-06) -- kalau flag-nya false, jangan balas status=2
+        // (yang cuma berguna untuk menampilkan popup) sama sekali; langsung anggap staf sudah
+        // klik "Lanjut" dan gulung penuh kalau memang ada peluangnya.
         $decision = $req->input('rollup_decision');
         if ($decision === null) {
-            $opportunities = $lifecycle->detectRollupOpportunities($sto);
-            if ($opportunities !== []) {
-                return response()->json([
-                    'status' => 2,
-                    'sto_id' => $sto->sto_id,
-                    'rollup_candidates' => $opportunities,
-                ]);
+            if (! OpnameLifecycle::ROLLUP_PROJECTION_ENABLED) {
+                $decision = 'full';
+            } else {
+                $opportunities = $lifecycle->detectRollupOpportunities($sto);
+                if ($opportunities !== []) {
+                    return response()->json([
+                        'status' => 2,
+                        'sto_id' => $sto->sto_id,
+                        'rollup_candidates' => $opportunities,
+                    ]);
+                }
+                $decision = 'skip';
             }
-            $decision = 'skip';
         }
 
         $sto->is_draft = false;
