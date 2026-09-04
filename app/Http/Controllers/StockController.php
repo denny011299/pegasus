@@ -1058,20 +1058,52 @@ class StockController extends Controller
      * stock_opname_bahan_lines, BUKAN lagi stock_opname_detail_bahans. Dokumen lama tidak
      * dimigrasikan, tetap dibaca via BahanOpnameLineReader cabang legacy.
      */
+    /**
+     * Kembaran persis previewStockOpnameRollup() (Produk) -- baca-saja, tidak menulis apa pun.
+     * Dipanggil dari CreateStockOpnameSupplies.js SEBELUM insertStockOpnameBahan()/
+     * submitStockOpnameBahan() beneran jalan.
+     */
+    function previewStockOpnameRollupBahan(Request $req)
+    {
+        $items = json_decode($req->item, true) ?: [];
+
+        $warehouseId = (int) ($req->input('warehouse_id') ?: (Session::get('active_warehouse_id') ?? 0));
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) SuppliesStock::resolveWarehouseId();
+        }
+
+        $candidates = (new BahanOpnameLifecycle())->detectRollupOpportunitiesFromPayload($items, $warehouseId ?: null);
+
+        // show_popup: satu saklar yang SAMA dengan sisi Produk -- OpnameLifecycle::
+        // ROLLUP_PROJECTION_ENABLED (bukan const terpisah untuk Bahan) -- lihat docblock const itu.
+        return response()->json([
+            'rollup_candidates' => $candidates,
+            'show_popup' => OpnameLifecycle::ROLLUP_PROJECTION_ENABLED,
+        ]);
+    }
+
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
         $items = json_decode($req->item, true) ?: [];
+        // Kembaran persis insertStockOpname() Produk -- lihat komentarnya untuk seluruh alasan
+        // (keputusan user 2026-09-06: setiap gulung nyata wajib lewat popup, default
+        // rollup_decision mengikuti OpnameLifecycle::ROLLUP_PROJECTION_ENABLED).
+        $decision = $req->input('rollup_decision') ?? (OpnameLifecycle::ROLLUP_PROJECTION_ENABLED ? 'skip' : 'full');
 
-        return DB::transaction(function () use ($data, $items) {
+        return DB::transaction(function () use ($data, $items, $decision) {
             $id = (new StockOpnameBahan())->insertStockOpnameBahan($data);
             StockOpnameBahanLine::writeFromPayload($id, $items);
+            $stob = StockOpnameBahan::find($id);
 
             $lifecycle = new BahanOpnameLifecycle();
             // GitHub #132 (2026-09-03): kembaran persis insertStockOpname() Produk -- lihat
             // komentarnya untuk alasan lengkap kenapa ini satu-satunya titik gulung untuk dokumen
-            // yang lahir langsung non-draft.
-            $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+            // yang lahir langsung non-draft. rollUpUnits() (gulung parsial otomatis) TIDAK LAGI
+            // dipanggil sebagai fallback -- lihat OpnameLifecycle::computeFullProjectionChanges().
+            if (! $stob->is_draft && $decision === 'full') {
+                $lifecycle->rollUpUnitsFull(StockOpnameBahan::find($id));
+            }
             $lifecycle->publish(StockOpnameBahan::find($id));
 
             return response()->json(['status' => 1, 'stob_id' => $id]);
@@ -1147,16 +1179,41 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
+        $lifecycle = new BahanOpnameLifecycle();
+        // Kembaran persis submitStockOpname() Produk -- lihat komentarnya untuk seluruh alasan.
+        // OpnameLifecycle::ROLLUP_PROJECTION_ENABLED CUMA mengatur tampilan popup (satu saklar
+        // yang sama dengan Produk) -- kalau flag-nya false, jangan balas status=2 sama sekali;
+        // langsung anggap staf sudah klik "Lanjut".
+        $decision = $req->input('rollup_decision');
+        if ($decision === null) {
+            if (! OpnameLifecycle::ROLLUP_PROJECTION_ENABLED) {
+                $decision = 'full';
+            } else {
+                $opportunities = $lifecycle->detectRollupOpportunities($stob);
+                if ($opportunities !== []) {
+                    return response()->json([
+                        'status' => 2,
+                        'stob_id' => $stob->stob_id,
+                        'rollup_candidates' => $opportunities,
+                    ]);
+                }
+                $decision = 'skip';
+            }
+        }
+
         $stob->is_draft = false;
         $stob->save();
 
         // NB (merged from main's efef95e, 2026-08-28): main called
         // (new StockOpnameBahan())->submitStockOpnameBahan($data), a model method that doesn't
         // exist in this tree -- see submitStockOpname()'s (Produk) matching note.
-        $lifecycle = new BahanOpnameLifecycle();
         // GitHub #132 (2026-09-03): kembaran persis submitStockOpname() Produk -- lihat
-        // komentarnya untuk alasan lengkap kenapa gulung pindah ke sini.
-        $lifecycle->rollUpUnits($stob->refresh());
+        // komentarnya untuk alasan lengkap kenapa gulung pindah ke sini. rollUpUnits() (gulung
+        // parsial otomatis) TIDAK LAGI dipanggil sebagai fallback -- lihat OpnameLifecycle::
+        // computeFullProjectionChanges().
+        if ($decision === 'full') {
+            $lifecycle->rollUpUnitsFull($stob->refresh());
+        }
         $lifecycle->publish($stob->refresh());
 
         return 1;

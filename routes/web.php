@@ -257,6 +257,8 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/generateStockOpnameBahan/{id}', [StockController::class, 'generateStockOpnameBahan'])->name('generateStockOpnameBahan');
         Route::get('/detailStockOpnameBahan/{id}', [StockController::class, 'DetailStockOpnameBahan'])->name('detailStockOpnameBahan');
         Route::get('/getDetailStockOpnameBahan', [StockController::class, 'getDetailStockOpnameBahan'])->name('getDetailStockOpnameBahan');
+        // Baca-saja, kembaran persis previewStockOpnameRollup() (Produk) -- lihat komentarnya.
+        Route::post('/previewStockOpnameRollupBahan', [StockController::class, 'previewStockOpnameRollupBahan'])->name('previewStockOpnameRollupBahan');
     });
     Route::middleware('check.access:Stok Opname Bahan Mentah|create')->group(function () {
         Route::post('/insertStockOpnameBahan', [StockController::class, 'insertStockOpnameBahan'])->name('insertStockOpnameBahan');

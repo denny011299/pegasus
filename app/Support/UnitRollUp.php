@@ -301,6 +301,25 @@ class UnitRollUp
     }
 
     /**
+     * Kembaran persis collapseProductFull() untuk Bahan/Supplies -- lihat docblock itu (dan
+     * collapseFull()'s docblock) untuk alasan lengkap kenapa TIDAK ADA guard "produk ini tidak
+     * disentuh staf": SENGAJA, dipakai App\Support\StockOpname\BahanOpnameLifecycle untuk
+     * menangkap data bahan lama yang sudah tidak kanonik di database, sama seperti sisi Produk.
+     *
+     * @param  array<int, int|null>  $qtyByUnitId
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function collapseSuppliesFull(int $suppliesId, array $qtyByUnitId, ?int $warehouseId = null): array
+    {
+        return self::collapseFull(
+            self::suppliesChain($suppliesId),
+            $qtyByUnitId,
+            self::allowedSuppliesUnitIds($suppliesId, $warehouseId),
+            self::existingSuppliesStockByUnit($suppliesId, $warehouseId)
+        );
+    }
+
+    /**
      * Convenience wrapper: gulung satu baris produk, dibatasi ke satuan yang sudah punya baris
      * stok aktif (kebijakan yang sama dengan planProduct()).
      *
