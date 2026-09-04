@@ -204,6 +204,10 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/generateStockOpname/{id}', [StockController::class, 'generateStockOpname'])->name('generateStockOpname');
         Route::get('/detailStockOpname/{id}', [StockController::class, 'DetailStockOpname'])->name('detailStockOpname');
         Route::get('/getDetailStockOpname', [StockController::class, 'getDetailStockOpname'])->name('getDetailStockOpname');
+        // Baca-saja, dipanggil dari CreateStockOpname.js SEBELUM insertStockOpname()/
+        // submitStockOpname() beneran jalan (baik jalur create maupun edit-draft-lalu-ajukan) --
+        // ditaruh di grup |view (bukan |create atau |edit) supaya berlaku untuk keduanya.
+        Route::post('/previewStockOpnameRollup', [StockController::class, 'previewStockOpnameRollup'])->name('previewStockOpnameRollup');
     });
     Route::middleware('check.access:Stok Opname Produk|create')->group(function () {
         Route::post('/insertStockOpname', [StockController::class, 'insertStockOpname'])->name('insertStockOpname');

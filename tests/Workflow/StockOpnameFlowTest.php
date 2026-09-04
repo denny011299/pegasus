@@ -50,6 +50,10 @@ class StockOpnameFlowTest extends TestCase
             'category_id' => $this->categoryId(),
             'sto_notes' => 'Workflow test opname',
             'is_draft' => $isDraft ? 1 : 0,
+            // Fixture produk punya lebih dari satu satuan aktif -- ini bisa memicu popup
+            // konfirmasi gulung baru (2026-09-04, bug report "93 Dos, 104 Piece"); skip di sini
+            // karena test-test ini tidak menguji perilaku itu (lihat StockOpnameRollupConfirmTest).
+            'rollup_decision' => 'skip',
             'item' => json_encode([[
                 'product_id' => $stock->product_id,
                 'product_variant_id' => $stock->product_variant_id,
@@ -175,7 +179,7 @@ class StockOpnameFlowTest extends TestCase
         $this->assertSame($startingStock, $stock->ps_stock, 'a blocked (still-draft) approval must not touch stock');
 
         // Submitting takes it out of draft...
-        $this->post('/submitStockOpname', ['sto_id' => $stoId])->assertStatus(200);
+        $this->post('/submitStockOpname', ['sto_id' => $stoId, 'rollup_decision' => 'skip'])->assertStatus(200);
         $sto->refresh();
         $this->assertFalse((bool) $sto->is_draft, 'submitStockOpname must clear is_draft');
         $this->assertSame(1, (int) $sto->status, 'submitting does not itself change status — it was already pending');

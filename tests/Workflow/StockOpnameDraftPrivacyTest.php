@@ -132,4 +132,46 @@ class StockOpnameDraftPrivacyTest extends TestCase
         $this->actingAsSuperAdminStaff();
         $this->get('/detailStockOpname/'.$stoId)->assertStatus(200);
     }
+
+    /**
+     * 2026-09-04: a draft has no snapshot at all (identity/system stock only freeze at publish,
+     * GitHub #115) -- the Print/PDF icon is already hidden client-side for a draft row
+     * (Stock_Opname.js's `item.is_draft` check), but that alone is only UI hiding, not
+     * enforcement. Hitting /generateStockOpname/{id} directly must 404 for a DRAFT regardless of
+     * who's asking -- even the document's own owner (detailStockOpname()'s "am I allowed to see
+     * this draft at all" check on its own is NOT enough here, since the owner legitimately passes
+     * that and would otherwise reach a PDF of half-typed data).
+     */
+    public function test_owner_cannot_generate_pdf_of_their_own_draft(): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Stok Opname Produk', ['view', 'create', 'edit'], ['staff_id' => 555005]);
+        $stock = $this->pickFixtureStock();
+        $stoId = $this->insertDraft($stock, $stock->ps_stock - 1);
+
+        $this->get('/generateStockOpname/'.$stoId)->assertStatus(404);
+    }
+
+    public function test_super_admin_cannot_generate_pdf_of_a_draft_either(): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Stok Opname Produk', ['view', 'create', 'edit'], ['staff_id' => 555006]);
+        $stock = $this->pickFixtureStock();
+        $stoId = $this->insertDraft($stock, $stock->ps_stock - 1);
+
+        $this->actingAsSuperAdminStaff();
+        $this->get('/generateStockOpname/'.$stoId)->assertStatus(404);
+    }
+
+    /** Once the draft is submitted (out of draft), the PDF must work again -- the guard is is_draft-only. */
+    public function test_pdf_works_again_once_the_draft_is_submitted(): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Stok Opname Produk', ['view', 'create', 'edit'], ['staff_id' => 555007]);
+        $stock = $this->pickFixtureStock();
+        $stoId = $this->insertDraft($stock, $stock->ps_stock - 1);
+
+        $this->post('/submitStockOpname', ['sto_id' => $stoId, 'rollup_decision' => 'skip'])->assertStatus(200);
+
+        $response = $this->get('/generateStockOpname/'.$stoId);
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+    }
 }

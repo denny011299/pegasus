@@ -633,6 +633,18 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   function LoadingButton(id) {
     var $btn = $(id);
     if (!$btn.length) return;
+    // Simpan height/min-width ASLI (dari style="..." di HTML, kalau ada) SEBELUM dikunci --
+    // ResetLoadingButton dulu cuma css({height:''}), yang menghapus property yang barusan
+    // ditulis JS ini, BUKAN mengembalikan ke teks asli attribute style: begitu jQuery
+    // menyentuh property inline style yang sama, teks aslinya hilang untuk selamanya (browser
+    // memutasi attribute style itu sendiri, bukan menyimpan dua salinan terpisah). Tanpa ini
+    // tombol dengan height tetap di HTML-nya (mis. .btn-save height:40px) jadi "penyet" --
+    // turun ke tinggi default browser -- begitu loading selesai. Guard pakai data() supaya
+    // panggilan bertingkat/berulang tidak menimpa nilai asli dengan nilai yang sudah dikunci.
+    if ($btn.data('pg-loading-orig-height') === undefined) {
+      $btn.data('pg-loading-orig-height', $btn[0].style.height || '');
+      $btn.data('pg-loading-orig-min-width', $btn[0].style.minWidth || '');
+    }
     // Lock current size so button doesn't expand when text changes
     $btn.css({
       'min-width': $btn.outerWidth() + 'px',
@@ -646,10 +658,13 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   function ResetLoadingButton(id, text = null) {
     var $btn = $(id);
     if (!$btn.length) return;
+    var origHeight = $btn.data('pg-loading-orig-height');
+    var origMinWidth = $btn.data('pg-loading-orig-min-width');
     $btn.css({
-      'min-width': '',
-      'height': ''
+      'min-width': origMinWidth !== undefined ? origMinWidth : '',
+      'height': origHeight !== undefined ? origHeight : ''
     });
+    $btn.removeData('pg-loading-orig-height').removeData('pg-loading-orig-min-width');
     $btn.html(`${text ? text : 'Save Changes'}`).prop("disabled", false);
   }
 

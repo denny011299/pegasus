@@ -96,25 +96,80 @@ class StockController extends Controller
      * Tidak butuh perubahan frontend: units[] dengan real_qty null-able sudah dikirim
      * CreateStockOpname.js sejak dulu, cuma dulu dibuang begitu saja di sini.
      */
+    /**
+     * Cek peluang gulung PENUH TANPA menulis apa pun ke DB -- keputusan user 2026-09-05: dulu
+     * insertStockOpname() menulis dokumen (header + baris) DULU cuma untuk bisa mengecek ini
+     * ("data bayangan" versi lama, ternyata tetap membuat dokumen sungguhan walau staf akhirnya
+     * klik Batal). Endpoint ini murni baca -- item dikirim mentah dari form (bentuk sama persis
+     * dengan yang dikirim insertStockOpname()/updateStockOpname()), tidak ada
+     * StockOpname/StockOpnameLine yang tersentuh sama sekali. Dipanggil dari CreateStockOpname.js
+     * SEBELUM insertData()/submitStockOpname() beneran jalan -- lihat previewStockOpnameRollup()
+     * di sana.
+     */
+    function previewStockOpnameRollup(Request $req)
+    {
+        $items = json_decode($req->item, true) ?: [];
+
+        $warehouseId = (int) ($req->input('warehouse_id') ?: (Session::get('active_warehouse_id') ?? 0));
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) ProductStock::resolveWarehouseId();
+        }
+
+        $candidates = (new OpnameLifecycle())->detectRollupOpportunitiesFromPayload($items, $warehouseId ?: null);
+
+        // show_popup: OpnameLifecycle::ROLLUP_PROJECTION_ENABLED CUMA mengatur tampilan popup,
+        // bukan deteksi/gulungnya sendiri (keputusan user 2026-09-06, diperbaiki setelah salah
+        // paham pertama hari yang sama -- lihat docblock const itu). false berarti
+        // CreateStockOpname.js harus langsung lanjut dengan rollup_decision=full TANPA
+        // menampilkan modal, kalau ada kandidat.
+        return response()->json([
+            'rollup_candidates' => $candidates,
+            'show_popup' => OpnameLifecycle::ROLLUP_PROJECTION_ENABLED,
+        ]);
+    }
+
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
         $items = json_decode($req->item, true) ?: [];
+        // Keputusan gulung SUDAH diambil di frontend lewat /previewStockOpnameRollup (baca-saja,
+        // tidak menulis apa pun) SEBELUM endpoint ini pernah dipanggil -- lihat docblock method
+        // itu. Jadi endpoint ini SELALU single-shot lagi seperti sebelum fitur konfirmasi gulung
+        // ada: tidak ada lagi jalur "tulis dulu, tanya nanti, tulis lagi kalau confirm".
+        //
+        // >>> GANTI 2026-09-06 (keputusan user: "setiap kali ada roll up yang terdeteksi,
+        // munculkan popup konfirmasinya") <<< rollup_decision !== 'full' TIDAK LAGI memicu
+        // rollUpUnits() (gulung parsial otomatis) sebagai fallback "aman" -- lihat docblock
+        // OpnameLifecycle::computeFullProjectionChanges() untuk bug yang ini tutup: mengisi
+        // satuan TERKECIL sendirian (mis. 1000 pcs, Dos kosong) dulu digulung otomatis lewat
+        // rollUpUnits() TANPA pernah lewat popup, karena hasilnya kebetulan identik dengan
+        // rollUpUnitsFull(). Sekarang SETIAP gulung nyata (apa pun bentuknya) wajib terdeteksi di
+        // /previewStockOpnameRollup dulu dan staf klik "Lanjut".
+        //
+        // Default kalau pemanggil tidak membawa rollup_decision eksplisit sama sekali (mis.
+        // panggilan API langsung yang tidak lewat preview): ikuti OpnameLifecycle::
+        // ROLLUP_PROJECTION_ENABLED -- flag itu CUMA mengatur tampilan popup, bukan gulungnya
+        // (koreksi 2026-09-06 yang sama), jadi kalau flag-nya false berarti "selalu langsung
+        // Lanjut" -- defaultnya 'full', bukan 'skip'. Gulung tetap hanya diterapkan untuk produk
+        // yang benar-benar punya perubahan nyata (lihat computeFullProjectionChanges()), jadi
+        // aman dijadikan default tanpa konfirmasi eksplisit.
+        $decision = $req->input('rollup_decision') ?? (OpnameLifecycle::ROLLUP_PROJECTION_ENABLED ? 'skip' : 'full');
 
-        return DB::transaction(function () use ($data, $items) {
+        return DB::transaction(function () use ($data, $items, $decision) {
             $id = (new StockOpname())->insertStockOpname($data);
             StockOpnameLine::writeFromPayload($id, $items);
+            $sto = StockOpname::find($id);
 
             $lifecycle = new OpnameLifecycle();
             // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
             // 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs) HANYA di titik dokumen benar-benar
             // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
-            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
+            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnitsFull()
             // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
-            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan. Dipanggil
-            // SEBELUM publish() supaya identitas satuan yang baru ikut tercipta dari gulungan
-            // (kalaupun ada) turut dibekukan pada publish yang sama.
-            $lifecycle->rollUpUnits(StockOpname::find($id));
+            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan.
+            if (! $sto->is_draft && $decision === 'full') {
+                $lifecycle->rollUpUnitsFull(StockOpname::find($id));
+            }
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
             // tanpa syarat baik untuk .btn-save (langsung publish) maupun .btn-save-draft (no-op,
@@ -208,6 +263,33 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
+        $lifecycle = new OpnameLifecycle();
+        // Keputusan user 2026-09-04 (bug report "93 Dos, 104 Piece"): sebelum is_draft dimatikan,
+        // tawarkan dulu gulung PENUH kalau ada peluangnya -- staf memutuskan lewat popup di
+        // frontend. is_draft masih true sampai staf menjawab, jadi memanggil endpoint ini dua kali
+        // (sekali untuk melihat popup, sekali lagi membawa rollup_decision) aman/idempoten.
+        //
+        // OpnameLifecycle::ROLLUP_PROJECTION_ENABLED CUMA mengatur tampilan popup, bukan
+        // deteksi/gulungnya (koreksi 2026-09-06) -- kalau flag-nya false, jangan balas status=2
+        // (yang cuma berguna untuk menampilkan popup) sama sekali; langsung anggap staf sudah
+        // klik "Lanjut" dan gulung penuh kalau memang ada peluangnya.
+        $decision = $req->input('rollup_decision');
+        if ($decision === null) {
+            if (! OpnameLifecycle::ROLLUP_PROJECTION_ENABLED) {
+                $decision = 'full';
+            } else {
+                $opportunities = $lifecycle->detectRollupOpportunities($sto);
+                if ($opportunities !== []) {
+                    return response()->json([
+                        'status' => 2,
+                        'sto_id' => $sto->sto_id,
+                        'rollup_candidates' => $opportunities,
+                    ]);
+                }
+                $decision = 'skip';
+            }
+        }
+
         $sto->is_draft = false;
         $sto->save();
 
@@ -218,14 +300,17 @@ class StockController extends Controller
         // dokumen keluar dari draft di sini -- inilah saat snapshot identitas dibekukan untuk
         // alur draft (tombol .btn-ajukan). Idempoten, jadi tidak masalah kalau dokumen ini
         // ternyata sudah pernah publish lewat insert.
-        $lifecycle = new OpnameLifecycle();
         // GitHub #132 (2026-09-03): inilah SATU-SATUNYA titik "diajukan" yang sebenarnya untuk
         // dokumen yang lahir sebagai draft -- gulung satuannya di sini, bukan di update, supaya
         // angka mentah yang diketik staf selama masih draft tidak diam-diam berubah tiap simpan.
         // Dipanggil SEBELUM publish() supaya identitas satuan yang baru tercipta dari gulungan
         // (kalau ada) ikut terbekukan pada publish yang sama -- lihat urutan yang sama persis di
-        // insertStockOpname().
-        $lifecycle->rollUpUnits($sto->refresh());
+        // insertStockOpname(). rollup_decision !== 'full' berarti TIDAK ADA gulung sama sekali
+        // (keputusan user 2026-09-06, lihat OpnameLifecycle::computeFullProjectionChanges()) --
+        // rollUpUnits() tidak lagi dipanggil sebagai fallback di sini.
+        if ($decision === 'full') {
+            $lifecycle->rollUpUnitsFull($sto->refresh());
+        }
         $lifecycle->publish($sto->refresh());
 
         return 1;
@@ -888,6 +973,17 @@ class StockController extends Controller
         if ($sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
             abort(404);
         }
+        // Draft belum punya snapshot apa pun (GitHub #115: identitas/stok sistem sengaja tidak
+        // dibekukan sampai dokumen terbit) -- PDF-nya tidak berarti dan tombolnya sendiri sudah
+        // disembunyikan di Stock_Opname.js (item.is_draft). Blokir juga di sini supaya menembak
+        // URL-nya langsung tidak bisa memaksa keluar dokumen setengah jadi, baik ini dokumen milik
+        // sendiri maupun bukan. Cuma dokumen versi BARU -- dokumen lama tidak pernah benar-benar
+        // punya draft lewat UI aslinya (tests/Workflow/StockOpnamePdfLiveSystemStockTest.php
+        // memaksanya cuma untuk menguji refreshLiveSystemQty() lama, cabang else di bawah tidak
+        // pernah menyembunyikan stok sistem seperti OpnameLineReader melakukannya untuk draft baru).
+        if ($sto->is_draft && ! $sto->is_old_version) {
+            abort(404, 'Dokumen masih draft, belum bisa dicetak.');
+        }
 
         if ($sto && ! $sto->is_old_version) {
             // Dokumen versi baru: satu pembaca untuk semuanya. Selisih diturunkan saat dibaca,
@@ -1437,6 +1533,10 @@ class StockController extends Controller
         }
         if ($stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
             abort(404);
+        }
+        // Kembaran guard generateStockOpname() Produk di atas -- lihat komentarnya untuk alasan.
+        if ($stob->is_draft && ! $stob->is_old_version) {
+            abort(404, 'Dokumen masih draft, belum bisa dicetak.');
         }
 
         if ($stob && ! $stob->is_old_version) {
