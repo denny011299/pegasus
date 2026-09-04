@@ -23,7 +23,7 @@ class LogDashboardActivity
             // samping log mutasi di atas. Baris 'open' dicatat dengan activity_type terpisah
             // supaya ReportController::dashboardChangeLogCounts() (KPI "Changelog" = antrean
             // butuh ACC Direktur) tidak ikut menghitung page-view biasa sebagai item pending.
-            $this->logOpen($request);
+            $this->logOpen($request, $response);
         }
 
         return $response;
@@ -64,7 +64,7 @@ class LogDashboardActivity
      * Ini estimasi pasif (jarak waktu ke request berikutnya), bukan sinyal tab-ditutup yang
      * sesungguhnya — lihat catatan cap 4 jam di bawah.
      */
-    private function logOpen(Request $request): void
+    private function logOpen(Request $request, Response $response): void
     {
         $staffId = (int) (session('user')->staff_id ?? 0);
         if ($staffId <= 0) {
@@ -87,23 +87,22 @@ class LogDashboardActivity
         // Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi —
         // durasinya = jarak ke pembukaan menu berikutnya ini. Kalau jaraknya lebih dari 4 jam,
         // anggap tab lama itu cuma ditinggal (idle/browser ditutup tanpa navigasi lagi) dan
-        // jangan diisi durasi yang menyesatkan.
-        $previous = DashboardChangeLog::where('created_by', $staffId)
-            ->where('activity_type', 'open')
-            ->whereNull('duration_seconds')
-            ->orderByDesc('created_at')
-            ->first();
-        if ($previous) {
-            // Explicit $absolute=true + cast to int: Carbon 3's diffInSeconds() defaults to a
-            // signed, sub-second-precision float (negative here since $previous is in the past).
-            $seconds = (int) $now->diffInSeconds($previous->created_at, true);
-            if ($seconds <= 4 * 3600) {
-                $previous->duration_seconds = $seconds;
-                $previous->save();
-            }
-        }
+        // jangan diisi durasi yang menyesatkan. Lihat juga DashboardActivityController::closeSession()
+        // -- sinyal AKTIF (tab ditutup) yang ditembak lewat navigator.sendBeacon() saat unload,
+        // supaya baris 'open' tidak nyangkut "Sedang dibuka" selamanya kalau user tidak pernah
+        // buka menu lain lagi.
+        DashboardChangeLog::closeOpenSession($staffId, $now);
 
         $staffName = session('user')->staff_name ?? '-';
+
+        // Token unik per-pageview, ditanam ke HTML di bawah supaya close-beacon (lihat
+        // mainlayout.blade.php) menutup baris 'open' INI secara spesifik lewat
+        // whereJson('meta->client_token', ...), bukan cuma "baris open terakhir milik staf
+        // ini yang durasinya masih kosong". Tanpa token itu ada race: beacon pagehide milik
+        // halaman A bisa sampai ke server SETELAH request GET halaman B (navigasi berikutnya)
+        // sudah lebih dulu bikin baris 'open' baru untuk B -- akibatnya beacon A malah menutup
+        // baris B yang baru berumur 0 detik (durasi jadi 0, bukan durasi A yang sebenarnya).
+        $clientToken = (string) Str::uuid();
 
         DashboardChangeLog::create([
             'module_key' => $moduleKey,
@@ -121,9 +120,31 @@ class LogDashboardActivity
             'meta' => [
                 'method' => $request->method(),
                 'path' => $request->path(),
+                'client_token' => $clientToken,
             ],
             'duration_seconds' => null,
         ]);
+
+        $this->injectClientToken($response, $clientToken);
+    }
+
+    /**
+     * Suntik token pageview ke HTML yang SUDAH di-render ($next($request) di handle() sudah
+     * jalan) -- tidak bisa lewat View::share() karena blade-nya sudah selesai dieksekusi.
+     * str_replace ke penutup </body> yang terakhir supaya window.__dashboardActivityToken
+     * selalu ada saat beacon di mainlayout.blade.php butuh dikirim.
+     */
+    private function injectClientToken(Response $response, string $token): void
+    {
+        $content = $response->getContent();
+        if ($content === false || !str_contains($content, '</body>')) {
+            return;
+        }
+
+        $script = '<script>window.__dashboardActivityToken='.json_encode($token).';</script></body>';
+        $pos = strrpos($content, '</body>');
+        $content = substr_replace($content, $script, $pos, strlen('</body>'));
+        $response->setContent($content);
     }
 
     private function shouldLogChange(Request $request, Response $response): bool
@@ -142,7 +163,7 @@ class LogDashboardActivity
         if ($path === '' || str_starts_with($path, 'get')) {
             return false;
         }
-        if (in_array($path, ['dismissdashboardqueueitem', 'updatedashboardwidgets', 'updatepermission'], true)) {
+        if (in_array($path, ['dismissdashboardqueueitem', 'updatedashboardwidgets', 'updatepermission', 'closedashboardsession'], true)) {
             return false;
         }
 
