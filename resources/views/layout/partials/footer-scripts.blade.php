@@ -967,37 +967,9 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
   }
 
-  /**
-   * Select2 (`AttachBody._positionDropdown`) menghitung `left` dropdown dari
-   * offset field pemicu di dokumen, tapi gak pernah di-clamp ke lebar
-   * viewport — dan tetap dipakai ulang tiap `window.resize` (termasuk yang
-   * dipicu keyboard on-screen). Kalau hasil hitungannya kegeser ke kanan,
-   * gak ada yang narik balik dropdown itu ke dalam layar. Karena
-   * dropdown-nya nempel di `<body>` (dropdownParent: body, bukan modal),
-   * ini bikin lebar area scroll seluruh halaman ikut membesar -> halaman
-   * jadi bisa di-slide horizontal & tampilannya kacau (GitHub #142, tablet).
-   * Clamp manual di sini pakai getBoundingClientRect (relatif viewport, gak
-   * kepengaruh miscalc internal-nya) supaya dropdown selalu balik masuk
-   * layar berapa pun offset yang dihitung Select2.
-   */
-  function pgClampSelect2DropdownPosition() {
-    var $dropdown = $('.select2-container--open').last().find('.select2-dropdown');
-    if (!$dropdown.length) return;
-    var el = $dropdown[0];
-    var margin = 8;
-    var vw = document.documentElement.clientWidth || window.innerWidth;
-    var rect = el.getBoundingClientRect();
-    var currentLeft = parseFloat($dropdown.css('left')) || 0;
-    if (rect.right > vw - margin) {
-      $dropdown.css('left', (currentLeft - (rect.right - (vw - margin))) + 'px');
-    } else if (rect.left < margin) {
-      $dropdown.css('left', (currentLeft + (margin - rect.left)) + 'px');
-    }
-  }
-
   /** Fokus kolom search Select2 (modal + dropdownParent body / mobile). */
   function attachSelect2SearchOpenFix($el) {
-    $el.off('select2:open.pgSearchFix select2:close.pgSearchFix');
+    $el.off('select2:open.pgSearchFix');
     $el.on('select2:open.pgSearchFix', function() {
       setTimeout(function() {
         var $open = $('.select2-container--open').last();
@@ -1016,17 +988,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             $search.trigger('focus');
           }
         }
-        pgClampSelect2DropdownPosition();
       }, 0);
-      // Keyboard on-screen buka/tutup memicu window resize -> Select2 hitung
-      // ulang posisi (tanpa clamp) tiap kali. Clamp ulang di sini juga.
-      $(window).off('resize.pgSelect2Clamp orientationchange.pgSelect2Clamp')
-        .on('resize.pgSelect2Clamp orientationchange.pgSelect2Clamp', function() {
-          setTimeout(pgClampSelect2DropdownPosition, 50);
-        });
-    });
-    $el.on('select2:close.pgSearchFix', function() {
-      $(window).off('resize.pgSelect2Clamp orientationchange.pgSelect2Clamp');
     });
   }
 
