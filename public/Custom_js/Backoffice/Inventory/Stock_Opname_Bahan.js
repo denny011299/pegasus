@@ -57,6 +57,7 @@ function inisialisasi() {
                 },
             },
             { data: "acc_by_name", defaultContent: "-" },
+            { data: "jenis_text", defaultContent: "-" },
             { data: "status_text", defaultContent: "-" },
             {
                 data: "action",
@@ -120,6 +121,10 @@ function refreshStockOpname() {
                     stob_code: item.stob_code || "-",
                     created_by_name: item.created_by_name || "-",
                     acc_by_name: item.acc_by_name || "-",
+                    jenis_text:
+                        item.sto_type == 2
+                            ? `<span class="badge bg-info" style="font-size: 12px">Bersihkan Data</span>`
+                            : `<span class="badge bg-light text-dark" style="font-size: 12px">Opname</span>`,
                     status_text: item.is_draft
                         ? `<span class="badge bg-warning" style="font-size: 12px">Draft</span>`
                         : statusTextMap[item.status] || "-",

@@ -7,6 +7,18 @@ var searchBahanDebounce = null;
 var canEditDraft = false;
 autocompleteCategory("#kategori", null, 1);
 
+/** Fitur "Clean Up Data" (2026-09-04): kembaran persis CreateStockOpname.js (Produk). */
+function setCleanUpMode(isCleanUp) {
+    $("#opname-count-section").toggleClass("d-none", isCleanUp);
+    $("#cleanup-description").toggleClass("d-none", !isCleanUp);
+    if (isCleanUp) {
+        $(".btn-save-draft,.btn-ajukan,.btn-delete-draft").hide();
+        $(".btn-save").text("Proses Bersihkan Data");
+    } else {
+        $(".btn-save").text("Tambah Stok Opname");
+    }
+}
+
 $(document).ready(function () {
     //    if(data.category_id!=null)$('#category_id').append(`<option value="${data.category_id}">${data.category_name}</option>`).trigger("change");
     //    if(mode==2){
@@ -14,6 +26,11 @@ $(document).ready(function () {
     //    }
     loadStaff();
     if (mode == 1) {
+        $("#jenis_opname").on("change", function () {
+            setCleanUpMode($(this).val() == "2");
+        });
+        setCleanUpMode($("#jenis_opname").val() == "2");
+
         refreshStockOpname();
         var yesterday = moment().format("YYYY-MM-DD");
         // Autofill ke input
@@ -70,16 +87,24 @@ $(document).ready(function () {
             refreshStockOpname();
         } else {
             $("#tanggal,#penanggung-jawab,#catatan").prop("disabled", true);
-            renderMode2(data.item); // ← pakai renderMode2, bukan forEach langsung
-            $("#tbStock input").prop("disabled", true);
             $(".btn-save,.btn-save-draft,.btn-ajukan,.btn-delete-draft").hide();
+
+            var isCleanUp = data.sto_type == 2;
+            var canOthersHere = isCleanUp ? canOthersCleanUp : canOthersNormal;
+
+            if (isCleanUp) {
+                setCleanUpMode(true);
+            } else {
+                renderMode2(data.item); // ← pakai renderMode2, bukan forEach langsung
+                $("#tbStock input").prop("disabled", true);
+            }
 
             if (data.is_draft) {
                 // Jaga-jaga saja — seharusnya tidak pernah tercapai karena
                 // draft orang lain sudah 404 di server.
                 $("#status").val("Draft");
             } else if (data.status == 1) {
-                $(".save-tolak,.save-terima").show();
+                $(".save-tolak,.save-terima").toggle(canOthersHere);
                 $("#status").val("Menunggu Approval");
             } else if (data.status == 2) {
                 $(".save-tolak,.save-terima").hide();
@@ -398,6 +423,13 @@ $(document).on("change", "#category_id", function () {
 
 $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
+    if ($("#jenis_opname").val() == "2") {
+        insertData({
+            btnSelector: ".btn-save",
+            doneText: "Proses Bersihkan Data",
+        });
+        return;
+    }
     clearTimeout(searchBahanDebounce);
     $("#filter_sup_name").val("");
     refreshStockOpname(function () {
@@ -559,7 +591,10 @@ function insertData(options) {
     }
 
     suppliesSubmit = [];
-    $(".row-stock").each(function () {
+    var isCleanUp = $("#jenis_opname").val() == "2";
+    // Fitur "Clean Up Data": tidak ada hitungan manual sama sekali -- server membangun sendiri
+    // baris-barisnya dari stok live (BahanOpnameLifecycle::rollUpFromLiveStock()).
+    $(isCleanUp ? [] : $(".row-stock")).each(function () {
         let row = $(this);
         let item = {};
 
@@ -628,6 +663,7 @@ function insertData(options) {
         stob_notes: $("#catatan").val(),
         item: JSON.stringify(suppliesSubmit),
         is_draft: isDraft ? 1 : 0,
+        sto_type: $("#jenis_opname").val() || 1,
         _token: token,
     };
     if (mode == 2) {
@@ -690,10 +726,18 @@ $(document).on("click", ".save-terima", function () {
 $(document).on("click", "#btn-acc-stob", function () {
     LoadingButton(this);
 
+    suppliesSubmit = [];
+    // Fitur "Clean Up Data": tidak ada tabel untuk dirender/di-scrape -- item dikirim kosong,
+    // server mengabaikannya total dan membaca langsung dari stock_opname_bahan_lines yang sudah
+    // dibangun saat insert (accStockOpnameBahanV2()).
+    if (data.sto_type == 2) {
+        submitAccStockOpnameBahan();
+        return;
+    }
+
     $("#filter_sup_name").val("");
     renderMode2(data.item);
 
-    suppliesSubmit = [];
     $(".row-stock").each(function () {
         let row = $(this);
         let item = {};
@@ -741,6 +785,10 @@ $(document).on("click", "#btn-acc-stob", function () {
         suppliesSubmit.push(item);
     });
 
+    submitAccStockOpnameBahan();
+});
+
+function submitAccStockOpnameBahan() {
     $.ajax({
         url: "/accStockOpnameBahan",
         data: {
@@ -770,7 +818,7 @@ $(document).on("click", "#btn-acc-stob", function () {
             console.log(e);
         },
     });
-});
+}
 
 $(document).on("click", ".save-tolak", function () {
     showModalDelete(

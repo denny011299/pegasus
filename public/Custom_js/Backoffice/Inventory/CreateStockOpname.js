@@ -7,9 +7,31 @@ var searchProdukDebounce = null;
 var canEditDraft = false;
 autocompleteCategory("#kategori", null, 1);
 
+/**
+ * Fitur "Clean Up Data" (2026-09-04): toggle tampilan create/detail antara opname biasa (tabel
+ * hitung produk) dan Bersihkan Data (tidak ada input sama sekali, cuma penjelasan tindakan).
+ * $("#jenis_opname") bisa berupa <select> (mode create, staf berizin) atau hidden input (selain
+ * itu) -- keduanya sama-sama dibaca lewat .val().
+ */
+function setCleanUpMode(isCleanUp) {
+    $("#opname-count-section").toggleClass("d-none", isCleanUp);
+    $("#cleanup-description").toggleClass("d-none", !isCleanUp);
+    if (isCleanUp) {
+        $(".btn-save-draft,.btn-ajukan,.btn-delete-draft").hide();
+        $(".btn-save").text("Proses Bersihkan Data");
+    } else {
+        $(".btn-save").text("Tambah Stok Opname");
+    }
+}
+
 $(document).ready(function () {
     loadStaff();
     if (mode == 1) {
+        $("#jenis_opname").on("change", function () {
+            setCleanUpMode($(this).val() == "2");
+        });
+        setCleanUpMode($("#jenis_opname").val() == "2");
+
         refreshStockOpname();
         var yesterday = moment().format("YYYY-MM-DD");
         console.log(yesterday);
@@ -66,16 +88,27 @@ $(document).ready(function () {
             refreshStockOpname();
         } else {
             $("#tanggal,#penanggung-jawab,#catatan").prop("disabled", true);
-            renderMode2(data.item);
-            $("#tbStock input").prop("disabled", true);
             $(".btn-save,.btn-save-draft,.btn-ajukan,.btn-delete-draft").hide();
+
+            var isCleanUp = data.sto_type == 2;
+            // Tombol Terima/Tolak dirender di server untuk pemilik SALAH SATU izin (biasa ATAU
+            // Bersihkan Data) -- di sini ditegakkan lagi per-dokumen supaya staf yang cuma punya
+            // satu dari keduanya tidak melihat tombol pada dokumen jenis yang lain.
+            var canOthersHere = isCleanUp ? canOthersCleanUp : canOthersNormal;
+
+            if (isCleanUp) {
+                setCleanUpMode(true);
+            } else {
+                renderMode2(data.item);
+                $("#tbStock input").prop("disabled", true);
+            }
 
             if (data.is_draft) {
                 // Jaga-jaga saja — seharusnya tidak pernah tercapai karena
                 // draft orang lain sudah 404 di server.
                 $("#status").val("Draft");
             } else if (data.status == 1) {
-                $(".save-tolak,.save-terima").show();
+                $(".save-tolak,.save-terima").toggle(canOthersHere);
                 $("#status").val("Menunggu Approval");
             } else if (data.status == 2) {
                 $(".save-tolak,.save-terima").hide();
@@ -357,6 +390,14 @@ $(document).on("change", "#category_id", function () {
 
 $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
+    // Fitur "Clean Up Data": tidak ada tabel produk untuk dimuat/divalidasi sama sekali.
+    if ($("#jenis_opname").val() == "2") {
+        insertData({
+            btnSelector: ".btn-save",
+            doneText: "Proses Bersihkan Data",
+        });
+        return;
+    }
     clearTimeout(searchProdukDebounce);
     $("#filter_pr_name").val("");
     refreshStockOpname(function () {
@@ -518,7 +559,10 @@ function insertData(options) {
     }
 
     productSubmit = [];
-    $(".row-stock").each(function () {
+    var isCleanUp = $("#jenis_opname").val() == "2";
+    // Fitur "Clean Up Data": tidak ada hitungan manual sama sekali -- jangan kirim apa pun,
+    // server membangun sendiri baris-barisnya dari stok live (OpnameLifecycle::rollUpFromLiveStock()).
+    $(isCleanUp ? [] : $(".row-stock")).each(function () {
         let row = $(this);
         let item = {};
 
@@ -589,6 +633,7 @@ function insertData(options) {
         sto_notes: $("#catatan").val(),
         item: JSON.stringify(productSubmit),
         is_draft: isDraft ? 1 : 0,
+        sto_type: $("#jenis_opname").val() || 1,
         _token: token,
     };
     if (mode == 2) {
@@ -651,10 +696,18 @@ $(document).on("click", ".save-terima", function () {
 $(document).on("click", "#btn-acc-sto", function () {
     LoadingButton(this);
 
+    productSubmit = [];
+    // Fitur "Clean Up Data": tidak ada tabel untuk dirender/di-scrape -- item dikirim kosong,
+    // server mengabaikannya total dan membaca langsung dari stock_opname_lines yang sudah
+    // dibangun saat insert (accStockOpnameV2()).
+    if (data.sto_type == 2) {
+        submitAccStockOpname();
+        return;
+    }
+
     $("#filter_pr_name").val("");
     renderMode2(data.item);
 
-    productSubmit = [];
     $(".row-stock").each(function () {
         let row = $(this);
         let item = {};
@@ -703,6 +756,10 @@ $(document).on("click", "#btn-acc-sto", function () {
         productSubmit.push(item);
     });
 
+    submitAccStockOpname();
+});
+
+function submitAccStockOpname() {
     $.ajax({
         url: "/accStockOpname",
         data: {
@@ -732,7 +789,7 @@ $(document).on("click", "#btn-acc-sto", function () {
             console.log(e);
         },
     });
-});
+}
 
 $(document).on("click", ".save-tolak", function () {
     showModalDelete(

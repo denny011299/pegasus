@@ -131,6 +131,7 @@
                                             <th>ID Opname</th>
                                             <th>Dibuat Oleh</th>
                                             <th>Diapprove/Ditolak Oleh</th>
+                                            <th>Jenis</th>
                                             <th>Status</th>
                                             <th class="no-sort">Aksi</th>
                                         </tr>

@@ -226,6 +226,19 @@
                                 <input type="text" class="form-control" id="warehouse_name" value="{{ $opnameWarehouseName !== '' ? $opnameWarehouseName : '-' }}" disabled readonly
                                     style="height:42px;border-radius:8px;font-size:13px;background:#f8fafc;font-weight:600;color:#1e40af;cursor:not-allowed;">
                             </div>
+                            {{-- Fitur "Clean Up Data" (2026-09-04): kembaran persis CreateStockOpname.blade.php
+                                 (Produk) -- lihat komentarnya untuk alasan lengkap. --}}
+                            @if (($mode ?? 1) == 1 && ($is_main_warehouse ?? false) && \App\Support\RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'create'))
+                                <div class="col-lg-3 col-md-6 col-12">
+                                    <label class="text-muted mb-2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">Jenis Opname</label>
+                                    <select id="jenis_opname" class="form-select" style="height:42px;border-radius:8px;font-size:13px;">
+                                        <option value="1" selected>Stock Opname</option>
+                                        <option value="2">Clean Up Data</option>
+                                    </select>
+                                </div>
+                            @else
+                                <input type="hidden" id="jenis_opname" value="{{ ($mode ?? 1) == 2 ? (int) data_get($data ?? [], 'sto_type', 1) : 1 }}">
+                            @endif
                             <div class="col-lg-3 col-md-6 col-12">
                                 <label class="text-muted mb-2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">Nama Penanggung Jawab <span class="text-danger">*</span></label>
                                 <div class="row-staff">
@@ -249,8 +262,28 @@
                 </div>
             </div>
 
+      {{-- Fitur "Clean Up Data" (2026-09-04): kembaran CreateStockOpname.blade.php (Produk). --}}
+      <div id="cleanup-description" class="card border-0 shadow-sm rounded-3 mb-4 d-none">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-start gap-3">
+            <div style="width:36px;height:36px;border-radius:10px;background:#fff7ed;border:1px solid #fed7aa;color:#c2410c;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="fe fe-refresh-cw" style="font-size:16px;"></i>
+            </div>
+            <div>
+              <h6 class="mb-1 fw-bold text-dark" style="font-size:14px;">Clean Up Data</h6>
+              <p class="mb-0 text-muted" style="font-size:13px;line-height:1.6;">
+                Tidak perlu menghitung stok bahan mentah secara manual. Saat disetujui, sistem akan
+                menyusun ulang stok yang sudah ada di Gudang Utama ke satuan yang seharusnya tanpa
+                mengubah jumlah fisik barang sama sekali -- cuma representasinya di antar satuan
+                yang diperbaiki.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Table Card (Consistent with Master Gudang .card-table) -->
-      <div class="row">
+      <div class="row" id="opname-count-section">
         <div class="col-sm-12">
           <!-- Toolbar (Search + Action Buttons) -->
           <div class="stock-opname-toolbar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
@@ -266,7 +299,7 @@
               @php
                 $akses = collect(json_decode(Session::get('user')->role_access));
               @endphp
-              @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses))
+              @if (($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses)) || \App\Support\RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others'))
                 <button class="btn btn-outline-danger save-tolak" style="display: none; height: 40px; border-radius: 8px; font-weight: 600; padding: 0 18px;">
                   <i class="fe fe-x me-1"></i> Tolak
                 </button>
@@ -316,7 +349,7 @@
                     @php
                         $akses = collect(json_decode(Session::get('user')->role_access));
                     @endphp
-                    @if ($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses))
+                    @if (($akses->firstWhere('name', 'Stok Opname Bahan Mentah') && in_array('others', $akses->firstWhere('name', 'Stok Opname Bahan Mentah')->akses)) || \App\Support\RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others'))
                         <button class="btn btn-danger save-tolak" style="display: none">Tolak</button>
                         <button class="btn btn-success save-terima" style="display: none">Terima</button>
                     @endif
@@ -341,6 +374,9 @@
         var data = @json($data);
         var mode = @json($mode);
         var sessionUser = @json(Session::get('user'));
+        // Fitur "Clean Up Data" (2026-09-04): lihat catatan di CreateStockOpname.blade.php (Produk).
+        var canOthersNormal = @json(\App\Support\RoleAccess::can(Session::get('user'), 'Stok Opname Bahan Mentah', 'others'));
+        var canOthersCleanUp = @json(\App\Support\RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others'));
     </script>
     <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=12"></script>
 @endsection

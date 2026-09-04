@@ -59,6 +59,18 @@ class StockOpname extends Model
             });
         }
 
+        // Fitur "Clean Up Data" (2026-09-04): dokumen sto_type=2 punya izin sendiri
+        // ("Stok Opname - Bersihkan Data"|view) di ATAS izin dasar modul ini -- role yang boleh
+        // melihat Stock Opname biasa belum tentu boleh melihat dokumen Bersihkan Data. Difilter di
+        // sini (bukan cuma di controller) supaya baik list MAUPUN buka-by-id langsung sama-sama
+        // ketutup, sama seperti pola draft di atas.
+        if (Schema::hasColumn($this->getTable(), 'sto_type')
+            && ! RoleAccess::isSuperAdmin($user)
+            && ! RoleAccess::can($user, 'Stok Opname - Bersihkan Data', 'view')
+        ) {
+            $result->where('sto_type', '!=', 2);
+        }
+
         if ($data['sto_date']) {
             $result->whereDate('sto_date', $data['sto_date']);
         }
@@ -168,6 +180,10 @@ class StockOpname extends Model
         // supaya migrasinya murni ADD COLUMN untuk dokumen lama, jadi diam di sini berarti
         // dokumen baru salah dilabeli sebagai dokumen lama dan tampil kosong.
         $t->is_old_version = false;
+        // Fitur "Clean Up Data" (2026-09-04): 1 = opname biasa (default), 2 = bersihkan data.
+        // Ditulis SATU KALI di sini saat dokumen lahir -- lihat updateStockOpname(), jenis dokumen
+        // tidak pernah berubah setelah dibuat, sama seperti warehouse_id.
+        $t->sto_type = (int) ($data['sto_type'] ?? 1) === 2 ? 2 : 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 

@@ -202,6 +202,141 @@ class OpnameLifecycle
         }
     }
 
+    /**
+     * Sembuhkan LIVE ps_stock produk yang ikut di dokumen ini SEBELUM dokumen mulai dipercaya --
+     * keputusan PM 2026-08-31: stok yang stuck under-rolled dari sebelum GitHub #87 (mis. 12 DOS +
+     * 24 Piece padahal 1 DOS = 24 Piece, seharusnya 13 DOS + 0 Piece) tetap salah selamanya kalau
+     * tidak ada transaksi stok-masuk lain yang kebetulan menyentuhnya (lihat docblock
+     * AuditStuckUnitRollUpCommand). Membuat Stock Opname adalah persis momen staf akan MEMPERCAYAI
+     * angka live itu, jadi sembuhkan di sini juga -- primitif yang sama (UnitRollUp::
+     * collapseProduct()) yang dipakai command audit itu dan rollUpUnits() di atas.
+     *
+     * HANYA menyentuh satuan yang TIDAK dihitung di dokumen ini (sol_counted_qty === null).
+     * Satuan yang sedang diisi staf akan ditimpa langsung oleh hasil hitungnya sendiri saat ACC
+     * (lihat accStockOpnameV2()), jadi menyembuhkannya di sini cuma kerja ganda yang percuma --
+     * dan tidak menyentuhnya menjaga efek method ini persis sebatas satuan yang memang diminta.
+     *
+     * Dipanggil dari insertStockOpname() (dokumen baru langsung menunggu) dan submitStockOpname()
+     * (draft -> menunggu). TIDAK dipanggil selama masih draft (dijaga is_draft di bawah) --
+     * idempoten, memanggilnya lagi pada produk yang sudah sembuh tidak mengubah apa pun lagi.
+     */
+    public function healUntouchedSystemStock($sto): void
+    {
+        if (! $sto || $sto->is_draft || $sto->is_old_version) {
+            return;
+        }
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
+
+        foreach ($lines as $productVariantId => $group) {
+            if (! $productVariantId) {
+                continue;
+            }
+
+            $touchedUnitIds = $group->filter(fn ($l) => $l->sol_counted_qty !== null)
+                ->pluck('unit_id')->map(fn ($u) => (int) $u)->all();
+
+            $stocks = ProductStock::where('product_variant_id', $productVariantId)
+                ->where('status', 1)
+                ->get();
+
+            $qtyByUnit = $stocks->pluck('ps_stock', 'unit_id')->map(fn ($q) => (int) $q)->all();
+            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            $stocksByUnit = $stocks->keyBy('unit_id');
+
+            foreach ($collapsed as $credit) {
+                $unitId = (int) $credit['unit_id'];
+                if (in_array($unitId, $touchedUnitIds, true)) {
+                    continue;
+                }
+
+                $stock = $stocksByUnit->get($unitId);
+                $before = $stock ? (int) $stock->ps_stock : 0;
+                $after = (int) $credit['qty'];
+                if (! $stock || $before === $after) {
+                    continue;
+                }
+
+                $delta = $after - $before;
+                $stock->ps_stock = $after;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => $delta > 0 ? 1 : 2,
+                    'log_item_id' => $productVariantId,
+                    'log_notes' => 'Konversi unit dari Stock Opname (perbaikan stok tergulung) '.LogStock::actorSuffix(),
+                    'log_jumlah' => abs($delta),
+                    'unit_id' => $unitId,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * "Bersihkan Data" (2026-09-04): tidak ada hitungan manual sama sekali -- dokumen ini dibuat
+     * langsung menggulung ulang SEMUA produk yang punya baris ps_stock aktif di gudang dokumen ke
+     * tangga satuannya, pakai App\Support\UnitRollUp yang SAMA persis dengan rollUpUnits() di atas.
+     *
+     * Triknya: collapse() menolak menyentuh satuan yang qty-nya null ("belum dihitung", GH #78).
+     * Di sini TIDAK ADA satuan yang null -- setiap satuan yang punya baris stok aktif diisi dengan
+     * qty LIVE-nya sendiri (UnitRollUp::existingProductStockByUnit()), jadi buat collapse() semua
+     * satuan itu "sudah diisi" dan boleh digulung. Karena carry di tiap tingkat dibangun dari nilai
+     * live yang sudah ada di tingkat itu sendiri (bukan diarang), hasilnya adalah representasi
+     * kanonik yang secara fisik SAMA PERSIS dengan sebelumnya, cuma disusun ulang ke satuan yang
+     * benar (mis. 104 pcs yang seharusnya 8 DOS + 8 pcs -> tersimpan 8 DOS + 8 pcs).
+     *
+     * Dipanggil dari StockController::insertStockOpname() SEBAGAI GANTI rollUpUnits() saat
+     * $sto->sto_type == 2, gudang utama saja (caller sudah menegakkan ini, isRetailWarehouse() di
+     * sini murni jaga-jaga kedua).
+     */
+    public function rollUpFromLiveStock($sto): void
+    {
+        if (! $sto || $sto->is_old_version) {
+            return;
+        }
+
+        $warehouseId = $sto->warehouse_id ?: null;
+        if (self::isRetailWarehouse($warehouseId)) {
+            return;
+        }
+
+        $variantIds = ($warehouseId !== null
+                ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : ProductStock::query())
+            ->where('status', 1)
+            ->pluck('product_variant_id')
+            ->filter()
+            ->unique();
+
+        $variants = ProductVariant::whereIn('product_variant_id', $variantIds)->get()->keyBy('product_variant_id');
+
+        foreach ($variantIds as $productVariantId) {
+            $qtyByUnit = UnitRollUp::existingProductStockByUnit((int) $productVariantId, $warehouseId);
+            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            $variant = $variants->get($productVariantId);
+            foreach ($collapsed as $credit) {
+                StockOpnameLine::upsertLine([
+                    'sto_id' => $sto->sto_id,
+                    'product_id' => $variant->product_id ?? null,
+                    'product_variant_id' => $productVariantId,
+                    'unit_id' => $credit['unit_id'],
+                    'sol_counted_qty' => $credit['qty'],
+                ]);
+            }
+        }
+    }
+
     /** Cap keputusan di header -- nama pemutus dibekukan supaya tidak ikut hilang kalau staf dihapus. */
     public function stampDecision($sto, ?int $accBy): void
     {
@@ -231,5 +366,24 @@ class OpnameLifecycle
             ->find($warehouseId);
 
         return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse !== 1);
+    }
+
+    /**
+     * true = $warehouseId benar-benar ada DAN tipenya gudang utama (is_main_warehouse == 1).
+     * Beda dari isRetailWarehouse() (yang menganggap "tidak ada gudang" = boleh gulung seperti
+     * biasa): dipakai StockController untuk menegakkan "Clean Up Data" gudang utama SAJA, jadi
+     * gudang yang tidak diketahui/null harus ditolak, bukan diloloskan.
+     */
+    public static function isMainWarehouse(?int $warehouseId): bool
+    {
+        if (! $warehouseId) {
+            return false;
+        }
+
+        $warehouse = Warehouse::query()
+            ->with(['type' => fn ($q) => $q->select('id', 'is_main_warehouse')])
+            ->find($warehouseId);
+
+        return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse === 1);
     }
 }

@@ -99,22 +99,47 @@ class StockController extends Controller
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
-        $items = json_decode($req->item, true) ?: [];
+        $isCleanUp = (int) ($data['sto_type'] ?? 1) === 2;
 
-        return DB::transaction(function () use ($data, $items) {
+        // Fitur "Clean Up Data" (2026-09-04): izin TAMBAHAN di atas izin dasar "Stok Opname
+        // Produk" modul ini, dan gudang UTAMA saja -- lihat OpnameLifecycle::rollUpFromLiveStock().
+        if ($isCleanUp) {
+            if (! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'create')) {
+                return response()->json(['status' => -1, 'message' => 'Tidak diizinkan membuat dokumen Bersihkan Data']);
+            }
+            $warehouseId = (int) ProductStock::resolveWarehouseId($data['warehouse_id'] ?? null);
+            if (! OpnameLifecycle::isMainWarehouse($warehouseId)) {
+                return response()->json(['status' => -1, 'message' => 'Bersihkan Data hanya bisa dibuat di Gudang Utama']);
+            }
+            // Tidak ada hitungan manual sama sekali -- jangan tulis item apa pun yang mungkin
+            // terbawa di request, dan dokumen ini tidak pernah berupa draft.
+            $items = [];
+            $data['is_draft'] = 0;
+        } else {
+            $items = json_decode($req->item, true) ?: [];
+        }
+
+        return DB::transaction(function () use ($data, $items, $isCleanUp) {
             $id = (new StockOpname())->insertStockOpname($data);
-            StockOpnameLine::writeFromPayload($id, $items);
-
             $lifecycle = new OpnameLifecycle();
-            // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
-            // 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs) HANYA di titik dokumen benar-benar
-            // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
-            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
-            // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
-            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan. Dipanggil
-            // SEBELUM publish() supaya identitas satuan yang baru ikut tercipta dari gulungan
-            // (kalaupun ada) turut dibekukan pada publish yang sama.
-            $lifecycle->rollUpUnits(StockOpname::find($id));
+
+            if ($isCleanUp) {
+                // Tidak ada hasil hitung staf untuk digulung -- baris-barisnya justru DIBANGUN di
+                // sini, langsung dari stok live, lihat docblock method itu.
+                $lifecycle->rollUpFromLiveStock(StockOpname::find($id));
+            } else {
+                StockOpnameLine::writeFromPayload($id, $items);
+
+                // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
+                // 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs) HANYA di titik dokumen benar-benar
+                // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
+                // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
+                // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
+                // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan. Dipanggil
+                // SEBELUM publish() supaya identitas satuan yang baru ikut tercipta dari gulungan
+                // (kalaupun ada) turut dibekukan pada publish yang sama.
+                $lifecycle->rollUpUnits(StockOpname::find($id));
+            }
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
             // tanpa syarat baik untuk .btn-save (langsung publish) maupun .btn-save-draft (no-op,
@@ -132,6 +157,11 @@ class StockController extends Controller
 
         if (!$sto) {
             return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
+        }
+        // Fitur "Clean Up Data" (2026-09-04): tidak ada hitungan manual sama sekali di dokumen
+        // ini -- tidak ada apa pun untuk diedit lewat endpoint ini.
+        if ((int) ($sto->sto_type ?? 1) === 2) {
+            return ["status" => -1, "message" => "Dokumen Bersihkan Data tidak bisa diedit"];
         }
         // Draft: hanya pembuatnya (atau super admin) boleh mengedit -- lihat
         // canManageStockOpnameDraft(). Menunggu (bukan draft, belum diputuskan): siapa pun yang
@@ -239,6 +269,11 @@ class StockController extends Controller
         if ($sto && $sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
             return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
         }
+        if ($sto && (int) ($sto->sto_type ?? 1) === 2
+            && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'delete')
+        ) {
+            return ["status" => -1, "message" => "Tidak diizinkan menghapus dokumen Bersihkan Data"];
+        }
 
         return (new StockOpname())->deleteStockOpname($data);
     }
@@ -251,6 +286,9 @@ class StockController extends Controller
                 'data' => [],
                 'mode' => 1,
                 'warehouse_name' => $this->activeWarehouseLabel(),
+                // Fitur "Clean Up Data" (2026-09-04): opsi "Jenis Opname" cuma ditampilkan kalau
+                // gudang aktif memang gudang utama -- lihat OpnameLifecycle::isMainWarehouse().
+                'is_main_warehouse' => OpnameLifecycle::isMainWarehouse((int) (Session::get('active_warehouse_id') ?? 0)),
             ]);
         }
 
@@ -334,6 +372,7 @@ class StockController extends Controller
             // selalu undefined di frontend (draft tidak pernah terdeteksi sebagai draft).
             'is_draft'    => (bool) $sto->is_draft,
             'created_by'  => $sto->created_by,
+            'sto_type'    => (int) ($sto->sto_type ?? 1),
             'item'        => $items
         ];
 
@@ -551,10 +590,24 @@ class StockController extends Controller
     function accStockOpname(Request $req)
     {
         $data = $req->all();
-        $stod = json_decode($data['item'], true);
         $sto = StockOpname::find($data['sto_id']);
 
-        if (! is_array($stod) || count($stod) === 0) {
+        // Fitur "Clean Up Data" (2026-09-04): izin TAMBAHAN di atas "Stok Opname Produk|others" --
+        // dan dokumen ini tidak pernah membawa $data['item'] (accStockOpnameV2() mengabaikannya
+        // total, angkanya sudah dibangun di stock_opname_lines saat insert), jadi guard "item
+        // kosong" di bawah dilewati untuk tipe ini.
+        $isCleanUp = $sto && (int) ($sto->sto_type ?? 1) === 2;
+        if ($isCleanUp && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others')) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Tidak diizinkan menyetujui dokumen Bersihkan Data',
+            ]);
+        }
+
+        $stod = json_decode($data['item'] ?? '', true);
+
+        if (! $isCleanUp && (! is_array($stod) || count($stod) === 0)) {
             return response()->json([
                 'status' => -1,
                 'header' => 'Gagal ACC',
@@ -860,6 +913,11 @@ class StockController extends Controller
         if (!$sto || $sto->is_draft) {
             return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
         }
+        if ((int) ($sto->sto_type ?? 1) === 2
+            && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others')
+        ) {
+            return ["status" => -1, "message" => "Tidak diizinkan menolak dokumen Bersihkan Data"];
+        }
 
         $sto->status = 3; // Tolak
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
@@ -965,17 +1023,39 @@ class StockController extends Controller
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $items = json_decode($req->item, true) ?: [];
+        $isCleanUp = (int) ($data['sto_type'] ?? 1) === 2;
 
-        return DB::transaction(function () use ($data, $items) {
+        // Fitur "Clean Up Data" (2026-09-04): kembaran persis insertStockOpname() Produk -- lihat
+        // komentarnya untuk alasan lengkap.
+        if ($isCleanUp) {
+            if (! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'create')) {
+                return response()->json(['status' => -1, 'message' => 'Tidak diizinkan membuat dokumen Bersihkan Data']);
+            }
+            $warehouseId = (int) SuppliesStock::resolveWarehouseId($data['warehouse_id'] ?? null);
+            if (! BahanOpnameLifecycle::isMainWarehouse($warehouseId)) {
+                return response()->json(['status' => -1, 'message' => 'Bersihkan Data hanya bisa dibuat di Gudang Utama']);
+            }
+            $items = [];
+            $data['is_draft'] = 0;
+        } else {
+            $items = json_decode($req->item, true) ?: [];
+        }
+
+        return DB::transaction(function () use ($data, $items, $isCleanUp) {
             $id = (new StockOpnameBahan())->insertStockOpnameBahan($data);
-            StockOpnameBahanLine::writeFromPayload($id, $items);
-
             $lifecycle = new BahanOpnameLifecycle();
-            // GitHub #132 (2026-09-03): kembaran persis insertStockOpname() Produk -- lihat
-            // komentarnya untuk alasan lengkap kenapa ini satu-satunya titik gulung untuk dokumen
-            // yang lahir langsung non-draft.
-            $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+
+            if ($isCleanUp) {
+                $lifecycle->rollUpFromLiveStock(StockOpnameBahan::find($id));
+            } else {
+                StockOpnameBahanLine::writeFromPayload($id, $items);
+
+                // GitHub #132 (2026-09-03): kembaran persis insertStockOpname() Produk -- lihat
+                // komentarnya untuk alasan lengkap kenapa ini satu-satunya titik gulung untuk dokumen
+                // yang lahir langsung non-draft.
+                $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+            }
+
             $lifecycle->publish(StockOpnameBahan::find($id));
 
             return response()->json(['status' => 1, 'stob_id' => $id]);
@@ -989,6 +1069,9 @@ class StockController extends Controller
 
         if (!$stob) {
             return ["status" => -1, "message" => "Dokumen ini tidak bisa diubah"];
+        }
+        if ((int) ($stob->sto_type ?? 1) === 2) {
+            return ["status" => -1, "message" => "Dokumen Bersihkan Data tidak bisa diedit"];
         }
         // Kembaran updateStockOpname() Produk -- lihat komentarnya untuk alasan lengkap kenapa
         // menunggu (bukan draft) juga boleh diedit sekarang.
@@ -1074,6 +1157,11 @@ class StockController extends Controller
         if ($stob && $stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
             return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
         }
+        if ($stob && (int) ($stob->sto_type ?? 1) === 2
+            && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'delete')
+        ) {
+            return ["status" => -1, "message" => "Tidak diizinkan menghapus dokumen Bersihkan Data"];
+        }
 
         return (new StockOpnameBahan())->deleteStockOpnameBahan($data);
     }
@@ -1117,6 +1205,8 @@ class StockController extends Controller
             $param["data"] = [];
             $param["mode"] = 1;
             $param['warehouse_name'] = $this->activeWarehouseLabel();
+            // Fitur "Clean Up Data" (2026-09-04): kembaran DetailStockOpname() Produk.
+            $param['is_main_warehouse'] = BahanOpnameLifecycle::isMainWarehouse((int) (Session::get('active_warehouse_id') ?? 0));
         }
         return view('Backoffice.Inventory.CreateStockOpnameSupplies')->with($param);
     }
@@ -1148,8 +1238,20 @@ class StockController extends Controller
     function accStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $stod = json_decode($data['item'], true);
         $stob = StockOpnameBahan::find($data['stob_id']);
+
+        // Fitur "Clean Up Data" (2026-09-04): kembaran persis accStockOpname() Produk -- lihat
+        // komentarnya untuk alasan lengkap.
+        $isCleanUp = $stob && (int) ($stob->sto_type ?? 1) === 2;
+        if ($isCleanUp && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others')) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Tidak diizinkan menyetujui dokumen Bersihkan Data',
+            ]);
+        }
+
+        $stod = json_decode($data['item'] ?? '', true);
         $warehouseId = (int) (
             ($stob->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
@@ -1412,6 +1514,11 @@ class StockController extends Controller
         $stob = StockOpnameBahan::find($data["stob_id"]);
         if (!$stob || $stob->is_draft) {
             return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
+        if ((int) ($stob->sto_type ?? 1) === 2
+            && ! RoleAccess::can(Session::get('user'), 'Stok Opname - Bersihkan Data', 'others')
+        ) {
+            return ["status" => -1, "message" => "Tidak diizinkan menolak dokumen Bersihkan Data"];
         }
 
         $stob->status = 3; // Tolak

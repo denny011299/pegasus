@@ -53,6 +53,14 @@ class StockOpnameBahan extends Model
             });
         }
 
+        // Fitur "Clean Up Data" (2026-09-04, kembaran StockOpname::getStockOpname()).
+        if (Schema::hasColumn($this->getTable(), 'sto_type')
+            && ! RoleAccess::isSuperAdmin($user)
+            && ! RoleAccess::can($user, 'Stok Opname - Bersihkan Data', 'view')
+        ) {
+            $result->where('sto_type', '!=', 2);
+        }
+
         if ($data['stob_date']) $result->whereDate('stob_date', $data['stob_date']);
         if ($data['staff_id'])  $result->where('staff_id', $data['staff_id']);
         if ($data['stob_id'])   $result->where('stob_id', $data['stob_id']);
@@ -144,6 +152,9 @@ class StockOpnameBahan extends Model
         // selalu versi baru (stock_opname_bahan_lines). Ditulis EKSPLISIT, tidak boleh
         // mengandalkan default kolom -- default-nya sengaja true untuk dokumen lama.
         $t->is_old_version = false;
+        // Fitur "Clean Up Data" (2026-09-04, kembaran StockOpname::insertStockOpname()): 1 = opname
+        // biasa (default), 2 = bersihkan data. Tidak pernah berubah setelah dibuat.
+        $t->sto_type = (int) ($data['sto_type'] ?? 1) === 2 ? 2 : 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
 

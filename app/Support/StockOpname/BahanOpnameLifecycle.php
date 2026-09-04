@@ -134,6 +134,47 @@ class BahanOpnameLifecycle
         }
     }
 
+    /**
+     * "Bersihkan Data" (2026-09-04): kembaran persis OpnameLifecycle::rollUpFromLiveStock() untuk
+     * Supplies. Lihat kelas itu untuk alasan lengkap.
+     */
+    public function rollUpFromLiveStock($stob): void
+    {
+        if (! $stob || $stob->is_old_version) {
+            return;
+        }
+
+        $warehouseId = $stob->warehouse_id ?: null;
+        if (self::isRetailWarehouse($warehouseId)) {
+            return;
+        }
+
+        $suppliesIds = ($warehouseId !== null
+                ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                : SuppliesStock::query())
+            ->where('status', 1)
+            ->pluck('supplies_id')
+            ->filter()
+            ->unique();
+
+        foreach ($suppliesIds as $suppliesId) {
+            $qtyByUnit = UnitRollUp::existingSuppliesStockByUnit((int) $suppliesId, $warehouseId);
+            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit, $warehouseId);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            foreach ($collapsed as $credit) {
+                StockOpnameBahanLine::upsertLine([
+                    'stob_id' => $stob->stob_id,
+                    'supplies_id' => $suppliesId,
+                    'unit_id' => $credit['unit_id'],
+                    'sobl_counted_qty' => $credit['qty'],
+                ]);
+            }
+        }
+    }
+
     public function stampDecision($stob, ?int $accBy): void
     {
         if (! $stob || $stob->is_old_version) {
@@ -157,5 +198,19 @@ class BahanOpnameLifecycle
             ->find($warehouseId);
 
         return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse !== 1);
+    }
+
+    /** Kembaran persis OpnameLifecycle::isMainWarehouse(). */
+    public static function isMainWarehouse(?int $warehouseId): bool
+    {
+        if (! $warehouseId) {
+            return false;
+        }
+
+        $warehouse = Warehouse::query()
+            ->with(['type' => fn ($q) => $q->select('id', 'is_main_warehouse')])
+            ->find($warehouseId);
+
+        return (bool) ($warehouse && $warehouse->type && (int) $warehouse->type->is_main_warehouse === 1);
     }
 }
