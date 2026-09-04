@@ -251,6 +251,40 @@
       '><i class="fe fe-trash-2"></i></a>'
     );
   }
+
+  // GitHub #53 follow-up: baris 'open' di dashboard_change_logs sebelumnya HANYA ditutup
+  // secara pasif -- saat staf membuka menu lain (LogDashboardActivity::logOpen()). Kalau tab
+  // ditutup (atau browser ditutup) tanpa navigasi lagi, baris itu nyangkut "Sedang dibuka"
+  // selamanya. navigator.sendBeacon() dipilih karena request biasa (fetch/XHR) BOLEH dibatalkan
+  // browser saat unload, sedangkan sendBeacon dijamin terkirim di background walau tab sudah
+  // ditutup.
+  //
+  // 'pagehide' dipakai, bukan 'beforeunload'/'unload' -- keduanya legacy, mematikan bfcache
+  // (halaman tidak bisa di-cache untuk tombol back/forward), dan sebagian browser mobile tidak
+  // konsisten memanggilnya. 'visibilitychange' -> hidden ditambah sebagai fallback: di Safari
+  // iOS, menutup tab/app-switch kadang hanya memicu ini, bukan pagehide.
+  (function () {
+    var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+    var sent = false;
+    function closeDashboardSession() {
+      if (sent || !navigator.sendBeacon) return;
+      sent = true;
+      var data = new FormData();
+      data.append("_token", csrfToken);
+      // window.__dashboardActivityToken diisi oleh LogDashboardActivity::injectClientToken()
+      // -- mengidentifikasi baris 'open' HALAMAN INI secara spesifik, supaya beacon tidak
+      // salah tutup baris lain yang keburu dibuat navigasi berikutnya (race condition kalau
+      // cuma mengandalkan "baris open terakhir").
+      if (window.__dashboardActivityToken) {
+        data.append("token", window.__dashboardActivityToken);
+      }
+      navigator.sendBeacon("{{ url('closeDashboardSession') }}", data);
+    }
+    window.addEventListener("pagehide", closeDashboardSession);
+    document.addEventListener("visibilitychange", function () {
+      if (document.visibilityState === "hidden") closeDashboardSession();
+    });
+  })();
 </script>
 @yield('custom_js')
 </body>
