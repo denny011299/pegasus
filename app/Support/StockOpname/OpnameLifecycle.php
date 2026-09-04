@@ -328,20 +328,18 @@ class OpnameLifecycle
      * keduanya untuk konteks. Kalau keduanya beda di satuan manapun, kembalikan array peluang
      * (null kalau tidak ada apa-apa yang berubah).
      *
-     * >>> GANTI 2026-09-05 (bug report user, hari yang sama): produk yang SAMA SEKALI tidak
-     * disentuh staf (semua satuannya null) TIDAK PERNAH dianggap peluang gulung, walau stok
-     * sistemnya sendiri kebetulan tidak kanonik (mis. Piece > 1 ratio Dos dari data lama) --
-     * UnitRollUp::collapseProductFull() tidak tahu bedanya "produk ini tidak disentuh" dari
-     * "produk ini disentuh tapi satuan ini kosong", dia cuma melihat $qtyByUnit per satuan.
-     * Tanpa guard ini, .btn-save mengirim SELURUH katalog yang sedang tampil di tabel (bukan
-     * cuma yang diisi -- itu memang disengaja untuk dokumen non-draft, lihat komentar keepSparse
-     * di CreateStockOpname.js), jadi produk APA PUN di layar yang kebetulan punya stok tidak
-     * kanonik ikut nongol di popup meski staf tidak pernah mengetiknya -- dan daftarnya berubah-
-     * ubah tergantung produk mana yang kebetulan sedang ter-render (katalog penuh saat create
-     * langsung, vs cuma baris yang pernah disimpan saat draft dibuka lagi), bukan berdasarkan apa
-     * yang staf ketik. "Disentuh" di sini = SETIDAKNYA satu satuan produk ini terisi -- baru untuk
-     * produk itu, satuan lain yang kosong DI DALAMNYA tetap boleh diisi dari stok sistem (itulah
-     * fungsi collapseProductFull()'s $existingByUnitId, dipertahankan apa adanya).
+     * >>> KEPUTUSAN 2026-09-05 (dipertegas ulang hari yang sama, membatalkan fix sehari
+     * sebelumnya yang sempat mengecualikan produk tak tersentuh): produk yang SAMA SEKALI tidak
+     * disentuh staf TETAP dievaluasi -- ini SENGAJA, bukan celah. Niatnya: pada titik dokumen
+     * benar-benar terbit, seluruh dokumen diperlakukan seakan sudah final -- stok sistem ditumpuk
+     * oleh input staf KALAU ADA, lalu diproyeksikan/digulung untuk SETIAP produk di dokumen ini
+     * (bukan cuma yang staf ketik). Ini justru dipakai untuk menangkap data lama yang sudah tidak
+     * kanonik di database (mis. 104 pcs padahal 1 DOS = 12 pcs) walau staf tidak mengetik apa pun
+     * untuk produk itu. Konsekuensinya: kelengkapan hasil ini bergantung pada $qtyByUnit yang
+     * dikirim pemanggil MEWAKILI SELURUH KATALOG dokumen (bukan cuma baris yang diisi) -- lihat
+     * CreateStockOpname.js's .btn-save/.btn-ajukan (keduanya sekarang memakai
+     * collectStockOpnameItems(false), TIDAK sparse, untuk pratinjau gulung) supaya popup
+     * konsisten baik dokumen baru maupun draft yang dibuka ulang.
      *
      * $changes[] diurutkan BESAR -> KECIL (keputusan user 2026-09-05: DOS di kiri, pcs di kanan
      * pada popup) lewat UnitRollUp::multipliersFromBottom() -- bukan urutan alami hasil collapse()
@@ -355,10 +353,6 @@ class OpnameLifecycle
      */
     private function buildRollupOpportunity(int $productVariantId, array $qtyByUnit, ?int $warehouseId, $variants, $products, $unitNames): ?array
     {
-        if (array_filter($qtyByUnit, fn ($q) => $q !== null) === []) {
-            return null;
-        }
-
         $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
 
         $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))

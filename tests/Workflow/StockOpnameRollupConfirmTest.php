@@ -36,15 +36,30 @@ use Tests\TestCase;
  * dengan rollup_decision='full'. insertStockOpname() sendiri sekarang selalu single-shot lagi
  * (tidak ada lagi jalur tulis-dulu-tanya-nanti).
  *
+ * >>> GANTI KEPUTUSAN 2026-09-05 (hari yang sama, follow-up KEDUA) <<< sempat ada fix yang
+ * mengecualikan produk yang SAMA SEKALI tidak disentuh staf dari deteksi gulung -- user
+ * membatalkan itu: memang SENGAJA produk yang tidak disentuh tetap dievaluasi murni dari stok
+ * sistemnya (dipakai untuk menangkap data lama yang sudah tidak kanonik di database). Akar
+ * masalah SEBENARNYA dari bug report "3 baris jadi 1 sesudah draft" bukan di situ, tapi karena
+ * .btn-ajukan memakai keepSparse=true (cuma baris yang diisi) untuk pratinjau MAUPUN draft-save
+ * di baliknya, beda dari .btn-save yang selalu memakai katalog PENUH -- popup jadi tidak
+ * konsisten tergantung baris mana yang kebetulan disimpan ke draft. Fix: .btn-ajukan sekarang
+ * SELALU memakai keepSparse=false juga (baik untuk pratinjau maupun draft-save di baliknya) --
+ * "Ajukan" = menerbitkan dokumen, jadi harus memperlakukan seluruh katalog sebagai final, persis
+ * semangat .btn-save. .btn-save-draft (tombol "Simpan sebagai Draft" eksplisit) TETAP
+ * keepSparse=true -- itu memang "simpan progres saja", bukan menerbitkan.
+ *
  * Skenario di sini:
  *  1. /previewStockOpnameRollup mendeteksi peluang gulung (Dos diisi, Piece TIDAK, existing Piece
  *     > 1 ratio Dos) TANPA MENULIS APA PUN -- tidak ada StockOpname/StockOpnameLine yang tercipta.
- *  2. rollup_decision diabaikan/'skip' (mis. staf klik Batal, TIDAK melanjutkan ke
+ *  2. Produk yang SAMA SEKALI tidak disentuh staf TETAP jadi kandidat kalau stok sistemnya sendiri
+ *     tidak kanonik -- ini disengaja, bukan bug.
+ *  3. rollup_decision diabaikan/'skip' (mis. staf klik Batal, TIDAK melanjutkan ke
  *     insertStockOpname() sama sekali) -> tidak ada dokumen yang tercipta sama sekali.
- *  3. rollup_decision='full' (staf klik Lanjut) -> insertStockOpname() single-shot langsung
+ *  4. rollup_decision='full' (staf klik Lanjut) -> insertStockOpname() single-shot langsung
  *     menggulung penuh, Piece ikut dilipat ke Dos.
- *  4. submitStockOpname() (ajukan draft) menerima rollup_decision dengan cara yang sama.
- *  5. Gudang ECERAN: /previewStockOpnameRollup tidak pernah mendeteksi peluang di sana.
+ *  5. submitStockOpname() (ajukan draft) menerima rollup_decision dengan cara yang sama.
+ *  6. Gudang ECERAN: /previewStockOpnameRollup tidak pernah mendeteksi peluang di sana.
  */
 class StockOpnameRollupConfirmTest extends TestCase
 {
@@ -186,27 +201,20 @@ class StockOpnameRollupConfirmTest extends TestCase
     }
 
     /**
-     * Bug report user 2026-09-05: ajukan langsung (tanpa draft) -> popup menampilkan 3 baris
-     * termasuk baris yang benar-benar diisi. Simpan sebagai draft (cuma baris yang diisi ikut
-     * tersimpan, sesuai desain) -> buka lagi & ajukan ulang -> cuma 1 baris yang tersisa di
-     * popup. Akar masalah: .btn-save mengirim SELURUH katalog yang sedang tampil di tabel (bukan
-     * cuma yang diisi -- itu memang disengaja untuk dokumen non-draft), dan
-     * UnitRollUp::collapseFull() tidak punya guard "produk ini tidak disentuh sama sekali" --
-     * jadi produk APA PUN yang kebetulan sedang ter-render DAN kebetulan stok sistemnya sendiri
-     * tidak kanonik (mis. dari data lama) ikut ditawarkan sebagai "peluang gulung", padahal staf
-     * tidak pernah menyentuhnya. Daftarnya jadi berbeda-beda tergantung produk mana yang
-     * kebetulan ter-render (katalog penuh vs cuma baris draft yang tersimpan), bukan berdasarkan
-     * input staf -- persis simtom yang dilaporkan.
+     * Keputusan user 2026-09-05: produk yang SAMA SEKALI tidak disentuh staf TETAP jadi kandidat
+     * gulung kalau stok sistemnya sendiri sudah tidak kanonik -- dipakai untuk menangkap data
+     * lama yang salah di database (mis. 104 pcs padahal 1 DOS = 12 pcs), bukan cuma satuan yang
+     * staf baru ketik. Ini kebalikan dari fix yang sempat dipasang sehari sebelumnya (dan
+     * dibatalkan hari yang sama) -- lihat docblock class ini.
      */
-    public function test_an_entirely_untouched_product_is_never_a_rollup_candidate_even_with_noncanonical_stock(): void
+    public function test_an_entirely_untouched_product_is_still_a_rollup_candidate_when_its_own_stock_is_noncanonical(): void
     {
         $this->actingAsSuperAdminStaff();
 
         // Produk yang BENAR-BENAR diisi staf.
         $touched = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
-        // Produk LAIN yang kebetulan sedang ter-render di tabel (mis. katalog penuh saat create
-        // langsung) tapi TIDAK PERNAH disentuh staf sama sekali -- stok sistemnya sendiri sudah
-        // tidak kanonik (104 pcs > 1 ratio Dos), persis kondisi yang memicu bug.
+        // Produk LAIN yang sedang ter-render di tabel (katalog penuh) tapi TIDAK PERNAH disentuh
+        // staf sama sekali -- stok sistemnya sendiri sudah tidak kanonik (30 pcs > 1 ratio Dos).
         $untouched = $this->makeLadderedItem(dosStock: 5, pcsStock: 30, ratio: 12);
 
         $items = array_merge(
@@ -224,9 +232,17 @@ class StockOpnameRollupConfirmTest extends TestCase
         $response = $this->preview($items);
         $response->assertStatus(200);
 
-        $candidates = $response->json('rollup_candidates');
-        $this->assertCount(1, $candidates, 'produk yang tidak disentuh staf tidak boleh ikut jadi kandidat gulung');
-        $this->assertSame($touched->product_variant_id, $candidates[0]['product_variant_id']);
+        $candidates = collect($response->json('rollup_candidates'))->keyBy('product_variant_id');
+        $this->assertCount(2, $candidates, 'produk yang tidak disentuh staf tetap harus jadi kandidat kalau stoknya tidak kanonik');
+
+        $untouchedCandidate = $candidates[$untouched->product_variant_id];
+        // 5 Dos + 30 pcs (existing, tidak diisi) = 60 + 30 = 90 pcs = 7 DOS + 6 pcs kanonik --
+        // proyeksi MURNI dari stok sistem, staf tidak mengetik apa pun untuk produk ini.
+        $changes = collect($untouchedCandidate['changes'])->keyBy('unit_id');
+        $this->assertSame(5, $changes[$this->units['dos']->unit_id]['before']);
+        $this->assertSame(7, $changes[$this->units['dos']->unit_id]['after']);
+        $this->assertSame(30, $changes[$this->units['pcs']->unit_id]['before']);
+        $this->assertSame(6, $changes[$this->units['pcs']->unit_id]['after']);
     }
 
     public function test_batal_never_touches_the_database_at_all(): void
@@ -324,6 +340,70 @@ class StockOpnameRollupConfirmTest extends TestCase
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(101, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty);
         $this->assertSame(8, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+    }
+
+    /**
+     * Bug report user 2026-09-05: ajukan langsung (tanpa draft) -> popup menampilkan 3 baris.
+     * Simpan sebagai draft (cuma baris yang diisi ikut tersimpan, sesuai desain) -> buka lagi &
+     * ajukan ulang -> cuma 1 baris yang tersisa di popup, padahal seharusnya tetap 3.
+     *
+     * Akar masalah SEBENARNYA (bukan di deteksi produk tak tersentuh -- itu memang disengaja,
+     * lihat test di atas): CreateStockOpname.js's .btn-ajukan memakai keepSparse=true untuk
+     * pratinjau (JUGA untuk draft-save di baliknya), beda dari .btn-save yang selalu memakai
+     * katalog PENUH -- jadi payload yang dikirim ke /previewStockOpnameRollup beda tergantung
+     * jalur, bukan konsisten. Fix-nya di JS (.btn-ajukan sekarang SELALU keepSparse=false, sama
+     * seperti .btn-save) -- di level backend ini, buktikan bahwa SELAMA payload yang dikirim
+     * KONSISTEN (katalog penuh, apa pun yang sudah/belum tersimpan sebagai draft), hasil
+     * previewnya SAMA -- tidak bergantung pada apa yang kebetulan sudah dipersist ke DB.
+     */
+    public function test_preview_result_is_identical_before_and_after_a_sparse_draft_save_when_the_same_full_payload_is_sent(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $touched = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        $untouchedA = $this->makeLadderedItem(dosStock: 5, pcsStock: 30, ratio: 12);
+        $untouchedB = $this->makeLadderedItem(dosStock: 3, pcsStock: 50, ratio: 12);
+
+        $fullCatalogPayload = fn () => array_merge(
+            $this->dosOnlyItemPayload($touched, 93),
+            [[
+                'product_id' => $untouchedA->product_id,
+                'product_variant_id' => $untouchedA->product_variant_id,
+                'units' => [
+                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                ],
+            ], [
+                'product_id' => $untouchedB->product_id,
+                'product_variant_id' => $untouchedB->product_variant_id,
+                'units' => [
+                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                ],
+            ]],
+        );
+
+        // 1. Ajukan langsung, belum pernah disimpan sebagai draft -- payload katalog penuh.
+        $first = $this->preview($fullCatalogPayload());
+        $first->assertStatus(200);
+        $firstIds = collect($first->json('rollup_candidates'))->pluck('product_variant_id')->sort()->values();
+        $this->assertCount(3, $firstIds, 'ketiga produk (1 diisi + 2 tidak kanonik) harus jadi kandidat');
+
+        // 2. Simpan sebagai draft -- SPARSE, cuma baris yang diisi staf yang tersimpan (desain
+        // yang tetap dipertahankan, dikonfirmasi user).
+        $draft = $this->insertOpname($this->dosOnlyItemPayload($touched, 93), ['is_draft' => 1]);
+        $draft->assertStatus(200);
+        $stoId = (int) $draft->json('sto_id');
+        $draftProductIds = StockOpnameLine::getLines($stoId)->pluck('product_variant_id')->unique();
+        $this->assertCount(1, $draftProductIds, 'draft cuma menyimpan produk yang diisi, bukan seluruh katalog');
+
+        // 3. Buka lagi & ajukan ulang -- JS mengirim katalog PENUH lagi (bukan cuma yang
+        // tersimpan di draft), jadi hasilnya harus SAMA PERSIS dengan langkah 1.
+        $second = $this->preview($fullCatalogPayload());
+        $second->assertStatus(200);
+        $secondIds = collect($second->json('rollup_candidates'))->pluck('product_variant_id')->sort()->values();
+
+        $this->assertSame($firstIds->all(), $secondIds->all(), 'proyeksi rollup harus sama persis sebelum dan sesudah draft disimpan');
     }
 
     public function test_retail_warehouse_never_offers_rollup_confirmation(): void

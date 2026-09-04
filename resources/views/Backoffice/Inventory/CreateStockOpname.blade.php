@@ -407,5 +407,5 @@
     var mode = @json($mode);
     var sessionUser = @json(Session::get('user'));
   </script>
-  <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v=14"></script>
+  <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v=15"></script>
 @endsection

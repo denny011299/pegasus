@@ -410,12 +410,21 @@ $(document).on("click", ".btn-ajukan", function () {
         // Sama seperti .btn-save: cek peluang gulung DULU dari DOM langsung, SEBELUM draft-nya
         // sendiri disimpan (insertData(isDraft:true)) atau diajukan (submitStockOpname()) --
         // klik "Batal" pada popup berarti benar-benar batal, tidak ada draft yang ikut tersimpan.
+        //
+        // keepSparse=false (BUKAN true) di SINI -- beda dari .btn-save-draft di atas (keepSparse
+        // tetap true di sana, itu memang "simpan progres saja"). "Ajukan" berarti MENERBITKAN
+        // dokumen ini, jadi harus memperlakukan SELURUH katalog yang sedang tampil seakan sudah
+        // final -- sama persis semangatnya dengan .btn-save (create langsung) -- supaya popup
+        // gulung konsisten baik diajukan langsung maupun sesudah sempat disimpan sebagai draft
+        // lalu dibuka lagi (keputusan user 2026-09-05, bug report: draft yang cuma menyimpan
+        // baris yang diisi tadinya membuat pratinjau kedua kalinya kehilangan kandidat gulung
+        // yang sebelumnya muncul). Baris untuk produk yang tidak diisi tetap masuk dengan
+        // real_qty null -- konsisten dengan bagaimana .btn-save selalu mengirim seluruh katalog.
         previewStockOpnameRollup(
-            collectStockOpnameItems(true),
+            collectStockOpnameItems(false),
             function (decision) {
                 insertData({
                     isDraft: true,
-                    keepSparse: true,
                     btnSelector: ".btn-ajukan",
                     doneText: "Ajukan",
                     onSuccess: function () {
