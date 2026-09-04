@@ -328,6 +328,21 @@ class OpnameLifecycle
      * keduanya untuk konteks. Kalau keduanya beda di satuan manapun, kembalikan array peluang
      * (null kalau tidak ada apa-apa yang berubah).
      *
+     * >>> GANTI 2026-09-05 (bug report user, hari yang sama): produk yang SAMA SEKALI tidak
+     * disentuh staf (semua satuannya null) TIDAK PERNAH dianggap peluang gulung, walau stok
+     * sistemnya sendiri kebetulan tidak kanonik (mis. Piece > 1 ratio Dos dari data lama) --
+     * UnitRollUp::collapseProductFull() tidak tahu bedanya "produk ini tidak disentuh" dari
+     * "produk ini disentuh tapi satuan ini kosong", dia cuma melihat $qtyByUnit per satuan.
+     * Tanpa guard ini, .btn-save mengirim SELURUH katalog yang sedang tampil di tabel (bukan
+     * cuma yang diisi -- itu memang disengaja untuk dokumen non-draft, lihat komentar keepSparse
+     * di CreateStockOpname.js), jadi produk APA PUN di layar yang kebetulan punya stok tidak
+     * kanonik ikut nongol di popup meski staf tidak pernah mengetiknya -- dan daftarnya berubah-
+     * ubah tergantung produk mana yang kebetulan sedang ter-render (katalog penuh saat create
+     * langsung, vs cuma baris yang pernah disimpan saat draft dibuka lagi), bukan berdasarkan apa
+     * yang staf ketik. "Disentuh" di sini = SETIDAKNYA satu satuan produk ini terisi -- baru untuk
+     * produk itu, satuan lain yang kosong DI DALAMNYA tetap boleh diisi dari stok sistem (itulah
+     * fungsi collapseProductFull()'s $existingByUnitId, dipertahankan apa adanya).
+     *
      * $changes[] diurutkan BESAR -> KECIL (keputusan user 2026-09-05: DOS di kiri, pcs di kanan
      * pada popup) lewat UnitRollUp::multipliersFromBottom() -- bukan urutan alami hasil collapse()
      * yang kebalikannya (kecil ke besar, dari cara carry naik dibangun).
@@ -340,6 +355,10 @@ class OpnameLifecycle
      */
     private function buildRollupOpportunity(int $productVariantId, array $qtyByUnit, ?int $warehouseId, $variants, $products, $unitNames): ?array
     {
+        if (array_filter($qtyByUnit, fn ($q) => $q !== null) === []) {
+            return null;
+        }
+
         $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
 
         $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))

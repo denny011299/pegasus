@@ -230,7 +230,19 @@ class UnitRollUp
      */
     public static function collapseFull(array $chain, array $qtyByUnitId, array $allowedUnitIds, array $existingByUnitId = []): array
     {
-        if ($chain === []) {
+        // Bug ditemukan user 2026-09-05 (hari yang sama fitur ini dipasang): tanpa guard ini,
+        // produk yang SAMA SEKALI tidak disentuh staf ($qtyByUnitId semua null) tetap digulung
+        // dari stok LIVE murni ($seed() jatuh ke $existingByUnitId di semua tingkat) -- bukan
+        // "melipat kelebihan yang staf isi sendiri" seperti niatnya collapseFull(), tapi
+        // "mengarang ulang representasi stok produk yang tidak sedang di-opname sama sekali".
+        // Ini nyata berbahaya di jalur TULIS (OpnameLifecycle::rollUpUnitsFull(), dipanggil
+        // setelah staf klik "Lanjut"): dokumen non-draft (.btn-save) selalu mengirim SELURUH
+        // katalog yang sedang tampil (bukan cuma yang diisi -- itu memang disengaja, lihat
+        // keepSparse di CreateStockOpname.js), jadi baris NULL ("tidak dihitung") milik produk
+        // yang tidak disentuh bisa diam-diam tertimpa angka karangan. Sama seperti collapse()'s
+        // guard $entered===[] di atas, cuma versi ini untuk gulung PENUH.
+        $entered = array_filter($qtyByUnitId, fn ($q) => $q !== null);
+        if ($entered === [] || $chain === []) {
             return [];
         }
 

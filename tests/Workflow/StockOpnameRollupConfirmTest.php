@@ -185,6 +185,50 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame($lineCountBefore, StockOpnameLine::count(), 'preview tidak boleh membuat baris apa pun');
     }
 
+    /**
+     * Bug report user 2026-09-05: ajukan langsung (tanpa draft) -> popup menampilkan 3 baris
+     * termasuk baris yang benar-benar diisi. Simpan sebagai draft (cuma baris yang diisi ikut
+     * tersimpan, sesuai desain) -> buka lagi & ajukan ulang -> cuma 1 baris yang tersisa di
+     * popup. Akar masalah: .btn-save mengirim SELURUH katalog yang sedang tampil di tabel (bukan
+     * cuma yang diisi -- itu memang disengaja untuk dokumen non-draft), dan
+     * UnitRollUp::collapseFull() tidak punya guard "produk ini tidak disentuh sama sekali" --
+     * jadi produk APA PUN yang kebetulan sedang ter-render DAN kebetulan stok sistemnya sendiri
+     * tidak kanonik (mis. dari data lama) ikut ditawarkan sebagai "peluang gulung", padahal staf
+     * tidak pernah menyentuhnya. Daftarnya jadi berbeda-beda tergantung produk mana yang
+     * kebetulan ter-render (katalog penuh vs cuma baris draft yang tersimpan), bukan berdasarkan
+     * input staf -- persis simtom yang dilaporkan.
+     */
+    public function test_an_entirely_untouched_product_is_never_a_rollup_candidate_even_with_noncanonical_stock(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        // Produk yang BENAR-BENAR diisi staf.
+        $touched = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        // Produk LAIN yang kebetulan sedang ter-render di tabel (mis. katalog penuh saat create
+        // langsung) tapi TIDAK PERNAH disentuh staf sama sekali -- stok sistemnya sendiri sudah
+        // tidak kanonik (104 pcs > 1 ratio Dos), persis kondisi yang memicu bug.
+        $untouched = $this->makeLadderedItem(dosStock: 5, pcsStock: 30, ratio: 12);
+
+        $items = array_merge(
+            $this->dosOnlyItemPayload($touched, 93),
+            [[
+                'product_id' => $untouched->product_id,
+                'product_variant_id' => $untouched->product_variant_id,
+                'units' => [
+                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                ],
+            ]],
+        );
+
+        $response = $this->preview($items);
+        $response->assertStatus(200);
+
+        $candidates = $response->json('rollup_candidates');
+        $this->assertCount(1, $candidates, 'produk yang tidak disentuh staf tidak boleh ikut jadi kandidat gulung');
+        $this->assertSame($touched->product_variant_id, $candidates[0]['product_variant_id']);
+    }
+
     public function test_batal_never_touches_the_database_at_all(): void
     {
         $this->actingAsSuperAdminStaff();
