@@ -353,31 +353,15 @@ class OpnameLifecycle
      */
     private function buildRollupOpportunity(int $productVariantId, array $qtyByUnit, ?int $warehouseId, $variants, $products, $unitNames): ?array
     {
-        $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
-
-        $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))
-            ->pluck('qty', 'unit_id')->all();
-        $fullByUnit = collect(UnitRollUp::collapseProductFull($productVariantId, $qtyByUnit, $warehouseId))
-            ->pluck('qty', 'unit_id')->all();
-
-        $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
-        $changes = [];
-        foreach ($unitIds as $unitId) {
-            $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
-            $after = $fullByUnit[$unitId] ?? $before;
-            if ((int) $before !== (int) $after) {
-                $changes[] = [
-                    'unit_id' => (int) $unitId,
-                    'unit_short_name' => $unitNames->get($unitId) ?? ('unit#'.$unitId),
-                    'before' => (int) $before,
-                    'after' => (int) $after,
-                ];
-            }
-        }
-
+        $changes = self::computeFullProjectionChanges($productVariantId, $qtyByUnit, $warehouseId);
         if ($changes === []) {
             return null;
         }
+
+        foreach ($changes as &$change) {
+            $change['unit_short_name'] = $unitNames->get($change['unit_id']) ?? ('unit#'.$change['unit_id']);
+        }
+        unset($change);
 
         $multipliers = UnitRollUp::multipliersFromBottom(UnitRollUp::productChain($productVariantId));
         usort($changes, fn ($a, $b) => ($multipliers[$b['unit_id']] ?? 0) <=> ($multipliers[$a['unit_id']] ?? 0));
@@ -394,6 +378,45 @@ class OpnameLifecycle
     }
 
     /**
+     * Inti perbandingan "apakah produk ini punya perubahan NYATA antara gulung parsial (aman) dan
+     * gulung penuh" -- diekstrak dari buildRollupOpportunity() (2026-09-05) supaya rollUpUnitsFull()
+     * bisa memakai perbandingan yang SAMA PERSIS sebagai gerbang tulis, bukan cuma "apakah
+     * collapseProductFull() mengembalikan sesuatu" (lihat docblock rollUpUnitsFull() untuk bug yang
+     * ini tutup: collapseProductFull() SELALU mengembalikan kredit -- termasuk {qty: 0} untuk
+     * produk yang stoknya sendiri sudah 0 di semua satuan dan tidak ada yang perlu digulung sama
+     * sekali -- jadi "collapsed !== []" saja bukan sinyal yang aman untuk menulis).
+     *
+     * @param  array<int, int|null>  $qtyByUnit
+     * @return array<int, array{unit_id: int, before: int, after: int}>  kosong = tidak ada
+     *         perubahan sama sekali untuk produk ini, aman dilewati apa adanya
+     */
+    private static function computeFullProjectionChanges(int $productVariantId, array $qtyByUnit, ?int $warehouseId): array
+    {
+        $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
+
+        $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))
+            ->pluck('qty', 'unit_id')->all();
+        $fullByUnit = collect(UnitRollUp::collapseProductFull($productVariantId, $qtyByUnit, $warehouseId))
+            ->pluck('qty', 'unit_id')->all();
+
+        $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
+        $changes = [];
+        foreach ($unitIds as $unitId) {
+            $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
+            $after = $fullByUnit[$unitId] ?? $before;
+            if ((int) $before !== (int) $after) {
+                $changes[] = [
+                    'unit_id' => (int) $unitId,
+                    'before' => (int) $before,
+                    'after' => (int) $after,
+                ];
+            }
+        }
+
+        return $changes;
+    }
+
+    /**
      * Gulung PENUH: sama seperti rollUpUnits(), tapi lewat UnitRollUp::collapseProductFull() --
      * satuan yang TIDAK disentuh staf ikut dilipat ke satuan yang disentuh, bukan dibiarkan NULL.
      *
@@ -402,6 +425,19 @@ class OpnameLifecycle
      * submitStockOpname() untuk gerbangnya. TIDAK PERNAH otomatis, TIDAK PERNAH dari draft.
      * Jangan panggil ini dari update/simpan-antara mana pun -- alasannya sama persis dengan
      * rollUpUnits() (GitHub #132).
+     *
+     * >>> BUG DITEMUKAN USER 2026-09-05 (hari yang sama .btn-ajukan diganti ke katalog penuh):
+     * versi lama menulis untuk SETIAP produk yang "collapseProductFull() mengembalikan sesuatu",
+     * tapi collapseProductFull() SELALU mengembalikan sesuatu begitu chain-nya tidak kosong --
+     * termasuk kredit {qty: 0} untuk produk yang stoknya sendiri sudah 0 di semua satuan dan
+     * TIDAK ADA yang perlu digulung sama sekali. Efeknya: PDF dipenuhi baris "0 DOS, 0 pcs"
+     * ter-highlight HIJAU (seakan "dihitung dan cocok") padahal staf tidak pernah menghitungnya --
+     * baris yang seharusnya tetap NULL ("tidak dihitung", highlight kosong) malah tertimpa
+     * sol_counted_qty=0. Fix: gerbang tulisnya sekarang computeFullProjectionChanges() -- PERSIS
+     * perbandingan yang sama dipakai buildRollupOpportunity() untuk menentukan apa yang tampil di
+     * popup -- jadi "Lanjut" menulis TEPAT apa yang ditampilkan popup, tidak lebih tidak kurang.
+     * Produk yang tidak punya perubahan nyata (before === after untuk semua satuan) dilewati apa
+     * adanya, baris NULL-nya tetap NULL.
      */
     public function rollUpUnitsFull($sto): void
     {
@@ -422,20 +458,20 @@ class OpnameLifecycle
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
-            $collapsed = UnitRollUp::collapseProductFull((int) $productVariantId, $qtyByUnit, $warehouseId);
-            if ($collapsed === []) {
+            $changes = self::computeFullProjectionChanges((int) $productVariantId, $qtyByUnit, $warehouseId);
+            if ($changes === []) {
                 continue;
             }
 
             $first = $group->first();
 
-            foreach ($collapsed as $credit) {
+            foreach ($changes as $change) {
                 StockOpnameLine::upsertLine([
                     'sto_id' => $sto->sto_id,
                     'product_id' => $first->product_id,
                     'product_variant_id' => $productVariantId,
-                    'unit_id' => $credit['unit_id'],
-                    'sol_counted_qty' => $credit['qty'],
+                    'unit_id' => $change['unit_id'],
+                    'sol_counted_qty' => $change['after'],
                     'sol_notes' => $first->sol_notes,
                 ]);
             }

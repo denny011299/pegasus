@@ -319,6 +319,64 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame(8, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
     }
 
+    /**
+     * Bug report user 2026-09-05: PDF penuh baris "0 DOS, 0 pcs" ter-highlight HIJAU (seakan
+     * "dihitung dan cocok") untuk produk yang staf tidak pernah sentuh sama sekali, muncul
+     * setelah dokumen diajukan (rollup_decision=full). Akar masalah: rollUpUnitsFull() (versi
+     * lama) menulis untuk SETIAP produk selama collapseProductFull() mengembalikan ARRAY APA PUN
+     * -- tapi collapseProductFull() SELALU mengembalikan sesuatu begitu chain-nya ada, termasuk
+     * kredit {qty: 0} untuk produk yang stoknya sendiri sudah 0 di semua satuan (tidak ada yang
+     * perlu digulung). Baris yang seharusnya tetap NULL ("tidak dihitung") tertimpa
+     * sol_counted_qty=0 -- highlight HIJAU muncul karena sol_counted_qty !== null dianggap
+     * "pernah dihitung", walau nilainya cuma kebetulan cocok 0=0 dengan sistem.
+     */
+    public function test_lanjut_never_overwrites_an_untouched_already_canonical_product_with_zero(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $touched = $this->makeLadderedItem(dosStock: 90, pcsStock: 104, ratio: 12);
+        // Produk lain, sudah 0/0 di semua satuan, TIDAK PERNAH disentuh staf -- ikut terkirim
+        // karena .btn-ajukan sekarang mengirim katalog penuh (keputusan user 2026-09-05).
+        $untouchedCanonical = $this->makeLadderedItem(dosStock: 0, pcsStock: 0, ratio: 12);
+
+        $items = array_merge(
+            $this->dosOnlyItemPayload($touched, 93),
+            [[
+                'product_id' => $untouchedCanonical->product_id,
+                'product_variant_id' => $untouchedCanonical->product_variant_id,
+                'units' => [
+                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                ],
+            ]],
+        );
+
+        // Sanity: memang tidak jadi kandidat di popup sama sekali (0/0 sudah kanonik).
+        $preview = $this->preview($items);
+        $candidateIds = collect($preview->json('rollup_candidates'))->pluck('product_variant_id');
+        $this->assertNotContains($untouchedCanonical->product_variant_id, $candidateIds);
+
+        $response = $this->insertOpname($items, ['rollup_decision' => 'full']);
+        $response->assertStatus(200);
+        $stoId = (int) $response->json('sto_id');
+
+        $untouchedLines = StockOpnameLine::where('sto_id', $stoId)
+            ->where('product_variant_id', $untouchedCanonical->product_variant_id)
+            ->get();
+        foreach ($untouchedLines as $line) {
+            $this->assertNull($line->sol_counted_qty, 'produk yang tidak disentuh & sudah kanonik harus TETAP null, bukan 0');
+        }
+
+        // PDF: baris ini TIDAK BOLEH ikut ter-highlight hijau -- OpnameLineReader's viewRow()
+        // hanya menghijaukan baris yang punya minimal satu satuan counted !== null.
+        $sto = StockOpname::find($stoId);
+        $row = collect((new \App\Support\StockOpname\OpnameLineReader())->read($sto))
+            ->firstWhere('product_variant_id', $untouchedCanonical->product_variant_id);
+        $this->assertNotNull($row);
+        $this->assertFalse($row['counted'], 'baris ini tidak boleh dianggap "pernah dihitung"');
+        $this->assertNull($row['highlight'], 'baris ini tidak boleh ter-highlight sama sekali');
+    }
+
     public function test_submit_stock_opname_still_accepts_an_explicit_rollup_decision(): void
     {
         $this->actingAsSuperAdminStaff();
