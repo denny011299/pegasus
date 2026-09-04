@@ -40,6 +40,19 @@ use App\Support\UnitRollUp;
 class OpnameLifecycle
 {
     /**
+     * Saklar utama popup konfirmasi gulung (keputusan user 2026-09-06): false = popup TIDAK
+     * PERNAH tampil, apa pun kondisinya -- detectRollupOpportunities()/
+     * detectRollupOpportunitiesFromPayload() keluar duluan sebelum logika deteksi apa pun jalan,
+     * jadi tidak ada satu pun cara lain (rollup_decision, gudang, isi form) untuk memaksanya
+     * tetap muncul selama flag ini false. true = ikuti kondisi deteksi yang sudah dibangun
+     * (lihat buildRollupOpportunity()/computeFullProjectionChanges()) -- perilaku hari ini.
+     *
+     * Ubah nilai ini secara langsung di kode (bukan .env/config) -- sengaja "constant var" biasa
+     * per permintaan user, bukan config yang bisa di-override runtime.
+     */
+    public const ROLLUP_PROJECTION_ENABLED = true;
+
+    /**
      * Bekukan identitas dokumen kalau (dan hanya kalau) dokumen sudah keluar dari draft.
      * Idempoten: baris yang snapshot-nya sudah ada TIDAK PERNAH ditulis ulang, jadi mengedit
      * dokumen yang sudah diajukan tidak diam-diam menyegarkan nama yang sudah beku.
@@ -220,6 +233,10 @@ class OpnameLifecycle
      */
     public function detectRollupOpportunities($sto): array
     {
+        if (! self::ROLLUP_PROJECTION_ENABLED) {
+            return [];
+        }
+
         if (! $sto || $sto->is_old_version) {
             return [];
         }
@@ -277,6 +294,10 @@ class OpnameLifecycle
      */
     public function detectRollupOpportunitiesFromPayload(array $items, ?int $warehouseId): array
     {
+        if (! self::ROLLUP_PROJECTION_ENABLED) {
+            return [];
+        }
+
         if (self::isRetailWarehouse($warehouseId)) {
             return [];
         }

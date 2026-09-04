@@ -532,4 +532,23 @@ class StockOpnameRollupConfirmTest extends TestCase
         $response->assertStatus(200);
         $this->assertSame([], $response->json('rollup_candidates'), 'gudang eceran tidak pernah punya peluang gulung');
     }
+
+    /**
+     * Saklar utama popup (keputusan user 2026-09-06): OpnameLifecycle::ROLLUP_PROJECTION_ENABLED
+     * const biasa (bukan config/.env), jadi tidak bisa di-toggle aman di dalam test PHPUnit tanpa
+     * menulis ulang file sumbernya -- perilaku "false = popup tidak pernah tampil apa pun
+     * kondisinya" sudah diverifikasi manual sebelum commit ini (di percakapan, bukan lewat test
+     * otomatis): dengan const-nya sementara diset false, detectRollupOpportunitiesFromPayload()
+     * untuk skenario Piece=1000 (yang jelas-jelas punya peluang gulung, lihat
+     * test_filling_only_the_smallest_unit_now_also_requires_confirmation) membalas [] -- tidak
+     * ada satu kandidat pun. Test ini cuma memastikan flag-nya tidak sengaja ke-nonaktifkan lagi
+     * di kemudian hari (default harus tetap true).
+     */
+    public function test_rollup_projection_flag_defaults_to_enabled(): void
+    {
+        $this->assertTrue(
+            \App\Support\StockOpname\OpnameLifecycle::ROLLUP_PROJECTION_ENABLED,
+            'ROLLUP_PROJECTION_ENABLED harus true secara default -- kalau memang mau dimatikan, ubah nilainya langsung di kode dan verifikasi manual seperti dijelaskan di docblock test ini',
+        );
+    }
 }
