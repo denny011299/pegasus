@@ -6,6 +6,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\CustomerProductReturnController;
 use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\CustomerSupplyReturnController;
+use App\Http\Controllers\DashboardActivityController;
 use App\Http\Controllers\DeployController;
 use App\Http\Controllers\DeploymentCheckController;
 use App\Http\Controllers\ExternalApiController;
@@ -62,6 +63,11 @@ Route::middleware(checkLogin::class)->group(function () {
     // staff account). Only devs who know the URL (from reading this file) reach them.
     Route::get('/system/changelog', [ChangelogController::class, 'index'])->name('system.changelog');
     Route::get('/system/deployment-check', [DeploymentCheckController::class, 'index'])->name('system.deployment-check');
+
+    // Ditembak oleh navigator.sendBeacon() saat tab/halaman ditutup -- lihat
+    // DashboardActivityController::closeSession(). Sengaja tidak pakai check.access,
+    // sama seperti rute internal lain di grup ini -- cukup checkLogin.
+    Route::post('/closeDashboardSession', [DashboardActivityController::class, 'closeSession'])->name('closeDashboardSession');
 
     Route::get('/', function () {
         return view('Backoffice.Dashboard.Dashboard-Admin');
