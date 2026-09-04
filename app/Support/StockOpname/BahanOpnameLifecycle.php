@@ -88,23 +88,17 @@ class BahanOpnameLifecycle
     }
 
     /**
-     * Kembaran persis OpnameLifecycle::rollUpUnits() (Produk), untuk Supplies. Lihat kelas itu
-     * untuk alasan lengkap -- termasuk GANTI KEPUTUSAN 2026-09-03 (GitHub #132): tidak lagi
-     * dipanggil dari update, hanya sekali saat dokumen benar-benar terbit (insert langsung
-     * non-draft, atau submitStockOpnameBahan() saat draft diajukan). Guard is_draft di bawah.
+     * Kembaran OpnameLifecycle::rollUpUnits() — hangus + roll tiap simpan, tanpa lipat stok live.
      */
     public function rollUpUnits($stob): void
     {
-        if (! $stob || $stob->is_old_version || $stob->is_draft) {
+        if (! $stob || $stob->is_old_version) {
             return;
         }
 
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->groupBy('supplies_id');
-        // Gudang DOKUMEN -- lihat OpnameLifecycle::rollUpUnits().
         $warehouseId = $stob->warehouse_id ?: null;
 
-        // Keputusan user 2026-09-02: kembaran persis OpnameLifecycle::rollUpUnits() -- gudang
-        // eceran tidak digulung sama sekali.
         if (self::isRetailWarehouse($warehouseId)) {
             return;
         }
@@ -115,19 +109,33 @@ class BahanOpnameLifecycle
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sobl_counted_qty])->all();
-            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit, $warehouseId);
-            if ($collapsed === []) {
+            $touched = collect($qtyByUnit)->contains(fn ($q) => $q !== null);
+            if (! $touched) {
                 continue;
             }
 
-            $first = $group->first();
-
+            $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit, $warehouseId, false);
+            $resultByUnit = [];
             foreach ($collapsed as $credit) {
+                $resultByUnit[(int) $credit['unit_id']] = (int) $credit['qty'];
+            }
+
+            $first = $group->first();
+            foreach ($group as $line) {
+                $uid = (int) $line->unit_id;
+                if (array_key_exists($uid, $resultByUnit)) {
+                    $qty = $resultByUnit[$uid];
+                } elseif ($qtyByUnit[$uid] !== null) {
+                    $qty = (int) $qtyByUnit[$uid];
+                } else {
+                    $qty = 0;
+                }
+
                 StockOpnameBahanLine::upsertLine([
                     'stob_id' => $stob->stob_id,
                     'supplies_id' => $suppliesId,
-                    'unit_id' => $credit['unit_id'],
-                    'sobl_counted_qty' => $credit['qty'],
+                    'unit_id' => $uid,
+                    'sobl_counted_qty' => $qty,
                     'sobl_notes' => $first->sobl_notes,
                 ]);
             }

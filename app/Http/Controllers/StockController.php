@@ -106,14 +106,7 @@ class StockController extends Controller
             StockOpnameLine::writeFromPayload($id, $items);
 
             $lifecycle = new OpnameLifecycle();
-            // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
-            // 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs) HANYA di titik dokumen benar-benar
-            // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
-            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
-            // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
-            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan. Dipanggil
-            // SEBELUM publish() supaya identitas satuan yang baru ikut tercipta dari gulungan
-            // (kalaupun ada) turut dibekukan pada publish yang sama.
+            // Policy 2026-09-05: roll-up + hangus di setiap simpan (termasuk draft).
             $lifecycle->rollUpUnits(StockOpname::find($id));
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
@@ -182,11 +175,8 @@ class StockController extends Controller
             // menggandakan baris seperti alur lama.
             StockOpnameLine::writeFromPayload($id, $items);
 
-            // GitHub #132 (2026-09-03): rollUpUnits() SENGAJA TIDAK dipanggil di sini lagi --
-            // dokumen yang masih bisa diedit (draft ATAUPUN koreksi sebelum ACC/tolak) harus
-            // menyimpan angka mentah persis seperti yang diketik staf. Gulung cuma terjadi SATU
-            // KALI, pas dokumen terbit (insertStockOpname() saat langsung non-draft, atau
-            // submitStockOpname() saat draft diajukan) -- lihat OpnameLifecycle::rollUpUnits().
+            // Policy 2026-09-05: roll-up + hangus juga di update (draft / koreksi menunggu).
+            (new OpnameLifecycle())->rollUpUnits($sto->refresh());
             (new OpnameLifecycle())->publish($sto->refresh());
         });
 
@@ -972,9 +962,7 @@ class StockController extends Controller
             StockOpnameBahanLine::writeFromPayload($id, $items);
 
             $lifecycle = new BahanOpnameLifecycle();
-            // GitHub #132 (2026-09-03): kembaran persis insertStockOpname() Produk -- lihat
-            // komentarnya untuk alasan lengkap kenapa ini satu-satunya titik gulung untuk dokumen
-            // yang lahir langsung non-draft.
+            // Policy 2026-09-05: roll-up + hangus di setiap simpan (termasuk draft).
             $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
             $lifecycle->publish(StockOpnameBahan::find($id));
 
@@ -1028,8 +1016,8 @@ class StockController extends Controller
 
             StockOpnameBahanLine::writeFromPayload($id, $items);
 
-            // GitHub #132 (2026-09-03): kembaran persis updateStockOpname() Produk -- lihat
-            // komentarnya. rollUpUnits() tidak lagi dipanggil dari update.
+            // Policy 2026-09-05: roll-up + hangus juga di update (draft / koreksi menunggu).
+            (new BahanOpnameLifecycle())->rollUpUnits($stob->refresh());
             (new BahanOpnameLifecycle())->publish($stob->refresh());
         });
 

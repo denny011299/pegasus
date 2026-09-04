@@ -736,12 +736,8 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertStringContainsString('2 '.$this->units['dos']->unit_short_name, $row);
     }
 
-    /**
-     * GANTI keputusan (GitHub #132, 2026-09-03): draft lewat /insertStockOpname TIDAK BOLEH
-     * tergulung -- angka mentah dibiarkan apa adanya sampai benar-benar diajukan/terbit. Lihat
-     * OpnameLifecycle::rollUpUnits() untuk alasan lengkap (kasus nyata SP0110).
-     */
-    public function test_insert_endpoint_leaves_a_draft_document_unrolled(): void
+    /** Policy 2026-09-05: draft lewat /insertStockOpname juga harus tergulung. */
+    public function test_insert_endpoint_rolls_up_on_a_draft_document_too(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -755,24 +751,20 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertTrue((bool) $sto->is_draft);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
-        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
-        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft tidak boleh tergulung sama sekali');
+        $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft pun harus tergulung');
     }
 
-    /**
-     * GANTI keputusan (GitHub #132, 2026-09-03): /updateStockOpname TIDAK BOLEH lagi menggulung
-     * ulang -- koreksi sebelum ACC/tolak harus tersimpan persis seperti yang diketik staf. Gulung
-     * cuma terjadi sekali, saat dokumen terbit (insert langsung non-draft, atau /submitStockOpname
-     * saat draft diajukan) -- lihat StockController::submitStockOpname().
-     */
-    public function test_update_endpoint_no_longer_rolls_up(): void
+    /** Policy 2026-09-05: /updateStockOpname juga menggulung ulang setelah edit hitungan. */
+    public function test_update_endpoint_rolls_up_after_editing_the_count(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $v = $this->withLadder($this->makeCatalogItem('AIR AKI PEGASUS', '12 X 1000 ML', 'AAP1L', dosStock: 0, pcsStock: 0));
-        $stoId = $this->insertOpname([['variant' => $v, 'dos' => null, 'pcs' => 5]]); // di bawah rasio, belum menggulung
+        $stoId = $this->insertOpname([['variant' => $v, 'dos' => null, 'pcs' => 5]]); // di bawah rasio
 
-        $this->assertNull(StockOpnameLine::getLines($stoId)->firstWhere('unit_id', $this->units['dos']->unit_id)->sol_counted_qty);
+        $this->assertSame(5, (int) StockOpnameLine::getLines($stoId)->firstWhere('unit_id', $this->units['pcs']->unit_id)->sol_counted_qty);
+        $this->assertSame(0, (int) StockOpnameLine::getLines($stoId)->firstWhere('unit_id', $this->units['dos']->unit_id)->sol_counted_qty, 'DOS hangus 0 saat pcs diisi di bawah rasio');
 
         $updateResponse = $this->post('/updateStockOpname', [
             'sto_id' => $stoId,
@@ -792,7 +784,7 @@ class StockOpnameV2EndToEndTest extends TestCase
         $updateResponse->assertStatus(200);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
-        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'update tidak boleh menggulung, angka mentah harus tersimpan apa adanya');
-        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'update tidak boleh menggulung, angka mentah harus tersimpan apa adanya');
+        $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'edit yang menaikkan hitungan harus ikut menggulung ulang');
     }
 }

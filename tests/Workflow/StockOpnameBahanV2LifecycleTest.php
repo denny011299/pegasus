@@ -391,8 +391,8 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
     /**
      * Contoh persis dari PM: 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs. DOS live
-     * sengaja 0 di sini -- lihat kembaran Produknya di StockOpnameV2LifecycleTest untuk kasus DOS
-     * yang sudah punya stok live.
+     * sengaja 0 di sini -- kasus DOS yang SUDAH punya stok live dipegang terpisah oleh
+     * test_roll_up_does_not_fold_live_stock_hangus_replace_policy().
      */
     public function test_roll_up_converts_a_filled_small_unit_into_an_untouched_big_one(): void
     {
@@ -404,15 +404,13 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
         $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
-        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty);
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'DOS harus ikut terisi otomatis dari kelebihan pcs');
     }
 
     /**
-     * GANTI keputusan (GitHub #132, 2026-09-03): kembaran persis
-     * StockOpnameV2LifecycleTest::test_roll_up_only_applies_to_a_published_document_never_a_draft()
-     * -- lihat komentarnya untuk alasan lengkap.
+     * Policy 2026-09-05: draft JUGA digulung saat simpan — angka di DB langsung kanonik.
      */
-    public function test_roll_up_only_applies_to_a_published_document_never_a_draft(): void
+    public function test_roll_up_applies_to_draft_and_published_documents(): void
     {
         [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);
         $draft = $this->makeDocument(isDraft: true);
@@ -421,22 +419,15 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         (new BahanOpnameLifecycle())->rollUpUnits($draft);
 
         $lines = StockOpnameBahanLine::getLines($draft->stob_id)->keyBy('unit_id');
-        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'draft tidak boleh tergulung sama sekali');
-        $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty, 'draft tidak boleh tergulung sama sekali');
-
-        [$supplies2, $dos2, $pcs2] = $this->makeFixtureWithLadder(dosStock: 0);
-        $pending = $this->makeDocument(isDraft: false);
-        $this->addLines($pending, $supplies2, [$pcs2->unit_id => 30, $dos2->unit_id => null]);
-
-        (new BahanOpnameLifecycle())->rollUpUnits($pending);
-
-        $lines2 = StockOpnameBahanLine::getLines($pending->stob_id)->keyBy('unit_id');
-        $this->assertSame(2, (int) $lines2[$dos2->unit_id]->sobl_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
-        $this->assertSame(6, (int) $lines2[$pcs2->unit_id]->sobl_counted_qty, 'dokumen yang sudah terbit tetap tergulung');
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'draft ikut tergulung');
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'draft ikut tergulung');
     }
 
-    /** Setara GitHub #78: satuan besar diisi 0 tidak boleh membuat satuan kecil ikut disimpulkan. */
-    public function test_roll_up_never_infers_a_smaller_unit_from_a_bigger_ones_entry(): void
+    /**
+     * Hangus 2026-09-05: isi hanya DOS → pcs yang kosong jadi 0 (bukan null).
+     * Beda dari #78 lama (null = tidak dihitung); sekarang bahan disentuh → unit lain 0.
+     */
+    public function test_roll_up_hangus_untouched_smaller_unit_to_zero_when_bigger_filled(): void
     {
         [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder();
         $stob = $this->makeDocument(isDraft: false);
@@ -446,9 +437,10 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
         $this->assertSame(0, (int) $lines[$dos->unit_id]->sobl_counted_qty);
-        $this->assertNull($lines[$pcs->unit_id]->sobl_counted_qty);
+        $this->assertSame(0, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'pcs hangus jadi 0');
     }
 
+    /** Menjalankan roll-up dua kali pada dokumen yang sama tidak boleh mengubah apa pun lagi. */
     public function test_roll_up_is_idempotent_across_repeated_saves(): void
     {
         [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder();
@@ -467,21 +459,13 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertSame($after1, $after2);
     }
 
-    public function test_roll_up_leaves_a_supplies_item_with_no_unit_ladder_untouched(): void
-    {
-        [$supplies, $dos, $pcs] = $this->makeFixture(); // tanpa SuppliesRelation
-        $stob = $this->makeDocument(isDraft: false);
-        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+    /** Bahan tanpa relasi: diganti oleh test_roll_up_hangus_sibling_unit_when_no_ladder. */
 
-        (new BahanOpnameLifecycle())->rollUpUnits($stob);
-
-        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
-        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
-        $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty);
-    }
-
-    /** Kembaran persis Produk -- lihat StockOpnameV2LifecycleTest untuk alasan lengkap. */
-    public function test_roll_up_folds_existing_live_stock_of_an_untouched_unit_instead_of_erasing_it(): void
+    /**
+     * Hangus 2026-09-05: isi HANYA Piece — DOS live TIDAK dilipat; DOS jadi hasil roll-up saja
+     * (1000 pcs → 83 DOS + 4 pcs). Unit yang tidak di hasil tetap 0 jika ada di line group.
+     */
+    public function test_roll_up_does_not_fold_live_stock_hangus_replace_policy(): void
     {
         [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 84, pcsStock: 0, ratio: 12);
         $stob = $this->makeDocument(isDraft: false);
@@ -493,9 +477,24 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
 
         $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
         $this->assertSame(4, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
-        $this->assertSame(167, (int) $lines[$dos->unit_id]->sobl_counted_qty, '84 DOS lama harus ikut terbawa, bukan digantikan angka dari Piece saja');
+        $this->assertSame(83, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'DOS live 84 tidak dilipat; diganti hasil roll pcs');
     }
 
+    /** Tanpa ladder: unit diisi tetap; unit kosong hangus → 0. */
+    public function test_roll_up_hangus_sibling_unit_when_no_ladder(): void
+    {
+        [$supplies, $dos, $pcs] = $this->makeFixture(); // tanpa SuppliesRelation
+        $stob = $this->makeDocument(isDraft: false);
+        $this->addLines($stob, $supplies, [$pcs->unit_id => 30, $dos->unit_id => null]);
+
+        (new BahanOpnameLifecycle())->rollUpUnits($stob);
+
+        $lines = StockOpnameBahanLine::getLines($stob->stob_id)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$pcs->unit_id]->sobl_counted_qty);
+        $this->assertSame(0, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'DOS hangus jadi 0');
+    }
+
+    /** rollUpUnits() harus keluar lebih dulu untuk dokumen lama, tidak boleh menyentuh apa pun. */
     public function test_roll_up_does_nothing_on_a_legacy_document(): void
     {
         $stob = $this->makeDocument(isDraft: false);
@@ -506,7 +505,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertSame(0, StockOpnameBahanLine::where('stob_id', $stob->stob_id)->count());
     }
 
-    /** Kembaran persis Produk -- lihat StockOpnameV2LifecycleTest untuk alasan lengkap. */
+    /** Gudang eceran: tidak digulung (satu satuan / retail). */
     public function test_roll_up_skips_a_retail_warehouse_document_entirely(): void
     {
         $retailWarehouseId = $this->resolveActiveRetailWarehouseId();
@@ -524,7 +523,7 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         $this->assertNull($lines[$dos->unit_id]->sobl_counted_qty, 'DOS tidak boleh ikut terisi otomatis di gudang eceran');
     }
 
-    /** Dokumen tanpa gudang sama sekali (warehouse_id null) tetap digulung seperti sebelum multi-gudang ada. */
+    /** Dokumen tanpa gudang (warehouse_id null) tetap digulung. */
     public function test_roll_up_still_applies_when_document_has_no_warehouse_pinned(): void
     {
         [$supplies, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 0);

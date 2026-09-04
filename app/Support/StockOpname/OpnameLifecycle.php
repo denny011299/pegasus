@@ -129,49 +129,24 @@ class OpnameLifecycle
     }
 
     /**
-     * Gulung REKURSIF hasil hitung tiap produk ke tangga satuannya (App\Support\UnitRollUp::
-     * collapseProduct()) -- isi satuan kecil, satuan besar yang belum disentuh ikut naik otomatis
-     * (mis. 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs).
+     * Gulung + hangus hasil hitung per produk (UnitRollUp::collapse, tanpa lipat stok live).
      *
-     * >>> GANTI KEPUTUSAN 2026-09-03 (GitHub #132) <<<
-     * Keputusan PM 2026-08-27 tadinya "gulung di SETIAP simpan" (insert MAUPUN update, draft
-     * ataupun langsung menunggu). Itu ternyata SALAH pada dokumen banyak-baris: tiap simpan
-     * antara (staf menghitung produk lain lalu simpan lagi, atau sekadar menyimpan draft)
-     * langsung menggulung angka mentah yang baru saja diketik dan MENGOSONGKAN kembali kolom
-     * satuan kecilnya -- staf yang belum selesai menghitung melihat isiannya "hilang"/berubah
-     * jadi satuan lain di tengah jalan (kasus nyata: SP0110, RCHK5LH 4 pcs berulang kali tergulung
-     * jadi angka DOS yang jauh berbeda karena banyak simpan-antara sebelum diajukan).
-     *
-     * Sekarang: TIDAK PERNAH dipanggil dari update (StockController::updateStockOpname()) --
-     * angka yang diketik staf dibiarkan APA ADANYA selama dokumen masih bisa diedit (draft
-     * maupun koreksi sebelum ACC/tolak). Hanya dipanggil SATU KALI, pas dokumen baru benar-benar
-     * "terbit" (bukan draft lagi): StockController::insertStockOpname() saat dibuat LANGSUNG
-     * non-draft (satu-satunya jalur UI hari ini), dan StockController::submitStockOpname() saat
-     * draft diajukan (.btn-ajukan, jalur yang belum dipasang di UI tapi sudah disiapkan).
-     * Guard is_draft di bawah membuat panggilan dari insert saat draft (kalau UI draft-nya nanti
-     * dipasang) jadi no-op dengan aman, konsisten dengan aturan ini.
-     *
-     * TIDAK PERNAH mengisi satuan yang lebih kecil dari satuan terkecil yang benar-benar diisi --
-     * lihat UnitRollUp::collapse() untuk alasan lengkap (setara GitHub #78: jangan mengarang data
-     * yang tidak pernah diperiksa staf).
+     * Policy 2026-09-05 (ganti #132 untuk timing; ganti fold-live untuk hangus):
+     * - Dipanggil di SETIAP simpan (insert/update/submit), termasuk draft — angka di DB langsung
+     *   kanonik setelah ketik+simpan.
+     * - ≥1 satuan diisi → satuan lain pada item itu jadi 0 (hangus), bukan null / bukan stok live.
+     * - 0 satuan diisi → tidak menulis apa pun (ACC tetap skip null).
+     * - Gudang eceran: no-op (satu satuan).
      */
     public function rollUpUnits($sto): void
     {
-        if (! $sto || $sto->is_old_version || $sto->is_draft) {
+        if (! $sto || $sto->is_old_version) {
             return;
         }
 
         $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
-        // Gudang DOKUMEN, bukan gudang aktif sesi yang kebetulan menyimpan -- lihat
-        // UnitRollUp::collapseProduct() untuk alasannya.
         $warehouseId = $sto->warehouse_id ?: null;
 
-        // Keputusan user 2026-09-02: skema multi-gudang membatasi gudang ECERAN untuk cuma
-        // menghitung/menyimpan retail_unit varian itu sendiri (lihat ProductVariant::
-        // getProductVariant() dan StockOpnameRetailWarehouseUnitVisibilityTest) -- menggulung ke
-        // satuan atas di sana bertabrakan langsung dengan aturan itu, karena satuan atas memang
-        // SENGAJA tidak pernah ada/tersimpan di gudang eceran. Gudang utama tetap digulung seperti
-        // biasa (catatan lama tetap berlaku di sana).
         if (self::isRetailWarehouse($warehouseId)) {
             return;
         }
@@ -182,20 +157,36 @@ class OpnameLifecycle
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
-            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId);
-            if ($collapsed === []) {
+            $touched = collect($qtyByUnit)->contains(fn ($q) => $q !== null);
+            if (! $touched) {
                 continue;
             }
 
-            $first = $group->first();
-
+            // Hangus: jangan lipat stok live unit kosong ke carry.
+            $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId, false);
+            $resultByUnit = [];
             foreach ($collapsed as $credit) {
+                $resultByUnit[(int) $credit['unit_id']] = (int) $credit['qty'];
+            }
+
+            $first = $group->first();
+            foreach ($group as $line) {
+                $uid = (int) $line->unit_id;
+                if (array_key_exists($uid, $resultByUnit)) {
+                    $qty = $resultByUnit[$uid];
+                } elseif ($qtyByUnit[$uid] !== null) {
+                    // Diisi user tapi tidak ada ladder / tidak tersentuh collapse — pertahankan.
+                    $qty = (int) $qtyByUnit[$uid];
+                } else {
+                    $qty = 0; // hangus
+                }
+
                 StockOpnameLine::upsertLine([
                     'sto_id' => $sto->sto_id,
                     'product_id' => $first->product_id,
                     'product_variant_id' => $productVariantId,
-                    'unit_id' => $credit['unit_id'],
-                    'sol_counted_qty' => $credit['qty'],
+                    'unit_id' => $uid,
+                    'sol_counted_qty' => $qty,
                     'sol_notes' => $first->sol_notes,
                 ]);
             }

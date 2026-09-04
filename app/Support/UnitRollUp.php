@@ -204,44 +204,67 @@ class UnitRollUp
     }
 
     /**
-     * Convenience wrapper: gulung satu baris produk, dibatasi ke satuan yang sudah punya baris
-     * stok aktif (kebijakan yang sama dengan planProduct()).
-     *
-     * $warehouseId: sama seperti allowedProductUnitIds() -- untuk Stock Opname ini WAJIB diisi
-     * gudang dokumennya sendiri, bukan gudang aktif sesi yang kebetulan menyimpan. Kalau tidak,
-     * dokumen bisa tergulung ke satuan yang tidak punya baris stok di gudangnya sendiri, dan ACC-nya
-     * nanti (accStockOpnameV2(), yang memang dipin ke gudang dokumen) menolak dengan "Baris stok
-     * tidak ditemukan".
-     *
      * @param  array<int, int|null>  $qtyByUnitId
+     * @param  bool  $foldLiveUntouched  true = lipat stok live unit kosong ke carry (default lama).
+     *         false = policy opname 2026-09-05: hangus — jangan bawa stok live unit yang tidak diisi.
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function collapseProduct(int $productVariantId, array $qtyByUnitId, ?int $warehouseId = null): array
+    public static function collapseProduct(int $productVariantId, array $qtyByUnitId, ?int $warehouseId = null, bool $foldLiveUntouched = true): array
     {
         return self::collapse(
             self::productChain($productVariantId),
             $qtyByUnitId,
             self::allowedProductUnitIds($productVariantId, $warehouseId),
-            self::existingProductStockByUnit($productVariantId, $warehouseId)
+            $foldLiveUntouched ? self::existingProductStockByUnit($productVariantId, $warehouseId) : []
         );
     }
 
     /**
-     * Convenience wrapper: gulung satu baris bahan, dibatasi ke satuan yang sudah punya baris
-     * stok aktif (kebijakan yang sama dengan planSupplies()).
-     * $warehouseId: lihat catatan di collapseProduct().
-     *
      * @param  array<int, int|null>  $qtyByUnitId
+     * @param  bool  $foldLiveUntouched  lihat collapseProduct()
      * @return array<int, array{unit_id: int, qty: int}>
      */
-    public static function collapseSupplies(int $suppliesId, array $qtyByUnitId, ?int $warehouseId = null): array
+    public static function collapseSupplies(int $suppliesId, array $qtyByUnitId, ?int $warehouseId = null, bool $foldLiveUntouched = true): array
     {
         return self::collapse(
             self::suppliesChain($suppliesId),
             $qtyByUnitId,
             self::allowedSuppliesUnitIds($suppliesId, $warehouseId),
-            self::existingSuppliesStockByUnit($suppliesId, $warehouseId)
+            $foldLiveUntouched ? self::existingSuppliesStockByUnit($suppliesId, $warehouseId) : []
         );
+    }
+
+    /**
+     * Pengali ke satuan terkecil tangga (untuk banding setara PDF opname).
+     *
+     * @return array<int, int> unit_id => multiplier (base = 1)
+     */
+    public static function productBaseMultipliers(int $productVariantId): array
+    {
+        return self::multipliersFromBottom(self::productChain($productVariantId));
+    }
+
+    /**
+     * @return array<int, int> unit_id => multiplier (base = 1)
+     */
+    public static function suppliesBaseMultipliers(int $suppliesId): array
+    {
+        return self::multipliersFromBottom(self::suppliesChain($suppliesId));
+    }
+
+    /** Total setara satuan terkecil; qty null diabaikan (0). */
+    public static function sumInBaseUnits(array $qtyByUnitId, array $multipliers): int
+    {
+        $total = 0;
+        foreach ($qtyByUnitId as $unitId => $qty) {
+            if ($qty === null) {
+                continue;
+            }
+            $mult = (int) ($multipliers[(int) $unitId] ?? 1);
+            $total += (int) $qty * max(1, $mult);
+        }
+
+        return $total;
     }
 
     /**
@@ -291,8 +314,11 @@ class UnitRollUp
      */
     private static function multipliersFromBottom(array $chain): array
     {
-        $smalls = array_unique(array_map(fn ($l) => $l['small'], $chain));
-        $bigs = array_unique(array_map(fn ($l) => $l['big'], $chain));
+        $smalls = array_values(array_unique(array_map(fn ($l) => $l['small'], $chain)));
+        $bigs = array_values(array_unique(array_map(fn ($l) => $l['big'], $chain)));
+        if ($smalls === []) {
+            return [];
+        }
         $bottomCandidates = array_values(array_diff($smalls, $bigs));
         $bottom = $bottomCandidates[0] ?? $smalls[0];
 
