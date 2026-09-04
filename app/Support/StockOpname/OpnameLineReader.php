@@ -6,6 +6,7 @@ use App\Models\ProductStock;
 use App\Models\StockOpnameDetail;
 use App\Models\StockOpnameLine;
 use App\Models\Unit;
+use App\Support\UnitRollUp;
 
 /**
  * Satu-satunya pintu baca dokumen Stock Opname untuk TAMPILAN (PDF, halaman detail, daftar).
@@ -212,11 +213,14 @@ class OpnameLineReader
      * Bentuk baris siap-cetak. $legacyTouched hanya diisi cabang legacy; untuk dokumen baru
      * "pernah dihitung" adalah fakta yang bisa dibaca langsung dari datanya (counted !== null),
      * tidak perlu flag apa pun.
+     *
+     * Highlight (2026-09-05): untuk item yang user pernah isi, banding setara satuan terkecil
+     * (bukan selisih per kolom) supaya hasil roll-up yang fisik sama tetap hijau.
      */
     private function viewRow(?string $sku, ?string $product, ?string $variant, ?string $notes, array $units, ?bool $legacyTouched = null, $productId = null, $variantId = null): array
     {
         $counted = $legacyTouched ?? collect($units)->contains(fn ($u) => $u['counted'] !== null);
-        $hasSelisih = collect($units)->contains(fn ($u) => (int) ($u['selisih'] ?? 0) !== 0);
+        $hasSelisih = $this->hasPhysicalSelisih($units, $variantId ? (int) $variantId : null, 'product');
 
         return [
             'product_id' => $productId,
@@ -243,12 +247,57 @@ class OpnameLineReader
             'selisih_text' => $this->text($units, 'selisih'),
             'counted' => $counted,
             'has_selisih' => $hasSelisih,
-            // Kuning kalau angkanya memang berselisih -- tidak pernah digantung pada flag apa pun,
-            // supaya warna tidak bisa bertentangan dengan angka di baris yang sama (SP0071).
-            // Hijau tetap butuh bukti "pernah dihitung": selisih 0 terlihat sama persis antara
-            // baris yang dihitung dan yang dibiarkan kosong, itu memang tidak bisa disimpulkan.
+            // Kuning kalau setara fisik beda; hijau kalau user isi & setara sama; null jika tidak diisi.
             'highlight' => $hasSelisih ? 'yellow' : ($counted ? 'green' : null),
         ];
+    }
+
+    /**
+     * true jika item disentuh user dan total base-unit system ≠ counted.
+     * Item tanpa input user → false (highlight null). Tanpa ladder → fallback selisih per unit.
+     *
+     * @param  'product'|'supplies'  $kind
+     */
+    private function hasPhysicalSelisih(array $units, ?int $entityId, string $kind = 'product'): bool
+    {
+        $touched = collect($units)->contains(fn ($u) => $u['counted'] !== null);
+        if (! $touched) {
+            return false;
+        }
+
+        $multipliers = [];
+        if ($entityId && $kind === 'product') {
+            $multipliers = UnitRollUp::productBaseMultipliers($entityId);
+        } elseif ($entityId && $kind === 'supplies') {
+            $multipliers = UnitRollUp::suppliesBaseMultipliers($entityId);
+        }
+
+        if ($multipliers === []) {
+            return collect($units)->contains(fn ($u) => (int) ($u['selisih'] ?? 0) !== 0);
+        }
+
+        $systemByUnit = [];
+        $countedByUnit = [];
+        foreach ($units as $u) {
+            $uid = (int) ($u['unit_id'] ?? 0);
+            if (! $uid) {
+                continue;
+            }
+            $systemByUnit[$uid] = $u['system'] === null ? null : (int) $u['system'];
+            $countedByUnit[$uid] = $u['counted'] === null ? null : (int) $u['counted'];
+        }
+
+        // Banding hanya unit yang punya angka (setelah hangus biasanya semua counted terisi).
+        $sysBase = UnitRollUp::sumInBaseUnits(
+            array_map(fn ($q) => $q === null ? 0 : $q, $systemByUnit),
+            $multipliers
+        );
+        $cntBase = UnitRollUp::sumInBaseUnits(
+            array_map(fn ($q) => $q === null ? 0 : $q, $countedByUnit),
+            $multipliers
+        );
+
+        return $sysBase !== $cntBase;
     }
 
     /** Rakit kolom siap-cetak: "8 DOS, 0 pcs". NULL (tidak dihitung) tercetak "-". */

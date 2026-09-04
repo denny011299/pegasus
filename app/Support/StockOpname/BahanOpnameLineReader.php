@@ -7,6 +7,7 @@ use App\Models\StockOpnameDetailBahan;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\Unit;
+use App\Support\UnitRollUp;
 
 /**
  * Kembaran persis App\Support\StockOpname\OpnameLineReader, untuk Stock Opname BAHAN (Supplies).
@@ -213,7 +214,7 @@ class BahanOpnameLineReader
     private function viewRow(?string $supplyName, ?string $notes, array $units, ?bool $legacyTouched = null, $suppliesId = null): array
     {
         $counted = $legacyTouched ?? collect($units)->contains(fn ($u) => $u['counted'] !== null);
-        $hasSelisih = collect($units)->contains(fn ($u) => (int) ($u['selisih'] ?? 0) !== 0);
+        $hasSelisih = $this->hasPhysicalSelisih($units, $suppliesId ? (int) $suppliesId : null);
 
         return [
             'supplies_id' => $suppliesId,
@@ -234,6 +235,42 @@ class BahanOpnameLineReader
             'stobd_real' => $this->text($units, 'counted'),
             'stobd_selisih' => $this->text($units, 'selisih'),
         ];
+    }
+
+    /** Banding setara base unit — mirror OpnameLineReader (policy 2026-09-05). */
+    private function hasPhysicalSelisih(array $units, ?int $suppliesId): bool
+    {
+        $touched = collect($units)->contains(fn ($u) => $u['counted'] !== null);
+        if (! $touched) {
+            return false;
+        }
+
+        $multipliers = $suppliesId ? UnitRollUp::suppliesBaseMultipliers($suppliesId) : [];
+        if ($multipliers === []) {
+            return collect($units)->contains(fn ($u) => (int) ($u['selisih'] ?? 0) !== 0);
+        }
+
+        $systemByUnit = [];
+        $countedByUnit = [];
+        foreach ($units as $u) {
+            $uid = (int) ($u['unit_id'] ?? 0);
+            if (! $uid) {
+                continue;
+            }
+            $systemByUnit[$uid] = $u['system'] === null ? null : (int) $u['system'];
+            $countedByUnit[$uid] = $u['counted'] === null ? null : (int) $u['counted'];
+        }
+
+        $sysBase = UnitRollUp::sumInBaseUnits(
+            array_map(fn ($q) => $q === null ? 0 : $q, $systemByUnit),
+            $multipliers
+        );
+        $cntBase = UnitRollUp::sumInBaseUnits(
+            array_map(fn ($q) => $q === null ? 0 : $q, $countedByUnit),
+            $multipliers
+        );
+
+        return $sysBase !== $cntBase;
     }
 
     /**
