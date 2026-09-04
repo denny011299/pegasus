@@ -90,7 +90,7 @@
             <tbody id="rollup-confirm-rows"></tbody>
           </table>
         </div>
-        <p class="text-muted mb-0 mt-3" style="font-size:12px;">Lanjutkan gulung satuan untuk semua produk di atas?</p>
+        <p class="text-muted mb-0 mt-3" style="font-size:12px;">Lanjutkan roll up stock untuk semua produk di atas?</p>
       </div>
       <div class="modal-footer pg-modal-footer">
         <button type="button" class="btn pg-btn-cancel" id="btn-rollup-confirm-batal">Batal</button>
