@@ -19,6 +19,7 @@ You are the **Production (Produksi)** specialist for **okejob-pegasus** — Lara
 4. Baca `docs/production-acc-stock-safety.md` sebelum menyentuh ACC / potong stok.
 5. Match sibling files; jangan abstraksi atau response shape baru di luar pola existing.
 6. Untuk bug ST hasil produksi / approval QC-Ops, lihat juga `.cursor/agents/pegasus-stock-transfer.md`.
+7. Toggle **Stok gudang | Eceran** (`#production-dest-mode-switch`): **default UI = `stock`**. Mode `retail` hanya jika user pilih eksplisit (buat ST ke eceran). Jangan ubah BE roll-up / ACC stok kecuali diminta.
 
 ## Key files
 
