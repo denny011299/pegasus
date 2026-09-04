@@ -214,6 +214,57 @@ class DashboardChangelogMenuOpenTrackingTest extends TestCase
         $this->assertNotNull($customerOpen->duration_seconds, "revisiting Dashboard must close Customer's session even though Dashboard was opened moments ago");
     }
 
+    /**
+     * User-reported: "when 2 users logged in the same time... they share a time trigger" --
+     * two concurrent login sessions of the SAME staff account (e.g. logged in on two
+     * devices/browsers at once) used to close each other's 'open' row, because the only
+     * scoping was staff_id. Each login session now gets its own marker (stored in the
+     * session's own data, not the volatile Laravel session ID) so opening a page on device B
+     * must NOT touch device A's still-genuinely-open row.
+     */
+    public function test_two_concurrent_sessions_of_the_same_staff_do_not_close_each_others_open_row(): void
+    {
+        $staff = $this->actingAsSuperAdminStaff();
+
+        // "Device A" opens Stock Opname.
+        $this->get('/stockOpname')->assertStatus(200);
+        $deviceA = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'stockopname')->where('activity_type', 'open')
+            ->firstOrFail();
+        $this->assertNull($deviceA->duration_seconds);
+        $markerA = $deviceA->meta['session_id'] ?? null;
+        $this->assertNotNull($markerA, 'the open row must carry a session marker');
+
+        // Simulate a second, independent login session for the SAME staff account (a
+        // different browser/device) by dropping the session marker before the next request --
+        // LogDashboardActivity::sessionMarker() then mints a fresh one, same as a brand new
+        // browser session would get.
+        session()->forget('_dashboard_activity_sid');
+        $this->actingAsSuperAdminStaff();
+        $this->get('/purchaseOrder')->assertStatus(200);
+
+        $deviceA->refresh();
+        $this->assertNull($deviceA->duration_seconds, "device B's navigation must not close device A's still-open session");
+
+        $deviceB = DashboardChangeLog::where('created_by', $staff->staff_id)
+            ->where('module_key', 'purchaseorder')->where('activity_type', 'open')
+            ->firstOrFail();
+        $markerB = $deviceB->meta['session_id'] ?? null;
+        $this->assertNotNull($markerB);
+        $this->assertNotSame($markerA, $markerB, 'each login session must get its own marker');
+
+        // Back on "device A" (its own marker restored) -- opening another page must still
+        // correctly close device A's own previous row.
+        session(['_dashboard_activity_sid' => $markerA]);
+        $this->get('/customer')->assertStatus(200);
+
+        $deviceA->refresh();
+        $this->assertNotNull($deviceA->duration_seconds, "device A's own navigation must still close its own previous row");
+
+        $deviceB->refresh();
+        $this->assertNull($deviceB->duration_seconds, "device A's navigation must not close device B's still-open session");
+    }
+
     public function test_menu_open_rows_are_excluded_from_the_changelog_pending_kpi(): void
     {
         $staff = $this->actingAsSuperAdminStaff();

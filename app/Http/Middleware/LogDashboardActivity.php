@@ -74,6 +74,7 @@ class LogDashboardActivity
         $moduleKey = $this->detectModuleKey($request);
         $moduleLabel = $this->formatModuleLabel($moduleKey);
         $now = now();
+        $sessionId = $this->sessionMarker($request);
 
         // Ditambahkan (2026-08-14), dihapus lagi (2026-08-15): sempat ada debounce 15 menit
         // per staf+modul di sini supaya klik-klik/refresh cepat tidak jadi baris baru tiap
@@ -84,14 +85,16 @@ class LogDashboardActivity
         // terbuka -- persis gejala yang dilaporkan user ("Dashboard nav click still not
         // ending the previous page session"). Setiap kunjungan sekarang selalu dicatat.
 
-        // Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi —
-        // durasinya = jarak ke pembukaan menu berikutnya ini. Kalau jaraknya lebih dari 4 jam,
-        // anggap tab lama itu cuma ditinggal (idle/browser ditutup tanpa navigasi lagi) dan
-        // jangan diisi durasi yang menyesatkan. Lihat juga DashboardActivityController::closeSession()
-        // -- sinyal AKTIF (tab ditutup) yang ditembak lewat navigator.sendBeacon() saat unload,
-        // supaya baris 'open' tidak nyangkut "Sedang dibuka" selamanya kalau user tidak pernah
-        // buka menu lain lagi.
-        DashboardChangeLog::closeOpenSession($staffId, $now);
+        // Tutup baris 'open' terakhir milik SESI LOGIN ini (modul manapun) yang belum punya
+        // durasi — durasinya = jarak ke pembukaan menu berikutnya ini. Di-scope ke $sessionId
+        // supaya staf yang sama login bersamaan di device/browser lain tidak ikut ditutup
+        // (lihat catatan di DashboardChangeLog::closeOpenSession()). Kalau jaraknya lebih dari
+        // 4 jam, anggap tab lama itu cuma ditinggal (idle/browser ditutup tanpa navigasi lagi)
+        // dan jangan diisi durasi yang menyesatkan. Lihat juga
+        // DashboardActivityController::closeSession() -- sinyal AKTIF (tab ditutup) yang
+        // ditembak lewat navigator.sendBeacon() saat unload, supaya baris 'open' tidak nyangkut
+        // "Sedang dibuka" selamanya kalau user tidak pernah buka menu lain lagi.
+        DashboardChangeLog::closeOpenSession($staffId, $now, 4 * 3600, $sessionId);
 
         $staffName = session('user')->staff_name ?? '-';
 
@@ -121,11 +124,35 @@ class LogDashboardActivity
                 'method' => $request->method(),
                 'path' => $request->path(),
                 'client_token' => $clientToken,
+                'session_id' => $sessionId,
             ],
             'duration_seconds' => null,
         ]);
 
         $this->injectClientToken($response, $clientToken);
+    }
+
+    /**
+     * Identitas SESI LOGIN saat ini (per browser/device), beda dari staff_id yang cuma
+     * identitas akunnya. Dua sesi login staf yang sama (2 device/tab login bersamaan) dapat
+     * marker berbeda -- inilah kunci supaya baris 'open' masing-masing tidak saling menutup
+     * (lihat DashboardChangeLog::closeOpenSession()).
+     *
+     * SENGAJA bukan $request->session()->getId() -- Laravel session ID tidak stabil untuk
+     * dipakai sebagai penanda ini: bisa berbeda tiap request (mis. StartSession meregenerasi
+     * ID dari cookie tiap kali) walau isi sesinya sendiri tetap sama. Marker kustom ini
+     * disimpan di DALAM data sesi (bukan ID-nya) sekali per sesi lalu dipakai ulang, jadi
+     * tetap sama selama sesi login yang sama berlangsung.
+     */
+    private function sessionMarker(Request $request): string
+    {
+        $marker = $request->session()->get('_dashboard_activity_sid');
+        if (!is_string($marker) || $marker === '') {
+            $marker = (string) Str::uuid();
+            $request->session()->put('_dashboard_activity_sid', $marker);
+        }
+
+        return $marker;
     }
 
     /**
