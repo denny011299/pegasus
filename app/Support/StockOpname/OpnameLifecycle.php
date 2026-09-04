@@ -378,13 +378,31 @@ class OpnameLifecycle
     }
 
     /**
-     * Inti perbandingan "apakah produk ini punya perubahan NYATA antara gulung parsial (aman) dan
-     * gulung penuh" -- diekstrak dari buildRollupOpportunity() (2026-09-05) supaya rollUpUnitsFull()
-     * bisa memakai perbandingan yang SAMA PERSIS sebagai gerbang tulis, bukan cuma "apakah
-     * collapseProductFull() mengembalikan sesuatu" (lihat docblock rollUpUnitsFull() untuk bug yang
-     * ini tutup: collapseProductFull() SELALU mengembalikan kredit -- termasuk {qty: 0} untuk
-     * produk yang stoknya sendiri sudah 0 di semua satuan dan tidak ada yang perlu digulung sama
-     * sekali -- jadi "collapsed !== []" saja bukan sinyal yang aman untuk menulis).
+     * Inti perbandingan "apakah produk ini punya perubahan NYATA antara apa yang tersimpan/
+     * diketik APA ADANYA dan proyeksi gulung PENUH" -- diekstrak dari buildRollupOpportunity()
+     * (2026-09-05) supaya rollUpUnitsFull() bisa memakai perbandingan yang SAMA PERSIS sebagai
+     * gerbang tulis.
+     *
+     * >>> GANTI 2026-09-06 (keputusan user: "setiap kali ada roll up yang terdeteksi, munculkan
+     * popup konfirmasinya") <<< Sebelumnya "before" di sini adalah hasil UnitRollUp::
+     * collapseProduct() (gulung PARSIAL yang aman, SELALU jalan otomatis tanpa konfirmasi lewat
+     * OpnameLifecycle::rollUpUnits()) -- popup cuma tampil kalau collapseProductFull() memberi
+     * hasil BERBEDA dari itu. Bug yang menutup ini: mengisi satuan TERKECIL sendirian (mis. 1000
+     * pcs, Dos dibiarkan kosong, 1 DOS = 12 pcs) SUDAH digulung otomatis lewat collapseProduct()
+     * TANPA popup sama sekali -- collapseProduct() dan collapseProductFull() kebetulan
+     * menghasilkan angka yang SAMA PERSIS untuk kasus ini (keduanya mulai menggulung dari satuan
+     * yang sama, satuan terkecil), jadi "before" (baseline) === "after" (full), tidak ada
+     * perbedaan untuk ditawarkan -- padahal jelas ADA gulungan yang terjadi (1000 pcs jadi
+     * beberapa Dos + sisa pcs).
+     *
+     * Sekarang: "before" adalah nilai APA ADANYA (yang diketik staf, atau stok sistem kalau
+     * satuan itu tidak diketik sama sekali) -- BUKAN hasil gulung parsial. Konsekuensinya,
+     * OpnameLifecycle::rollUpUnits() (gulung parsial otomatis) TIDAK LAGI dipanggil dari
+     * StockController::insertStockOpname()/submitStockOpname() sama sekali -- SETIAP gulung,
+     * termasuk yang dulu "otomatis aman", sekarang lewat gerbang popup yang sama (lihat kedua
+     * method itu). rollUpUnits() sendiri TIDAK dihapus (masih dipakai BahanOpnameLifecycle's
+     * kembarannya dan diuji langsung sebagai unit di tests/Workflow/StockOpnameV2LifecycleTest.php)
+     * -- cuma tidak lagi dipanggil dari kedua titik itu.
      *
      * @param  array<int, int|null>  $qtyByUnit
      * @return array<int, array{unit_id: int, before: int, after: int}>  kosong = tidak ada
@@ -393,16 +411,13 @@ class OpnameLifecycle
     private static function computeFullProjectionChanges(int $productVariantId, array $qtyByUnit, ?int $warehouseId): array
     {
         $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
-
-        $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))
-            ->pluck('qty', 'unit_id')->all();
         $fullByUnit = collect(UnitRollUp::collapseProductFull($productVariantId, $qtyByUnit, $warehouseId))
             ->pluck('qty', 'unit_id')->all();
 
-        $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
+        $unitIds = array_unique(array_merge(array_keys($qtyByUnit), array_keys($fullByUnit)));
         $changes = [];
         foreach ($unitIds as $unitId) {
-            $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
+            $before = $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
             $after = $fullByUnit[$unitId] ?? $before;
             if ((int) $before !== (int) $after) {
                 $changes[] = [

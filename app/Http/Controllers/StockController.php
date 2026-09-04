@@ -127,9 +127,18 @@ class StockController extends Controller
         // Keputusan gulung SUDAH diambil di frontend lewat /previewStockOpnameRollup (baca-saja,
         // tidak menulis apa pun) SEBELUM endpoint ini pernah dipanggil -- lihat docblock method
         // itu. Jadi endpoint ini SELALU single-shot lagi seperti sebelum fitur konfirmasi gulung
-        // ada: tidak ada lagi jalur "tulis dulu, tanya nanti, tulis lagi kalau confirm". Default
-        // 'skip' (gulung PARSIAL yang aman) untuk pemanggil yang tidak lewat preview sama sekali
-        // (mis. panggilan API langsung) -- tidak pernah diam-diam menggulung penuh tanpa diminta.
+        // ada: tidak ada lagi jalur "tulis dulu, tanya nanti, tulis lagi kalau confirm".
+        //
+        // >>> GANTI 2026-09-06 (keputusan user: "setiap kali ada roll up yang terdeteksi,
+        // munculkan popup konfirmasinya") <<< rollup_decision !== 'full' TIDAK LAGI memicu
+        // rollUpUnits() (gulung parsial otomatis) sebagai fallback "aman" -- lihat docblock
+        // OpnameLifecycle::computeFullProjectionChanges() untuk bug yang ini tutup: mengisi
+        // satuan TERKECIL sendirian (mis. 1000 pcs, Dos kosong) dulu digulung otomatis lewat
+        // rollUpUnits() TANPA pernah lewat popup, karena hasilnya kebetulan identik dengan
+        // rollUpUnitsFull(). Sekarang SETIAP gulung nyata (apa pun bentuknya) wajib terdeteksi di
+        // /previewStockOpnameRollup dulu dan staf klik "Lanjut" -- rollup_decision yang bukan
+        // 'full' (default kalau pemanggil tidak lewat preview sama sekali, mis. panggilan API
+        // langsung) berarti TIDAK ADA gulung apa pun, angka tersimpan PERSIS seperti yang dikirim.
         $decision = $req->input('rollup_decision', 'skip');
 
         return DB::transaction(function () use ($data, $items, $decision) {
@@ -141,15 +150,11 @@ class StockController extends Controller
             // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
             // 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs) HANYA di titik dokumen benar-benar
             // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
-            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
+            // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnitsFull()
             // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
             // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan.
-            if (! $sto->is_draft) {
-                if ($decision === 'full') {
-                    $lifecycle->rollUpUnitsFull(StockOpname::find($id));
-                } else {
-                    $lifecycle->rollUpUnits(StockOpname::find($id));
-                }
+            if (! $sto->is_draft && $decision === 'full') {
+                $lifecycle->rollUpUnitsFull(StockOpname::find($id));
             }
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
@@ -277,11 +282,11 @@ class StockController extends Controller
         // angka mentah yang diketik staf selama masih draft tidak diam-diam berubah tiap simpan.
         // Dipanggil SEBELUM publish() supaya identitas satuan yang baru tercipta dari gulungan
         // (kalau ada) ikut terbekukan pada publish yang sama -- lihat urutan yang sama persis di
-        // insertStockOpname().
+        // insertStockOpname(). rollup_decision !== 'full' berarti TIDAK ADA gulung sama sekali
+        // (keputusan user 2026-09-06, lihat OpnameLifecycle::computeFullProjectionChanges()) --
+        // rollUpUnits() tidak lagi dipanggil sebagai fallback di sini.
         if ($decision === 'full') {
             $lifecycle->rollUpUnitsFull($sto->refresh());
-        } else {
-            $lifecycle->rollUpUnits($sto->refresh());
         }
         $lifecycle->publish($sto->refresh());
 

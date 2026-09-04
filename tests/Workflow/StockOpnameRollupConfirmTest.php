@@ -265,15 +265,16 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame(104, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
     }
 
-    public function test_insert_without_rollup_decision_defaults_to_the_old_safe_partial_behavior(): void
+    public function test_insert_without_rollup_decision_applies_no_rollup_at_all(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
         $items = $this->dosOnlyItemPayload($v, 93);
 
-        // Tidak ada rollup_decision dikirim -- default 'skip' (pemanggil yang tidak lewat preview
-        // sama sekali, mis. panggilan API langsung) tidak pernah diam-diam menggulung penuh.
+        // Tidak ada rollup_decision dikirim -- pemanggil yang tidak lewat preview sama sekali
+        // (mis. panggilan API langsung) tidak pernah diam-diam menggulung apa pun, bahkan yang
+        // dulu "otomatis aman" sekalipun (keputusan user 2026-09-06).
         $response = $this->insertOpname($items);
         $response->assertStatus(200);
         $response->assertJson(['status' => 1]);
@@ -281,7 +282,7 @@ class StockOpnameRollupConfirmTest extends TestCase
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(93, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'Dos tetap 93, tidak berubah');
-        $this->assertNull($lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'Piece TETAP null -- perilaku lama, tidak digulung');
+        $this->assertNull($lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'Piece TETAP null -- tidak digulung');
 
         $sto = StockOpname::find($stoId);
         $this->assertNotNull($sto->sto_staff_name, 'publish() harus tetap jalan untuk dokumen non-draft');
@@ -290,6 +291,57 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->post('/accStockOpname', ['sto_id' => $stoId, 'item' => json_encode([['dummy' => 1]])])->assertOk();
         $this->assertSame(93, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['dos']->unit_id)->value('ps_stock'));
         $this->assertSame(104, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
+    }
+
+    /**
+     * Bug report user 2026-09-06: "setiap kali ada roll up yang terdeteksi, munculkan popup
+     * konfirmasinya" -- mengisi satuan TERKECIL sendirian (Piece=1000, Dos dibiarkan kosong)
+     * dulu digulung otomatis TANPA popup sama sekali, karena hasil gulung "aman" (parsial) dan
+     * "penuh" kebetulan identik untuk kasus ini (keduanya mulai menggulung dari satuan yang sama
+     * persis, satuan terkecil) -- lihat OpnameLifecycle::computeFullProjectionChanges()'s
+     * docblock. Sekarang perbandingannya bukan lagi "parsial vs penuh" tapi "apa adanya vs
+     * penuh", jadi kasus ini TERDETEKSI juga, dan tanpa rollup_decision='full' TIDAK ADA gulung
+     * sama sekali (1000 pcs tersimpan APA ADANYA, bukan otomatis jadi beberapa Dos).
+     */
+    public function test_filling_only_the_smallest_unit_now_also_requires_confirmation(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        // 1 DOS = 12 pcs. Dos existing 90, staf isi Piece 1000 sendirian.
+        $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 0, ratio: 12);
+        $items = [[
+            'product_id' => $v->product_id,
+            'product_variant_id' => $v->product_variant_id,
+            'units' => [
+                ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+                ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => 1000],
+            ],
+        ]];
+
+        // 1000 pcs = 83 Dos + 4 pcs sisa; + 90 Dos existing = 173 Dos + 4 pcs kanonik.
+        $preview = $this->preview($items);
+        $preview->assertStatus(200);
+        $candidates = $preview->json('rollup_candidates');
+        $this->assertCount(1, $candidates, 'mengisi satuan terkecil sendirian sekarang HARUS terdeteksi juga');
+        $changes = collect($candidates[0]['changes'])->keyBy('unit_id');
+        $this->assertSame(90, $changes[$this->units['dos']->unit_id]['before']);
+        $this->assertSame(173, $changes[$this->units['dos']->unit_id]['after']);
+        $this->assertSame(1000, $changes[$this->units['pcs']->unit_id]['before']);
+        $this->assertSame(4, $changes[$this->units['pcs']->unit_id]['after']);
+
+        // Tanpa konfirmasi ('full'), TIDAK ADA gulung sama sekali -- 1000 pcs tersimpan apa adanya.
+        $noConfirm = $this->insertOpname($items);
+        $noConfirmId = (int) $noConfirm->json('sto_id');
+        $lines = StockOpnameLine::getLines($noConfirmId)->keyBy('unit_id');
+        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'Dos TETAP null tanpa konfirmasi -- tidak ada gulung otomatis lagi');
+        $this->assertSame(1000, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'Piece tersimpan 1000 apa adanya');
+
+        // Dengan konfirmasi ('full'), tergulung persis seperti yang ditampilkan popup.
+        $confirmed = $this->insertOpname($items, ['rollup_decision' => 'full']);
+        $confirmedId = (int) $confirmed->json('sto_id');
+        $lines2 = StockOpnameLine::getLines($confirmedId)->keyBy('unit_id');
+        $this->assertSame(173, (int) $lines2[$this->units['dos']->unit_id]->sol_counted_qty);
+        $this->assertSame(4, (int) $lines2[$this->units['pcs']->unit_id]->sol_counted_qty);
     }
 
     public function test_lanjut_creates_the_document_in_one_shot_with_full_rollup(): void
