@@ -193,7 +193,8 @@ function productionActiveWarehouseName() {
     return wh.name || wh.warehouse_name || "Gudang utama aktif";
 }
 
-var productionDestMode = "retail";
+// Default stok gudang aktif; Eceran/Transfer hanya jika user pilih eksplisit
+var productionDestMode = "stock";
 
 function setProductionDestMode(mode) {
     productionDestMode = mode === "stock" ? "stock" : "retail";
@@ -369,7 +370,7 @@ $("#addProduction").on("hidden.bs.modal", function () {
     ) {
         return;
     }
-    setProductionDestMode("retail");
+    setProductionDestMode("stock");
     resetProductionApprovalActions();
     setProductionModalMode("form");
     setProductionSaveVisible(true, "Simpan");

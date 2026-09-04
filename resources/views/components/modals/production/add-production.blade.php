@@ -249,12 +249,12 @@
                         Tujuan <span class="text-danger">*</span></label>
                       <div id="production-dest-mode-switch" class="pg-dest-toggle d-none ms-1" role="group"
                         aria-label="Mode gudang tujuan">
-                        <button type="button" class="pg-dest-toggle__btn" data-dest-mode="stock"
-                          aria-pressed="false" tabindex="0">
+                        <button type="button" class="pg-dest-toggle__btn is-active" data-dest-mode="stock"
+                          aria-pressed="true" tabindex="0">
                           <i class="fe fe-home"></i> Stok
                         </button>
-                        <button type="button" class="pg-dest-toggle__btn is-active" data-dest-mode="retail"
-                          aria-pressed="true" tabindex="0">
+                        <button type="button" class="pg-dest-toggle__btn" data-dest-mode="retail"
+                          aria-pressed="false" tabindex="0">
                           <i class="fe fe-repeat"></i> Transfer
                         </button>
                       </div>
