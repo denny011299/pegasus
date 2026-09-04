@@ -41,7 +41,15 @@ class DashboardActivityController extends Controller
             if ($token !== '') {
                 DashboardChangeLog::closeOpenSessionByToken($staffId, $token, now());
             } else {
-                DashboardChangeLog::closeOpenSession($staffId, now(), null);
+                // Fallback ini juga di-scope ke marker sesi (session data, bukan session ID --
+                // lihat LogDashboardActivity::sessionMarker()) supaya dua sesi login staf yang
+                // sama (2 device/browser) tidak saling menutup baris 'open' satu sama lain.
+                // Kalau markernya belum pernah ada (mis. baris lama pra-fix), jangan generate
+                // baru di sini -- beacon TIDAK bikin baris baru, cuma menutup yang sudah ada.
+                $marker = $request->session()->get('_dashboard_activity_sid');
+                if (is_string($marker) && $marker !== '') {
+                    DashboardChangeLog::closeOpenSession($staffId, now(), null, $marker);
+                }
             }
         }
 

@@ -27,10 +27,18 @@ class DashboardChangeLog extends Model
     ];
 
     /**
-     * Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi,
-     * dengan durasi = jarak waktu ke $endedAt. Dipakai dari dua tempat: LogDashboardActivity
-     * (estimasi pasif -- ditutup oleh pembukaan menu BERIKUTNYA) dan tab-close beacon
-     * (sinyal aktif -- ditutup oleh browser saat tab/halaman benar-benar ditinggalkan).
+     * Tutup baris 'open' terakhir milik SESI LOGIN ini (modul manapun) yang belum punya
+     * durasi, dengan durasi = jarak waktu ke $endedAt. Dipakai dari dua tempat:
+     * LogDashboardActivity (estimasi pasif -- ditutup oleh pembukaan menu BERIKUTNYA) dan
+     * tab-close beacon (sinyal aktif -- ditutup oleh browser saat tab/halaman benar-benar
+     * ditinggalkan).
+     *
+     * $sessionId WAJIB diisi (Laravel session ID milik request yang sedang berjalan) supaya
+     * query di-scope ke sesi login itu saja, bukan ke SEMUA baris 'open' milik $staffId.
+     * Tanpa scoping ini, staf yang login bersamaan di 2 device/browser (akun yang sama, dua
+     * sesi login berbeda) saling menutup baris 'open' satu sama lain -- device A tak sengaja
+     * ikut "ditutup" begitu device B membuka menu apa pun, padahal tab A masih benar-benar
+     * terbuka. Null hanya untuk baris lama (pra-fix) yang belum punya session_id di meta-nya.
      *
      * $maxSeconds membatasi durasi yang menyesatkan (tab lama ditinggal idle tanpa navigasi
      * lagi); default 4 jam sama seperti estimasi pasif. Beacon boleh melewati batas ini
@@ -39,11 +47,12 @@ class DashboardChangeLog extends Model
      * Idempotent lewat whereNull('duration_seconds') di query pemanggil -- baris yang sudah
      * ditutup (oleh salah satu jalur) tidak akan tertimpa oleh jalur lainnya.
      */
-    public static function closeOpenSession(int $staffId, $endedAt, ?int $maxSeconds = 4 * 3600): ?self
+    public static function closeOpenSession(int $staffId, $endedAt, ?int $maxSeconds = 4 * 3600, ?string $sessionId = null): ?self
     {
         $previous = self::where('created_by', $staffId)
             ->where('activity_type', 'open')
             ->whereNull('duration_seconds')
+            ->when($sessionId !== null, fn ($q) => $q->where('meta->session_id', $sessionId))
             ->orderByDesc('created_at')
             ->first();
 
