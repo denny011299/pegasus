@@ -307,7 +307,8 @@ function renderMode2(items) {
 }
 
 $(document).on("keyup", "#filter_pr_name", function () {
-    if (mode == 1) {
+    // Edit draft = mode 2 + canEditDraft — tetap AJAX katalog, bukan filter lokal view-only.
+    if (mode == 1 || canEditDraft) {
         clearTimeout(searchProdukDebounce);
         searchProdukDebounce = setTimeout(function () {
             refreshStockOpname();

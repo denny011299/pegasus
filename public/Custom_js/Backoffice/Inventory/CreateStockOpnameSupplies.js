@@ -355,13 +355,13 @@ function renderMode2(items) {
 }
 
 $(document).on("keyup", "#filter_sup_name", function () {
-    if (mode == 1) {
+    // Edit draft = mode 2 + canEditDraft — tetap AJAX katalog, bukan filter lokal view-only.
+    if (mode == 1 || canEditDraft) {
         clearTimeout(searchBahanDebounce);
         searchBahanDebounce = setTimeout(function () {
-            refreshStockOpname(); // mode 1 tetap AJAX
+            refreshStockOpname();
         }, 500);
     } else {
-        // mode 2 filter dari data.item langsung, TANPA AJAX
         let keyword = $(this).val().toLowerCase();
         let filtered = data.item.filter((item) =>
             (item.supplies_name ?? "").toLowerCase().includes(keyword),
