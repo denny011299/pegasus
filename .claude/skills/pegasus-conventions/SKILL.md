@@ -23,6 +23,8 @@ out which variant is dominant and which is legacy-only.
   app logic). All page-specific JS lives in **`public/Custom_js/Backoffice/<Area>/<Page>.js`**, loaded via a
   plain `<script src>` tag, no `import`/`export`, no npm packages beyond axios (present but not the AJAX
   pattern actually used — see below).
+- **Shared UI helpers** (spinner tombol, modal, autocomplete): `footer-scripts.blade.php` / `Custom_js/Shared/` —
+  lihat skill `pegasus-shared-helpers` dan rule `.cursor/rules/pegasus-shared-helpers.mdc`. Jangan duplicate di page JS.
 
 ## ⚠️ Touching any stock-mutating logic — check unit roll-up FIRST, before writing code
 If the change you're about to write reads or writes `product_stocks.ps_stock` /

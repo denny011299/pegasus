@@ -1,0 +1,45 @@
+---
+description: SOP helper bersama — spinner, modal, autocomplete. Jangan duplicate di page JS.
+alwaysApply: true
+---
+
+# Shared helpers (jangan bikin ulang)
+
+Kalau pola UI dipakai **lebih dari sekali**, taruh di shared — jangan copy ke `public/Custom_js/Backoffice/**`.
+
+## Di mana
+
+| Jenis | Lokasi |
+|-------|--------|
+| JS global (tombol, modal, notif, autocomplete) | `resources/views/layout/partials/footer-scripts.blade.php` |
+| CSS/layout global | `resources/views/layout/partials/header.blade.php` atau `pg-modal-styles.blade.php` |
+| Helper JS khusus fitur multi-halaman | `public/Custom_js/Shared/*.js` (contoh `popup-table.js`) |
+
+Page JS hanya orkestrasi modul; panggil helper yang sudah ada.
+
+## Wajib pakai (sudah ada)
+
+- Spinner tombol: `LoadingButton(sel)` / `ResetLoadingButton(sel, html)`
+- Notif: `notifikasi(simbol, title, deskripsi)` / toastr
+- Modal: `showModalKonfirmasi` / `showModalDelete` / `showModalDanger`
+- Autocomplete: `autocompleteWarehouse`, `autocompleteProductVariant`, `autocompleteStaff`, …
+
+```js
+// ❌ BAD — spinner lokal di Production.js / Pay_Receive.js
+$btn.html('<span class="spinner-border...">').prop('disabled', true);
+
+// ✅ GOOD
+LoadingButton($btn);
+ResetLoadingButton($btn, '<i class="fe fe-check"></i> Simpan');
+```
+
+## Saat kerja baru
+
+1. Grep dulu di `footer-scripts` / `Shared/` — ada belum?
+2. Belum ada + akan dipakai ≥2 tempat → **tambah di shared**, baru pakai.
+3. Hanya dipakai 1 halaman → boleh lokal; kalau nanti kepakai lagi, angkat ke shared.
+
+## Catatan
+
+- `ResetLoadingButton` mengosongkan `height`/`min-width` inline — tombol ikon fixed-height perlu set ulang height setelah reset (lihat pola Produksi `resetAddProductButton`).
+- Detail workflow: skill `.claude/skills/pegasus-shared-helpers/SKILL.md`.
