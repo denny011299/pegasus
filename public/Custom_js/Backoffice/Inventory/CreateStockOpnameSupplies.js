@@ -401,7 +401,23 @@ $(document).on("click", ".btn-save", function () {
     clearTimeout(searchBahanDebounce);
     $("#filter_sup_name").val("");
     refreshStockOpname(function () {
-        insertData({ btnSelector: ".btn-save", doneText: "Tambah Stok Opname" });
+        // Keputusan user 2026-09-06 (porting dari CreateStockOpname.js/Produk): cek peluang
+        // gulung DULU (murni baca DOM + panggilan read-only, tidak ada apa pun tertulis ke DB)
+        // sebelum insertData() beneran menyimpan -- kalau staf klik "Batal" pada popup,
+        // insertData() TIDAK PERNAH dipanggil sama sekali.
+        previewStockOpnameRollupBahan(
+            collectStockOpnameBahanItems(false),
+            function (decision) {
+                insertData({
+                    btnSelector: ".btn-save",
+                    doneText: "Tambah Stok Opname",
+                    rollupDecision: decision,
+                });
+            },
+            function () {
+                ResetLoadingButton(".btn-save", "Tambah Stok Opname");
+            },
+        );
     });
 });
 
@@ -432,38 +448,76 @@ $(document).on("click", ".btn-ajukan", function () {
     clearTimeout(searchBahanDebounce);
     $("#filter_sup_name").val("");
     refreshStockOpname(function () {
-        insertData({
-            isDraft: true,
-            btnSelector: ".btn-ajukan",
-            doneText: "Ajukan",
-            onSuccess: function () {
-                $.ajax({
-                    url: "/submitStockOpnameBahan",
-                    data: { stob_id: data.stob_id, _token: token },
-                    method: "post",
-                    success: function (e) {
-                        if (e && e.status == -1) {
-                            notifikasi(
-                                "error",
-                                "Gagal Mengajukan",
-                                e.message || "Terjadi kesalahan",
-                            );
-                            ResetLoadingButton(".btn-ajukan", "Ajukan");
-                            return;
-                        }
-                        toastr.success("", "Berhasil mengajukan Stock Opname");
-                        window.location.href = "/stockOpnameBahan";
-                    },
-                    error: function (e) {
-                        ResetLoadingButton(".btn-ajukan", "Ajukan");
-                        if (handlePermissionError(e)) return;
-                        console.log(e);
+        // Sama seperti .btn-save: cek peluang gulung DULU dari DOM langsung, SEBELUM draft-nya
+        // sendiri disimpan (insertData(isDraft:true)) atau diajukan (submitStockOpnameBahan()) --
+        // klik "Batal" pada popup berarti benar-benar batal, tidak ada draft yang ikut tersimpan.
+        //
+        // keepSparse=false (BUKAN true) di SINI, JUGA pada insertData() di bawah -- "Ajukan"
+        // berarti MENERBITKAN dokumen ini, jadi harus memperlakukan SELURUH katalog yang sedang
+        // tampil seakan sudah final, sama persis semangatnya dengan .btn-save (porting keputusan
+        // user 2026-09-05/06 dari sisi Produk).
+        previewStockOpnameRollupBahan(
+            collectStockOpnameBahanItems(false),
+            function (decision) {
+                insertData({
+                    isDraft: true,
+                    btnSelector: ".btn-ajukan",
+                    doneText: "Ajukan",
+                    onSuccess: function () {
+                        submitStockOpnameBahan(decision);
                     },
                 });
             },
-        });
+            function () {
+                ResetLoadingButton(".btn-ajukan", "Ajukan");
+            },
+        );
     });
 });
+
+/**
+ * Ajukan draft (dipanggil setelah insertData/updateData yang menyimpan draft berhasil).
+ * rollupDecision datang dari previewStockOpnameRollupBahan() yang sudah dijawab staf SEBELUM
+ * draft-nya sendiri disimpan -- lihat klik-handler .btn-ajukan di atas. Tetap mengerti status==2
+ * (jaring pengaman kalau backend somehow belum tahu keputusannya) tapi jalur normal harusnya
+ * tidak pernah lewat situ lagi. Kembaran persis submitStockOpname() di CreateStockOpname.js.
+ */
+function submitStockOpnameBahan(rollupDecision) {
+    var param = { stob_id: data.stob_id, _token: token };
+    if (rollupDecision) {
+        param.rollup_decision = rollupDecision;
+    }
+
+    $.ajax({
+        url: "/submitStockOpnameBahan",
+        data: param,
+        method: "post",
+        success: function (e) {
+            if (e && e.status == -1) {
+                notifikasi(
+                    "error",
+                    "Gagal Mengajukan",
+                    e.message || "Terjadi kesalahan",
+                );
+                ResetLoadingButton(".btn-ajukan", "Ajukan");
+                return;
+            }
+            if (e && e.status == 2 && Array.isArray(e.rollup_candidates)) {
+                showRollupConfirmBahan(e.rollup_candidates, function (decision) {
+                    submitStockOpnameBahan(decision);
+                });
+                return;
+            }
+            toastr.success("", "Berhasil mengajukan Stock Opname");
+            window.location.href = "/stockOpnameBahan";
+        },
+        error: function (e) {
+            ResetLoadingButton(".btn-ajukan", "Ajukan");
+            if (handlePermissionError(e)) return;
+            console.log(e);
+        },
+    });
+}
 
 $(document).on("click", ".btn-delete-draft", function () {
     showModalDelete(
@@ -512,53 +566,15 @@ function getData(id) {
     return data.items[ada];
 }
 
-function insertData(options) {
-    options = options || {};
-    var isDraft = !!options.isDraft;
-    var btnSelector = options.btnSelector || ".btn-save";
-    var doneText = options.doneText || "Tambah Stok Opname";
-    var onSuccess = options.onSuccess;
-    // Draft: hanya simpan bahan yang benar-benar diisi user. Kalau tidak,
-    // seluruh katalog bahan (yang cuma tampil karena pencarian kosong) ikut
-    // tersimpan dengan real_qty otomatis = stok sistem, dan saat draft dibuka
-    // lagi user akan melihat angka yang tidak pernah mereka masukkan sendiri.
-    var keepSparse = !!options.keepSparse;
-
-    $(".is-invalid").removeClass("is-invalid");
-    $(".invalid").removeClass("invalid");
-    var url = "/insertStockOpnameBahan";
-    var valid = 1;
-
-    $(".fill").each(function () {
-        if (
-            $(this).val() == null ||
-            $(this).val() == "null" ||
-            $(this).val() == ""
-        ) {
-            valid = -1;
-            $(this).addClass("is-invalid");
-        }
-    });
-
-    if (
-        $("#penanggung-jawab").val() == null ||
-        $("#penanggung-jawab").val() == ""
-    ) {
-        $(".row-staff .select2-selection--single").addClass("invalid");
-        valid = -1;
-    }
-
-    if (valid == -1) {
-        notifikasi(
-            "error",
-            "Gagal Insert",
-            "Silahkan cek kembali inputan anda",
-        );
-        ResetLoadingButton(btnSelector, doneText);
-        return false;
-    }
-
-    suppliesSubmit = [];
+/**
+ * Bangun array item (per bahan x per satuan) langsung dari DOM tabel Stock Opname -- MURNI baca,
+ * tidak ada validasi maupun AJAX di sini. Dipakai insertData() untuk payload SUNGGUHAN, dan
+ * previewStockOpnameRollupBahan() (dipanggil dari klik-handler .btn-save/.btn-ajukan, SEBELUM
+ * insertData() pernah dipanggil) untuk cek peluang gulung tanpa menyentuh DB sama sekali.
+ * Kembaran persis collectStockOpnameItems() di CreateStockOpname.js (Produk).
+ */
+function collectStockOpnameBahanItems(keepSparse) {
+    var items = [];
     $(".row-stock").each(function () {
         let row = $(this);
         let item = {};
@@ -617,8 +633,160 @@ function insertData(options) {
         // dipakai PDF (Backoffice/PDF/OpnameBahan.blade.php) untuk highlight.
         item.stobd_touched = hasValue ? 1 : 0;
 
-        suppliesSubmit.push(item);
+        items.push(item);
     });
+
+    return items;
+}
+
+/**
+ * Cek peluang gulung TANPA menulis apa pun ke DB -- panggil SEBELUM insertData()/
+ * submitStockOpnameBahan() beneran menyimpan. items dari collectStockOpnameBahanItems().
+ * Kembaran persis previewStockOpnameRollup() di CreateStockOpname.js (Produk).
+ */
+function previewStockOpnameRollupBahan(items, onProceed, onCancel) {
+    $.ajax({
+        url: "/previewStockOpnameRollupBahan",
+        data: { item: JSON.stringify(items), _token: token },
+        method: "post",
+        success: function (e) {
+            var candidates = (e && e.rollup_candidates) || [];
+            if (!Array.isArray(candidates) || candidates.length === 0) {
+                onProceed("skip");
+                return;
+            }
+            // show_popup: satu saklar yang SAMA dengan sisi Produk (OpnameLifecycle::
+            // ROLLUP_PROJECTION_ENABLED) -- false berarti langsung anggap staf klik "Lanjut"
+            // tanpa menampilkan modal sama sekali.
+            if (e && e.show_popup === false) {
+                onProceed("full");
+                return;
+            }
+            showRollupConfirmBahan(candidates, function (decision) {
+                if (decision === "full") {
+                    onProceed("full");
+                } else if (typeof onCancel === "function") {
+                    onCancel();
+                }
+            });
+        },
+        error: function (e) {
+            if (handlePermissionError(e)) return;
+            console.log(e);
+            // Preview gagal (mis. jaringan) -- jangan diam-diam memblokir submit, lanjut dengan
+            // gulung PARSIAL yang aman seperti sebelum fitur konfirmasi ini ada.
+            onProceed("skip");
+        },
+    });
+}
+
+/**
+ * Popup konfirmasi gulung untuk Bahan -- modal PG bergradien (#modalRollupConfirmBahan,
+ * components/modals/stock-opname/rollup-confirm-bahan.blade.php). Kembaran persis
+ * showRollupConfirm() di CreateStockOpname.js (Produk), cuma id-id DOM-nya beda.
+ */
+function showRollupConfirmBahan(candidates, onDecision) {
+    var $rows = $("#rollup-confirm-bahan-rows");
+    $rows.empty();
+
+    candidates.forEach(function (c) {
+        // Backend sudah mengurutkan ch dari satuan BESAR ke KECIL. Panah (&larr;) SENGAJA di
+        // LUAR <span class="rollup-unit-before"> supaya coret cuma menembus angkanya.
+        var chips = (c.changes || [])
+            .map(function (ch) {
+                return (
+                    '<span class="rollup-unit-chip">' +
+                    escapeHtml(ch.unit_short_name || "") +
+                    " " +
+                    ch.after +
+                    ' <span class="rollup-arrow">&larr;</span> ' +
+                    '<span class="rollup-unit-before">' +
+                    ch.before +
+                    "</span></span>"
+                );
+            })
+            .join(" ");
+
+        $rows.append(
+            $("<tr>").append(
+                $("<td>").text(
+                    c.supplies_name || "Bahan#" + c.supplies_id,
+                ),
+                $("<td>").html(
+                    '<div class="d-flex flex-wrap gap-1">' + chips + "</div>",
+                ),
+            ),
+        );
+    });
+
+    var $modal = $("#modalRollupConfirmBahan");
+    var decided = null;
+    $("#btn-rollup-confirm-bahan-lanjut")
+        .off("click")
+        .on("click", function () {
+            decided = "full";
+            $modal.modal("hide");
+        });
+    $("#btn-rollup-confirm-bahan-batal")
+        .off("click")
+        .on("click", function () {
+            decided = "skip";
+            $modal.modal("hide");
+        });
+    $modal.off("hidden.bs.modal").on("hidden.bs.modal", function () {
+        onDecision(decided || "skip");
+    });
+
+    $modal.modal("show");
+}
+
+function insertData(options) {
+    options = options || {};
+    var isDraft = !!options.isDraft;
+    var btnSelector = options.btnSelector || ".btn-save";
+    var doneText = options.doneText || "Tambah Stok Opname";
+    var onSuccess = options.onSuccess;
+    // Draft: hanya simpan bahan yang benar-benar diisi user. Kalau tidak,
+    // seluruh katalog bahan (yang cuma tampil karena pencarian kosong) ikut
+    // tersimpan dengan real_qty otomatis = stok sistem, dan saat draft dibuka
+    // lagi user akan melihat angka yang tidak pernah mereka masukkan sendiri.
+    var keepSparse = !!options.keepSparse;
+
+    $(".is-invalid").removeClass("is-invalid");
+    $(".invalid").removeClass("invalid");
+    var url = "/insertStockOpnameBahan";
+    var valid = 1;
+
+    $(".fill").each(function () {
+        if (
+            $(this).val() == null ||
+            $(this).val() == "null" ||
+            $(this).val() == ""
+        ) {
+            valid = -1;
+            $(this).addClass("is-invalid");
+        }
+    });
+
+    if (
+        $("#penanggung-jawab").val() == null ||
+        $("#penanggung-jawab").val() == ""
+    ) {
+        $(".row-staff .select2-selection--single").addClass("invalid");
+        valid = -1;
+    }
+
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Insert",
+            "Silahkan cek kembali inputan anda",
+        );
+        ResetLoadingButton(btnSelector, doneText);
+        return false;
+    }
+
+    suppliesSubmit = collectStockOpnameBahanItems(keepSparse);
     console.log(suppliesSubmit);
 
     param = {
@@ -630,6 +798,11 @@ function insertData(options) {
         is_draft: isDraft ? 1 : 0,
         _token: token,
     };
+    // Keputusan gulung sudah dijawab staf lewat previewStockOpnameRollupBahan() SEBELUM
+    // insertData() ini pernah dipanggil -- endpoint di bawah ini selalu single-shot.
+    if (options.rollupDecision) {
+        param.rollup_decision = options.rollupDecision;
+    }
     if (mode == 2) {
         url = "/updateStockOpnameBahan";
         param.stob_id = data.stob_id;

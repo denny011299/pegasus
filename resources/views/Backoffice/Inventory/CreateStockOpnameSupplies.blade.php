@@ -333,6 +333,8 @@
         </div>
     </div>
     <!-- /Page Wrapper -->
+
+    @include('components.modals.stock-opname.rollup-confirm-bahan')
 @endsection
 
 @section('custom_js')
@@ -342,5 +344,5 @@
         var mode = @json($mode);
         var sessionUser = @json(Session::get('user'));
     </script>
-    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=12"></script>
+    <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v=13"></script>
 @endsection
