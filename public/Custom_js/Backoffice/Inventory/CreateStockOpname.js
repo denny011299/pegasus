@@ -397,33 +397,55 @@ $(document).on("click", ".btn-ajukan", function () {
             btnSelector: ".btn-ajukan",
             doneText: "Ajukan",
             onSuccess: function () {
-                $.ajax({
-                    url: "/submitStockOpname",
-                    data: { sto_id: data.sto_id, _token: token },
-                    method: "post",
-                    success: function (e) {
-                        if (e && e.status == -1) {
-                            notifikasi(
-                                "error",
-                                "Gagal Mengajukan",
-                                e.message || "Terjadi kesalahan",
-                            );
-                            ResetLoadingButton(".btn-ajukan", "Ajukan");
-                            return;
-                        }
-                        toastr.success("", "Berhasil mengajukan Stock Opname");
-                        window.location.href = "/stockOpname";
-                    },
-                    error: function (e) {
-                        ResetLoadingButton(".btn-ajukan", "Ajukan");
-                        if (handlePermissionError(e)) return;
-                        console.log(e);
-                    },
-                });
+                submitStockOpname();
             },
         });
     });
 });
+
+/**
+ * Ajukan draft (dipanggil setelah insertData/updateData yang menyimpan draft berhasil). Sama
+ * seperti insertData(): backend bisa membalas status==2 (ada peluang gulung, lihat
+ * showRollupConfirm()) sebelum benar-benar mengajukan -- panggil ulang dirinya sendiri dengan
+ * keputusan staf. is_draft masih true sampai backend benar-benar mengajukan, jadi memanggil
+ * /submitStockOpname dua kali (sekali lihat popup, sekali bawa keputusan) aman.
+ */
+function submitStockOpname(rollupDecision) {
+    var param = { sto_id: data.sto_id, _token: token };
+    if (rollupDecision) {
+        param.rollup_decision = rollupDecision;
+    }
+
+    $.ajax({
+        url: "/submitStockOpname",
+        data: param,
+        method: "post",
+        success: function (e) {
+            if (e && e.status == -1) {
+                notifikasi(
+                    "error",
+                    "Gagal Mengajukan",
+                    e.message || "Terjadi kesalahan",
+                );
+                ResetLoadingButton(".btn-ajukan", "Ajukan");
+                return;
+            }
+            if (e && e.status == 2 && Array.isArray(e.rollup_candidates)) {
+                showRollupConfirm(e.rollup_candidates, function (decision) {
+                    submitStockOpname(decision);
+                });
+                return;
+            }
+            toastr.success("", "Berhasil mengajukan Stock Opname");
+            window.location.href = "/stockOpname";
+        },
+        error: function (e) {
+            ResetLoadingButton(".btn-ajukan", "Ajukan");
+            if (handlePermissionError(e)) return;
+            console.log(e);
+        },
+    });
+}
 
 $(document).on("click", ".btn-delete-draft", function () {
     showModalDelete(
@@ -592,6 +614,14 @@ function insertData(options) {
         is_draft: isDraft ? 1 : 0,
         _token: token,
     };
+    // Panggilan kedua setelah staf menjawab popup konfirmasi gulung (lihat status==2 di bawah):
+    // sto_id dokumen yang sudah dibuat panggilan pertama supaya backend tidak membuatnya dua kali.
+    if (options.rollupDecision) {
+        param.rollup_decision = options.rollupDecision;
+    }
+    if (options.existingStoId) {
+        param.sto_id = options.existingStoId;
+    }
     if (mode == 2) {
         url = "/updateStockOpname";
         param.sto_id = data.sto_id;
@@ -614,6 +644,20 @@ function insertData(options) {
                 ResetLoadingButton(btnSelector, doneText);
                 return;
             }
+            // Ada satuan yang tidak disentuh staf tapi bisa digulung ke satuan yang staf koreksi
+            // (mis. Dos dikoreksi, Piece dibiarkan) -- dokumen SUDAH tersimpan (backend menulis
+            // barisnya sebelum mengecek ini), tinggal tanya staf mau digulung atau tidak.
+            if (e && e.status == 2 && Array.isArray(e.rollup_candidates)) {
+                showRollupConfirm(e.rollup_candidates, function (decision) {
+                    insertData(
+                        Object.assign({}, options, {
+                            rollupDecision: decision,
+                            existingStoId: e.sto_id,
+                        }),
+                    );
+                });
+                return;
+            }
             if (typeof onSuccess === "function") {
                 onSuccess(e);
                 return;
@@ -628,6 +672,39 @@ function insertData(options) {
             toastr.error("", "Terjadi Kesalahan Saat Tambah Stok Opname");
             console.log(e);
         },
+    });
+}
+
+/**
+ * Popup konfirmasi gulung PENUH (keputusan user 2026-09-04, bug report "93 Dos, 104 Piece"):
+ * ditampilkan HANYA kalau backend mendeteksi ada produk yang satuan kecilnya tidak disentuh staf
+ * tapi bisa dilipat ke satuan besar yang staf koreksi. onDecision dipanggil dengan "full" (staf
+ * klik Lanjut) atau "skip" (Batal -- gulung parsial otomatis yang aman tetap jalan seperti biasa).
+ */
+function showRollupConfirm(candidates, onDecision) {
+    var list = candidates
+        .map(function (c) {
+            return (
+                "<li>" +
+                escapeHtml(c.product_name || "Produk#" + c.product_variant_id) +
+                "</li>"
+            );
+        })
+        .join("");
+
+    Swal.fire({
+        icon: "warning",
+        title: "Ada satuan yang bisa digulung",
+        html:
+            "Satuan kecil yang tidak dihitung ulang akan dilipat ke satuan besar yang baru dikoreksi untuk produk berikut:" +
+            '<ul style="text-align:left">' +
+            list +
+            "</ul>Lanjutkan gulung satuan?",
+        showCancelButton: true,
+        confirmButtonText: "Lanjut",
+        cancelButtonText: "Batal",
+    }).then(function (result) {
+        onDecision(result.isConfirmed ? "full" : "skip");
     });
 }
 

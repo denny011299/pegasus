@@ -202,6 +202,140 @@ class OpnameLifecycle
         }
     }
 
+    /**
+     * Deteksi peluang gulung PENUH tanpa MENULIS apa pun -- gerbang konfirmasi dipanggil dari
+     * StockController::insertStockOpname()/submitStockOpname() SEBELUM dokumen benar-benar
+     * terbit (keputusan user 2026-09-04, bug report "93 Dos, 104 Piece": staf mengoreksi cuma
+     * Dos, Piece dibiarkan 104 apa adanya -- itu benar per aturan GH #78, tapi user ingin
+     * kesempatan menggulung PENUH ditawarkan secara eksplisit persis di titik dokumen terbit,
+     * bukan otomatis).
+     *
+     * Membandingkan dua hasil gulung untuk tiap produk di dokumen:
+     *   - "baseline": UnitRollUp::collapseProduct() -- gulung PARSIAL yang aman, cuma satuan
+     *     yang staf isi sendiri yang ikut bergerak (ini yang akan ditulis kalau staf pilih
+     *     "Batal" pada popup).
+     *   - "full": UnitRollUp::collapseProductFull() -- gulung PENUH, termasuk melipat satuan
+     *     yang TIDAK disentuh staf (mis. Piece) ke satuan yang disentuh (mis. Dos).
+     * Kalau keduanya beda untuk satuan manapun, produk itu punya "peluang gulung" dan masuk
+     * daftar yang ditampilkan di popup konfirmasi.
+     *
+     * Gudang ECERAN dikecualikan sama seperti rollUpUnits() -- alasannya sama persis.
+     *
+     * @return array<int, array{product_variant_id: int, product_name: string}>
+     */
+    public function detectRollupOpportunities($sto): array
+    {
+        if (! $sto || $sto->is_old_version) {
+            return [];
+        }
+
+        $warehouseId = $sto->warehouse_id ?: null;
+        if (self::isRetailWarehouse($warehouseId)) {
+            return [];
+        }
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
+        if ($lines->isEmpty()) {
+            return [];
+        }
+
+        $variants = ProductVariant::whereIn('product_variant_id', $lines->keys()->filter()->unique()->all())
+            ->get()->keyBy('product_variant_id');
+        $products = Product::whereIn('product_id', $variants->pluck('product_id')->filter()->unique()->all())
+            ->get()->keyBy('product_id');
+
+        $opportunities = [];
+
+        foreach ($lines as $productVariantId => $group) {
+            if (! $productVariantId) {
+                continue;
+            }
+
+            $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
+            $existing = UnitRollUp::existingProductStockByUnit((int) $productVariantId, $warehouseId);
+
+            $baselineByUnit = collect(UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId))
+                ->pluck('qty', 'unit_id')->all();
+            $fullByUnit = collect(UnitRollUp::collapseProductFull((int) $productVariantId, $qtyByUnit, $warehouseId))
+                ->pluck('qty', 'unit_id')->all();
+
+            $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
+            $changed = false;
+            foreach ($unitIds as $unitId) {
+                $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
+                $after = $fullByUnit[$unitId] ?? $before;
+                if ((int) $before !== (int) $after) {
+                    $changed = true;
+                    break;
+                }
+            }
+
+            if (! $changed) {
+                continue;
+            }
+
+            $variant = $variants->get($productVariantId);
+            $product = $variant ? $products->get($variant->product_id) : null;
+            $name = trim(($product->product_name ?? 'produk#'.$productVariantId).' '.($variant->product_variant_name ?? ''));
+
+            $opportunities[] = [
+                'product_variant_id' => (int) $productVariantId,
+                'product_name' => $name,
+            ];
+        }
+
+        return $opportunities;
+    }
+
+    /**
+     * Gulung PENUH: sama seperti rollUpUnits(), tapi lewat UnitRollUp::collapseProductFull() --
+     * satuan yang TIDAK disentuh staf ikut dilipat ke satuan yang disentuh, bukan dibiarkan NULL.
+     *
+     * >>> HANYA dipanggil setelah staf mengonfirmasi lewat popup ("Lanjut") yang menampilkan hasil
+     * detectRollupOpportunities() -- lihat StockController::insertStockOpname()/
+     * submitStockOpname() untuk gerbangnya. TIDAK PERNAH otomatis, TIDAK PERNAH dari draft.
+     * Jangan panggil ini dari update/simpan-antara mana pun -- alasannya sama persis dengan
+     * rollUpUnits() (GitHub #132).
+     */
+    public function rollUpUnitsFull($sto): void
+    {
+        if (! $sto || $sto->is_old_version || $sto->is_draft) {
+            return;
+        }
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
+        $warehouseId = $sto->warehouse_id ?: null;
+
+        if (self::isRetailWarehouse($warehouseId)) {
+            return;
+        }
+
+        foreach ($lines as $productVariantId => $group) {
+            if (! $productVariantId) {
+                continue;
+            }
+
+            $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
+            $collapsed = UnitRollUp::collapseProductFull((int) $productVariantId, $qtyByUnit, $warehouseId);
+            if ($collapsed === []) {
+                continue;
+            }
+
+            $first = $group->first();
+
+            foreach ($collapsed as $credit) {
+                StockOpnameLine::upsertLine([
+                    'sto_id' => $sto->sto_id,
+                    'product_id' => $first->product_id,
+                    'product_variant_id' => $productVariantId,
+                    'unit_id' => $credit['unit_id'],
+                    'sol_counted_qty' => $credit['qty'],
+                    'sol_notes' => $first->sol_notes,
+                ]);
+            }
+        }
+    }
+
     /** Cap keputusan di header -- nama pemutus dibekukan supaya tidak ikut hilang kalau staf dihapus. */
     public function stampDecision($sto, ?int $accBy): void
     {

@@ -100,10 +100,25 @@ class StockController extends Controller
     {
         $data = $req->all();
         $items = json_decode($req->item, true) ?: [];
+        // null = belum ada keputusan dari staf; 'full'/'skip' datang dari panggilan KEDUA setelah
+        // staf menjawab popup konfirmasi gulung (lihat blok is_draft di bawah). $existingId dikirim
+        // HANYA pada panggilan kedua itu (bersama sto_id dokumen yang BARU SAJA dibuat panggilan
+        // pertama) supaya dokumennya tidak dibuat dua kali.
+        $decision = $req->input('rollup_decision');
+        $existingId = $req->input('sto_id');
 
-        return DB::transaction(function () use ($data, $items) {
-            $id = (new StockOpname())->insertStockOpname($data);
-            StockOpnameLine::writeFromPayload($id, $items);
+        return DB::transaction(function () use ($data, $items, $decision, $existingId) {
+            if ($existingId) {
+                $sto = StockOpname::find($existingId);
+                if (! $sto) {
+                    return response()->json(['status' => -1, 'message' => 'Dokumen ini tidak bisa diubah']);
+                }
+                $id = $sto->sto_id;
+            } else {
+                $id = (new StockOpname())->insertStockOpname($data);
+                StockOpnameLine::writeFromPayload($id, $items);
+                $sto = StockOpname::find($id);
+            }
 
             $lifecycle = new OpnameLifecycle();
             // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
@@ -111,10 +126,31 @@ class StockController extends Controller
             // terbit. .btn-save (dokumen dibuat LANGSUNG non-draft, is_draft = 0) membuat insert
             // INI-lah momen "terbit"-nya. .btn-save-draft (is_draft = 1) membuat rollUpUnits()
             // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
-            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan. Dipanggil
-            // SEBELUM publish() supaya identitas satuan yang baru ikut tercipta dari gulungan
-            // (kalaupun ada) turut dibekukan pada publish yang sama.
-            $lifecycle->rollUpUnits(StockOpname::find($id));
+            // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan.
+            if (! $sto->is_draft) {
+                // Keputusan user 2026-09-04 (bug report "93 Dos, 104 Piece"): sebelum gulung PARSIAL
+                // otomatis ditulis, tawarkan dulu gulung PENUH (termasuk satuan yang tidak disentuh
+                // staf) kalau ada peluangnya -- staf yang memutuskan lewat popup di frontend, bukan
+                // otomatis. Baris sudah tersimpan (writeFromPayload di atas), jadi aman dijawab lewat
+                // panggilan kedua ke endpoint yang sama tanpa membuat dokumen ganda.
+                if ($decision === null) {
+                    $opportunities = $lifecycle->detectRollupOpportunities($sto);
+                    if ($opportunities !== []) {
+                        return response()->json([
+                            'status' => 2,
+                            'sto_id' => $id,
+                            'rollup_candidates' => $opportunities,
+                        ]);
+                    }
+                    $decision = 'skip';
+                }
+
+                if ($decision === 'full') {
+                    $lifecycle->rollUpUnitsFull(StockOpname::find($id));
+                } else {
+                    $lifecycle->rollUpUnits(StockOpname::find($id));
+                }
+            }
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
             // tanpa syarat baik untuk .btn-save (langsung publish) maupun .btn-save-draft (no-op,
@@ -208,6 +244,24 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
+        $lifecycle = new OpnameLifecycle();
+        // Keputusan user 2026-09-04 (bug report "93 Dos, 104 Piece"): sebelum is_draft dimatikan,
+        // tawarkan dulu gulung PENUH kalau ada peluangnya -- staf memutuskan lewat popup di
+        // frontend. is_draft masih true sampai staf menjawab, jadi memanggil endpoint ini dua kali
+        // (sekali untuk melihat popup, sekali lagi membawa rollup_decision) aman/idempoten.
+        $decision = $req->input('rollup_decision');
+        if ($decision === null) {
+            $opportunities = $lifecycle->detectRollupOpportunities($sto);
+            if ($opportunities !== []) {
+                return response()->json([
+                    'status' => 2,
+                    'sto_id' => $sto->sto_id,
+                    'rollup_candidates' => $opportunities,
+                ]);
+            }
+            $decision = 'skip';
+        }
+
         $sto->is_draft = false;
         $sto->save();
 
@@ -218,14 +272,17 @@ class StockController extends Controller
         // dokumen keluar dari draft di sini -- inilah saat snapshot identitas dibekukan untuk
         // alur draft (tombol .btn-ajukan). Idempoten, jadi tidak masalah kalau dokumen ini
         // ternyata sudah pernah publish lewat insert.
-        $lifecycle = new OpnameLifecycle();
         // GitHub #132 (2026-09-03): inilah SATU-SATUNYA titik "diajukan" yang sebenarnya untuk
         // dokumen yang lahir sebagai draft -- gulung satuannya di sini, bukan di update, supaya
         // angka mentah yang diketik staf selama masih draft tidak diam-diam berubah tiap simpan.
         // Dipanggil SEBELUM publish() supaya identitas satuan yang baru tercipta dari gulungan
         // (kalau ada) ikut terbekukan pada publish yang sama -- lihat urutan yang sama persis di
         // insertStockOpname().
-        $lifecycle->rollUpUnits($sto->refresh());
+        if ($decision === 'full') {
+            $lifecycle->rollUpUnitsFull($sto->refresh());
+        } else {
+            $lifecycle->rollUpUnits($sto->refresh());
+        }
         $lifecycle->publish($sto->refresh());
 
         return 1;
