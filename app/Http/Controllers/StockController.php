@@ -945,6 +945,17 @@ class StockController extends Controller
         if ($sto->is_draft && !$this->canManageStockOpnameDraft($sto)) {
             abort(404);
         }
+        // Draft belum punya snapshot apa pun (GitHub #115: identitas/stok sistem sengaja tidak
+        // dibekukan sampai dokumen terbit) -- PDF-nya tidak berarti dan tombolnya sendiri sudah
+        // disembunyikan di Stock_Opname.js (item.is_draft). Blokir juga di sini supaya menembak
+        // URL-nya langsung tidak bisa memaksa keluar dokumen setengah jadi, baik ini dokumen milik
+        // sendiri maupun bukan. Cuma dokumen versi BARU -- dokumen lama tidak pernah benar-benar
+        // punya draft lewat UI aslinya (tests/Workflow/StockOpnamePdfLiveSystemStockTest.php
+        // memaksanya cuma untuk menguji refreshLiveSystemQty() lama, cabang else di bawah tidak
+        // pernah menyembunyikan stok sistem seperti OpnameLineReader melakukannya untuk draft baru).
+        if ($sto->is_draft && ! $sto->is_old_version) {
+            abort(404, 'Dokumen masih draft, belum bisa dicetak.');
+        }
 
         if ($sto && ! $sto->is_old_version) {
             // Dokumen versi baru: satu pembaca untuk semuanya. Selisih diturunkan saat dibaca,
@@ -1494,6 +1505,10 @@ class StockController extends Controller
         }
         if ($stob->is_draft && !$this->canManageStockOpnameBahanDraft($stob)) {
             abort(404);
+        }
+        // Kembaran guard generateStockOpname() Produk di atas -- lihat komentarnya untuk alasan.
+        if ($stob->is_draft && ! $stob->is_old_version) {
+            abort(404, 'Dokumen masih draft, belum bisa dicetak.');
         }
 
         if ($stob && ! $stob->is_old_version) {

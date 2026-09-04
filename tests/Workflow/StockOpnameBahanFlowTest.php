@@ -178,4 +178,26 @@ class StockOpnameBahanFlowTest extends TestCase
         $stock->refresh();
         $this->assertSame($realQty, $stock->ss_stock);
     }
+
+    /**
+     * Kembaran StockOpnameDraftPrivacyTest's PDF guard, sisi Bahan (2026-09-04): draft belum
+     * punya snapshot apa pun, tombol Print-nya sendiri sudah disembunyikan client-side
+     * (Stock_Opname_Bahan.js's `item.is_draft`), tapi endpoint-nya harus menolak juga -- termasuk
+     * untuk pembuat dokumennya sendiri, bukan cuma staf lain.
+     */
+    public function test_generate_pdf_rejects_a_draft_even_for_its_own_owner(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $stock = $this->pickFixtureStock();
+        $stobId = $this->insertStockOpnameBahan($stock, isDraft: true, realQty: $stock->ss_stock - 1);
+
+        $this->get('/generateStockOpnameBahan/'.$stobId)->assertStatus(404);
+
+        $this->post('/submitStockOpnameBahan', ['stob_id' => $stobId])->assertStatus(200);
+
+        $response = $this->get('/generateStockOpnameBahan/'.$stobId);
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+    }
 }
