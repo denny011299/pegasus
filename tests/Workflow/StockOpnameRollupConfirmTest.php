@@ -145,7 +145,19 @@ class StockOpnameRollupConfirmTest extends TestCase
         $response->assertJson(['status' => 2]);
         $stoId = (int) $response->json('sto_id');
         $this->assertNotSame(0, $stoId);
-        $this->assertSame(1, count($response->json('rollup_candidates')));
+        $candidates = $response->json('rollup_candidates');
+        $this->assertCount(1, $candidates);
+        $this->assertSame($v->product_variant_id, $candidates[0]['product_variant_id']);
+        // Rincian per satuan (2026-09-04): popup harus bisa menunjukkan "DOS 101 <- 93" dan
+        // "PCS 8 <- (tidak dihitung)" tanpa panggilan tambahan.
+        $changesByUnit = collect($candidates[0]['changes'])->keyBy('unit_id');
+        $dosChange = $changesByUnit[$this->units['dos']->unit_id];
+        $this->assertSame(93, $dosChange['before']);
+        $this->assertSame(101, $dosChange['after']);
+        $this->assertSame($this->units['dos']->unit_short_name, $dosChange['unit_short_name']);
+        $pcsChange = $changesByUnit[$this->units['pcs']->unit_id];
+        $this->assertSame(104, $pcsChange['before']);
+        $this->assertSame(8, $pcsChange['after']);
 
         // Dokumen SUDAH tersimpan (baris ditulis) tapi BELUM terbit -- identitas belum dibekukan
         // (publish() belum jalan), sesuai desain "belum ada keputusan staf".

@@ -678,34 +678,67 @@ function insertData(options) {
 /**
  * Popup konfirmasi gulung PENUH (keputusan user 2026-09-04, bug report "93 Dos, 104 Piece"):
  * ditampilkan HANYA kalau backend mendeteksi ada produk yang satuan kecilnya tidak disentuh staf
- * tapi bisa dilipat ke satuan besar yang staf koreksi. onDecision dipanggil dengan "full" (staf
- * klik Lanjut) atau "skip" (Batal -- gulung parsial otomatis yang aman tetap jalan seperti biasa).
+ * tapi bisa dilipat ke satuan besar yang staf koreksi. Modal PG bergradien (#modalRollupConfirm,
+ * components/modals/stock-opname/rollup-confirm.blade.php) -- bukan SweetAlert2 -- dengan tabel
+ * rincian per produk x per satuan (before -> after), dikunci 4 baris tinggi lalu scroll.
+ * onDecision dipanggil dengan "full" (staf klik Lanjut) atau "skip" (Batal -- gulung parsial
+ * otomatis yang aman tetap jalan seperti biasa).
  */
 function showRollupConfirm(candidates, onDecision) {
-    var list = candidates
-        .map(function (c) {
-            return (
-                "<li>" +
-                escapeHtml(c.product_name || "Produk#" + c.product_variant_id) +
-                "</li>"
-            );
-        })
-        .join("");
+    var $rows = $("#rollup-confirm-rows");
+    $rows.empty();
 
-    Swal.fire({
-        icon: "warning",
-        title: "Ada satuan yang bisa digulung",
-        html:
-            "Satuan kecil yang tidak dihitung ulang akan dilipat ke satuan besar yang baru dikoreksi untuk produk berikut:" +
-            '<ul style="text-align:left">' +
-            list +
-            "</ul>Lanjutkan gulung satuan?",
-        showCancelButton: true,
-        confirmButtonText: "Lanjut",
-        cancelButtonText: "Batal",
-    }).then(function (result) {
-        onDecision(result.isConfirmed ? "full" : "skip");
+    candidates.forEach(function (c) {
+        var chips = (c.changes || [])
+            .map(function (ch) {
+                return (
+                    '<span class="rollup-unit-chip">' +
+                    escapeHtml(ch.unit_short_name || "") +
+                    " " +
+                    ch.after +
+                    ' <span class="rollup-unit-before">&larr; ' +
+                    ch.before +
+                    "</span></span>"
+                );
+            })
+            .join(" ");
+
+        $rows.append(
+            $("<tr>").append(
+                $("<td>").text(
+                    c.product_name || "Produk#" + c.product_variant_id,
+                ),
+                $("<td>").html(
+                    '<div class="d-flex flex-wrap gap-1">' + chips + "</div>",
+                ),
+            ),
+        );
     });
+
+    var $modal = $("#modalRollupConfirm");
+    // decided dipegang di closure ini, bukan langsung memanggil onDecision di handler klik --
+    // supaya menutup modal lewat X/backdrop/ESC (bukan klik salah satu tombol) juga sampai ke
+    // onDecision (dianggap "Batal") lewat SATU titik (hidden.bs.modal), bukan dua jalur berbeda
+    // yang bisa saling menumpuk. .off() dulu di semuanya supaya popup sebelumnya tidak ikut
+    // memanggil onDecision dua kali.
+    var decided = null;
+    $("#btn-rollup-confirm-lanjut")
+        .off("click")
+        .on("click", function () {
+            decided = "full";
+            $modal.modal("hide");
+        });
+    $("#btn-rollup-confirm-batal")
+        .off("click")
+        .on("click", function () {
+            decided = "skip";
+            $modal.modal("hide");
+        });
+    $modal.off("hidden.bs.modal").on("hidden.bs.modal", function () {
+        onDecision(decided || "skip");
+    });
+
+    $modal.modal("show");
 }
 
 $(document).on("click", ".btnBack", function () {

@@ -221,7 +221,11 @@ class OpnameLifecycle
      *
      * Gudang ECERAN dikecualikan sama seperti rollUpUnits() -- alasannya sama persis.
      *
-     * @return array<int, array{product_variant_id: int, product_name: string}>
+     * Tiap produk yang punya peluang membawa `changes[]` (satuan, angka SEBELUM/SESUDAH gulung
+     * penuh) supaya popup konfirmasi bisa menampilkan rincian per satuan (keputusan user
+     * 2026-09-04 setelah popup pertama cuma menyebut nama produk) -- bukan cuma daftar nama.
+     *
+     * @return array<int, array{product_variant_id: int, product_name: string, changes: array<int, array{unit_id: int, unit_short_name: string, before: int, after: int}>}>
      */
     public function detectRollupOpportunities($sto): array
     {
@@ -234,15 +238,20 @@ class OpnameLifecycle
             return [];
         }
 
-        $lines = StockOpnameLine::getLines($sto->sto_id)->groupBy('product_variant_id');
-        if ($lines->isEmpty()) {
+        $flatLines = StockOpnameLine::getLines($sto->sto_id);
+        if ($flatLines->isEmpty()) {
             return [];
         }
+        $lines = $flatLines->groupBy('product_variant_id');
 
         $variants = ProductVariant::whereIn('product_variant_id', $lines->keys()->filter()->unique()->all())
             ->get()->keyBy('product_variant_id');
         $products = Product::whereIn('product_id', $variants->pluck('product_id')->filter()->unique()->all())
             ->get()->keyBy('product_id');
+        // $flatLines (BUKAN $lines yang sudah di-groupBy) -- groupBy() membungkus tiap grup jadi
+        // Collection tersendiri, jadi pluck('unit_id') di atasnya cuma menghasilkan array kosong.
+        $unitNames = Unit::whereIn('unit_id', $flatLines->pluck('unit_id')->filter()->unique()->all())
+            ->pluck('unit_short_name', 'unit_id');
 
         $opportunities = [];
 
@@ -260,17 +269,21 @@ class OpnameLifecycle
                 ->pluck('qty', 'unit_id')->all();
 
             $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
-            $changed = false;
+            $changes = [];
             foreach ($unitIds as $unitId) {
                 $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
                 $after = $fullByUnit[$unitId] ?? $before;
                 if ((int) $before !== (int) $after) {
-                    $changed = true;
-                    break;
+                    $changes[] = [
+                        'unit_id' => (int) $unitId,
+                        'unit_short_name' => $unitNames->get($unitId) ?? ('unit#'.$unitId),
+                        'before' => (int) $before,
+                        'after' => (int) $after,
+                    ];
                 }
             }
 
-            if (! $changed) {
+            if ($changes === []) {
                 continue;
             }
 
@@ -281,6 +294,7 @@ class OpnameLifecycle
             $opportunities[] = [
                 'product_variant_id' => (int) $productVariantId,
                 'product_name' => $name,
+                'changes' => $changes,
             ];
         }
 
