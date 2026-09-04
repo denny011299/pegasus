@@ -94,6 +94,19 @@
             box-sizing: border-box !important;
         }
 
+        /*
+         * Kolom search Select2 ikut font-size body (14px) lewat rule
+         * `font-size: 100%` bawaan select2.css. Safari di tablet/HP
+         * otomatis nge-zoom in halaman begitu sebuah <input> dengan
+         * font-size di bawah 16px kefokus — hasilnya kelihatan kayak
+         * layout "kegeser"/halaman jadi bisa di-slide horizontal begitu
+         * autocomplete dibuka atau diketik (GitHub #142, tablet).
+         * 16px = ambang aman biar Safari gak nge-zoom.
+         */
+        .select2-search__field {
+            font-size: 16px !important;
+        }
+
         /* Global Table Styling (Aesthetic) */
         .table-responsive {
             border: 1px solid #e2e8f0;
