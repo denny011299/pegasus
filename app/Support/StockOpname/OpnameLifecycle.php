@@ -203,27 +203,18 @@ class OpnameLifecycle
     }
 
     /**
-     * Deteksi peluang gulung PENUH tanpa MENULIS apa pun -- gerbang konfirmasi dipanggil dari
-     * StockController::insertStockOpname()/submitStockOpname() SEBELUM dokumen benar-benar
-     * terbit (keputusan user 2026-09-04, bug report "93 Dos, 104 Piece": staf mengoreksi cuma
-     * Dos, Piece dibiarkan 104 apa adanya -- itu benar per aturan GH #78, tapi user ingin
-     * kesempatan menggulung PENUH ditawarkan secara eksplisit persis di titik dokumen terbit,
-     * bukan otomatis).
+     * Deteksi peluang gulung PENUH tanpa MENULIS apa pun, dari dokumen yang SUDAH tersimpan
+     * (draft yang sudah pernah disimpan, dibaca dari stock_opname_lines). Bandingkan dengan
+     * detectRollupOpportunitiesFromPayload() di bawah untuk dokumen yang BELUM tersimpan sama
+     * sekali -- keduanya berbagi buildRollupOpportunity(), cuma sumber $qtyByUnit-nya beda.
      *
-     * Membandingkan dua hasil gulung untuk tiap produk di dokumen:
-     *   - "baseline": UnitRollUp::collapseProduct() -- gulung PARSIAL yang aman, cuma satuan
-     *     yang staf isi sendiri yang ikut bergerak (ini yang akan ditulis kalau staf pilih
-     *     "Batal" pada popup).
-     *   - "full": UnitRollUp::collapseProductFull() -- gulung PENUH, termasuk melipat satuan
-     *     yang TIDAK disentuh staf (mis. Piece) ke satuan yang disentuh (mis. Dos).
-     * Kalau keduanya beda untuk satuan manapun, produk itu punya "peluang gulung" dan masuk
-     * daftar yang ditampilkan di popup konfirmasi.
+     * Dipakai StockController::submitStockOpname() sebagai jaring pengaman kalau frontend
+     * memanggilnya tanpa lebih dulu melewati /previewStockOpnameRollup (lihat CreateStockOpname.js)
+     * -- untuk alur UI normal, deteksi yang sebenarnya sudah selesai lewat payload SEBELUM draft-nya
+     * sendiri disimpan (keputusan user 2026-09-05: jangan ada tulisan DB apa pun sampai staf
+     * benar-benar menjawab popup).
      *
      * Gudang ECERAN dikecualikan sama seperti rollUpUnits() -- alasannya sama persis.
-     *
-     * Tiap produk yang punya peluang membawa `changes[]` (satuan, angka SEBELUM/SESUDAH gulung
-     * penuh) supaya popup konfirmasi bisa menampilkan rincian per satuan (keputusan user
-     * 2026-09-04 setelah popup pertama cuma menyebut nama produk) -- bukan cuma daftar nama.
      *
      * @return array<int, array{product_variant_id: int, product_name: string, changes: array<int, array{unit_id: int, unit_short_name: string, before: int, after: int}>}>
      */
@@ -254,51 +245,139 @@ class OpnameLifecycle
             ->pluck('unit_short_name', 'unit_id');
 
         $opportunities = [];
-
         foreach ($lines as $productVariantId => $group) {
             if (! $productVariantId) {
                 continue;
             }
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
-            $existing = UnitRollUp::existingProductStockByUnit((int) $productVariantId, $warehouseId);
-
-            $baselineByUnit = collect(UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId))
-                ->pluck('qty', 'unit_id')->all();
-            $fullByUnit = collect(UnitRollUp::collapseProductFull((int) $productVariantId, $qtyByUnit, $warehouseId))
-                ->pluck('qty', 'unit_id')->all();
-
-            $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
-            $changes = [];
-            foreach ($unitIds as $unitId) {
-                $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
-                $after = $fullByUnit[$unitId] ?? $before;
-                if ((int) $before !== (int) $after) {
-                    $changes[] = [
-                        'unit_id' => (int) $unitId,
-                        'unit_short_name' => $unitNames->get($unitId) ?? ('unit#'.$unitId),
-                        'before' => (int) $before,
-                        'after' => (int) $after,
-                    ];
-                }
+            $opportunity = $this->buildRollupOpportunity((int) $productVariantId, $qtyByUnit, $warehouseId, $variants, $products, $unitNames);
+            if ($opportunity !== null) {
+                $opportunities[] = $opportunity;
             }
-
-            if ($changes === []) {
-                continue;
-            }
-
-            $variant = $variants->get($productVariantId);
-            $product = $variant ? $products->get($variant->product_id) : null;
-            $name = trim(($product->product_name ?? 'produk#'.$productVariantId).' '.($variant->product_variant_name ?? ''));
-
-            $opportunities[] = [
-                'product_variant_id' => (int) $productVariantId,
-                'product_name' => $name,
-                'changes' => $changes,
-            ];
         }
 
         return $opportunities;
+    }
+
+    /**
+     * Kembaran detectRollupOpportunities() yang bekerja LANGSUNG dari payload frontend (bentuk
+     * item[] yang sama dengan StockOpnameLine::writeFromPayload()), tanpa dokumen apa pun perlu
+     * ada di database sama sekali -- "data bayangan" (keputusan user 2026-09-05): staf mengklik
+     * "Tambah Stok Opname"/"Ajukan", browser mengirim isi form apa adanya ke sini murni untuk
+     * dicek, TIDAK ADA StockOpname/StockOpnameLine yang ditulis. Baru kalau staf klik "Lanjut"
+     * pada popup, browser mengirim ulang payload yang SAMA ke endpoint create/submit sungguhan
+     * (StockController::insertStockOpname()/submitStockOpname()) dengan rollup_decision='full'.
+     *
+     * Dipanggil dari StockController::previewStockOpnameRollup() (route baru, read-only, tidak
+     * ada DB::transaction() sama sekali di sekitarnya).
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array{product_variant_id: int, product_name: string, changes: array<int, array{unit_id: int, unit_short_name: string, before: int, after: int}>}>
+     */
+    public function detectRollupOpportunitiesFromPayload(array $items, ?int $warehouseId): array
+    {
+        if (self::isRetailWarehouse($warehouseId)) {
+            return [];
+        }
+
+        $byVariant = [];
+        foreach ($items as $item) {
+            $productVariantId = (int) ($item['product_variant_id'] ?? 0);
+            if (! $productVariantId) {
+                continue;
+            }
+            foreach (($item['units'] ?? []) as $unit) {
+                $unitId = (int) ($unit['unit_id'] ?? 0);
+                if (! $unitId) {
+                    continue;
+                }
+                // array_key_exists, bukan ?? -- null di sini BERMAKNA "tidak dihitung", sama
+                // seperti konvensi StockOpnameLine::upsertLine().
+                $byVariant[$productVariantId][$unitId] = array_key_exists('real_qty', $unit) && $unit['real_qty'] !== null
+                    ? (int) $unit['real_qty']
+                    : null;
+            }
+        }
+
+        if ($byVariant === []) {
+            return [];
+        }
+
+        $variantIds = array_keys($byVariant);
+        $variants = ProductVariant::whereIn('product_variant_id', $variantIds)->get()->keyBy('product_variant_id');
+        $products = Product::whereIn('product_id', $variants->pluck('product_id')->filter()->unique()->all())
+            ->get()->keyBy('product_id');
+        $allUnitIds = collect($byVariant)->flatMap(fn ($units) => array_keys($units))->unique()->all();
+        $unitNames = Unit::whereIn('unit_id', $allUnitIds)->pluck('unit_short_name', 'unit_id');
+
+        $opportunities = [];
+        foreach ($byVariant as $productVariantId => $qtyByUnit) {
+            $opportunity = $this->buildRollupOpportunity($productVariantId, $qtyByUnit, $warehouseId, $variants, $products, $unitNames);
+            if ($opportunity !== null) {
+                $opportunities[] = $opportunity;
+            }
+        }
+
+        return $opportunities;
+    }
+
+    /**
+     * Inti perbandingan gulung PARSIAL (aman) vs PENUH untuk SATU produk, dipakai
+     * detectRollupOpportunities()/detectRollupOpportunitiesFromPayload() -- lihat docblock
+     * keduanya untuk konteks. Kalau keduanya beda di satuan manapun, kembalikan array peluang
+     * (null kalau tidak ada apa-apa yang berubah).
+     *
+     * $changes[] diurutkan BESAR -> KECIL (keputusan user 2026-09-05: DOS di kiri, pcs di kanan
+     * pada popup) lewat UnitRollUp::multipliersFromBottom() -- bukan urutan alami hasil collapse()
+     * yang kebalikannya (kecil ke besar, dari cara carry naik dibangun).
+     *
+     * @param  array<int, int|null>  $qtyByUnit
+     * @param  \Illuminate\Support\Collection  $variants  keyBy('product_variant_id')
+     * @param  \Illuminate\Support\Collection  $products  keyBy('product_id')
+     * @param  \Illuminate\Support\Collection  $unitNames  unit_id => unit_short_name
+     * @return array{product_variant_id: int, product_name: string, changes: array<int, array{unit_id: int, unit_short_name: string, before: int, after: int}>}|null
+     */
+    private function buildRollupOpportunity(int $productVariantId, array $qtyByUnit, ?int $warehouseId, $variants, $products, $unitNames): ?array
+    {
+        $existing = UnitRollUp::existingProductStockByUnit($productVariantId, $warehouseId);
+
+        $baselineByUnit = collect(UnitRollUp::collapseProduct($productVariantId, $qtyByUnit, $warehouseId))
+            ->pluck('qty', 'unit_id')->all();
+        $fullByUnit = collect(UnitRollUp::collapseProductFull($productVariantId, $qtyByUnit, $warehouseId))
+            ->pluck('qty', 'unit_id')->all();
+
+        $unitIds = array_unique(array_merge(array_keys($baselineByUnit), array_keys($fullByUnit)));
+        $changes = [];
+        foreach ($unitIds as $unitId) {
+            $before = $baselineByUnit[$unitId] ?? $qtyByUnit[$unitId] ?? $existing[$unitId] ?? 0;
+            $after = $fullByUnit[$unitId] ?? $before;
+            if ((int) $before !== (int) $after) {
+                $changes[] = [
+                    'unit_id' => (int) $unitId,
+                    'unit_short_name' => $unitNames->get($unitId) ?? ('unit#'.$unitId),
+                    'before' => (int) $before,
+                    'after' => (int) $after,
+                ];
+            }
+        }
+
+        if ($changes === []) {
+            return null;
+        }
+
+        $multipliers = UnitRollUp::multipliersFromBottom(UnitRollUp::productChain($productVariantId));
+        usort($changes, fn ($a, $b) => ($multipliers[$b['unit_id']] ?? 0) <=> ($multipliers[$a['unit_id']] ?? 0));
+
+        $variant = $variants->get($productVariantId);
+        $product = $variant ? $products->get($variant->product_id) : null;
+        $name = trim(($product->product_name ?? 'produk#'.$productVariantId).' '.($variant->product_variant_name ?? ''));
+
+        return [
+            'product_variant_id' => $productVariantId,
+            'product_name' => $name,
+            'changes' => $changes,
+        ];
     }
 
     /**

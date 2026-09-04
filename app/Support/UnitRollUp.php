@@ -371,13 +371,15 @@ class UnitRollUp
 
     /**
      * Pengali tiap satuan pada $chain relatif terhadap satuan PALING BAWAH tangga itu (satuan
-     * yang tidak pernah muncul sebagai `big`). Dipakai HANYA untuk mengurutkan "mana yang paling
-     * kecil di antara yang diisi" di collapse() -- bukan untuk konversi langsung.
+     * yang tidak pernah muncul sebagai `big`). Dipakai untuk mengurutkan "mana yang paling
+     * kecil di antara yang diisi" di collapse() -- bukan untuk konversi langsung. Public (bukan
+     * private lagi, 2026-09-05): App\Support\StockOpname\OpnameLifecycle juga memakainya untuk
+     * mengurutkan popup konfirmasi gulung dari satuan BESAR ke KECIL (DOS di kiri, pcs di kanan).
      *
      * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
      * @return array<int, int> unit_id => pengali relatif terhadap satuan paling bawah
      */
-    private static function multipliersFromBottom(array $chain): array
+    public static function multipliersFromBottom(array $chain): array
     {
         $smalls = array_unique(array_map(fn ($l) => $l['small'], $chain));
         $bigs = array_unique(array_map(fn ($l) => $l['big'], $chain));

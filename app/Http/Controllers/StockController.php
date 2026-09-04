@@ -96,29 +96,46 @@ class StockController extends Controller
      * Tidak butuh perubahan frontend: units[] dengan real_qty null-able sudah dikirim
      * CreateStockOpname.js sejak dulu, cuma dulu dibuang begitu saja di sini.
      */
+    /**
+     * Cek peluang gulung PENUH TANPA menulis apa pun ke DB -- keputusan user 2026-09-05: dulu
+     * insertStockOpname() menulis dokumen (header + baris) DULU cuma untuk bisa mengecek ini
+     * ("data bayangan" versi lama, ternyata tetap membuat dokumen sungguhan walau staf akhirnya
+     * klik Batal). Endpoint ini murni baca -- item dikirim mentah dari form (bentuk sama persis
+     * dengan yang dikirim insertStockOpname()/updateStockOpname()), tidak ada
+     * StockOpname/StockOpnameLine yang tersentuh sama sekali. Dipanggil dari CreateStockOpname.js
+     * SEBELUM insertData()/submitStockOpname() beneran jalan -- lihat previewStockOpnameRollup()
+     * di sana.
+     */
+    function previewStockOpnameRollup(Request $req)
+    {
+        $items = json_decode($req->item, true) ?: [];
+
+        $warehouseId = (int) ($req->input('warehouse_id') ?: (Session::get('active_warehouse_id') ?? 0));
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) ProductStock::resolveWarehouseId();
+        }
+
+        $candidates = (new OpnameLifecycle())->detectRollupOpportunitiesFromPayload($items, $warehouseId ?: null);
+
+        return response()->json(['rollup_candidates' => $candidates]);
+    }
+
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
         $items = json_decode($req->item, true) ?: [];
-        // null = belum ada keputusan dari staf; 'full'/'skip' datang dari panggilan KEDUA setelah
-        // staf menjawab popup konfirmasi gulung (lihat blok is_draft di bawah). $existingId dikirim
-        // HANYA pada panggilan kedua itu (bersama sto_id dokumen yang BARU SAJA dibuat panggilan
-        // pertama) supaya dokumennya tidak dibuat dua kali.
-        $decision = $req->input('rollup_decision');
-        $existingId = $req->input('sto_id');
+        // Keputusan gulung SUDAH diambil di frontend lewat /previewStockOpnameRollup (baca-saja,
+        // tidak menulis apa pun) SEBELUM endpoint ini pernah dipanggil -- lihat docblock method
+        // itu. Jadi endpoint ini SELALU single-shot lagi seperti sebelum fitur konfirmasi gulung
+        // ada: tidak ada lagi jalur "tulis dulu, tanya nanti, tulis lagi kalau confirm". Default
+        // 'skip' (gulung PARSIAL yang aman) untuk pemanggil yang tidak lewat preview sama sekali
+        // (mis. panggilan API langsung) -- tidak pernah diam-diam menggulung penuh tanpa diminta.
+        $decision = $req->input('rollup_decision', 'skip');
 
-        return DB::transaction(function () use ($data, $items, $decision, $existingId) {
-            if ($existingId) {
-                $sto = StockOpname::find($existingId);
-                if (! $sto) {
-                    return response()->json(['status' => -1, 'message' => 'Dokumen ini tidak bisa diubah']);
-                }
-                $id = $sto->sto_id;
-            } else {
-                $id = (new StockOpname())->insertStockOpname($data);
-                StockOpnameLine::writeFromPayload($id, $items);
-                $sto = StockOpname::find($id);
-            }
+        return DB::transaction(function () use ($data, $items, $decision) {
+            $id = (new StockOpname())->insertStockOpname($data);
+            StockOpnameLine::writeFromPayload($id, $items);
+            $sto = StockOpname::find($id);
 
             $lifecycle = new OpnameLifecycle();
             // GitHub #132 (2026-09-03, GANTI keputusan PM 2026-08-27): gulung satuan (mis. 1 DOS =
@@ -128,23 +145,6 @@ class StockController extends Controller
             // sendiri yang no-op di sini (lihat guard is_draft di dalamnya) -- gulungnya baru
             // terjadi nanti, satu kali, di submitStockOpname() saat draft itu diajukan.
             if (! $sto->is_draft) {
-                // Keputusan user 2026-09-04 (bug report "93 Dos, 104 Piece"): sebelum gulung PARSIAL
-                // otomatis ditulis, tawarkan dulu gulung PENUH (termasuk satuan yang tidak disentuh
-                // staf) kalau ada peluangnya -- staf yang memutuskan lewat popup di frontend, bukan
-                // otomatis. Baris sudah tersimpan (writeFromPayload di atas), jadi aman dijawab lewat
-                // panggilan kedua ke endpoint yang sama tanpa membuat dokumen ganda.
-                if ($decision === null) {
-                    $opportunities = $lifecycle->detectRollupOpportunities($sto);
-                    if ($opportunities !== []) {
-                        return response()->json([
-                            'status' => 2,
-                            'sto_id' => $id,
-                            'rollup_candidates' => $opportunities,
-                        ]);
-                    }
-                    $decision = 'skip';
-                }
-
                 if ($decision === 'full') {
                     $lifecycle->rollUpUnitsFull(StockOpname::find($id));
                 } else {

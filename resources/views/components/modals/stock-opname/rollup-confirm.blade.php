@@ -53,6 +53,11 @@
     font-weight: 600;
     white-space: nowrap;
   }
+  /* Panah dan angka "before" adalah DUA span terpisah (2026-09-05) -- coret cuma boleh menembus
+     angkanya sendiri, bukan ikut menembus panah &larr; di sebelahnya. */
+  #modalRollupConfirm .rollup-unit-chip .rollup-arrow {
+    color: #94a3b8;
+  }
   #modalRollupConfirm .rollup-unit-chip .rollup-unit-before {
     color: #94a3b8;
     font-weight: 500;
@@ -67,7 +72,7 @@
         <div class="d-flex align-items-center gap-3">
           <div class="pg-modal-icon"><i class="fe fe-refresh-cw"></i></div>
           <div>
-            <h5 class="modal-title mb-0">Ada Satuan yang Bisa Digulung</h5>
+            <h5 class="modal-title mb-0">Stock Produk Ini Akan Di Roll Up</h5>
             <small class="modal-subtitle">Satuan kecil yang tidak dihitung ulang akan dilipat ke satuan besar yang baru dikoreksi</small>
           </div>
         </div>

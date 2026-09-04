@@ -22,20 +22,29 @@ use Tests\TestCase;
  *
  * Investigasi: angka itu SUDAH BENAR per aturan GH #78 (UnitRollUp::collapse()'s docblock --
  * jangan pernah mengarang angka satuan yang tidak pernah diperiksa staf, Piece TETAP 104 apa
- * adanya). Tapi user secara eksplisit minta ini ditawarkan sebagai PILIHAN eksplisit di titik
- * dokumen terbit (insertStockOpname is_draft=0, atau submitStockOpname) -- bukan otomatis --
- * lewat popup konfirmasi. Baca App\Support\StockOpname\OpnameLifecycle::detectRollupOpportunities()/
- * rollUpUnitsFull() untuk desainnya.
+ * adanya). User minta ini ditawarkan sebagai PILIHAN eksplisit di titik dokumen terbit lewat
+ * popup konfirmasi.
  *
- * Ketiga skenario di sini:
- *  1. Ada peluang gulung (Dos diisi, Piece TIDAK, existing Piece > 1 ratio Dos) -> endpoint
- *     membalas status=2 + daftar produk, TIDAK menulis apa pun ke stock_opname_lines yang
- *     mengubah publish/rollup, dokumen sudah tersimpan tapi belum terbit.
- *  2. Staf menjawab "Batal" (rollup_decision=skip) -> perilaku SEBELUMNYA (parsial, aman) --
- *     Piece tetap NULL/tidak tersentuh, sama seperti sebelum fitur ini ada.
- *  3. Staf menjawab "Lanjut" (rollup_decision=full) -> Piece ikut dilipat ke Dos.
- *  4. Gudang ECERAN: tidak pernah ditawari popup sama sekali (rollUpUnits() pun sudah
- *     mengecualikan eceran, lihat OpnameLifecycle::isRetailWarehouse()).
+ * >>> GANTI DESAIN 2026-09-05 <<< (follow-up dari user setelah popup pertama terpasang):
+ * Versi pertama (2026-09-04) menulis dokumen (header + baris) DULU cuma untuk bisa mengecek
+ * peluang gulung, baru membalas status=2 kalau ada -- artinya kalau staf klik "Batal", dokumen
+ * yang sudah ditulis itu tetap disimpan (cuma tanpa gulung penuh). User bilang itu salah: klik
+ * "Batal" harus berarti BATAL AJUKAN SAMA SEKALI, tidak ada DB yang tersentuh. Sekarang deteksi
+ * dipisah total dari penulisan: /previewStockOpnameRollup (baca-saja, OpnameLifecycle::
+ * detectRollupOpportunitiesFromPayload()) dipanggil DULU dengan payload mentah dari form -- kalau
+ * staf klik Lanjut, browser BARU memanggil insertStockOpname()/submitStockOpname() sungguhan
+ * dengan rollup_decision='full'. insertStockOpname() sendiri sekarang selalu single-shot lagi
+ * (tidak ada lagi jalur tulis-dulu-tanya-nanti).
+ *
+ * Skenario di sini:
+ *  1. /previewStockOpnameRollup mendeteksi peluang gulung (Dos diisi, Piece TIDAK, existing Piece
+ *     > 1 ratio Dos) TANPA MENULIS APA PUN -- tidak ada StockOpname/StockOpnameLine yang tercipta.
+ *  2. rollup_decision diabaikan/'skip' (mis. staf klik Batal, TIDAK melanjutkan ke
+ *     insertStockOpname() sama sekali) -> tidak ada dokumen yang tercipta sama sekali.
+ *  3. rollup_decision='full' (staf klik Lanjut) -> insertStockOpname() single-shot langsung
+ *     menggulung penuh, Piece ikut dilipat ke Dos.
+ *  4. submitStockOpname() (ajukan draft) menerima rollup_decision dengan cara yang sama.
+ *  5. Gudang ECERAN: /previewStockOpnameRollup tidak pernah mendeteksi peluang di sana.
  */
 class StockOpnameRollupConfirmTest extends TestCase
 {
@@ -113,8 +122,27 @@ class StockOpnameRollupConfirmTest extends TestCase
         return $variant;
     }
 
-    /** Insert dokumen: cuma Dos yang diisi ($dosQty), Piece dikirim sebagai unit_id + real_qty:null. */
-    private function insertDosOnlyOpname(ProductVariant $v, int $dosQty, array $extra = []): \Illuminate\Testing\TestResponse
+    /** Payload item[]: cuma Dos yang diisi ($dosQty), Piece dikirim sebagai unit_id + real_qty:null. */
+    private function dosOnlyItemPayload(ProductVariant $v, int $dosQty): array
+    {
+        return [[
+            'product_id' => $v->product_id,
+            'product_variant_id' => $v->product_variant_id,
+            'units' => [
+                ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => $dosQty],
+                ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
+            ],
+        ]];
+    }
+
+    private function preview(array $items, array $extra = []): \Illuminate\Testing\TestResponse
+    {
+        return $this->post('/previewStockOpnameRollup', array_merge([
+            'item' => json_encode($items),
+        ], $extra));
+    }
+
+    private function insertOpname(array $items, array $extra = []): \Illuminate\Testing\TestResponse
     {
         return $this->post('/insertStockOpname', array_merge([
             'sto_date' => now()->toDateString(),
@@ -122,98 +150,105 @@ class StockOpnameRollupConfirmTest extends TestCase
             'category_id' => $this->categoryId(),
             'sto_notes' => 'Rollup confirm test',
             'is_draft' => 0,
-            'item' => json_encode([[
-                'product_id' => $v->product_id,
-                'product_variant_id' => $v->product_variant_id,
-                'units' => [
-                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => $dosQty],
-                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
-                ],
-            ]]),
+            'item' => json_encode($items),
         ], $extra));
     }
 
-    public function test_direct_publish_detects_and_offers_rollup_confirmation(): void
+    public function test_preview_detects_a_rollup_opportunity_without_writing_anything(): void
     {
         $this->actingAsSuperAdminStaff();
 
         // Meniru laporan bug: 90 Dos, 104 Piece -- staf cuma mengoreksi Dos jadi 93.
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        $stoCountBefore = StockOpname::count();
+        $lineCountBefore = StockOpnameLine::count();
 
-        $response = $this->insertDosOnlyOpname($v, 93);
+        $response = $this->preview($this->dosOnlyItemPayload($v, 93));
         $response->assertStatus(200);
-        $response->assertJson(['status' => 2]);
-        $stoId = (int) $response->json('sto_id');
-        $this->assertNotSame(0, $stoId);
+
         $candidates = $response->json('rollup_candidates');
         $this->assertCount(1, $candidates);
         $this->assertSame($v->product_variant_id, $candidates[0]['product_variant_id']);
-        // Rincian per satuan (2026-09-04): popup harus bisa menunjukkan "DOS 101 <- 93" dan
-        // "PCS 8 <- (tidak dihitung)" tanpa panggilan tambahan.
-        $changesByUnit = collect($candidates[0]['changes'])->keyBy('unit_id');
-        $dosChange = $changesByUnit[$this->units['dos']->unit_id];
+        // Rincian per satuan, diurutkan BESAR -> KECIL (keputusan user 2026-09-05: DOS di kiri).
+        $this->assertSame($this->units['dos']->unit_id, $candidates[0]['changes'][0]['unit_id']);
+        $dosChange = $candidates[0]['changes'][0];
         $this->assertSame(93, $dosChange['before']);
         $this->assertSame(101, $dosChange['after']);
         $this->assertSame($this->units['dos']->unit_short_name, $dosChange['unit_short_name']);
-        $pcsChange = $changesByUnit[$this->units['pcs']->unit_id];
+        $pcsChange = $candidates[0]['changes'][1];
+        $this->assertSame($this->units['pcs']->unit_id, $pcsChange['unit_id']);
         $this->assertSame(104, $pcsChange['before']);
         $this->assertSame(8, $pcsChange['after']);
 
-        // Dokumen SUDAH tersimpan (baris ditulis) tapi BELUM terbit -- identitas belum dibekukan
-        // (publish() belum jalan), sesuai desain "belum ada keputusan staf".
-        $sto = StockOpname::find($stoId);
-        $this->assertNull($sto->sto_staff_name, 'publish() belum boleh jalan sebelum staf menjawab popup');
-        $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
-        $this->assertSame(93, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty);
-        $this->assertNull($lines[$this->units['pcs']->unit_id]->sol_counted_qty);
+        // "Data bayangan" (keputusan user 2026-09-05): TIDAK ADA satu baris pun tertulis ke DB.
+        $this->assertSame($stoCountBefore, StockOpname::count(), 'preview tidak boleh membuat dokumen apa pun');
+        $this->assertSame($lineCountBefore, StockOpnameLine::count(), 'preview tidak boleh membuat baris apa pun');
     }
 
-    public function test_answering_batal_keeps_the_old_safe_partial_behavior(): void
+    public function test_batal_never_touches_the_database_at_all(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
-        $first = $this->insertDosOnlyOpname($v, 93);
-        $stoId = (int) $first->json('sto_id');
+        $items = $this->dosOnlyItemPayload($v, 93);
+        $stoCountBefore = StockOpname::count();
+        $lineCountBefore = StockOpnameLine::count();
 
-        // Panggilan kedua: staf klik "Batal" -> rollup_decision=skip, kirim ulang sto_id yang sama.
-        $second = $this->insertDosOnlyOpname($v, 93, [
-            'rollup_decision' => 'skip',
-            'sto_id' => $stoId,
-        ]);
-        $second->assertStatus(200);
-        $second->assertJson(['status' => 1, 'sto_id' => $stoId]);
+        // Staf melihat popup lewat preview, lalu klik "Batal" -- browser TIDAK PERNAH memanggil
+        // insertStockOpname() sama sekali. Cukup pastikan preview sendiri tidak menulis apa pun
+        // (sudah dites di atas) dan tidak ada endpoint lain yang perlu dipanggil untuk "batal".
+        $this->preview($items)->assertStatus(200);
+
+        $this->assertSame($stoCountBefore, StockOpname::count());
+        $this->assertSame($lineCountBefore, StockOpnameLine::count());
+        $this->assertSame(90, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['dos']->unit_id)->value('ps_stock'));
+        $this->assertSame(104, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
+    }
+
+    public function test_insert_without_rollup_decision_defaults_to_the_old_safe_partial_behavior(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
+        $items = $this->dosOnlyItemPayload($v, 93);
+
+        // Tidak ada rollup_decision dikirim -- default 'skip' (pemanggil yang tidak lewat preview
+        // sama sekali, mis. panggilan API langsung) tidak pernah diam-diam menggulung penuh.
+        $response = $this->insertOpname($items);
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 1]);
+        $stoId = (int) $response->json('sto_id');
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(93, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'Dos tetap 93, tidak berubah');
         $this->assertNull($lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'Piece TETAP null -- perilaku lama, tidak digulung');
 
         $sto = StockOpname::find($stoId);
-        $this->assertNotNull($sto->sto_staff_name, 'publish() harus jalan setelah keputusan dijawab');
+        $this->assertNotNull($sto->sto_staff_name, 'publish() harus tetap jalan untuk dokumen non-draft');
 
         // ACC: cuma Dos yang tertulis ke ps_stock, Piece tidak tersentuh -- persis laporan bug user.
-        $accResp = $this->post('/accStockOpname', ['sto_id' => $stoId, 'item' => json_encode([['dummy' => 1]])]);
-        $accResp->assertOk();
+        $this->post('/accStockOpname', ['sto_id' => $stoId, 'item' => json_encode([['dummy' => 1]])])->assertOk();
         $this->assertSame(93, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['dos']->unit_id)->value('ps_stock'));
         $this->assertSame(104, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
     }
 
-    public function test_answering_lanjut_rolls_untouched_piece_into_dos(): void
+    public function test_lanjut_creates_the_document_in_one_shot_with_full_rollup(): void
     {
         $this->actingAsSuperAdminStaff();
 
         // 1 DOS = 12 pcs. 93 Dos (diisi) + 104 pcs (existing, tidak diisi) = 1116 + 104 = 1220 pcs
         // = 101 DOS + 8 pcs kanonik.
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104, ratio: 12);
-        $first = $this->insertDosOnlyOpname($v, 93);
-        $stoId = (int) $first->json('sto_id');
+        $items = $this->dosOnlyItemPayload($v, 93);
+        $stoCountBefore = StockOpname::count();
 
-        $second = $this->insertDosOnlyOpname($v, 93, [
-            'rollup_decision' => 'full',
-            'sto_id' => $stoId,
-        ]);
-        $second->assertStatus(200);
-        $second->assertJson(['status' => 1, 'sto_id' => $stoId]);
+        // Staf klik Lanjut -- browser memanggil insertStockOpname() SATU KALI dengan
+        // rollup_decision=full, tidak ada panggilan pertama yang menulis apa pun sebelumnya.
+        $response = $this->insertOpname($items, ['rollup_decision' => 'full']);
+        $response->assertStatus(200);
+        $response->assertJson(['status' => 1]);
+        $stoId = (int) $response->json('sto_id');
+        $this->assertSame($stoCountBefore + 1, StockOpname::count(), 'cuma SATU dokumen yang tercipta, bukan dua');
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(101, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'Dos ikut menyerap kelebihan Piece');
@@ -224,23 +259,22 @@ class StockOpnameRollupConfirmTest extends TestCase
         $this->assertSame(8, (int) ProductStock::where('product_variant_id', $v->product_variant_id)->where('unit_id', $this->units['pcs']->unit_id)->value('ps_stock'));
     }
 
-    public function test_submit_stock_opname_offers_the_same_confirmation_for_a_draft(): void
+    public function test_submit_stock_opname_still_accepts_an_explicit_rollup_decision(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104);
-        $draft = $this->insertDosOnlyOpname($v, 93, ['is_draft' => 1]);
+        $items = $this->dosOnlyItemPayload($v, 93);
+
+        // Draft-nya sendiri (halaman "Ajukan" selalu autosave draft dulu) -- ini pra-syarat yang
+        // TIDAK berubah oleh perubahan 2026-09-05 (menyimpan draft bukan "menerbitkan").
+        $draft = $this->insertOpname($items, ['is_draft' => 1]);
         $draft->assertStatus(200);
-        $draft->assertJson(['status' => 1]);
         $stoId = (int) $draft->json('sto_id');
 
-        $first = $this->post('/submitStockOpname', ['sto_id' => $stoId]);
-        $first->assertStatus(200);
-        $first->assertJson(['status' => 2]);
-        $this->assertTrue((bool) StockOpname::find($stoId)->is_draft, 'belum ada keputusan -- draft belum diajukan');
-
-        $second = $this->post('/submitStockOpname', ['sto_id' => $stoId, 'rollup_decision' => 'full']);
-        $second->assertStatus(200);
+        // Frontend sudah menjawab popup lewat preview SEBELUM memanggil ini -- langsung bawa
+        // rollup_decision, satu panggilan saja.
+        $this->post('/submitStockOpname', ['sto_id' => $stoId, 'rollup_decision' => 'full'])->assertStatus(200);
         $this->assertFalse((bool) StockOpname::find($stoId)->refresh()->is_draft);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
@@ -260,24 +294,8 @@ class StockOpnameRollupConfirmTest extends TestCase
 
         $v = $this->makeLadderedItem(dosStock: 90, pcsStock: 104, warehouseId: $warehouse->id);
 
-        $response = $this->post('/insertStockOpname', [
-            'sto_date' => now()->toDateString(),
-            'staff_id' => $this->staffId(),
-            'category_id' => $this->categoryId(),
-            'sto_notes' => 'Rollup confirm test (eceran)',
-            'is_draft' => 0,
-            'warehouse_id' => $warehouse->id,
-            'item' => json_encode([[
-                'product_id' => $v->product_id,
-                'product_variant_id' => $v->product_variant_id,
-                'units' => [
-                    ['unit_id' => $this->units['dos']->unit_id, 'system_qty' => 0, 'real_qty' => 93],
-                    ['unit_id' => $this->units['pcs']->unit_id, 'system_qty' => 0, 'real_qty' => null],
-                ],
-            ]]),
-        ]);
-
+        $response = $this->preview($this->dosOnlyItemPayload($v, 93), ['warehouse_id' => $warehouse->id]);
         $response->assertStatus(200);
-        $response->assertJson(['status' => 1], 'gudang eceran tidak pernah ditawari popup gulung');
+        $this->assertSame([], $response->json('rollup_candidates'), 'gudang eceran tidak pernah punya peluang gulung');
     }
 }
