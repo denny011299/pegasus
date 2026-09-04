@@ -1397,7 +1397,8 @@ function continueAddProduct(tempBom) {
             $("#production_destination_warehouse_id")
                 .val(null)
                 .trigger("change");
-            syncProductionDestinationControl();
+            // Tiap baris baru: default Stok lagi (jangan bawa mode Transfer dari baris sebelumnya).
+            setProductionDestMode("stock");
             clearPendingProductionAdd();
         },
         error: function (a) {
@@ -1530,6 +1531,8 @@ $(document).on("change", "#addProduction #product_id", function () {
     }
 
     populateProductionUnitSelect(data);
+    // Produk baru di input row → selalu mulai dari Stok; Transfer hanya jika user pilih lagi.
+    setProductionDestMode("stock");
     $("#production_qty").trigger("keyup");
 });
 
