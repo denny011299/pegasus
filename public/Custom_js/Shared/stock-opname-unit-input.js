@@ -13,7 +13,7 @@ function buildOpnameUnitInputHtml(opts) {
     var showCheckbox = opts.showCheckbox !== false;
 
     var displayVal = checked ? "" : value;
-    var displayPh = checked ? "ikutin stock lama" : placeholder;
+    var displayPh = checked ? "ikut stock sistem" : placeholder;
     var phAttr =
         displayPh !== ""
             ? ' placeholder="' + String(displayPh).replace(/"/g, "&quot;") + '"'
@@ -22,7 +22,7 @@ function buildOpnameUnitInputHtml(opts) {
     var chkAttr = checked ? " checked" : "";
 
     var checkboxHtml = showCheckbox
-        ? '<span class="input-group-text unit-use-system-wrap" title="Centang = ikut stok lama">' +
+        ? '<span class="input-group-text unit-use-system-wrap" title="Centang untuk menggunakan stock sistem">' +
           '<input type="checkbox" class="form-check-input m-0 use-system-stock"' +
           chkAttr +
           "></span>"

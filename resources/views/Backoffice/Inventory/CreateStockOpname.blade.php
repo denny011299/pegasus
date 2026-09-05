@@ -154,15 +154,34 @@
     }
 
     .stock-opname-use-system-hint {
-      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 42px;
+      padding: 0 14px;
+      font-size: 12.5px;
       font-weight: 600;
       color: #92400e;
-      background: #fef3c7;
-      border: 1px solid #fcd34d;
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+      border: 1px solid #fde68a;
       border-radius: 8px;
-      padding: 8px 12px;
       margin: 0;
       white-space: nowrap;
+      box-shadow: 0 1px 2px rgba(217, 119, 6, 0.05);
+    }
+
+    .stock-opname-use-system-hint .hint-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #fef3c7;
+      border: 1px solid #fde68a;
+      color: #d97706;
+      font-size: 12px;
+      flex-shrink: 0;
     }
 
     #tb-stock-wrap.opname-submitting {
@@ -351,7 +370,10 @@
                   <input type="text" class="form-control ps-5" id="filter_pr_name" placeholder="Cari Nama Produk / SKU..." style="height: 42px; border-radius: 8px; font-size: 13px; border: 1px solid #cbd5e1;">
                 </div>
               </div>
-              <p class="stock-opname-use-system-hint mb-0"><i class="fe fe-info me-1"></i>Kalau centang itu ikut stock lama</p>
+              <div class="stock-opname-use-system-hint mb-0">
+                <span class="hint-icon-badge"><i class="fe fe-info"></i></span>
+                <span>Centang untuk menggunakan stock sistem</span>
+              </div>
             </div>
 
             <!-- Action Buttons for Desktop -->
