@@ -59,7 +59,7 @@ function applyOpnameUseSystemStockState($cb) {
             $input.data("prev-ph", $input.attr("placeholder") || "");
             $input.data("prev-val-saved", 1);
         }
-        $input.val("").attr("placeholder", "ikutin stock lama").prop("disabled", true);
+        $input.val("").attr("placeholder", "ikut stock sistem").prop("disabled", true);
     } else {
         var prev = $input.data("prev-val");
         var prevPh = $input.data("prev-ph") || "";
