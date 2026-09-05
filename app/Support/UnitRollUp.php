@@ -204,6 +204,131 @@ class UnitRollUp
     }
 
     /**
+     * Gulung PENUH: seperti collapse(), tapi mulai dari DASAR tangga (satuan terkecil) dan
+     * dipakai bukan hanya satuan yang staf isi -- satuan yang tidak diisi ikut disumbang dari
+     * stok yang sudah ada ($existingByUnitId) di SETIAP tingkat, bukan cuma tingkat yang
+     * dilewati saat naik dari satuan yang diisi. Hasilnya: representasi kanonik PENUH atas
+     * seluruh tangga, termasuk melipat kelebihan satuan kecil yang TIDAK PERNAH disentuh staf
+     * ke satuan besar yang staf isi sendiri.
+     *
+     * >>> INI SENGAJA MELANGGAR aturan GH #78 yang dipegang collapse() ("jangan pernah mengarang
+     * angka satuan yang tidak pernah diperiksa staf") -- makanya TIDAK PERNAH dipanggil otomatis
+     * dari input mana pun. Satu-satunya pemanggil yang sah: OpnameLifecycle::rollUpUnitsFull(),
+     * dan itu HANYA dipanggil setelah staf melihat daftar produk yang akan tergulung dan
+     * mengklik "Lanjut" secara eksplisit pada popup konfirmasi (keputusan user 2026-09-04,
+     * GitHub bug report "93 Dos, 104 Piece") -- baca docblock rollUpUnitsFull() untuk alur
+     * lengkapnya. Jangan panggil ini dari collapseProduct()/rollUpUnits() (jalur otomatis,
+     * aman) atau dari draft mana pun.
+     *
+     * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
+     * @param  array<int, int|null>  $qtyByUnitId  null/tidak ada = satuan ini TIDAK diisi
+     * @param  array<int, int>  $allowedUnitIds
+     * @param  array<int, int>  $existingByUnitId  stok live per satuan, dipakai untuk satuan yang
+     *         tidak diisi di $qtyByUnitId, di SETIAP tingkat (bukan cuma yang dilewati)
+     * @return array<int, array{unit_id: int, qty: int}>  seluruh satuan yang tersentuh gulungan
+     *         ini (bisa kosong kalau chain kosong atau tidak ada satuan apa pun yang punya nilai)
+     */
+    public static function collapseFull(array $chain, array $qtyByUnitId, array $allowedUnitIds, array $existingByUnitId = []): array
+    {
+        // >>> TIDAK ADA guard "produk ini tidak disentuh staf" di sini, SENGAJA <<< (keputusan
+        // user 2026-09-05, membatalkan fix sehari sebelumnya yang menambahkan guard itu):
+        // collapseFull() memang dimaksudkan memproyeksikan SELURUH produk seakan-akan dokumen ini
+        // sudah final -- stok sistem ditumpuk oleh input staf KALAU ADA, lalu digulung. Kalau staf
+        // tidak mengisi satuan apa pun untuk produk ini, itu proyeksi MURNI dari stok sistem yang
+        // sudah ada -- justru itulah yang dipakai untuk menangkap data lama yang sudah tidak
+        // kanonik (mis. 104 pcs padahal 1 DOS = 12 pcs) walau tidak ada yang sedang meng-opname
+        // produk itu secara eksplisit. Lihat App\Support\StockOpname\OpnameLifecycle::
+        // buildRollupOpportunity() untuk sisi pemanggilnya.
+        if ($chain === []) {
+            return [];
+        }
+
+        $multipliers = self::multipliersFromBottom($chain);
+        if ($multipliers === []) {
+            return [];
+        }
+        asort($multipliers);
+        $bottom = array_key_first($multipliers);
+
+        $seed = fn ($unitId) => $qtyByUnitId[$unitId] ?? $existingByUnitId[$unitId] ?? null;
+
+        $allowed = array_flip(array_map('intval', $allowedUnitIds));
+        $current = $bottom;
+        $carry = (int) ($seed($bottom) ?? 0);
+        $credits = [];
+        $hops = 0;
+
+        while ($hops < self::MAX_HOPS) {
+            $hops++;
+
+            $rel = null;
+            foreach ($chain as $link) {
+                if ($link['small'] === $current) {
+                    $rel = $link;
+                    break;
+                }
+            }
+
+            if ($rel === null || $rel['ratio'] <= 0 || $carry < $rel['ratio'] || ! isset($allowed[$rel['big']])) {
+                break;
+            }
+
+            $credits[] = ['unit_id' => $current, 'qty' => $carry % $rel['ratio']];
+            $carry = (int) floor($carry / $rel['ratio']) + (int) ($seed($rel['big']) ?? 0);
+            $current = $rel['big'];
+        }
+
+        $credits[] = ['unit_id' => $current, 'qty' => $carry];
+
+        return $credits;
+    }
+
+    /**
+     * Convenience wrapper: gulung PENUH satu baris produk (lihat collapseFull()) -- hanya dipakai
+     * di belakang konfirmasi eksplisit staf, lihat OpnameLifecycle::rollUpUnitsFull().
+     *
+     * @param  array<int, int|null>  $qtyByUnitId
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function collapseProductFull(int $productVariantId, array $qtyByUnitId, ?int $warehouseId = null): array
+    {
+        return self::collapseFull(
+            self::productChain($productVariantId),
+            $qtyByUnitId,
+            self::allowedProductUnitIds($productVariantId, $warehouseId),
+            self::existingProductStockByUnit($productVariantId, $warehouseId)
+        );
+    }
+
+    /**
+     * Kembaran persis collapseProductFull() untuk Bahan/Supplies -- lihat docblock itu (dan
+     * collapseFull()'s docblock) untuk alasan lengkap kenapa TIDAK ADA guard "produk ini tidak
+     * disentuh staf": SENGAJA, dipakai App\Support\StockOpname\BahanOpnameLifecycle untuk
+     * menangkap data bahan lama yang sudah tidak kanonik di database, sama seperti sisi Produk.
+     *
+     * @param  array<int, int|null>  $qtyByUnitId
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function collapseSuppliesFull(int $suppliesId, array $qtyByUnitId, ?int $warehouseId = null): array
+    {
+        return self::collapseFull(
+            self::suppliesChain($suppliesId),
+            $qtyByUnitId,
+            self::allowedSuppliesUnitIds($suppliesId, $warehouseId),
+            self::existingSuppliesStockByUnit($suppliesId, $warehouseId)
+        );
+    }
+
+    /**
+     * Convenience wrapper: gulung satu baris produk, dibatasi ke satuan yang sudah punya baris
+     * stok aktif (kebijakan yang sama dengan planProduct()).
+     *
+     * $warehouseId: sama seperti allowedProductUnitIds() -- untuk Stock Opname ini WAJIB diisi
+     * gudang dokumennya sendiri, bukan gudang aktif sesi yang kebetulan menyimpan. Kalau tidak,
+     * dokumen bisa tergulung ke satuan yang tidak punya baris stok di gudangnya sendiri, dan ACC-nya
+     * nanti (accStockOpnameV2(), yang memang dipin ke gudang dokumen) menolak dengan "Baris stok
+     * tidak ditemukan".
+     *
      * @param  array<int, int|null>  $qtyByUnitId
      * @param  bool  $foldLiveUntouched  true = lipat stok live unit kosong ke carry (default lama).
      *         false = policy opname 2026-09-05: hangus — jangan bawa stok live unit yang tidak diisi.
@@ -306,13 +431,15 @@ class UnitRollUp
 
     /**
      * Pengali tiap satuan pada $chain relatif terhadap satuan PALING BAWAH tangga itu (satuan
-     * yang tidak pernah muncul sebagai `big`). Dipakai HANYA untuk mengurutkan "mana yang paling
-     * kecil di antara yang diisi" di collapse() -- bukan untuk konversi langsung.
+     * yang tidak pernah muncul sebagai `big`). Dipakai untuk mengurutkan "mana yang paling
+     * kecil di antara yang diisi" di collapse() -- bukan untuk konversi langsung. Public (bukan
+     * private lagi, 2026-09-05): App\Support\StockOpname\OpnameLifecycle juga memakainya untuk
+     * mengurutkan popup konfirmasi gulung dari satuan BESAR ke KECIL (DOS di kiri, pcs di kanan).
      *
      * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
      * @return array<int, int> unit_id => pengali relatif terhadap satuan paling bawah
      */
-    private static function multipliersFromBottom(array $chain): array
+    public static function multipliersFromBottom(array $chain): array
     {
         $smalls = array_values(array_unique(array_map(fn ($l) => $l['small'], $chain)));
         $bigs = array_values(array_unique(array_map(fn ($l) => $l['big'], $chain)));

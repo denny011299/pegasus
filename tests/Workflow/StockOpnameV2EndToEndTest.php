@@ -131,7 +131,7 @@ class StockOpnameV2EndToEndTest extends TestCase
      * @param  array<int, array{variant: ProductVariant, dos: int|null, pcs: int|null}>  $lines
      *         null = satuan itu dibiarkan tidak dihitung.
      */
-    private function insertOpname(array $lines, bool $isDraft = false, string $notes = 'E2E test'): int
+    private function insertOpname(array $lines, bool $isDraft = false, string $notes = 'E2E test', ?string $rollupDecision = null): int
     {
         $items = [];
         foreach ($lines as $line) {
@@ -155,14 +155,15 @@ class StockOpnameV2EndToEndTest extends TestCase
             ];
         }
 
-        $response = $this->post('/insertStockOpname', [
+        $response = $this->post('/insertStockOpname', array_filter([
             'sto_date' => now()->toDateString(),
             'staff_id' => $this->staffId(),
             'category_id' => $this->categoryId(),
             'sto_notes' => $notes,
             'is_draft' => $isDraft ? 1 : 0,
             'item' => json_encode($items),
-        ]);
+            'rollup_decision' => $rollupDecision,
+        ], fn ($v) => $v !== null));
         $response->assertStatus(200);
         $response->assertJson(['status' => 1]);
 
@@ -716,8 +717,16 @@ class StockOpnameV2EndToEndTest extends TestCase
      * Contoh persis dari PM, LEWAT /insertStockOpname sungguhan (bukan lifecycle langsung seperti
      * StockOpnameV2LifecycleTest): 1 DOS = 12 pcs, isi 30 pcs -> tersimpan 2 DOS + 6 pcs, dan itu
      * yang tercetak di PDF-nya juga.
+     *
+     * >>> GANTI KEPUTUSAN (user, 2026-09-06): "setiap kali ada roll up yang terdeteksi,
+     * munculkan popup konfirmasinya" -- gulung ini dulu terjadi OTOMATIS tanpa konfirmasi sama
+     * sekali (rollUpUnits() dipanggil tanpa syarat dari insertStockOpname()). Sekarang SEMUA
+     * gulung, termasuk mengisi satuan terkecil sendirian seperti contoh PM ini, wajib lewat
+     * /previewStockOpnameRollup dan rollup_decision='full' -- lihat OpnameLifecycle::
+     * computeFullProjectionChanges()'s docblock untuk bug yang mendorong perubahan ini
+     * (mengisi 1000 pcs sendirian dulu tergulung tanpa staf pernah melihat popup-nya).
      */
-    public function test_insert_endpoint_rolls_up_a_filled_small_unit_automatically(): void
+    public function test_insert_endpoint_rolls_up_a_filled_small_unit_when_confirmed(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -725,11 +734,11 @@ class StockOpnameV2EndToEndTest extends TestCase
 
         $stoId = $this->insertOpname([[
             'variant' => $v, 'dos' => null, 'pcs' => 30,
-        ]]);
+        ]], rollupDecision: 'full');
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
-        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'DOS harus otomatis terisi dari kelebihan pcs, lewat endpoint sungguhan');
+        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'DOS harus terisi dari kelebihan pcs setelah rollup_decision=full');
 
         $row = $this->extractRow($this->pdf($stoId), $v->product_variant_sku);
         $this->assertStringContainsString('6 '.$this->units['pcs']->unit_short_name, $row);

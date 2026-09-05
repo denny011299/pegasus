@@ -23,7 +23,7 @@ class LogDashboardActivity
             // samping log mutasi di atas. Baris 'open' dicatat dengan activity_type terpisah
             // supaya ReportController::dashboardChangeLogCounts() (KPI "Changelog" = antrean
             // butuh ACC Direktur) tidak ikut menghitung page-view biasa sebagai item pending.
-            $this->logOpen($request);
+            $this->logOpen($request, $response);
         }
 
         return $response;
@@ -64,7 +64,7 @@ class LogDashboardActivity
      * Ini estimasi pasif (jarak waktu ke request berikutnya), bukan sinyal tab-ditutup yang
      * sesungguhnya — lihat catatan cap 4 jam di bawah.
      */
-    private function logOpen(Request $request): void
+    private function logOpen(Request $request, Response $response): void
     {
         $staffId = (int) (session('user')->staff_id ?? 0);
         if ($staffId <= 0) {
@@ -74,6 +74,7 @@ class LogDashboardActivity
         $moduleKey = $this->detectModuleKey($request);
         $moduleLabel = $this->formatModuleLabel($moduleKey);
         $now = now();
+        $sessionId = $this->sessionMarker($request);
 
         // Ditambahkan (2026-08-14), dihapus lagi (2026-08-15): sempat ada debounce 15 menit
         // per staf+modul di sini supaya klik-klik/refresh cepat tidak jadi baris baru tiap
@@ -84,26 +85,27 @@ class LogDashboardActivity
         // terbuka -- persis gejala yang dilaporkan user ("Dashboard nav click still not
         // ending the previous page session"). Setiap kunjungan sekarang selalu dicatat.
 
-        // Tutup baris 'open' terakhir milik staf ini (modul manapun) yang belum punya durasi —
-        // durasinya = jarak ke pembukaan menu berikutnya ini. Kalau jaraknya lebih dari 4 jam,
-        // anggap tab lama itu cuma ditinggal (idle/browser ditutup tanpa navigasi lagi) dan
-        // jangan diisi durasi yang menyesatkan.
-        $previous = DashboardChangeLog::where('created_by', $staffId)
-            ->where('activity_type', 'open')
-            ->whereNull('duration_seconds')
-            ->orderByDesc('created_at')
-            ->first();
-        if ($previous) {
-            // Explicit $absolute=true + cast to int: Carbon 3's diffInSeconds() defaults to a
-            // signed, sub-second-precision float (negative here since $previous is in the past).
-            $seconds = (int) $now->diffInSeconds($previous->created_at, true);
-            if ($seconds <= 4 * 3600) {
-                $previous->duration_seconds = $seconds;
-                $previous->save();
-            }
-        }
+        // Tutup baris 'open' terakhir milik SESI LOGIN ini (modul manapun) yang belum punya
+        // durasi — durasinya = jarak ke pembukaan menu berikutnya ini. Di-scope ke $sessionId
+        // supaya staf yang sama login bersamaan di device/browser lain tidak ikut ditutup
+        // (lihat catatan di DashboardChangeLog::closeOpenSession()). Kalau jaraknya lebih dari
+        // 4 jam, anggap tab lama itu cuma ditinggal (idle/browser ditutup tanpa navigasi lagi)
+        // dan jangan diisi durasi yang menyesatkan. Lihat juga
+        // DashboardActivityController::closeSession() -- sinyal AKTIF (tab ditutup) yang
+        // ditembak lewat navigator.sendBeacon() saat unload, supaya baris 'open' tidak nyangkut
+        // "Sedang dibuka" selamanya kalau user tidak pernah buka menu lain lagi.
+        DashboardChangeLog::closeOpenSession($staffId, $now, 4 * 3600, $sessionId);
 
         $staffName = session('user')->staff_name ?? '-';
+
+        // Token unik per-pageview, ditanam ke HTML di bawah supaya close-beacon (lihat
+        // mainlayout.blade.php) menutup baris 'open' INI secara spesifik lewat
+        // whereJson('meta->client_token', ...), bukan cuma "baris open terakhir milik staf
+        // ini yang durasinya masih kosong". Tanpa token itu ada race: beacon pagehide milik
+        // halaman A bisa sampai ke server SETELAH request GET halaman B (navigasi berikutnya)
+        // sudah lebih dulu bikin baris 'open' baru untuk B -- akibatnya beacon A malah menutup
+        // baris B yang baru berumur 0 detik (durasi jadi 0, bukan durasi A yang sebenarnya).
+        $clientToken = (string) Str::uuid();
 
         DashboardChangeLog::create([
             'module_key' => $moduleKey,
@@ -121,9 +123,55 @@ class LogDashboardActivity
             'meta' => [
                 'method' => $request->method(),
                 'path' => $request->path(),
+                'client_token' => $clientToken,
+                'session_id' => $sessionId,
             ],
             'duration_seconds' => null,
         ]);
+
+        $this->injectClientToken($response, $clientToken);
+    }
+
+    /**
+     * Identitas SESI LOGIN saat ini (per browser/device), beda dari staff_id yang cuma
+     * identitas akunnya. Dua sesi login staf yang sama (2 device/tab login bersamaan) dapat
+     * marker berbeda -- inilah kunci supaya baris 'open' masing-masing tidak saling menutup
+     * (lihat DashboardChangeLog::closeOpenSession()).
+     *
+     * SENGAJA bukan $request->session()->getId() -- Laravel session ID tidak stabil untuk
+     * dipakai sebagai penanda ini: bisa berbeda tiap request (mis. StartSession meregenerasi
+     * ID dari cookie tiap kali) walau isi sesinya sendiri tetap sama. Marker kustom ini
+     * disimpan di DALAM data sesi (bukan ID-nya) sekali per sesi lalu dipakai ulang, jadi
+     * tetap sama selama sesi login yang sama berlangsung.
+     */
+    private function sessionMarker(Request $request): string
+    {
+        $marker = $request->session()->get('_dashboard_activity_sid');
+        if (!is_string($marker) || $marker === '') {
+            $marker = (string) Str::uuid();
+            $request->session()->put('_dashboard_activity_sid', $marker);
+        }
+
+        return $marker;
+    }
+
+    /**
+     * Suntik token pageview ke HTML yang SUDAH di-render ($next($request) di handle() sudah
+     * jalan) -- tidak bisa lewat View::share() karena blade-nya sudah selesai dieksekusi.
+     * str_replace ke penutup </body> yang terakhir supaya window.__dashboardActivityToken
+     * selalu ada saat beacon di mainlayout.blade.php butuh dikirim.
+     */
+    private function injectClientToken(Response $response, string $token): void
+    {
+        $content = $response->getContent();
+        if ($content === false || !str_contains($content, '</body>')) {
+            return;
+        }
+
+        $script = '<script>window.__dashboardActivityToken='.json_encode($token).';</script></body>';
+        $pos = strrpos($content, '</body>');
+        $content = substr_replace($content, $script, $pos, strlen('</body>'));
+        $response->setContent($content);
     }
 
     private function shouldLogChange(Request $request, Response $response): bool
@@ -142,7 +190,7 @@ class LogDashboardActivity
         if ($path === '' || str_starts_with($path, 'get')) {
             return false;
         }
-        if (in_array($path, ['dismissdashboardqueueitem', 'updatedashboardwidgets', 'updatepermission'], true)) {
+        if (in_array($path, ['dismissdashboardqueueitem', 'updatedashboardwidgets', 'updatepermission', 'closedashboardsession'], true)) {
             return false;
         }
 

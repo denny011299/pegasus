@@ -633,6 +633,18 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   function LoadingButton(id) {
     var $btn = $(id);
     if (!$btn.length) return;
+    // Simpan height/min-width ASLI (dari style="..." di HTML, kalau ada) SEBELUM dikunci --
+    // ResetLoadingButton dulu cuma css({height:''}), yang menghapus property yang barusan
+    // ditulis JS ini, BUKAN mengembalikan ke teks asli attribute style: begitu jQuery
+    // menyentuh property inline style yang sama, teks aslinya hilang untuk selamanya (browser
+    // memutasi attribute style itu sendiri, bukan menyimpan dua salinan terpisah). Tanpa ini
+    // tombol dengan height tetap di HTML-nya (mis. .btn-save height:40px) jadi "penyet" --
+    // turun ke tinggi default browser -- begitu loading selesai. Guard pakai data() supaya
+    // panggilan bertingkat/berulang tidak menimpa nilai asli dengan nilai yang sudah dikunci.
+    if ($btn.data('pg-loading-orig-height') === undefined) {
+      $btn.data('pg-loading-orig-height', $btn[0].style.height || '');
+      $btn.data('pg-loading-orig-min-width', $btn[0].style.minWidth || '');
+    }
     // Lock current size so button doesn't expand when text changes
     $btn.css({
       'min-width': $btn.outerWidth() + 'px',
@@ -646,10 +658,13 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   function ResetLoadingButton(id, text = null) {
     var $btn = $(id);
     if (!$btn.length) return;
+    var origHeight = $btn.data('pg-loading-orig-height');
+    var origMinWidth = $btn.data('pg-loading-orig-min-width');
     $btn.css({
-      'min-width': '',
-      'height': ''
+      'min-width': origMinWidth !== undefined ? origMinWidth : '',
+      'height': origHeight !== undefined ? origHeight : ''
     });
+    $btn.removeData('pg-loading-orig-height').removeData('pg-loading-orig-min-width');
     $btn.html(`${text ? text : 'Save Changes'}`).prop("disabled", false);
   }
 
@@ -962,6 +977,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
+  /** Deteksi device touch (tablet/HP) — dipakai buat skip autofocus search Select2. */
+  function pgIsTouchDevice() {
+    return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+  }
+
   /** Fokus kolom search Select2 (modal + dropdownParent body / mobile). */
   function attachSelect2SearchOpenFix($el) {
     $el.off('select2:open.pgSearchFix');
@@ -971,7 +991,17 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $open.find('.select2-search--dropdown').removeClass('select2-search--hide').show();
         var $search = $open.find('.select2-search__field');
         if ($search.length) {
-          $search.prop('readonly', false).attr('inputmode', 'search').trigger('focus');
+          $search.prop('readonly', false).attr('inputmode', 'search');
+          // Di tablet/touch, auto-focus di sini memicu keyboard on-screen yang
+          // langsung menggeser posisi list opsi (browser scroll-into-view buat
+          // input yang fokus). Kalau user udah mulai tap ke arah item pas layout
+          // bergeser, tap-nya mendarat di opsi lain -> item yang ke-pilih beda
+          // dari yang dimaksud user ("auto pilih" salah produk, GitHub #142).
+          // Search field tetap kelihatan & bisa di-tap manual buat ketik cari;
+          // cuma auto-focus-nya yang di-skip khusus touch device.
+          if (!pgIsTouchDevice()) {
+            $search.trigger('focus');
+          }
         }
       }, 0);
     });
