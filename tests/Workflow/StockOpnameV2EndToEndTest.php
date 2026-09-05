@@ -750,8 +750,10 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertStringContainsString('2 '.$this->units['dos']->unit_short_name, $row);
     }
 
-    /** Policy 2026-09-05: draft lewat /insertStockOpname juga harus tergulung. */
-    public function test_insert_endpoint_rolls_up_on_a_draft_document_too(): void
+    /**
+     * Draft menyimpan ketikan mentah — hangus/roll-up baru saat ajukan.
+     */
+    public function test_insert_endpoint_keeps_raw_input_on_draft_until_submit(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -765,8 +767,46 @@ class StockOpnameV2EndToEndTest extends TestCase
         $this->assertTrue((bool) $sto->is_draft);
 
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty, 'draft: pcs tetap ketikan user');
+        $this->assertNull($lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft: DOS kosong tidak dihanguskan');
+
+        $this->post('/submitStockOpname', ['sto_id' => $stoId])->assertOk();
+
+        $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
-        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'draft pun harus tergulung');
+        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'ajukan: baru hangus + roll-up');
+    }
+
+    /** Draft + centang: flag tersimpan, counted null; ajukan mengisi dari stok live. */
+    public function test_draft_use_system_flag_materializes_on_submit(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $v = $this->withLadder($this->makeCatalogItem(
+            'AIR HIKARI DRAFT FLAG',
+            '12 X 1 L',
+            'AHDF1L',
+            dosStock: 5,
+            pcsStock: 5
+        ));
+
+        $stoId = $this->insertOpname([[
+            'variant' => $v,
+            'dos' => null,
+            'pcs' => 10,
+            'dos_use_system' => true,
+        ]], isDraft: true);
+
+        $draft = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
+        $this->assertTrue((bool) $draft[$this->units['dos']->unit_id]->sol_use_system_stock);
+        $this->assertNull($draft[$this->units['dos']->unit_id]->sol_counted_qty, 'centang draft: belum tulis stok sistem');
+        $this->assertSame(10, (int) $draft[$this->units['pcs']->unit_id]->sol_counted_qty);
+
+        $this->post('/submitStockOpname', ['sto_id' => $stoId])->assertOk();
+
+        $after = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
+        $this->assertSame(5, (int) $after[$this->units['dos']->unit_id]->sol_counted_qty, 'ajukan: centang → live DOS');
+        $this->assertSame(10, (int) $after[$this->units['pcs']->unit_id]->sol_counted_qty);
     }
 
     /** Policy 2026-09-05: /updateStockOpname juga menggulung ulang setelah edit hitungan. */

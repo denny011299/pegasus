@@ -576,8 +576,10 @@ class StockOpnameBahanV2EndToEndTest extends TestCase
         $this->assertStringContainsString('2 '.$this->units['dos']->unit_short_name, $row);
     }
 
-    /** "Baik draft maupun langsung menunggu" -- draft lewat /insertStockOpnameBahan juga harus tergulung. */
-    public function test_insert_endpoint_rolls_up_on_a_draft_document_too(): void
+    /**
+     * Draft menyimpan ketikan mentah — hangus/roll-up baru saat ajukan.
+     */
+    public function test_insert_endpoint_keeps_raw_input_on_draft_until_submit(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -589,8 +591,14 @@ class StockOpnameBahanV2EndToEndTest extends TestCase
         $this->assertTrue((bool) $stob->is_draft);
 
         $lines = StockOpnameBahanLine::getLines($stobId)->keyBy('unit_id');
+        $this->assertSame(30, (int) $lines[$this->units['pcs']->unit_id]->sobl_counted_qty, 'draft: pcs tetap ketikan user');
+        $this->assertNull($lines[$this->units['dos']->unit_id]->sobl_counted_qty, 'draft: DOS kosong tidak dihanguskan');
+
+        $this->post('/submitStockOpnameBahan', ['stob_id' => $stobId])->assertOk();
+
+        $lines = StockOpnameBahanLine::getLines($stobId)->keyBy('unit_id');
         $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sobl_counted_qty);
-        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sobl_counted_qty, 'draft pun harus tergulung');
+        $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sobl_counted_qty, 'ajukan: baru hangus + roll-up');
     }
 
     /** Mengedit dokumen menunggu lewat /updateStockOpnameBahan juga harus menggulung ulang. */

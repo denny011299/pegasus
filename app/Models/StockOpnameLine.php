@@ -57,6 +57,9 @@ class StockOpnameLine extends Model
         $t->sol_counted_qty = array_key_exists('sol_counted_qty', $data)
             ? ($data['sol_counted_qty'] === null ? null : (int) $data['sol_counted_qty'])
             : $t->sol_counted_qty;
+        if (array_key_exists('sol_use_system_stock', $data)) {
+            $t->sol_use_system_stock = (bool) $data['sol_use_system_stock'];
+        }
         $t->sol_notes = $data['sol_notes'] ?? null;
         $t->status = 1;
         $t->save();
@@ -97,12 +100,14 @@ class StockOpnameLine extends Model
                     continue;
                 }
 
+                $useSystem = ! empty($unit['use_system_stock']);
                 self::upsertLine([
                     'sto_id' => $stoId,
                     'product_id' => $item['product_id'] ?? null,
                     'product_variant_id' => $item['product_variant_id'],
                     'unit_id' => $unit['unit_id'],
                     'sol_counted_qty' => array_key_exists('real_qty', $unit) ? $unit['real_qty'] : null,
+                    'sol_use_system_stock' => $useSystem,
                     'sol_notes' => $item['stod_notes'] ?? null,
                 ]);
             }

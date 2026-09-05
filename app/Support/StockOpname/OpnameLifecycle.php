@@ -23,15 +23,11 @@ use App\Support\UnitRollUp;
  *   menunggu           -> tidak menulis apa pun; stok sistem dibaca live saat ditampilkan.
  *   disetujui/ditolak  -> snapshot STOK SISTEM (sol_system_qty_final) + nama pemutus + waktu.
  *
- * >>> PERBARUI 2026-09-03: jalur draft SUDAH hidup, bukan lagi "tidur" <<<
- * CreateStockOpname.blade.php sekarang memasang KETIGA tombol -- .btn-save-draft, .btn-ajukan,
- * DAN .btn-save -- jadi staf yang menghitung dokumen besar (banyak produk) bisa betul-betul
- * menyimpan sebagai draft berkali-kali sambil terus menghitung, baru menekan .btn-ajukan kalau
- * sudah selesai. Catatan lama di sini bilang draft "masih tidur" dan itulah yang membuat
- * rollUpUnits() dulu dipanggil dari SETIAP simpan (insert+update) tanpa peduli is_draft -- begitu
- * jalur draft hidup, itu jadi bug nyata (GitHub #132, kasus SP0110): tiap simpan-antara draft
- * langsung menggulung angka mentah yang belum selesai diketik staf. Sekarang rollUpUnits() cuma
- * jalan SATU KALI, pas dokumen benar-benar terbit -- lihat docblock method itu sendiri.
+ * >>> PERBARUI 2026-09-03 / 2026-09-05 draft privacy <<<
+ * CreateStockOpname.blade.php memasang .btn-save-draft, .btn-ajukan, DAN .btn-save.
+ * Draft = save progress: raw ketikan + flag centang, TANPA autofill stok sistem / hangus /
+ * roll-up (GitHub #132 + permintaan user 2026-09-05: draft tidak boleh menampilkan stok asli).
+ * Hangus + rollUpUnits() jalan saat dokumen keluar draft (ajukan) atau simpan non-draft.
  *
  * publish() sendiri TETAP dipicu oleh KEADAAN ("dokumen ini sudah bukan draft dan identitasnya
  * belum dibekukan"), bukan oleh peristiwa tombol tertentu, dan aman dipanggil berkali-kali.
@@ -162,7 +158,8 @@ class OpnameLifecycle
     /**
      * Hangus + gulung hasil hitung per produk (UnitRollUp::collapse, tanpa lipat stok live).
      *
-     * Policy 2026-09-05 (+ klarifikasi 2026-09-05 sore):
+     * Policy 2026-09-05 (+ klarifikasi draft sore):
+     * - Dipanggil dari controller saat simpan NON-draft / ajukan — bukan saat simpan draft.
      * - Produk tanpa input sama sekali (semua null) → no-op (bukan ikut digulung dari stok sistem).
      * - ≥1 satuan diisi → satuan kosong pada item itu dulu jadi 0 (hangus), baru digulung.
      * - Gulung bawah→atas: cukup ratio → naik; belum cukup → biarkan, lanjut cek satuan atas.

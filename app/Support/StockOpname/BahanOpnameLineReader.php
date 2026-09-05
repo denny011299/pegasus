@@ -87,6 +87,7 @@ class BahanOpnameLineReader
                         'system' => $system,
                         'live' => $liveQty,
                         'counted' => $line->sobl_counted_qty === null ? null : (int) $line->sobl_counted_qty,
+                        'use_system_stock' => (bool) ($line->sobl_use_system_stock ?? false),
                         'selisih' => $isDraft ? null : $line->selisih($system),
                     ];
                 }
@@ -198,6 +199,19 @@ class BahanOpnameLineReader
                 ->values()
                 ->all();
 
+            // Angka + flag centang per unit_id (bukan parse stobd_real) — draft restore centang.
+            $savedUnits = [];
+            foreach ($row['units'] as $u) {
+                if (empty($u['unit_id'])) {
+                    continue;
+                }
+                $savedUnits[] = [
+                    'unit_id' => $u['unit_id'],
+                    'real_qty' => $u['counted'],
+                    'use_system_stock' => ! empty($u['use_system_stock']),
+                ];
+            }
+
             return [
                 'supplies_id' => $row['supplies_id'],
                 'supplies_name' => $row['supplies_name'],
@@ -207,6 +221,7 @@ class BahanOpnameLineReader
                 'stobd_selisih' => $row['selisih_text'],
                 'units' => $units,
                 'stock' => $stock,
+                'saved_units' => $savedUnits,
             ];
         })->values()->all();
     }

@@ -38,4 +38,34 @@ class UseSystemStockTest extends TestCase
 
         $this->assertSame(4, $items[0]['sp_units'][0]['real_qty']);
     }
+
+    public function test_reject_when_all_units_use_system_stock(): void
+    {
+        $msg = UseSystemStock::rejectIfAllUnitsUseSystem([
+            [
+                'product_variant_id' => 1,
+                'units' => [
+                    ['unit_id' => 1, 'use_system_stock' => 1],
+                    ['unit_id' => 2, 'use_system_stock' => 1],
+                ],
+            ],
+        ], 'units');
+
+        $this->assertNotNull($msg);
+    }
+
+    public function test_allow_when_at_least_one_unit_not_use_system(): void
+    {
+        $msg = UseSystemStock::rejectIfAllUnitsUseSystem([
+            [
+                'product_variant_id' => 1,
+                'units' => [
+                    ['unit_id' => 1, 'use_system_stock' => 1],
+                    ['unit_id' => 2, 'use_system_stock' => 0, 'real_qty' => 5],
+                ],
+            ],
+        ], 'units');
+
+        $this->assertNull($msg);
+    }
 }

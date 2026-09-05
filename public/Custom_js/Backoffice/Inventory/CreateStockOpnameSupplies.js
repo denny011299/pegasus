@@ -99,23 +99,32 @@ $(document).ready(function () {
 function seedSavedValuesFromItems(items) {
     (items || []).forEach(function (item) {
         var key = item.supplies_id;
-        var realMap = {};
-        if (item.stobd_real) {
+        var stocks = {};
+        var useSystem = {};
+        if (item.saved_units && item.saved_units.length) {
+            item.saved_units.forEach(function (u) {
+                if (u.use_system_stock) {
+                    useSystem[u.unit_id] = true;
+                } else if (u.real_qty !== null && u.real_qty !== undefined) {
+                    stocks[u.unit_id] = u.real_qty;
+                }
+            });
+        } else if (item.stobd_real) {
+            var realMap = {};
             item.stobd_real.split(", ").forEach(function (str) {
                 var parts = str.trim().split(" ");
                 var qty = parseInt(parts[0]);
                 var unitName = parts.slice(1).join(" ");
                 realMap[unitName] = isNaN(qty) ? -1 : qty;
             });
+            (item.units || []).forEach(function (u) {
+                var realQty = realMap[u.unit_short_name];
+                if (realQty !== undefined && realQty !== -1) {
+                    stocks[u.unit_id] = realQty;
+                }
+            });
         }
-        var stocks = {};
-        (item.units || []).forEach(function (u) {
-            var realQty = realMap[u.unit_short_name];
-            if (realQty !== undefined && realQty !== -1) {
-                stocks[u.unit_id] = realQty;
-            }
-        });
-        savedValues[key] = { notes: item.stobd_notes || "", stocks: stocks, useSystem: {} };
+        savedValues[key] = { notes: item.stobd_notes || "", stocks: stocks, useSystem: useSystem };
     });
 }
 
@@ -182,7 +191,7 @@ function refreshStockOpname(callback) {
                     rl_stock += buildOpnameUnitInputHtml({
                         unitId: element.unit_id,
                         unitName: element.unit_short_name,
-                        systemQty: element.ss_stock,
+                        systemQty: data.is_draft ? "" : element.ss_stock,
                         placeholder: createPlaceholder,
                         value: "",
                         showCheckbox: true,
@@ -572,6 +581,7 @@ function insertData(options) {
     }
 
     suppliesSubmit = [];
+    $(".row-stock").removeClass("table-danger");
     $(".row-stock").each(function () {
         let row = $(this);
         let item = {};
@@ -630,6 +640,17 @@ function insertData(options) {
             return;
         }
 
+        if (
+            sp_units.length > 0 &&
+            sp_units.every(function (u) {
+                return !!u.use_system_stock;
+            })
+        ) {
+            valid = -1;
+            row.addClass("table-danger");
+            return;
+        }
+
         item.sp_units = sp_units;
         item.stobd_system = systemArr.join(", ");
         item.stobd_real = realArr.join(", ");
@@ -642,6 +663,17 @@ function insertData(options) {
         suppliesSubmit.push(item);
     });
     console.log(suppliesSubmit);
+
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Simpan",
+            "Satu baris tidak boleh semua satuan tercentang. Kosongkan minimal satu atau isi hitungan.",
+        );
+        setStockOpnameFormLocked(false);
+        ResetLoadingButton(btnSelector, doneText);
+        return false;
+    }
 
     param = {
         stob_date: $("#tanggal").val(),

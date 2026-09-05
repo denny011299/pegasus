@@ -131,19 +131,24 @@ class StockController extends Controller
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
-        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
-            json_decode($req->item, true) ?: [],
-            'units'
-        );
+        $rawItems = json_decode($req->item, true) ?: [];
+        if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'units')) {
+            return response()->json(['status' => -1, 'message' => $msg]);
+        }
+        // Draft = save progress saja: raw ketikan + flag centang, tanpa autofill stok sistem / hangus / roll-up.
+        $isDraft = ! empty($data['is_draft']) && (int) $data['is_draft'] === 1;
+        $items = $isDraft
+            ? $rawItems
+            : \App\Support\StockOpname\UseSystemStock::autofillPayload($rawItems, 'units');
 
-        return DB::transaction(function () use ($data, $items) {
+        return DB::transaction(function () use ($data, $items, $isDraft) {
             $id = (new StockOpname())->insertStockOpname($data);
             StockOpnameLine::writeFromPayload($id, $items);
 
             $lifecycle = new OpnameLifecycle();
-            // Policy 2026-09-05: roll-up + hangus di setiap simpan (termasuk draft).
-            // Bukan rollUpUnitsFull() / popup Ariel (#146/#148).
-            $lifecycle->rollUpUnits(StockOpname::find($id));
+            if (! $isDraft) {
+                $lifecycle->rollUpUnits(StockOpname::find($id));
+            }
 
             // publish() sendiri yang menolak selama is_draft masih true -- aman dipanggil di sini
             // tanpa syarat baik untuk .btn-save (langsung publish) maupun .btn-save-draft (no-op,
@@ -181,10 +186,13 @@ class StockController extends Controller
         // Jangan diam-diam mengubah status draft/menunggu di sini -- itu keputusan
         // /submitStockOpname, bukan /updateStockOpname.
         $data['is_draft'] = $sto->is_draft;
-        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
-            json_decode($req->item, true) ?: [],
-            'units'
-        );
+        $rawItems = json_decode($req->item, true) ?: [];
+        if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'units')) {
+            return ["status" => -1, "message" => $msg];
+        }
+        $items = $sto->is_draft
+            ? $rawItems
+            : \App\Support\StockOpname\UseSystemStock::autofillPayload($rawItems, 'units');
 
         // NB (merged from main's efef95e, 2026-08-28): the is_old_version branch below keeps
         // fase2's own wipe-and-reinsert semantics (a draft may freely add/remove line items, so
@@ -214,9 +222,11 @@ class StockController extends Controller
             // menggandakan baris seperti alur lama.
             StockOpnameLine::writeFromPayload($id, $items);
 
-            // Policy 2026-09-05: roll-up + hangus juga di update (draft / koreksi menunggu).
-            (new OpnameLifecycle())->rollUpUnits($sto->refresh());
-            (new OpnameLifecycle())->publish($sto->refresh());
+            // Draft: raw saja. Hangus/roll-up baru di ajukan / simpan non-draft.
+            if (! $sto->is_draft) {
+                (new OpnameLifecycle())->rollUpUnits($sto->refresh());
+                (new OpnameLifecycle())->publish($sto->refresh());
+            }
         });
 
         return 1;
@@ -237,15 +247,19 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
-        $lifecycle = new OpnameLifecycle();
-        $sto->is_draft = false;
-        $sto->save();
+        return DB::transaction(function () use ($sto) {
+            // Centang di draft belum punya angka — isi dari stok live, baru hangus/roll-up.
+            \App\Support\StockOpname\UseSystemStock::materializeProductFlagsFromLive($sto);
 
-        // Policy 2026-09-05: hangus + roll-up tiap simpan (bukan popup Ariel rollUpUnitsFull).
-        $lifecycle->rollUpUnits($sto->refresh());
-        $lifecycle->publish($sto->refresh());
+            $sto->is_draft = false;
+            $sto->save();
 
-        return 1;
+            $lifecycle = new OpnameLifecycle();
+            $lifecycle->rollUpUnits($sto->refresh());
+            $lifecycle->publish($sto->refresh());
+
+            return 1;
+        });
     }
 
     function deleteStockOpname(Request $req)
@@ -1017,18 +1031,23 @@ class StockController extends Controller
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
-            json_decode($req->item, true) ?: [],
-            'sp_units'
-        );
+        $rawItems = json_decode($req->item, true) ?: [];
+        if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'sp_units')) {
+            return response()->json(['status' => -1, 'message' => $msg]);
+        }
+        $isDraft = ! empty($data['is_draft']) && (int) $data['is_draft'] === 1;
+        $items = $isDraft
+            ? $rawItems
+            : \App\Support\StockOpname\UseSystemStock::autofillPayload($rawItems, 'sp_units');
 
-        return DB::transaction(function () use ($data, $items) {
+        return DB::transaction(function () use ($data, $items, $isDraft) {
             $id = (new StockOpnameBahan())->insertStockOpnameBahan($data);
             StockOpnameBahanLine::writeFromPayload($id, $items);
 
             $lifecycle = new BahanOpnameLifecycle();
-            // Policy 2026-09-05: roll-up + hangus di setiap simpan (termasuk draft).
-            $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+            if (! $isDraft) {
+                $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
+            }
             $lifecycle->publish(StockOpnameBahan::find($id));
 
             return response()->json(['status' => 1, 'stob_id' => $id]);
@@ -1054,10 +1073,13 @@ class StockController extends Controller
         }
 
         $data['is_draft'] = $stob->is_draft;
-        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
-            json_decode($req->item, true) ?: [],
-            'sp_units'
-        );
+        $rawItems = json_decode($req->item, true) ?: [];
+        if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'sp_units')) {
+            return ["status" => -1, "message" => $msg];
+        }
+        $items = $stob->is_draft
+            ? $rawItems
+            : \App\Support\StockOpname\UseSystemStock::autofillPayload($rawItems, 'sp_units');
 
         // NB (merged from main's efef95e, 2026-08-28): kembaran updateStockOpname() Produk -- lihat
         // komentarnya untuk alasan is_old_version branch di bawah tetap pakai wipe-and-reinsert
@@ -1084,9 +1106,10 @@ class StockController extends Controller
 
             StockOpnameBahanLine::writeFromPayload($id, $items);
 
-            // Policy 2026-09-05: roll-up + hangus juga di update (draft / koreksi menunggu).
-            (new BahanOpnameLifecycle())->rollUpUnits($stob->refresh());
-            (new BahanOpnameLifecycle())->publish($stob->refresh());
+            if (! $stob->is_draft) {
+                (new BahanOpnameLifecycle())->rollUpUnits($stob->refresh());
+                (new BahanOpnameLifecycle())->publish($stob->refresh());
+            }
         });
 
         return 1;
@@ -1107,15 +1130,18 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
-        $lifecycle = new BahanOpnameLifecycle();
-        $stob->is_draft = false;
-        $stob->save();
+        return DB::transaction(function () use ($stob) {
+            \App\Support\StockOpname\UseSystemStock::materializeBahanFlagsFromLive($stob);
 
-        // Policy 2026-09-05: hangus + roll-up (bukan popup Ariel).
-        $lifecycle->rollUpUnits($stob->refresh());
-        $lifecycle->publish($stob->refresh());
+            $stob->is_draft = false;
+            $stob->save();
 
-        return 1;
+            $lifecycle = new BahanOpnameLifecycle();
+            $lifecycle->rollUpUnits($stob->refresh());
+            $lifecycle->publish($stob->refresh());
+
+            return 1;
+        });
     }
 
     function deleteStockOpnameBahan(Request $req)

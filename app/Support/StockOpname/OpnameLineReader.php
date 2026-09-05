@@ -76,6 +76,7 @@ class OpnameLineReader
                     'real_qty' => $u['counted'],
                     'selisih_qty' => $u['selisih'],
                     'live_qty' => $u['live'],
+                    'use_system_stock' => ! empty($u['use_system_stock']),
                 ];
             }
 
@@ -143,6 +144,7 @@ class OpnameLineReader
                         'system' => $system,
                         'live' => $liveQty,
                         'counted' => $line->sol_counted_qty === null ? null : (int) $line->sol_counted_qty,
+                        'use_system_stock' => (bool) ($line->sol_use_system_stock ?? false),
                         'selisih' => $isDraft ? null : $line->selisih($system),
                     ];
                 }

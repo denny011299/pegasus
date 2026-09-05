@@ -46,6 +46,9 @@ class StockOpnameBahanLine extends Model
         $t->sobl_counted_qty = array_key_exists('sobl_counted_qty', $data)
             ? ($data['sobl_counted_qty'] === null ? null : (int) $data['sobl_counted_qty'])
             : $t->sobl_counted_qty;
+        if (array_key_exists('sobl_use_system_stock', $data)) {
+            $t->sobl_use_system_stock = (bool) $data['sobl_use_system_stock'];
+        }
         $t->sobl_notes = $data['sobl_notes'] ?? null;
         $t->status = 1;
         $t->save();
@@ -82,11 +85,13 @@ class StockOpnameBahanLine extends Model
                     continue;
                 }
 
+                $useSystem = ! empty($unit['use_system_stock']);
                 self::upsertLine([
                     'stob_id' => $stobId,
                     'supplies_id' => $item['supplies_id'],
                     'unit_id' => $unit['unit_id'],
                     'sobl_counted_qty' => array_key_exists('real_qty', $unit) ? $unit['real_qty'] : null,
+                    'sobl_use_system_stock' => $useSystem,
                     'sobl_notes' => $item['stobd_notes'] ?? null,
                 ]);
             }

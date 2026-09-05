@@ -72,8 +72,29 @@ function applyOpnameUseSystemStockState($cb) {
 }
 
 $(document).on("change", ".use-system-stock", function () {
-    applyOpnameUseSystemStockState($(this));
+    var $cb = $(this);
+    // Satu baris tidak boleh semua satuan ikut stock sistem (= tidak di-opname).
+    if ($cb.is(":checked") && opnameRowAllUseSystemChecked($cb.closest(".row-stock"))) {
+        $cb.prop("checked", false);
+        if (typeof notifikasi === "function") {
+            notifikasi(
+                "error",
+                "Tidak diizinkan",
+                "Satu baris tidak boleh semua satuan tercentang. Kosongkan minimal satu atau isi hitungan.",
+            );
+        } else if (typeof toastr !== "undefined") {
+            toastr.error("", "Satu baris tidak boleh semua satuan tercentang");
+        }
+        return;
+    }
+    applyOpnameUseSystemStockState($cb);
 });
+
+/** True kalau semua checkbox .use-system-stock di baris ini tercentang. */
+function opnameRowAllUseSystemChecked($row) {
+    var $all = $row.find(".use-system-stock");
+    return $all.length > 0 && $all.filter(":checked").length === $all.length;
+}
 
 /** Kunci input tabel/header saat simpan — penanggung jawab selalu disabled. */
 function setStockOpnameFormLocked(locked) {

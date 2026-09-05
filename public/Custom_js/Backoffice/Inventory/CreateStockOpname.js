@@ -96,10 +96,15 @@ function seedSavedValuesFromItems(items) {
     (items || []).forEach(function (item) {
         var key = item.product_id + "_" + item.product_variant_id;
         var stocks = {};
+        var useSystem = {};
         (item.units || []).forEach(function (u) {
-            stocks[u.unit_id] = u.real_qty;
+            if (u.use_system_stock) {
+                useSystem[u.unit_id] = true;
+            } else if (u.real_qty !== null && u.real_qty !== undefined) {
+                stocks[u.unit_id] = u.real_qty;
+            }
         });
-        savedValues[key] = { notes: item.stod_notes || "", stocks: stocks, useSystem: {} };
+        savedValues[key] = { notes: item.stod_notes || "", stocks: stocks, useSystem: useSystem };
     });
 }
 
@@ -165,8 +170,7 @@ function refreshStockOpname(callback) {
                 var rl_stock = "";
 
                 item.stock.forEach((element) => {
-                    // Placeholder hanya di dokumen existing non-draft. data-system-qty tetap
-                    // diisi live (termasuk draft) supaya centang "ikut stok lama" bisa autofill.
+                    // Draft: jangan tampilkan/isi stok sistem di data-system-qty maupun placeholder.
                     let createPlaceholder =
                         mode == 2 && !data.is_draft
                             ? String(element.ps_stock)
@@ -174,7 +178,7 @@ function refreshStockOpname(callback) {
                     rl_stock += buildOpnameUnitInputHtml({
                         unitId: element.unit_id,
                         unitName: element.unit_short_name,
-                        systemQty: element.ps_stock,
+                        systemQty: data.is_draft ? "" : element.ps_stock,
                         placeholder: createPlaceholder,
                         value: "",
                         showCheckbox: true,
@@ -537,6 +541,7 @@ function insertData(options) {
     }
 
     productSubmit = [];
+    $(".row-stock").removeClass("table-danger");
     $(".row-stock").each(function () {
         let row = $(this);
         let item = {};
@@ -597,6 +602,17 @@ function insertData(options) {
             return;
         }
 
+        if (
+            units.length > 0 &&
+            units.every(function (u) {
+                return !!u.use_system_stock;
+            })
+        ) {
+            valid = -1;
+            row.addClass("table-danger");
+            return;
+        }
+
         item.units = units;
         item.stod_system = systemArr.join(", ");
         item.stod_real = realArr.join(", ");
@@ -609,6 +625,17 @@ function insertData(options) {
         productSubmit.push(item);
     });
     console.log(productSubmit);
+
+    if (valid == -1) {
+        notifikasi(
+            "error",
+            "Gagal Simpan",
+            "Satu baris tidak boleh semua satuan tercentang. Kosongkan minimal satu atau isi hitungan.",
+        );
+        setStockOpnameFormLocked(false);
+        ResetLoadingButton(btnSelector, doneText);
+        return false;
+    }
 
     param = {
         sto_date: $("#tanggal").val(),

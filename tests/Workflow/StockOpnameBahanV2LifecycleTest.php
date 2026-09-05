@@ -408,7 +408,8 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
     }
 
     /**
-     * Policy 2026-09-05: draft JUGA digulung saat simpan — angka di DB langsung kanonik.
+     * rollUpUnits() sendiri tetap bisa digulung pada dokumen draft kalau dipanggil langsung.
+     * Endpoint insert/update draft TIDAK memanggilnya — lihat E2E.
      */
     public function test_roll_up_applies_to_draft_and_published_documents(): void
     {
@@ -419,8 +420,8 @@ class StockOpnameBahanV2LifecycleTest extends TestCase
         (new BahanOpnameLifecycle())->rollUpUnits($draft);
 
         $lines = StockOpnameBahanLine::getLines($draft->stob_id)->keyBy('unit_id');
-        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'draft ikut tergulung');
-        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'draft ikut tergulung');
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sobl_counted_qty, 'helper rollUpUnits tetap jalan di draft');
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sobl_counted_qty, 'helper rollUpUnits tetap jalan di draft');
     }
 
     /**
