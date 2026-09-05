@@ -215,6 +215,25 @@ class UnitRollUpTest extends TestCase
     }
 
     /**
+     * pcs di bawah rasio TIDAK boleh menghentikan gulung satuan atas yang juga diisi.
+     * pcs=5 (tidak bisa ke DOS), DOS=5 (bisa ke SAK, ratio 2) → 5 pcs + 1 DOS + 2 SAK.
+     */
+    public function test_collapse_continues_up_ladder_when_lower_unit_cannot_roll(): void
+    {
+        $result = UnitRollUp::collapse(
+            $this->ladder(),
+            [self::PIECE => 5, self::DOS => 5, self::SAK => null],
+            $this->allUnits()
+        );
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => 5],
+            ['unit_id' => self::DOS, 'qty' => 1],
+            ['unit_id' => self::SAK, 'qty' => 2],
+        ], $result);
+    }
+
+    /**
      * Kasus yang butuh gulung DUA KALI (carry dari tingkat bawah + isian sendiri di tingkat atas
      * sama-sama meluap ke tingkat berikutnya) -- 48 pcs (4 DOS persis) + 3 DOS yang diisi terpisah
      * = 7 DOS setara, dan 7 DOS >= ratio SAK(2), jadi ikut naik lagi jadi 3 SAK + 1 DOS.

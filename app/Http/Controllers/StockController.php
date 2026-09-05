@@ -131,7 +131,10 @@ class StockController extends Controller
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
-        $items = json_decode($req->item, true) ?: [];
+        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
+            json_decode($req->item, true) ?: [],
+            'units'
+        );
 
         return DB::transaction(function () use ($data, $items) {
             $id = (new StockOpname())->insertStockOpname($data);
@@ -178,7 +181,10 @@ class StockController extends Controller
         // Jangan diam-diam mengubah status draft/menunggu di sini -- itu keputusan
         // /submitStockOpname, bukan /updateStockOpname.
         $data['is_draft'] = $sto->is_draft;
-        $items = json_decode($req->item, true) ?: [];
+        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
+            json_decode($req->item, true) ?: [],
+            'units'
+        );
 
         // NB (merged from main's efef95e, 2026-08-28): the is_old_version branch below keeps
         // fase2's own wipe-and-reinsert semantics (a draft may freely add/remove line items, so
@@ -1011,7 +1017,10 @@ class StockController extends Controller
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
-        $items = json_decode($req->item, true) ?: [];
+        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
+            json_decode($req->item, true) ?: [],
+            'sp_units'
+        );
 
         return DB::transaction(function () use ($data, $items) {
             $id = (new StockOpnameBahan())->insertStockOpnameBahan($data);
@@ -1045,7 +1054,10 @@ class StockController extends Controller
         }
 
         $data['is_draft'] = $stob->is_draft;
-        $items = json_decode($req->item, true) ?: [];
+        $items = \App\Support\StockOpname\UseSystemStock::autofillPayload(
+            json_decode($req->item, true) ?: [],
+            'sp_units'
+        );
 
         // NB (merged from main's efef95e, 2026-08-28): kembaran updateStockOpname() Produk -- lihat
         // komentarnya untuk alasan is_old_version branch di bawah tetap pakai wipe-and-reinsert

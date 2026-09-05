@@ -160,14 +160,13 @@ class OpnameLifecycle
     }
 
     /**
-     * Gulung + hangus hasil hitung per produk (UnitRollUp::collapse, tanpa lipat stok live).
+     * Hangus + gulung hasil hitung per produk (UnitRollUp::collapse, tanpa lipat stok live).
      *
-     * Policy 2026-09-05 (ganti #132 untuk timing; ganti fold-live untuk hangus):
-     * - Dipanggil di SETIAP simpan (insert/update/submit), termasuk draft — angka di DB langsung
-     *   kanonik setelah ketik+simpan.
-     * - ≥1 satuan diisi → satuan lain pada item itu jadi 0 (hangus), bukan null / bukan stok live.
-     * - 0 satuan diisi → tidak menulis apa pun (ACC tetap skip null).
-     * - Gudang eceran: no-op (satu satuan).
+     * Policy 2026-09-05 (+ klarifikasi 2026-09-05 sore):
+     * - Produk tanpa input sama sekali (semua null) → no-op (bukan ikut digulung dari stok sistem).
+     * - ≥1 satuan diisi → satuan kosong pada item itu dulu jadi 0 (hangus), baru digulung.
+     * - Gulung bawah→atas: cukup ratio → naik; belum cukup → biarkan, lanjut cek satuan atas.
+     * - Gudang eceran: no-op.
      */
     public function rollUpUnits($sto): void
     {
@@ -189,11 +188,18 @@ class OpnameLifecycle
 
             $qtyByUnit = $group->mapWithKeys(fn ($l) => [(int) $l->unit_id => $l->sol_counted_qty])->all();
             $touched = collect($qtyByUnit)->contains(fn ($q) => $q !== null);
+            // User tidak opname produk ini sama sekali → jangan gulung dari stok sistem.
             if (! $touched) {
                 continue;
             }
 
-            // Hangus: jangan lipat stok live unit kosong ke carry.
+            // Hangus dulu: null → 0, supaya gulung jalan dari satuan terkecil ke atas.
+            foreach ($qtyByUnit as $uid => $q) {
+                if ($q === null) {
+                    $qtyByUnit[$uid] = 0;
+                }
+            }
+
             $collapsed = UnitRollUp::collapseProduct((int) $productVariantId, $qtyByUnit, $warehouseId, false);
             $resultByUnit = [];
             foreach ($collapsed as $credit) {
@@ -203,14 +209,9 @@ class OpnameLifecycle
             $first = $group->first();
             foreach ($group as $line) {
                 $uid = (int) $line->unit_id;
-                if (array_key_exists($uid, $resultByUnit)) {
-                    $qty = $resultByUnit[$uid];
-                } elseif ($qtyByUnit[$uid] !== null) {
-                    // Diisi user tapi tidak ada ladder / tidak tersentuh collapse — pertahankan.
-                    $qty = (int) $qtyByUnit[$uid];
-                } else {
-                    $qty = 0; // hangus
-                }
+                $qty = array_key_exists($uid, $resultByUnit)
+                    ? $resultByUnit[$uid]
+                    : (int) $qtyByUnit[$uid];
 
                 StockOpnameLine::upsertLine([
                     'sto_id' => $sto->sto_id,

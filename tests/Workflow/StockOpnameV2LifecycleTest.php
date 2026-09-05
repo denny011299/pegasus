@@ -537,6 +537,65 @@ class StockOpnameV2LifecycleTest extends TestCase
         $this->assertSame(6, (int) $lines[$pcs->unit_id]->sol_counted_qty);
     }
 
+    /**
+     * Isi HANYA DOS → pcs hangus 0; DOS dicek bisa gulung ke atas (2-level: tidak ada lebih besar,
+     * jadi DOS tetap). Intinya produk disentuh ikut hangus+cek gulung.
+     */
+    public function test_roll_up_only_filled_dos_hangus_empty_pcs_then_checks_dos(): void
+    {
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 10, pcsStock: 10);
+        $sto = $this->makeDocument(isDraft: false);
+        $this->addLines($sto, $variant, [$dos->unit_id => 5, $pcs->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
+        $this->assertSame(5, (int) $lines[$dos->unit_id]->sol_counted_qty);
+        $this->assertSame(0, (int) $lines[$pcs->unit_id]->sol_counted_qty, 'pcs kosong hangus 0');
+    }
+
+    /**
+     * Jerigen/DOS diisi + piece diisi, DOS tengah kosong → piece digulung dulu ke DOS bila cukup,
+     * lalu hasil DOS digabung dengan isian besar. pcs=30 + dos null → 2 DOS + 6 pcs (stok live DOS
+     * tidak dilipat).
+     */
+    public function test_roll_up_piece_through_empty_middle_dos_when_enough(): void
+    {
+        [$variant, $dos, $pcs] = $this->makeFixtureWithLadder(dosStock: 10, pcsStock: 10);
+        $sto = $this->makeDocument(isDraft: false);
+        // "10 dos sistem" tidak dipakai: user isi pcs saja + dos kosong (hangus), bukan centang stok lama.
+        $this->addLines($sto, $variant, [$dos->unit_id => null, $pcs->unit_id => 30]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $lines = StockOpnameLine::getLines($sto->sto_id)->keyBy('unit_id');
+        $this->assertSame(6, (int) $lines[$pcs->unit_id]->sol_counted_qty);
+        $this->assertSame(2, (int) $lines[$dos->unit_id]->sol_counted_qty);
+    }
+
+    /** Semua null = produk tidak di-opname → baris tetap null, tidak digulung dari stok sistem. */
+    public function test_roll_up_skips_untouched_product_with_only_null_counts(): void
+    {
+        [$variantTouched, $dosT, $pcsT] = $this->makeFixtureWithLadder(dosStock: 10, pcsStock: 10);
+        [$variantSkip, $dosS, $pcsS] = $this->makeFixtureWithLadder(dosStock: 10, pcsStock: 10);
+        $sto = $this->makeDocument(isDraft: false);
+        $this->addLines($sto, $variantTouched, [$pcsT->unit_id => 30, $dosT->unit_id => null]);
+        $this->addLines($sto, $variantSkip, [$pcsS->unit_id => null, $dosS->unit_id => null]);
+
+        (new OpnameLifecycle())->rollUpUnits($sto);
+
+        $touched = StockOpnameLine::getLines($sto->sto_id)
+            ->where('product_variant_id', $variantTouched->product_variant_id)
+            ->keyBy('unit_id');
+        $this->assertSame(2, (int) $touched[$dosT->unit_id]->sol_counted_qty);
+
+        $skipped = StockOpnameLine::getLines($sto->sto_id)
+            ->where('product_variant_id', $variantSkip->product_variant_id)
+            ->keyBy('unit_id');
+        $this->assertNull($skipped[$dosS->unit_id]->sol_counted_qty);
+        $this->assertNull($skipped[$pcsS->unit_id]->sol_counted_qty);
+    }
+
     // ---------------------------------------------------------------- identitas baris
 
     /**

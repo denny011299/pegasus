@@ -26,7 +26,7 @@ $(document).ready(function () {
             $("#penanggung-jawab")
                 .empty()
                 .append(option)
-                .attr("disabled", false)
+                .prop("disabled", true)
                 .trigger("change");
         }
     } else {
@@ -51,10 +51,14 @@ $(document).ready(function () {
             true,
             true,
         );
-        $("#penanggung-jawab").empty().append(staffOption).trigger("change");
+        $("#penanggung-jawab")
+            .empty()
+            .append(staffOption)
+            .prop("disabled", true)
+            .trigger("change");
 
         if (canEditDraft) {
-            $("#tanggal,#penanggung-jawab,#catatan").prop("disabled", false);
+            $("#tanggal,#catatan").prop("disabled", false);
             $("#status").val("Draft");
             $(".btn-save,.save-tolak,.save-terima").hide();
             $(".btn-save-draft,.btn-ajukan,.btn-delete-draft").show();
@@ -95,7 +99,7 @@ function seedSavedValuesFromItems(items) {
         (item.units || []).forEach(function (u) {
             stocks[u.unit_id] = u.real_qty;
         });
-        savedValues[key] = { notes: item.stod_notes || "", stocks: stocks };
+        savedValues[key] = { notes: item.stod_notes || "", stocks: stocks, useSystem: {} };
     });
 }
 
@@ -121,12 +125,17 @@ function refreshStockOpname(callback) {
         savedValues[key] = {
             notes: $(this).find(".notes").val(),
             stocks: {},
+            useSystem: {},
         };
         $(this)
             .find(".real-stock")
             .each(function () {
                 var unitId = $(this).data("unit-id");
                 savedValues[key].stocks[unitId] = $(this).val();
+                savedValues[key].useSystem[unitId] = $(this)
+                    .closest(".unit-qty-group")
+                    .find(".use-system-stock")
+                    .is(":checked");
             });
     });
     console.log(savedValues);
@@ -156,25 +165,20 @@ function refreshStockOpname(callback) {
                 var rl_stock = "";
 
                 item.stock.forEach((element) => {
-                    // GitHub #78 follow-up (merged from main's 54e564c): only hint the live stock
-                    // on an EXISTING document being re-edited (mode 2, e.g. a draft reload) -- a
-                    // brand-new create form (mode 1) stays fully blank, per the user's explicit
-                    // request.
-                    // GitHub #115: draft murni cuma boleh menampilkan apa yang sudah diinput
-                    // sendiri -- stok sistem TIDAK ditampilkan sama sekali selama masih draft.
+                    // Placeholder hanya di dokumen existing non-draft. data-system-qty tetap
+                    // diisi live (termasuk draft) supaya centang "ikut stok lama" bisa autofill.
                     let createPlaceholder =
                         mode == 2 && !data.is_draft
-                            ? ` placeholder="${element.ps_stock}"`
+                            ? String(element.ps_stock)
                             : "";
-                    rl_stock += `
-                        <input type="text"
-                            class="form-control real-stock nominal_only text-end"
-                            value=""${createPlaceholder}
-                            data-unit-id="${element.unit_id}"
-                            data-unit-name="${element.unit_short_name}"
-                            data-system-qty="${data.is_draft ? "" : element.ps_stock}">
-                        <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
-                    `;
+                    rl_stock += buildOpnameUnitInputHtml({
+                        unitId: element.unit_id,
+                        unitName: element.unit_short_name,
+                        systemQty: element.ps_stock,
+                        placeholder: createPlaceholder,
+                        value: "",
+                        showCheckbox: true,
+                    });
                 });
 
                 $("#tbStock").append(`
@@ -211,8 +215,16 @@ function refreshStockOpname(callback) {
                         .find(".real-stock")
                         .each(function () {
                             var unitId = $(this).data("unit-id");
+                            var $cb = $(this)
+                                .closest(".unit-qty-group")
+                                .find(".use-system-stock");
+                            if (savedValues[key].useSystem && savedValues[key].useSystem[unitId]) {
+                                $cb.prop("checked", true);
+                                applyOpnameUseSystemStockState($cb);
+                                return;
+                            }
                             var sv = savedValues[key].stocks[unitId];
-                            if (sv != undefined && sv !== '') {
+                            if (sv != undefined && sv !== "") {
                                 $(this).val(formatRupiah(String(sv)));
                             }
                         });
@@ -224,7 +236,7 @@ function refreshStockOpname(callback) {
                 );
             }
             if (mode == 2 && !canEditDraft) {
-                $(".real-stock, .notes").attr("disabled", "disabled");
+                $(".real-stock, .notes, .use-system-stock").attr("disabled", "disabled");
             }
 
             if (typeof callback === "function") callback();
@@ -259,20 +271,18 @@ function renderMode2(items) {
             // GitHub #115: draft tidak membawa live_qty/system_qty sama sekali (backend sengaja
             // tidak mengambilnya) -- tidak ada placeholder untuk ditampilkan.
             let systemHint = element.live_qty ?? element.system_qty;
-            let placeholderAttr =
-                untouched && systemHint !== null && systemHint !== undefined
-                    ? ` placeholder="${formatRupiah(String(systemHint))}"`
-                    : "";
-            rl_stock += `
-                <input type="text"
-                    class="form-control real-stock nominal_only text-end"
-                    value="${prefill}"${placeholderAttr}
-                    disabled
-                    data-unit-id="${element.unit_id}"
-                    data-unit-name="${element.unit_short_name}"
-                    data-system-qty="${element.system_qty}">
-                <span class="input-group-text">${escapeHtml(element.unit_short_name)}</span>
-            `;
+            rl_stock += buildOpnameUnitInputHtml({
+                unitId: element.unit_id,
+                unitName: element.unit_short_name,
+                systemQty: element.system_qty,
+                placeholder:
+                    untouched && systemHint !== null && systemHint !== undefined
+                        ? formatRupiah(String(systemHint))
+                        : "",
+                value: prefill,
+                disabled: true,
+                showCheckbox: false,
+            });
         });
 
         $("#tbStock").append(`
@@ -358,18 +368,22 @@ $(document).on("change", "#category_id", function () {
 
 $(document).on("click", ".btn-save", function () {
     LoadingButton(this);
+    setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
     $("#filter_pr_name").val("");
     refreshStockOpname(function () {
+        setStockOpnameFormLocked(true);
         insertData({ btnSelector: ".btn-save", doneText: "Tambah Stok Opname" });
     });
 });
 
 $(document).on("click", ".btn-save-draft", function () {
     LoadingButton(this);
+    setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
     $("#filter_pr_name").val("");
     refreshStockOpname(function () {
+        setStockOpnameFormLocked(true);
         insertData({
             isDraft: true,
             keepSparse: true,
@@ -377,7 +391,6 @@ $(document).on("click", ".btn-save-draft", function () {
             doneText: "Simpan sebagai Draft",
             onSuccess: function (e) {
                 toastr.success("", "Draft berhasil disimpan");
-                ResetLoadingButton(".btn-save-draft", "Simpan sebagai Draft");
                 var stoId = mode == 1 ? e && e.sto_id : data.sto_id;
                 window.location.href = stoId
                     ? "/detailStockOpname/" + stoId
@@ -389,9 +402,11 @@ $(document).on("click", ".btn-save-draft", function () {
 
 $(document).on("click", ".btn-ajukan", function () {
     LoadingButton(this);
+    setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
     $("#filter_pr_name").val("");
     refreshStockOpname(function () {
+        setStockOpnameFormLocked(true);
         insertData({
             isDraft: true,
             btnSelector: ".btn-ajukan",
@@ -408,6 +423,7 @@ $(document).on("click", ".btn-ajukan", function () {
                                 "Gagal Mengajukan",
                                 e.message || "Terjadi kesalahan",
                             );
+                            setStockOpnameFormLocked(false);
                             ResetLoadingButton(".btn-ajukan", "Ajukan");
                             return;
                         }
@@ -415,6 +431,7 @@ $(document).on("click", ".btn-ajukan", function () {
                         window.location.href = "/stockOpname";
                     },
                     error: function (e) {
+                        setStockOpnameFormLocked(false);
                         ResetLoadingButton(".btn-ajukan", "Ajukan");
                         if (handlePermissionError(e)) return;
                         console.log(e);
@@ -514,6 +531,7 @@ function insertData(options) {
             "Gagal Insert",
             "Silahkan cek kembali inputan anda",
         );
+        setStockOpnameFormLocked(false);
         ResetLoadingButton(btnSelector, doneText);
         return false;
     }
@@ -535,33 +553,42 @@ function insertData(options) {
 
         row.find(".real-stock").each(function () {
             let input = $(this);
+            let useSystem = input
+                .closest(".unit-qty-group")
+                .find(".use-system-stock")
+                .is(":checked");
 
             let unitId = input.data("unit-id");
             let unitName = input.data("unit-name");
             let systemQty = parseInt(input.data("system-qty")) || 0;
             let val = input.val();
-            if (val !== "" && val !== null && val !== undefined) {
+            if (useSystem || (val !== "" && val !== null && val !== undefined)) {
                 hasValue = true;
             }
             let realQty =
                 val === "" || val === null || val === undefined
                     ? -1
-                    : (convertToAngka(String(val)) || 0);
-            // GitHub #78: satuan yang dibiarkan kosong TIDAK dianggap "dihitung = stok sistem" --
-            // PM sudah konfirmasi fallback lama itu bukan perilaku yang wajib dipertahankan.
-            // Kirim null / token "-" apa adanya supaya backend tahu ini belum pernah dihitung.
-            let counted = realQty !== -1;
+                    : convertToAngka(String(val)) || 0;
+            // Centang = ikut stok lama: real_qty null + flag; backend autofill lalu roll-up.
+            let counted = !useSystem && realQty !== -1;
 
             units.push({
                 unit_id: unitId,
                 system_qty: systemQty,
                 real_qty: counted ? realQty : null,
+                use_system_stock: useSystem ? 1 : 0,
             });
 
             systemArr.push(systemQty + " " + unitName);
-            realArr.push((counted ? realQty : "-") + " " + unitName);
+            realArr.push(
+                (useSystem ? systemQty : counted ? realQty : "-") + " " + unitName,
+            );
             selisihArr.push(
-                (counted ? realQty - systemQty : "-") + " " + unitName,
+                (useSystem || counted
+                    ? (useSystem ? systemQty : realQty) - systemQty
+                    : "-") +
+                    " " +
+                    unitName,
             );
         });
 
@@ -611,6 +638,7 @@ function insertData(options) {
                     "Gagal Simpan",
                     e.message || "Terjadi kesalahan",
                 );
+                setStockOpnameFormLocked(false);
                 ResetLoadingButton(btnSelector, doneText);
                 return;
             }
@@ -619,10 +647,11 @@ function insertData(options) {
                 return;
             }
             toastr.success("", "Berhasil Tambah Stock Opname");
-            ResetLoadingButton(btnSelector, doneText);
+            // Spinner tetap sampai redirect — jangan ResetLoadingButton di sini.
             window.location.href = "/stockOpname";
         },
         error: function (e) {
+            setStockOpnameFormLocked(false);
             ResetLoadingButton(btnSelector, doneText);
             if (handlePermissionError(e)) return;
             toastr.error("", "Terjadi Kesalahan Saat Tambah Stok Opname");

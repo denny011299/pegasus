@@ -159,6 +159,8 @@ class UnitRollUp
         $credits = [];
         $visited = [$startUnit => true];
         $hops = 0;
+        // true = current sudah ditulis di credits (karena tidak bisa gulung), jangan emit lagi di akhir.
+        $currentAlreadyCredited = false;
 
         while ($hops < self::MAX_HOPS) {
             $hops++;
@@ -171,29 +173,43 @@ class UnitRollUp
                 }
             }
 
-            if ($rel === null || $rel['ratio'] <= 0 || $carry < $rel['ratio'] || ! isset($allowed[$rel['big']])) {
+            // Tidak ada hop ke atas / satuan besar tidak diizinkan — berhenti di current.
+            if ($rel === null || $rel['ratio'] <= 0 || ! isset($allowed[$rel['big']])) {
                 break;
             }
 
-            $credits[] = ['unit_id' => $current, 'qty' => $carry % $rel['ratio']];
-            // Lipat nilai yang staf isi SENDIRI di tingkat ini (kalau ada) ke dalam bawaan naik --
-            // inilah yang membuat "DOS diisi 1 DAN pcs diisi 15" digabung benar (bukan cuma
-            // menggulung salah satu lalu mengabaikan yang lain). Kalau TIDAK diisi, lipat stok
-            // LIVE yang sudah ada di satuan itu (bukan 0) -- lihat docblock $existingByUnitId di
-            // atas untuk alasan lengkap (satuan yang tidak disentuh tidak boleh lenyap).
-            $carry = (int) floor($carry / $rel['ratio']) + (int) ($enteredInChain[$rel['big']] ?? $existingByUnitId[$rel['big']] ?? 0);
-            $current = $rel['big'];
+            if ($carry >= $rel['ratio']) {
+                $credits[] = ['unit_id' => $current, 'qty' => $carry % $rel['ratio']];
+                // Lipat nilai yang staf isi SENDIRI di tingkat atas (kalau ada) ke dalam bawaan naik.
+                // Kalau TIDAK diisi, lipat stok LIVE (lihat docblock $existingByUnitId).
+                $carry = (int) floor($carry / $rel['ratio']) + (int) ($enteredInChain[$rel['big']] ?? $existingByUnitId[$rel['big']] ?? 0);
+                $current = $rel['big'];
+                $visited[$current] = true;
+                $currentAlreadyCredited = false;
+                continue;
+            }
+
+            // Belum cukup buat gulung dari sini — biarkan carry di current, lanjut cek satuan atas
+            // HANYA jika atasnya juga diisi user (jangan loncat ke stok live / jangan mengarang null).
+            $credits[] = ['unit_id' => $current, 'qty' => $carry];
+            $currentAlreadyCredited = true;
+
+            $next = $rel['big'];
+            if (! array_key_exists($next, $enteredInChain)) {
+                break;
+            }
+
+            $current = $next;
+            $carry = (int) $enteredInChain[$next];
             $visited[$current] = true;
+            $currentAlreadyCredited = false;
         }
 
-        $credits[] = ['unit_id' => $current, 'qty' => $carry];
+        if (! $currentAlreadyCredited) {
+            $credits[] = ['unit_id' => $current, 'qty' => $carry];
+        }
 
-        // Satuan yang diisi tapi TIDAK PERNAH disinggahi jalan naik ini (carry-nya berhenti duluan
-        // sebelum sempat mencapainya -- lihat test idempotency) tetap harus muncul di hasil dengan
-        // nilai aslinya, tidak berubah. Tanpa ini, menjalankan collapse() dua kali pada hasilnya
-        // sendiri bisa diam-diam "kehilangan" satuan yang sudah benar dari daftar yang dikembalikan
-        // -- efek akhirnya tetap benar (baris itu memang sudah punya nilai yang tepat, jadi tidak
-        // perlu ditulis ulang), tapi kontraknya jadi tidak bisa diandalkan pemanggil.
+        // Satuan yang diisi tapi TIDAK PERNAH disinggahi jalan naik ini tetap harus muncul.
         foreach ($enteredInChain as $unitId => $qty) {
             if (! isset($visited[$unitId])) {
                 $credits[] = ['unit_id' => $unitId, 'qty' => (int) $qty];

@@ -97,7 +97,8 @@ class BahanOpnameLifecycle
     }
 
     /**
-     * Kembaran OpnameLifecycle::rollUpUnits() — hangus + roll tiap simpan, tanpa lipat stok live.
+     * Kembaran OpnameLifecycle::rollUpUnits() — hangus dulu, lalu gulung bawah→atas, tanpa lipat stok live.
+     * Produk/bahan tanpa input user → no-op.
      */
     public function rollUpUnits($stob): void
     {
@@ -123,6 +124,12 @@ class BahanOpnameLifecycle
                 continue;
             }
 
+            foreach ($qtyByUnit as $uid => $q) {
+                if ($q === null) {
+                    $qtyByUnit[$uid] = 0;
+                }
+            }
+
             $collapsed = UnitRollUp::collapseSupplies((int) $suppliesId, $qtyByUnit, $warehouseId, false);
             $resultByUnit = [];
             foreach ($collapsed as $credit) {
@@ -132,13 +139,9 @@ class BahanOpnameLifecycle
             $first = $group->first();
             foreach ($group as $line) {
                 $uid = (int) $line->unit_id;
-                if (array_key_exists($uid, $resultByUnit)) {
-                    $qty = $resultByUnit[$uid];
-                } elseif ($qtyByUnit[$uid] !== null) {
-                    $qty = (int) $qtyByUnit[$uid];
-                } else {
-                    $qty = 0;
-                }
+                $qty = array_key_exists($uid, $resultByUnit)
+                    ? $resultByUnit[$uid]
+                    : (int) $qtyByUnit[$uid];
 
                 StockOpnameBahanLine::upsertLine([
                     'stob_id' => $stob->stob_id,

@@ -172,6 +172,7 @@
 
 <!-- PG Popup Table: konstanta + perilaku standar tabel input di dalam modal -->
 <script src="{{ URL::asset('/Custom_js/Shared/popup-table.js') }}"></script>
+<script src="{{ URL::asset('/Custom_js/Shared/stock-opname-unit-input.js') }}"></script>
 
 @if (Route::is(['lightbox', 'template-invoice']))
   <!-- lightbox JS -->

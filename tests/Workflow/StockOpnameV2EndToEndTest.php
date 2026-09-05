@@ -128,14 +128,17 @@ class StockOpnameV2EndToEndTest extends TestCase
     }
 
     /**
-     * @param  array<int, array{variant: ProductVariant, dos: int|null, pcs: int|null}>  $lines
-     *         null = satuan itu dibiarkan tidak dihitung.
+     * @param  array<int, array{variant: ProductVariant, dos: int|null, pcs: int|null, dos_use_system?: bool, pcs_use_system?: bool}>  $lines
+     *         null = satuan itu dibiarkan tidak dihitung (hangus jika sibling diisi).
+     *         *_use_system = centang ikut stok lama (backend autofill dari system_qty).
      */
     private function insertOpname(array $lines, bool $isDraft = false, string $notes = 'E2E test', ?string $rollupDecision = null): int
     {
         $items = [];
         foreach ($lines as $line) {
             $v = $line['variant'];
+            $dosUse = ! empty($line['dos_use_system']);
+            $pcsUse = ! empty($line['pcs_use_system']);
             $items[] = [
                 'product_id' => $v->product_id,
                 'product_variant_id' => $v->product_variant_id,
@@ -144,12 +147,14 @@ class StockOpnameV2EndToEndTest extends TestCase
                     [
                         'unit_id' => $this->units['dos']->unit_id,
                         'system_qty' => $this->currentStock($v, 'dos'),
-                        'real_qty' => $line['dos'],
+                        'real_qty' => $dosUse ? null : $line['dos'],
+                        'use_system_stock' => $dosUse ? 1 : 0,
                     ],
                     [
                         'unit_id' => $this->units['pcs']->unit_id,
                         'system_qty' => $this->currentStock($v, 'pcs'),
-                        'real_qty' => $line['pcs'],
+                        'real_qty' => $pcsUse ? null : $line['pcs'],
+                        'use_system_stock' => $pcsUse ? 1 : 0,
                     ],
                 ],
             ];
@@ -795,5 +800,48 @@ class StockOpnameV2EndToEndTest extends TestCase
         $lines = StockOpnameLine::getLines($stoId)->keyBy('unit_id');
         $this->assertSame(6, (int) $lines[$this->units['pcs']->unit_id]->sol_counted_qty);
         $this->assertSame(2, (int) $lines[$this->units['dos']->unit_id]->sol_counted_qty, 'edit yang menaikkan hitungan harus ikut menggulung ulang');
+    }
+
+    /**
+     * Centang ikut stok lama: DOS system=5 tetap 5; pcs diisi 10 (di bawah rasio) → hangus tidak
+     * men-zero DOS yang di-centang. Tanpa centang, DOS kosong jadi 0.
+     */
+    public function test_insert_use_system_stock_keeps_sibling_system_qty(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $v = $this->withLadder($this->makeCatalogItem(
+            'AIR HIKARI TEST',
+            '12 X 1 L',
+            'AHT1L',
+            dosStock: 5,
+            pcsStock: 5
+        ));
+
+        $stoKeep = $this->insertOpname([[
+            'variant' => $v,
+            'dos' => null,
+            'pcs' => 10,
+            'dos_use_system' => true,
+        ]]);
+        $keep = StockOpnameLine::getLines($stoKeep)->keyBy('unit_id');
+        $this->assertSame(5, (int) $keep[$this->units['dos']->unit_id]->sol_counted_qty, 'centang DOS = ikut stok lama 5');
+        $this->assertSame(10, (int) $keep[$this->units['pcs']->unit_id]->sol_counted_qty);
+
+        $v2 = $this->withLadder($this->makeCatalogItem(
+            'AIR HIKARI TEST B',
+            '12 X 1 L',
+            'AHT1LB',
+            dosStock: 5,
+            pcsStock: 5
+        ));
+        $stoHangus = $this->insertOpname([[
+            'variant' => $v2,
+            'dos' => null,
+            'pcs' => 10,
+        ]]);
+        $hangus = StockOpnameLine::getLines($stoHangus)->keyBy('unit_id');
+        $this->assertSame(0, (int) $hangus[$this->units['dos']->unit_id]->sol_counted_qty, 'tanpa centang DOS hangus 0');
+        $this->assertSame(10, (int) $hangus[$this->units['pcs']->unit_id]->sol_counted_qty);
     }
 }

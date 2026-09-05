@@ -94,12 +94,19 @@
     }
 
     #tb-stock-table .rstock {
-      flex-wrap: nowrap !important;
+      flex-wrap: wrap !important;
       display: flex !important;
       width: 100% !important;
+      gap: 8px !important;
     }
 
-    #tb-stock-table .rstock .form-control {
+    #tb-stock-table .rstock .unit-qty-group {
+      flex: 1 1 0% !important;
+      min-width: 140px !important;
+      flex-wrap: nowrap !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group .form-control {
       height: 42px !important;
       font-size: 14px !important;
       font-weight: 500 !important;
@@ -109,26 +116,58 @@
       border-radius: 0 !important;
     }
 
-    #tb-stock-table .rstock .form-control:first-child {
-      border-top-left-radius: 8px !important;
-      border-bottom-left-radius: 8px !important;
-    }
-
-    #tb-stock-table .rstock .input-group-text {
+    #tb-stock-table .rstock .unit-qty-group .input-group-text {
       height: 42px !important;
       font-size: 13px !important;
       font-weight: 500 !important;
       background-color: #f8fafc !important;
       border-color: #cbd5e1 !important;
       color: #334155 !important;
-      padding: 0 14px !important;
+      padding: 0 10px !important;
       flex: 0 0 auto !important;
       border-radius: 0 !important;
     }
 
-    #tb-stock-table .rstock .input-group-text:last-child {
+    #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap {
+      padding: 0 8px !important;
+      display: flex !important;
+      align-items: center !important;
+      border-top-left-radius: 8px !important;
+      border-bottom-left-radius: 8px !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap .form-check-input {
+      width: 1.05rem;
+      height: 1.05rem;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group > .input-group-text:last-child {
       border-top-right-radius: 8px !important;
       border-bottom-right-radius: 8px !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group:not(:has(.unit-use-system-wrap)) .form-control {
+      border-top-left-radius: 8px !important;
+      border-bottom-left-radius: 8px !important;
+    }
+
+    .stock-opname-use-system-hint {
+      font-size: 12px;
+      font-weight: 600;
+      color: #92400e;
+      background: #fef3c7;
+      border: 1px solid #fcd34d;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 0;
+      white-space: nowrap;
+    }
+
+    #tb-stock-wrap.opname-submitting {
+      pointer-events: none;
+      opacity: 0.65;
     }
 
     #tb-stock-table input.notes {
@@ -305,11 +344,14 @@
         <div class="col-sm-12">
           <!-- Toolbar (Search + Action Buttons) - Sticky Floating Card -->
           <div class="stock-opname-toolbar d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
-            <div style="max-width: 360px; width: 100%;">
-              <div class="position-relative">
-                <i class="fe fe-search position-absolute text-muted" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px;"></i>
-                <input type="text" class="form-control ps-5" id="filter_pr_name" placeholder="Cari Nama Produk / SKU..." style="height: 42px; border-radius: 8px; font-size: 13px; border: 1px solid #cbd5e1;">
+            <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2" style="max-width: 720px; width: 100%;">
+              <div style="max-width: 360px; width: 100%;">
+                <div class="position-relative">
+                  <i class="fe fe-search position-absolute text-muted" style="left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px;"></i>
+                  <input type="text" class="form-control ps-5" id="filter_pr_name" placeholder="Cari Nama Produk / SKU..." style="height: 42px; border-radius: 8px; font-size: 13px; border: 1px solid #cbd5e1;">
+                </div>
               </div>
+              <p class="stock-opname-use-system-hint mb-0"><i class="fe fe-info me-1"></i>Kalau centang itu ikut stock lama</p>
             </div>
 
             <!-- Action Buttons for Desktop -->
@@ -405,5 +447,5 @@
     var mode = @json($mode);
     var sessionUser = @json(Session::get('user'));
   </script>
-  <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v=12"></script>
+  <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v={{ time() }}"></script>
 @endsection
