@@ -213,8 +213,10 @@ class ProductController extends Controller
                             ->where('units.status', 1)
                             ->where('units.unit_name', 'like', $like)
                             ->whereRaw(
-                                // product_unit = JSON array id satuan, mis. ["7","9"] — LIKE saja (MariaDB-safe)
-                                "products.product_unit LIKE CONCAT('%\"', CAST(units.unit_id AS CHAR), '\"%')"
+                                // product_unit = JSON array id satuan, mis. ["7","9"] — LIKE saja (MariaDB-safe).
+                                // products/units punya collation yang berbeda-beda antar tabel (drift lama),
+                                // jadi kedua sisi di-COLLATE eksplisit supaya tidak "Illegal mix of collations".
+                                "CONVERT(products.product_unit USING utf8mb4) COLLATE utf8mb4_unicode_ci LIKE CONCAT('%\"', CAST(units.unit_id AS CHAR) COLLATE utf8mb4_unicode_ci, '\"%')"
                             );
                     });
             });
