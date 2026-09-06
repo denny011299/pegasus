@@ -182,7 +182,7 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableLogs-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive dt-pending" id="tableLogs-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; overflow-y: hidden;">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>

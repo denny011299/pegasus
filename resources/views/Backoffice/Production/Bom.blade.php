@@ -14,6 +14,9 @@
         /* Pola DataTable sama Produksi */
         #tableBom {
             width: 100% !important;
+            /* Sama seperti isu #153 di tabel Pengiriman: min-width memaksa tabel
+               overflow horizontal di layar sempit, bukan meremukkan kolom. */
+            min-width: 900px;
             table-layout: fixed;
         }
 
@@ -33,6 +36,10 @@
             letter-spacing: .4px;
             background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
+            /* Header pendek — pindahkan seluruh kata ke baris berikutnya kalau
+               tidak muat, jangan dipenggal di tengah huruf. */
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         #tableBom tbody td {
@@ -149,7 +156,7 @@
                 <div class="col-sm-12">
                     <div class="card card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableBom-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive dt-pending" id="tableBom-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; overflow-y: hidden;">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
