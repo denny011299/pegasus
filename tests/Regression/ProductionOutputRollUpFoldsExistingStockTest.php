@@ -159,14 +159,23 @@ class ProductionOutputRollUpFoldsExistingStockTest extends TestCase
         $this->assertSame(0, $pieceStock->ps_stock, 'BUG WOULD BE: stuck at 12 Piece, never rolled up');
         $this->assertSame(1, $dosStock->ps_stock, 'existing 6 + produced 6 = 12 = exactly 1 DOS');
 
-        // The origin unit's deduction is logged as an OUT/"keluar" conversion row (log_category 2),
-        // not a negative "IN" row -- log_jumlah stays a positive magnitude throughout this codebase.
+        // History requested by the user (2026-09-07): 3 separate legs, not one netted delta --
+        // "inward 6 Piece" (the real event), "outward 12 Piece" (existing 6 + produced 6, the FULL
+        // amount that moved up -- not just this call's own 6), then "inward 1 DOS" (the result).
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 1,
+            'log_category' => 1,
+            'log_item_id' => $variant->product_variant_id,
+            'unit_id' => self::PIECE_UNIT_ID,
+            'log_jumlah' => 6,
+            'log_notes' => 'Hasil produksi ' . $production->production_code,
+        ]);
         $this->assertDatabaseHas('log_stocks', [
             'log_type' => 1,
             'log_category' => 2,
             'log_item_id' => $variant->product_variant_id,
             'unit_id' => self::PIECE_UNIT_ID,
-            'log_jumlah' => 6, // the delta moved out of Piece (existing 6 -> 0), not the full carry
+            'log_jumlah' => 12, // existing 6 + produced 6, the FULL amount converted -- not the delta
         ]);
         $this->assertDatabaseHas('log_stocks', [
             'log_type' => 1,
@@ -175,5 +184,11 @@ class ProductionOutputRollUpFoldsExistingStockTest extends TestCase
             'unit_id' => self::DOS_UNIT_ID,
             'log_jumlah' => 1,
         ]);
+
+        // Exactly 3 log_stocks rows for this production -- the 3 legs above, nothing netted away
+        // and nothing duplicated.
+        $this->assertSame(3, \Illuminate\Support\Facades\DB::table('log_stocks')
+            ->where('log_item_id', $variant->product_variant_id)
+            ->count());
     }
 }

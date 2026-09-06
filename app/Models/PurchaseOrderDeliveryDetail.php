@@ -102,6 +102,31 @@ class PurchaseOrderDeliveryDetail extends Model
                 $row->ss_stock += $credit['qty'];
                 $row->save();
             }
+
+            // Catat jejak konversinya kalau memang naik satuan (ditambahkan 2026-09-07, riwayat
+            // stok diminta bentuk 3 langkah, bukan satu delta bersih): satuan asal keluar (cat 2),
+            // satuan hasil masuk (cat 1). Pola log-nya sama persis dengan
+            // ProductIssuesDetail::deleteProductIssuesDetail(). Log "masuk" untuk qty mentah yang
+            // diterima ($data["pdod_qty"]) sudah ditulis caller (SupplierController::accPO()) --
+            // ini cuma menambah 2 baris konversi, bukan menggantikan log itu.
+            if ($rollUp !== []) {
+                $naik = (int) $data["pdod_qty"] - (int) $base['qty'];
+                if ($naik > 0) {
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
+                        'log_item_id' => $sv->supplies_id, 'log_notes' => 'Konversi unit (Naik satuan)',
+                        'log_jumlah' => $naik, 'unit_id' => (int) $data["unit_id"],
+                    ]);
+                }
+                foreach ($rollUp as $credit) {
+                    if ($credit['qty'] <= 0) continue;
+                    (new LogStock())->insertLog([
+                        'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
+                        'log_item_id' => $sv->supplies_id, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
+                        'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
+                    ]);
+                }
+            }
         }
         return $t->pdod_id;
     }

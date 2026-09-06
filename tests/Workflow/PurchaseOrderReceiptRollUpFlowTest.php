@@ -204,5 +204,15 @@ class PurchaseOrderReceiptRollUpFlowTest extends TestCase
 
         $this->assertSame(0, $pieceStock->ss_stock, 'BUG WOULD BE: stuck at 12 Piece, never rolled up');
         $this->assertSame(1, $dosStock->ss_stock, 'existing 6 + received 6 = 12 = exactly 1 DOS');
+
+        // History requested by the user (2026-09-07): 3 separate legs, not one netted delta.
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2, 'log_category' => 2, 'log_notes' => 'Konversi unit (Naik satuan)',
+            'log_jumlah' => 12, 'unit_id' => self::PIECE,
+        ]);
+        $this->assertDatabaseHas('log_stocks', [
+            'log_type' => 2, 'log_category' => 1, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
+            'log_jumlah' => 1, 'unit_id' => self::DOS,
+        ]);
     }
 }
