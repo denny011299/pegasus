@@ -40,6 +40,10 @@
 
         #tableSalesOrder {
             width: 100% !important;
+            /* Jaga proporsi kolom, tapi jangan sampai diperas di layar sempit (tablet/hp) —
+               min-width memaksa tabel overflow horizontal sehingga .table-responsive bisa
+               di-scroll ke samping, bukan meremukkan tiap kolom jadi tidak terbaca. */
+            min-width: 1000px;
             table-layout: fixed;
         }
 
@@ -59,6 +63,10 @@
             letter-spacing: .4px;
             background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
+            /* Header cuma berisi label pendek (mis. "NO. INVOICE") — jangan sampai
+               kata dipenggal di tengah huruf, biarkan seluruh kata pindah baris. */
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         #tableSalesOrder tbody td {
@@ -328,7 +336,7 @@
                 <div class="col-sm-12">
                     <div class=" card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableSalesOrder-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive dt-pending" id="tableSalesOrder-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; overflow-y: hidden;">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>

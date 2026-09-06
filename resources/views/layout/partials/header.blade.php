@@ -152,6 +152,29 @@
             gap: 8px;
             transition: all 0.2s ease;
         }
+        /* Di layar sempit (tablet/hp), nama gudang tidak muat berapa pun caranya
+           dipatahkan — daripada mendesak navbar sampai overflow, tampilkan
+           indikator gudang aktif sebagai ikon bulat saja. Nama tetap kebaca lewat
+           tooltip (title=) dan lewat isi dropdown saat dibuka. */
+        @media (max-width: 991.98px) {
+            /* Jangan kecilkan margin-left dari nilai inline aslinya (45px) — itu
+               jaraknya ke tombol hamburger (#toggle_btn) di kirinya. Sempat
+               diperkecil ke 16px dan malah membuat ikon gudang menabrak hamburger. */
+            .warehouse-custom-dropdown .btn-warehouse {
+                min-width: 0;
+                width: 36px;
+                height: 36px;
+                padding: 0;
+                border-radius: 50%;
+                justify-content: center;
+            }
+            .warehouse-custom-dropdown .btn-warehouse span {
+                display: none;
+            }
+            .warehouse-custom-dropdown .btn-warehouse::after {
+                display: none;
+            }
+        }
         .warehouse-custom-dropdown .btn-warehouse:hover,
         .warehouse-custom-dropdown .btn-warehouse:focus {
             background: #dbeafe;
@@ -678,7 +701,7 @@
                 return strtoupper($wh->type->warehouse_type_name ?? 'DAFTAR GUDANG');
             });
         @endphp
-        <button class="btn btn-warehouse dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false" autocomplete="off">
+        <button class="btn btn-warehouse dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="true" aria-expanded="false" autocomplete="off" title="{{ $activeWh ? ($activeWh->warehouse_name ?? $activeWh->name) : 'Pilih Gudang...' }}">
             <div class="d-flex align-items-center gap-2">
                 <i class="{{ $activeIconClass }}" style="color: #6366f1;"></i>
                 <span>{{ $activeWh ? ($activeWh->warehouse_name ?? $activeWh->name) : 'Pilih Gudang...' }}</span>

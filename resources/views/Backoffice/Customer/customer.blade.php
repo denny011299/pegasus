@@ -4,6 +4,10 @@
     <style>
         #tableCustomer {
             width: 100% !important;
+            /* Sama seperti isu #153 di tabel Pengiriman: jangan sampai kolom
+               diperas di layar sempit — min-width memaksa tabel overflow
+               horizontal sehingga .table-responsive bisa di-scroll ke samping. */
+            min-width: 900px;
             table-layout: fixed;
         }
 
@@ -24,6 +28,10 @@
             letter-spacing: .4px;
             background: #f1f5f9;
             border-bottom: 1px solid #e2e8f0;
+            /* Label header pendek — kalau tidak muat, pindahkan seluruh kata ke
+               baris berikutnya, jangan dipenggal di tengah huruf. */
+            word-break: keep-all;
+            overflow-wrap: normal;
         }
 
         #tableCustomer tbody td {
@@ -70,7 +78,7 @@
                 <div class="col-sm-12">
                     <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableCustomer-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                            <div class="table-responsive dt-pending" id="tableCustomer-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; overflow-y: hidden;">
                                 <table class="table table-center table-hover mb-0" id="tableCustomer">
                                     <thead style="background:#f1f5f9; border-bottom: 1px solid #e2e8f0;">
                                         <tr>
