@@ -127,6 +127,60 @@ class UnitRollUpTest extends TestCase
         $this->assertLessThanOrEqual(21, count($plan));
     }
 
+    /**
+     * GitHub #151 (2026-09-06): plan() alone only ever sees the incoming qty. planFolded() folds
+     * stock already at the start unit in first, so a qty that alone doesn't cross a ratio boundary
+     * still rolls up once combined with what's already there. See UnitRollUp's class docblock.
+     */
+    public function test_folded_rolls_up_a_qty_that_alone_would_not_reach_the_ratio(): void
+    {
+        // 6 Piece already on hand + 6 more = 12 = exactly 1 DOS. plan() alone (existing=0) would
+        // leave this flat at 6 Piece; folded correctly rolls it all the way.
+        $plan = UnitRollUp::planFolded($this->ladder(), self::PIECE, 6, $this->allUnits(), existingAtStartUnit: 6);
+
+        $this->assertSame([
+            ['unit_id' => self::PIECE, 'qty' => -6], // 6 already-there Piece moved OUT into the DOS
+            ['unit_id' => self::DOS, 'qty' => 1],
+        ], $plan);
+    }
+
+    public function test_folded_with_zero_existing_stock_matches_plan_exactly(): void
+    {
+        // existingAtStartUnit: 0 must reproduce plan()'s old behaviour bit-for-bit — every stock-IN
+        // call site that folds now passes real existing stock, but the zero case must stay identical
+        // to what these sites did before GitHub #151.
+        $folded = UnitRollUp::planFolded($this->ladder(), self::PIECE, 31, $this->allUnits(), existingAtStartUnit: 0);
+        $plain = UnitRollUp::plan($this->ladder(), self::PIECE, 31, $this->allUnits());
+
+        $this->assertSame($plain, $folded);
+    }
+
+    public function test_folded_conserves_the_original_physical_total(): void
+    {
+        $existing = 6;
+        $incoming = 6;
+        $plan = UnitRollUp::planFolded($this->ladder(), self::PIECE, $incoming, $this->allUnits(), $existing);
+
+        $multipliers = [self::PIECE => 1, self::DOS => 12, self::SAK => 24];
+        $totalDelta = 0;
+        foreach ($plan as $credit) {
+            $totalDelta += $credit['qty'] * $multipliers[$credit['unit_id']];
+        }
+
+        // The net change across every unit, converted to Piece-equivalent, must equal exactly the
+        // incoming qty — folding only reshapes where the existing+incoming total lands, it never
+        // invents or loses any of it.
+        $this->assertSame($incoming, $totalDelta);
+    }
+
+    public function test_folded_leaves_a_qty_that_still_does_not_cross_the_ratio_untouched(): void
+    {
+        // 3 existing + 4 incoming = 7, still short of the 12-Piece ratio — nothing should roll.
+        $plan = UnitRollUp::planFolded($this->ladder(), self::PIECE, 4, $this->allUnits(), existingAtStartUnit: 3);
+
+        $this->assertSame([['unit_id' => self::PIECE, 'qty' => 4]], $plan);
+    }
+
     // ================================================================== collapse()
 
     /**

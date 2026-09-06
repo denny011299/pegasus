@@ -26,10 +26,27 @@ use App\Models\SuppliesStock;
  * so it stays at each consumption site. See `ProductIssuesDetail::stockCheck()` and
  * `StockController::deleteProductIssue()` for the canonical relation-lookup implementations of it.
  *
+ * ⚠️ GitHub #151 (2026-09-06): `plan()` alone only rolls the INCOMING qty — stock already sitting
+ * at the start unit is ignored. Producing/receiving 6 Piece when 6 Piece already exist (1 DOS = 12
+ * Piece) landed as 12 Piece / 0 DOS instead of 0 Piece / 1 DOS; only a single stock-in that was
+ * ITSELF an exact multiple of the ratio ever rolled up. This was written up as a PM-accepted "known
+ * risk" below (`sumInBaseUnits`/collapse* already fold existing stock for Stock Opname, but every
+ * stock-IN roll-up site used bare `plan()`), then reported as a real bug and fixed: every stock-IN
+ * caller now goes through `planFolded()`/`planProductFolded()`/`planSuppliesFolded()` instead of
+ * `plan()`/`planProduct()`/`planSupplies()` directly. `plan()` itself is unchanged (still pure,
+ * still what the ladder-walking algorithm is built on) — folding is a thin wrapper around it.
+ *
  * Design notes:
  * - `plan*()` is PURE: it performs no DB writes and returns the credit plan as an ordered list of
  *   `{unit_id, qty}`, lowest unit first. The caller applies it and writes its own `log_stocks`
  *   rows, because the log note/code differs per flow.
+ * - `planFolded()`/`planProductFolded()`/`planSuppliesFolded()`: same shape, but the qty for the
+ *   START unit is a DELTA (can be negative) rather than an absolute portion of the incoming qty —
+ *   it already accounts for what was sitting there before this call. A negative entry means that
+ *   many units moved OUT of the start unit into a bigger one; log it as an OUT/"keluar" movement
+ *   (log_category 2 for products, same convention `ProductIssuesDetail::deleteProductIssuesDetail()`
+ *   already uses), not as a negative "IN" row — `log_jumlah` stays a positive magnitude throughout
+ *   this codebase, direction is carried by log_type/log_category, not by sign.
  * - `$allowedUnitIds` is the caller's policy hook for "may I credit this unit?". Production passes
  *   every unit in the ladder because it provisions missing `ProductStock` rows on demand (behind a
  *   user confirmation). Every other caller passes only units that ALREADY have an active stock
@@ -86,6 +103,70 @@ class UnitRollUp
         $credits[] = ['unit_id' => $currentUnitId, 'qty' => (int) $remaining];
 
         return $credits;
+    }
+
+    /**
+     * Like plan(), but folds stock ALREADY sitting at $startUnitId into the roll-up decision first
+     * — see this class's GitHub #151 docblock note above. Returns the same ordered
+     * `{unit_id, qty}` shape as plan(), except the entry for $startUnitId is a DELTA (may be
+     * negative) instead of an absolute portion of $qty; every other entry is unchanged (a roll-up
+     * caused by $qty alone was already correct — only the start unit needed the existing-stock fold,
+     * since every level above it is always credited via `+=`, never an absolute set).
+     *
+     * @param  array<int, array{small: int, big: int, ratio: int}>  $chain
+     * @param  array<int, int>  $allowedUnitIds
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function planFolded(array $chain, int $startUnitId, int $qty, array $allowedUnitIds, int $existingAtStartUnit): array
+    {
+        $credits = self::plan($chain, $startUnitId, $existingAtStartUnit + $qty, $allowedUnitIds);
+        if ($credits !== [] && $credits[0]['unit_id'] === $startUnitId) {
+            $credits[0]['qty'] -= $existingAtStartUnit;
+        }
+
+        return $credits;
+    }
+
+    /**
+     * Convenience wrapper: planFolded() for a product, pulling the existing stock at $startUnitId
+     * itself (not the whole ladder — collapse()'s multi-level fold is deliberately NOT reused here,
+     * see the class docblock). $allowedUnitIdsOverride mirrors ProductUnitStock::addQty()'s
+     * $rollUpAllowedUnitIds — pass it when the caller provisions missing rows itself (Production's
+     * ladderUnitIds()); omit to fall back to the strict allowedProductUnitIds() policy.
+     *
+     * @param  array<int, int>|null  $allowedUnitIdsOverride
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function planProductFolded(int $productVariantId, int $startUnitId, int $qty, ?int $warehouseId = null, ?array $allowedUnitIdsOverride = null): array
+    {
+        $existing = self::existingProductStockByUnit($productVariantId, $warehouseId)[$startUnitId] ?? 0;
+
+        return self::planFolded(
+            self::productChain($productVariantId),
+            $startUnitId,
+            $qty,
+            $allowedUnitIdsOverride ?? self::allowedProductUnitIds($productVariantId, $warehouseId),
+            $existing
+        );
+    }
+
+    /**
+     * Kembaran planProductFolded() untuk Bahan/Supplies — lihat docblock itu.
+     *
+     * @param  array<int, int>|null  $allowedUnitIdsOverride
+     * @return array<int, array{unit_id: int, qty: int}>
+     */
+    public static function planSuppliesFolded(int $suppliesId, int $startUnitId, int $qty, ?int $warehouseId = null, ?array $allowedUnitIdsOverride = null): array
+    {
+        $existing = self::existingSuppliesStockByUnit($suppliesId, $warehouseId)[$startUnitId] ?? 0;
+
+        return self::planFolded(
+            self::suppliesChain($suppliesId),
+            $startUnitId,
+            $qty,
+            $allowedUnitIdsOverride ?? self::allowedSuppliesUnitIds($suppliesId, $warehouseId),
+            $existing
+        );
     }
 
     /**

@@ -203,4 +203,29 @@ class CustomerProductReturnRollUpTest extends TestCase
             'status' => 1,
         ]);
     }
+
+    /**
+     * GitHub #151 (2026-09-06): the roll-up above only looked at the qty THIS return brought in --
+     * stock already sitting at the Piece level before the return was ignored. Returning 6 pcs when 6
+     * pcs already existed (1 DOS = 12 pcs) landed as 12 Piece / 0 DOS forever, because 6 alone is not
+     * a multiple of 12. Fixed via ProductUnitStock::addQty()'s planProductFolded() call.
+     */
+    public function test_returning_pcs_rolls_up_together_with_stock_already_on_hand(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $warehouseId = $this->mainWarehouseId();
+        // 6 pcs already sitting there, below the 12-pcs DOS ratio on its own.
+        $v = $this->makeLadderedVariant($warehouseId, dosStock: 0, pcsStock: 6, ratio: 12);
+        $customer = $this->createArmada();
+
+        // 6 more pcs returned -- not a multiple of 12 by itself, but 6 + 6 = 12 = exactly 1 DOS.
+        $record = $this->makeReturn($customer, $v, $warehouseId, 'pcs', 6);
+
+        $response = $this->post("/customerProductReturns/{$record->return_id}/accept");
+        $response->assertOk();
+
+        $this->assertSame(0, $this->currentStock($v, 'pcs', $warehouseId), 'BUG WOULD BE: stuck at 12 Piece, never rolled up');
+        $this->assertSame(1, $this->currentStock($v, 'dos', $warehouseId), 'existing 6 + returned 6 = 12 = exactly 1 DOS');
+    }
 }

@@ -1084,28 +1084,56 @@ class ProductUnitStock
         //  - eksplisit: caller yang memang sengaja menyediakan baris baru dengan konfirmasi user
         //    lebih dulu (accProduction() + confirm_create_stock) meneruskan seluruh tangga satuan
         //    lewat UnitRollUp::ladderUnitIds().
+        //
+        // planFolded() (GitHub #151, 2026-09-06): folds stock ALREADY at $unitId into the roll-up
+        // decision, so a $qty that alone doesn't cross a unit boundary still rolls up once combined
+        // with what's already there -- see UnitRollUp's class docblock. The credit for $unitId
+        // itself can come back negative (that many units moved up into a bigger one).
         $credits = $rollUp
-            ? UnitRollUp::plan(
-                UnitRollUp::productChain($productVariantId),
-                $unitId,
-                (int) $qty,
-                $rollUpAllowedUnitIds ?? UnitRollUp::allowedProductUnitIds($productVariantId, $warehouseId)
-            )
+            ? UnitRollUp::planProductFolded($productVariantId, $unitId, (int) $qty, $warehouseId, $rollUpAllowedUnitIds)
             : [['unit_id' => $unitId, 'qty' => $qty]];
 
-        foreach ($credits as $credit) {
-            if ($credit['qty'] <= 0) {
-                continue;
+        // History shape requested by the user (2026-09-07): when existing stock got folded in and
+        // actually consumed (origin credit went negative), don't just write the net delta -- write
+        // what physically happened, as 3 separate legs: the real event lands first (inward the FULL
+        // incoming qty, at $unitId), then the conversion is its own bongkar/hasil pair (outward the
+        // whole amount that moved up -- existing + incoming, not just this call's share -- then
+        // inward at the bigger unit(s)). Example: 5 DOS + 1 Piece on hand, 1 DOS = 4 Piece, 3 Piece
+        // produced -> "inward 3 Piece", "outward 4 Piece (konversi)", "inward 1 DOS (hasil
+        // konversi)", landing on 6 DOS / 0 Piece exactly like a single netted write would, but
+        // legible as three real events instead of one unexplained negative row. When nothing got
+        // folded (origin credit is >= 0, the plain GitHub #19 case), behavior is unchanged: one
+        // entry per touched level, same as before this feature.
+        $originIsFoldedDeduction = $rollUp && $credits !== [] && $credits[0]['unit_id'] === $unitId && $credits[0]['qty'] < 0;
+
+        if ($originIsFoldedDeduction) {
+            $naik = (int) $qty - $credits[0]['qty']; // existing + incoming that moved up, always > 0 here
+            self::creditOneProductUnit($warehouseId, $productId, $productVariantId, $unitId, (float) $qty, $logCode, $logNotes);
+            self::creditOneProductUnit($warehouseId, $productId, $productVariantId, $unitId, -(float) $naik, $logCode, $logNotes);
+            foreach (array_slice($credits, 1) as $credit) {
+                if ($credit['qty'] == 0) {
+                    continue;
+                }
+                self::creditOneProductUnit(
+                    $warehouseId, $productId, $productVariantId, (int) $credit['unit_id'], (float) $credit['qty'],
+                    $logCode, $logNotes, isRollUpResult: true
+                );
             }
-            self::creditOneProductUnit(
-                $warehouseId,
-                $productId,
-                $productVariantId,
-                (int) $credit['unit_id'],
-                (float) $credit['qty'],
-                $logCode,
-                $logNotes
-            );
+        } else {
+            foreach ($credits as $credit) {
+                if ($credit['qty'] == 0) {
+                    continue;
+                }
+                self::creditOneProductUnit(
+                    $warehouseId,
+                    $productId,
+                    $productVariantId,
+                    (int) $credit['unit_id'],
+                    (float) $credit['qty'],
+                    $logCode,
+                    $logNotes
+                );
+            }
         }
 
         self::clearCache();
@@ -1120,7 +1148,8 @@ class ProductUnitStock
         int $unitId,
         float $qty,
         string $logCode,
-        string $logNotes
+        string $logNotes,
+        bool $isRollUpResult = false
     ): void {
         $rows = ProductStock::withoutGlobalScope('active_warehouse')
             ->where('status', 1)
@@ -1152,14 +1181,30 @@ class ProductUnitStock
         $row->ps_stock = round((float) $row->ps_stock + $qty, 4);
         $row->save();
 
+        // $qty can be negative here (GitHub #151 fold, see caller): that many units moved OUT of
+        // this unit into a bigger one via the SAME roll-up call. log_jumlah stays a positive
+        // magnitude and log_category carries the direction instead -- same convention
+        // ProductIssuesDetail::deleteProductIssuesDetail() already uses ("Naik satuan"/"Hasil naik
+        // satuan"), and what ProductionPendingStockRestorer::applyReverseStock() already knows how
+        // to reverse for log_type=1 (cat 1 = credit, subtract on reverse; cat 2 = deduct, add back).
+        // $isRollUpResult: this credit is the "hasil" leg of a fold-triggered 3-leg breakdown (see
+        // addQty()) -- decorate its note distinctly from a plain credit so the history reads as a
+        // conversion result, not just another ordinary stock-in.
+        $isOut = $qty < 0;
+        $notes = $logNotes;
+        if ($isOut) {
+            $notes = 'Konversi unit (naik satuan otomatis) ' . $logNotes;
+        } elseif ($isRollUpResult) {
+            $notes = 'Hasil konversi naik satuan otomatis (' . $logNotes . ')';
+        }
         (new LogStock())->insertLog([
             'log_date' => now(),
             'log_kode' => $logCode,
             'log_type' => 1,
-            'log_category' => 1,
+            'log_category' => $isOut ? 2 : 1,
             'log_item_id' => $productVariantId,
-            'log_notes' => $logNotes,
-            'log_jumlah' => $qty,
+            'log_notes' => $notes,
+            'log_jumlah' => abs($qty),
             'log_saldo' => (float) $row->ps_stock,
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,
