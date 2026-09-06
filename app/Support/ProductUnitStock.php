@@ -1084,17 +1084,18 @@ class ProductUnitStock
         //  - eksplisit: caller yang memang sengaja menyediakan baris baru dengan konfirmasi user
         //    lebih dulu (accProduction() + confirm_create_stock) meneruskan seluruh tangga satuan
         //    lewat UnitRollUp::ladderUnitIds().
+        //
+        // planFolded() (GitHub #151, 2026-09-06): folds stock ALREADY at $unitId into the roll-up
+        // decision, so a $qty that alone doesn't cross a unit boundary still rolls up once combined
+        // with what's already there -- see UnitRollUp's class docblock. The credit for $unitId
+        // itself can come back negative (that many units moved up into a bigger one); creditOneProductUnit()
+        // below logs that as an OUT/"keluar" movement, not a negative "IN" row.
         $credits = $rollUp
-            ? UnitRollUp::plan(
-                UnitRollUp::productChain($productVariantId),
-                $unitId,
-                (int) $qty,
-                $rollUpAllowedUnitIds ?? UnitRollUp::allowedProductUnitIds($productVariantId, $warehouseId)
-            )
+            ? UnitRollUp::planProductFolded($productVariantId, $unitId, (int) $qty, $warehouseId, $rollUpAllowedUnitIds)
             : [['unit_id' => $unitId, 'qty' => $qty]];
 
         foreach ($credits as $credit) {
-            if ($credit['qty'] <= 0) {
+            if ($credit['qty'] == 0) {
                 continue;
             }
             self::creditOneProductUnit(
@@ -1152,14 +1153,21 @@ class ProductUnitStock
         $row->ps_stock = round((float) $row->ps_stock + $qty, 4);
         $row->save();
 
+        // $qty can be negative here (GitHub #151 fold, see caller): that many units moved OUT of
+        // this unit into a bigger one via the SAME roll-up call. log_jumlah stays a positive
+        // magnitude and log_category carries the direction instead -- same convention
+        // ProductIssuesDetail::deleteProductIssuesDetail() already uses ("Naik satuan"/"Hasil naik
+        // satuan"), and what ProductionPendingStockRestorer::applyReverseStock() already knows how
+        // to reverse for log_type=1 (cat 1 = credit, subtract on reverse; cat 2 = deduct, add back).
+        $isOut = $qty < 0;
         (new LogStock())->insertLog([
             'log_date' => now(),
             'log_kode' => $logCode,
             'log_type' => 1,
-            'log_category' => 1,
+            'log_category' => $isOut ? 2 : 1,
             'log_item_id' => $productVariantId,
-            'log_notes' => $logNotes,
-            'log_jumlah' => $qty,
+            'log_notes' => $isOut ? 'Konversi unit (naik satuan otomatis) ' . $logNotes : $logNotes,
+            'log_jumlah' => abs($qty),
             'log_saldo' => (float) $row->ps_stock,
             'unit_id' => $unitId,
             'warehouse_id' => $warehouseId,

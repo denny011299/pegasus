@@ -173,7 +173,14 @@ class ProductIssuesDetail extends Model
             // 24 Piece walaupun 1 DOS = 12 Piece. Sekarang dinaikkan berjenjang lewat UnitRollUp,
             // konsisten dengan hasil produksi (accProduction). UnitRollUp hanya menaikkan ke satuan
             // yang SUDAH punya baris stok aktif, jadi tidak ada baris stok baru yang dibuat diam-diam.
-            $rollUp = UnitRollUp::planSupplies((int) $m->supplies_id, (int) $t->unit_id, (int) $t->pid_qty);
+            //
+            // planSuppliesFolded() (GitHub #151, 2026-09-06): dulu pakai planSupplies() polos, yang
+            // cuma menggulung qty yang dikembalikan SAJA -- kalau stok lama di satuan asal + qty ini
+            // sama-sama tidak cukup sendirian tapi cukup DIGABUNG, tidak pernah naik satuan. Sekarang
+            // stok lama ikut dilipat; $base['qty'] jadi DELTA (bisa negatif) bukan porsi mentah dari
+            // $t->pid_qty -- $naik di bawah tetap dihitung benar karena formulanya
+            // (pid_qty - delta) sama untuk kedua kasus.
+            $rollUp = UnitRollUp::planSuppliesFolded((int) $m->supplies_id, (int) $t->unit_id, (int) $t->pid_qty);
             $base = $rollUp[0];           // selalu satuan asal
             $naikLevel = array_slice($rollUp, 1); // level-level di atasnya (kosong kalau tidak naik)
 

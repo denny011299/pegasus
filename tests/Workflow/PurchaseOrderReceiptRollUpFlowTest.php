@@ -180,4 +180,29 @@ class PurchaseOrderReceiptRollUpFlowTest extends TestCase
         $po = PurchaseOrder::find($poId);
         $this->assertSame(-1, (int) $po->status, 'the PO ends up rejected');
     }
+
+    /**
+     * GitHub #151 (2026-09-06): the roll-up above only looked at the qty THIS receipt brought in --
+     * stock already sitting at the Piece level before the PO was received was ignored. Receiving 6
+     * Piece when 6 Piece already existed (1 DOS = 12 Piece) landed as 12 Piece / 0 DOS forever,
+     * because 6 alone is not a multiple of 12. Fixed via UnitRollUp::planSuppliesFolded() -- see its
+     * class docblock.
+     */
+    public function test_receiving_goods_rolls_up_together_with_stock_already_on_hand(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [, $variant, $pieceStock, $dosStock, $supplier] = $this->createFixture();
+
+        $pieceStock->ss_stock = 6; // pre-existing, below the 12-Piece DOS ratio on its own
+        $pieceStock->save();
+
+        // 6 more Piece arrives -- not a multiple of 12 by itself, but 6 + 6 = 12 = exactly 1 DOS.
+        $this->createAndApprovePo($variant, $supplier, 6);
+
+        $pieceStock->refresh();
+        $dosStock->refresh();
+
+        $this->assertSame(0, $pieceStock->ss_stock, 'BUG WOULD BE: stuck at 12 Piece, never rolled up');
+        $this->assertSame(1, $dosStock->ss_stock, 'existing 6 + received 6 = 12 = exactly 1 DOS');
+    }
 }

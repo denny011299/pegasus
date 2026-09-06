@@ -61,17 +61,25 @@ class PurchaseOrderDeliveryDetail extends Model
             // SupplierController supaya bisa membongkar satuan besar saat mengembalikan stok.
             // Tanpa itu, roll-up di sini membuat pembatalan PO selalu gagal "Stok bahan tidak
             // mencukupi", karena stoknya sudah tidak lagi berada di satuan yang dipesan.
-            $rollUp = UnitRollUp::planSupplies(
+            //
+            // planSuppliesFolded() (GitHub #151, 2026-09-06): dulu pakai planSupplies() polos, yang
+            // cuma menggulung QTY YANG DATANG saja -- 6 Piece diterima saat sudah ada 6 Piece
+            // (1 DOS = 12 Piece) tetap menumpuk jadi 12 Piece, tidak pernah jadi 1 DOS, karena 6
+            // sendiri bukan kelipatan 12. Sekarang stok yang SUDAH ada di satuan asal ikut dilipat ke
+            // keputusan gulung -- lihat docblock class UnitRollUp.
+            $rollUp = UnitRollUp::planSuppliesFolded(
                 (int) $sv->supplies_id,
                 (int) $data["unit_id"],
                 (int) $data["pdod_qty"]
             );
 
-            // Entry ke-0 selalu satuan asal. Baris stoknya SENGAJA tidak di-null-guard: kalau
-            // kombinasi supplies_id + unit_id tidak ketemu, itu unit_id yang salah dan harus
-            // meledak seperti perilaku sebelumnya supaya transaksi accPO() rollback -- bukan
-            // di-skip diam-diam, yang berarti "barang diterima tapi stok tidak pernah bertambah"
-            // tanpa ada yang tahu (antipattern yang sudah pernah diperbaiki di accProduction()).
+            // Entry ke-0 selalu satuan asal -- qty-nya sekarang DELTA (bisa negatif kalau stok lama
+            // + baru cukup naik satuan; += di bawah tetap benar untuk delta negatif). Baris stoknya
+            // SENGAJA tidak di-null-guard: kalau kombinasi supplies_id + unit_id tidak ketemu, itu
+            // unit_id yang salah dan harus meledak seperti perilaku sebelumnya supaya transaksi
+            // accPO() rollback -- bukan di-skip diam-diam, yang berarti "barang diterima tapi stok
+            // tidak pernah bertambah" tanpa ada yang tahu (antipattern yang sudah pernah diperbaiki
+            // di accProduction()).
             $base = array_shift($rollUp);
             $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
                 ->where("unit_id", "=", $base['unit_id'])

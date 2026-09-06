@@ -1035,10 +1035,14 @@ class ProductionController extends Controller
         $missingProductStockRows = [];
         foreach ($transferPlan['groups'] as $group) {
             foreach ($group['items'] as $output) {
-                $credits = UnitRollUp::plan(
-                    UnitRollUp::productChain((int) $output['product_variant_id']),
+                // planProductFolded() (GitHub #151, 2026-09-06): folds stock ALREADY at the produced
+                // unit into the roll-up decision too -- must match addQty()'s actual call below
+                // exactly, or this preview can drift from what really gets credited/provisioned.
+                $credits = UnitRollUp::planProductFolded(
+                    (int) $output['product_variant_id'],
                     (int) $output['unit_id'],
                     (int) $output['qty'],
+                    (int) $mainWarehouse->id,
                     UnitRollUp::ladderUnitIds((int) $output['product_variant_id'])
                 );
 
