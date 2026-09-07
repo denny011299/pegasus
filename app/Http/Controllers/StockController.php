@@ -32,6 +32,7 @@ use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
+use App\Support\UnitRollUp;
 use App\Support\UnitStockSorter;
 use App\Support\StockOpname\OpnameLifecycle;
 use App\Support\StockOpname\OpnameLineReader;
@@ -2530,43 +2531,53 @@ class StockController extends Controller
                 else {
                     $itemId = $value["item_id"];
                     $m = ProductVariant::find($itemId);
-                    $s = ProductStock::where('product_variant_id', '=', $m->product_variant_id)->where('unit_id', '=', $value["unit_id"])->first();
-                    $stocks = $s->ps_stock ?? 0;
-                    $stocks += $value["pid_qty"];
 
-                    $s->ps_stock = $stocks;
-                    $m->save();
-                    $s->save();
+                    // GitHub #155: dulu ps_stock ditambah flat di satuan yang diretur, tanpa roll
+                    // up sama sekali -- 1 Dos 4 Piece + 8 Piece jadi "1 Dos 12 Piece" alih-alih naik
+                    // jadi "2 Dos 0 Piece". Roll-up cuma masuk akal untuk gudang utama (retur Armada
+                    // masuk balik ke stok gudang utama), jadi pakai ProductUnitStock::addQty() dengan
+                    // $rollUp aktif kalau gudang aktif sesi ini memang gudang utama -- sama seperti
+                    // ProductionController::accProduction() (GH #19/#151). Kalau gudang aktif BUKAN
+                    // gudang utama, kredit tetap flat seperti sebelumnya (tidak ada roll-up di gudang
+                    // eceran).
+                    // resolveWarehouseId() (bukan session() mentah): sama seperti scope
+                    // 'active_warehouse' yang tadinya dipakai query ProductStock di sini --
+                    // eksplisit > session > gudang utama > gudang aktif pertama -- supaya gudang
+                    // yang dipakai konsisten dengan yang tadinya dibaca lewat scope itu.
+                    $activeWarehouseId = ProductStock::resolveWarehouseId();
+                    $isMainWarehouse = $activeWarehouseId > 0
+                        && ProductStock::warehouseIsMain($activeWarehouseId) === true;
+
+                    ProductUnitStock::addQty(
+                        $activeWarehouseId,
+                        (int) $m->product_id,
+                        (int) $m->product_variant_id,
+                        (int) $value['unit_id'],
+                        (float) $value['pid_qty'],
+                        $pi->pi_code,
+                        'Produk bermasalah retur Armada ' . LogStock::actorSuffix(),
+                        $isMainWarehouse,
+                        $isMainWarehouse ? UnitRollUp::allowedProductUnitIds((int) $m->product_variant_id, $activeWarehouseId) : null
+                    );
                 }
-                // Catat Log
-                $logNotes = "";
-                $logCategory = 0;
-                $logType = 0;
-                $itemId = 0;
+                // Catat Log (retur supplier saja -- retur Armada sudah dicatat oleh
+                // ProductUnitStock::addQty() di atas)
                 if ($pi->tipe_return == 1) {
                     $sup = SuppliesVariant::find($value['item_id']);
                     $spr = Supplier::find($sup->supplier_id);
                     $logNotes = 'Produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
-                    $logCategory = 2;
-                    $logType = 2;
 
-                    $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2) {
-                    $logNotes = 'Produk bermasalah retur Armada ' . LogStock::actorSuffix();
-                    $logCategory = 1;
-                    $logType = 1;
-                    $itemId = $value['item_id'];
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode'    => $pi->pi_code,
+                        'log_type'    => 2,
+                        'log_category' => 2,
+                        'log_item_id' => $sup->supplies_id,
+                        'log_notes'  => $logNotes,
+                        'log_jumlah' => $value['pid_qty'],
+                        'unit_id'    => $value['unit_id'],
+                    ]);
                 }
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => $logType,
-                    'log_category' => $logCategory,
-                    'log_item_id' => $itemId,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $value['pid_qty'],
-                    'unit_id'    => $value['unit_id'],
-                ]);
             }
 
             // 2. Status di-flip ke Approved HANYA SEKALI, setelah SEMUA item berhasil dimutasi —
