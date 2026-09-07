@@ -72,83 +72,25 @@ class ProductIssuesDetail extends Model
         return $t->pid_id;  
     } 
 
+    // GitHub #157 (2026-09-07): dulu method ini memutasi ss_stock/ps_stock (flat, tanpa roll-up)
+    // DAN PurchaseOrderDetail/po_total langsung di sini -- padahal dipanggil dari
+    // StockController::updateProductIssue() untuk dokumen `product_issues` yang MASIH PENDING
+    // (status belum di-ACC). Itu melanggar invariant yang sudah diverifikasi test lain
+    // (ProductIssuesFlowTest): stok baru boleh berubah saat accProductIssues(), insert/update
+    // dokumen pending TIDAK PERNAH menyentuh stok -- persis seperti insertProductIssuesDetail() di
+    // atas, yang dari awal memang tidak pernah menyentuh stok sama sekali. Endpoint ini juga sudah
+    // dikonfirmasi TIDAK reachable dari UI produksi hari ini (tombol edit sengaja disembunyikan --
+    // lihat cdocs/docs/flows/produk-bermasalah/FLOW.md), dan blok invoice PO di atas adalah dead
+    // code (insertProductIssue() tidak pernah mengisi ref_num). Sekarang method ini HANYA mengubah
+    // kolom baris detailnya sendiri, konsisten dengan insertProductIssuesDetail().
     function updateProductIssuesDetail($data)
     {
         $pi = ProductIssues::find($data['pi_id']);
-        $t =  self::find($data["pid_id"]);
-        $itemId = 0;
+        $t = self::find($data["pid_id"]);
 
-        // Return to Supplier
-        if ($pi->tipe_return == 1){
-            $itemId = $data['supplies_variant_id'];
-            $m = SuppliesVariant::find($itemId);
-            $s = SuppliesStock::where('supplies_id','=',$m->supplies_id)->where('unit_id','=',$data["unit_id"])->first();
-            
-            $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-            $po = PurchaseOrder::find($inv->po_id);
-            $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-
-            // pengurangan qty invoice
-            $total = 0;
-            foreach ($pod as $key => $value) {
-                if ($data['supplies_variant_id'] == $value['supplies_variant_id'] && $data['unit_id'] == $value['unit_id']){
-                    if (($value['pod_qty'] - $data['pid_qty']) >= 0) {
-                        $value['pod_qty'] -= $data['pid_qty'];
-                        $value['pod_subtotal'] = $value['pod_harga'] * $value['pod_qty'];
-                        $value->save();
-                    }
-                    else return -1;
-                }
-                $total += $value['pod_subtotal'];
-            }
-            if ($po->jenis_discount == "persen"){
-                $total -= $total * $po->po_discount/100;
-            } else {
-                $total -= $po->po_discount;
-            }
-            $total += $total * $po->po_ppn/100;
-            $total += $po->po_cost;
-
-            $data_retur = ReturnSupplies::where('po_id', $po->po_id)->where('status', 1)->get();
-            $total_retur = 0;
-            if ($data_retur){
-                foreach ($data_retur as $key => $value) {
-                    $total_retur += $value->rs_total;
-                }
-                if (isset($data['total_retur'])) $total -= $data['total_retur'];
-                else $total -= $total_retur;
-            }
-
-            $inv->poi_total = $total;
-            $po->po_total = $total;
-            $inv->save();
-            $po->save();
-            
-            if($m->pid_qty != $data["pid_qty"]){
-                if ($s->ss_stock - $data["pid_qty"] >= 0) {
-                    $s->ss_stock -= $data["pid_qty"];
-                } else {
-                    return -1;
-                }
-            }
-            // $s->ss_stock = $stocks;
-            $m->save();
-            $s->save();
-        }
-
-        // Return from customer 
-        else{
-            $itemId = $data["product_variant_id"];
-            $m = ProductVariant::find($itemId);
-            $s = ProductStock::where('product_variant_id','=',$m->product_variant_id)->where('unit_id','=',$data["unit_id"])->first();
-            
-            if($m->pid_qty != $data["pid_qty"]){
-                $s->ps_stock -= $t->pid_qty;
-                $s->ps_stock += $data["pid_qty"];
-            }
-            $m->save();
-            $s->save();
-        }
+        $itemId = $pi->tipe_return == 1
+            ? $data['supplies_variant_id']
+            : $data["product_variant_id"];
 
         $t->pi_id = $data["pi_id"];
         $t->pid_qty = $data["pid_qty"];
@@ -156,7 +98,7 @@ class ProductIssuesDetail extends Model
         $t->unit_id = $data["unit_id"];
         $t->save();
 
-        return $t->pid_id;  
+        return $t->pid_id;
     }
 
     function deleteProductIssuesDetail($data)

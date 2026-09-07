@@ -1655,70 +1655,77 @@ class ProductionController extends Controller
                 }
             }
 
-            // Cari relasi dari unit terkecil ke unit atas
-            $sr = SuppliesRelation::where('supplies_id', $suppliesId)
-                ->where('su_id_2', $stokBawah->unit_id) // su_id_2 = Piece
-                ->where('status', 1)
-                ->first();
+            // GitHub #159 (2026-09-07): dulu konversi satu-tingkat manual lewat SuppliesRelation
+            // langsung (`floor($butuhTersedia / $sr->sr_value_2)`), dan TIDAK melipat stok yang
+            // SUDAH ADA di $stokBawah sebelum kredit ini masuk -- bug class yang sama dengan #151
+            // (6 Piece sudah ada + 6 Piece kembali = tetap 12 Piece, bukan naik jadi 1 Dos). Sekarang
+            // lewat UnitRollUp::planSuppliesFolded(), yang melipat stok existing DAN menelusuri
+            // seluruh tangga satuan (bukan cuma satu tingkat ke atas), hanya menaikkan ke satuan
+            // yang SUDAH punya baris stok aktif -- sama seperti
+            // ProductIssuesDetail::deleteProductIssuesDetail() dan
+            // PurchaseOrderDeliveryDetail::insertPoDeliveryDetail().
+            $credits = UnitRollUp::planSuppliesFolded((int) $suppliesId, (int) $stokBawah->unit_id, (int) $butuhTersedia);
+            $base = array_shift($credits);      // selalu satuan bawah (bisa DELTA negatif kalau naik satuan)
+            $naikLevel = $credits;               // level-level di atasnya (kosong kalau tidak naik)
 
-            if ($sr && $butuhTersedia >= $sr->sr_value_2) {
-                // Hitung konversi: 144 Piece / 24 = 6 DOS
-                $kembalikanDos = floor($butuhTersedia / $sr->sr_value_2);
-                $sisaPiece     = fmod($butuhTersedia, $sr->sr_value_2);
+            $stokBawah->ss_stock += $base['qty'];
+            $stokBawah->save();
 
-                // Kembalikan ke unit atas (DOS)
-                $stokAtas = SuppliesStock::where('supplies_id', $suppliesId)
-                    ->where('unit_id', $sr->su_id_1)
+            foreach ($naikLevel as $credit) {
+                if ($credit['qty'] <= 0) continue;
+
+                $row = SuppliesStock::where('supplies_id', $suppliesId)
+                    ->where('unit_id', $credit['unit_id'])
                     ->where('status', 1)
                     ->first();
+                if (!$row) continue;
 
-                if ($stokAtas) {
-                    $stokAtas->ss_stock += $kembalikanDos;
-                    $stokAtas->save();
+                $row->ss_stock += $credit['qty'];
+                $row->save();
+            }
 
+            // Log utama: qty penuh yang dikembalikan, di satuan bawah tempat butuhTersedia dihitung
+            // -- riwayat tetap menyebut "pengembalian" walau sebagian/semua ikut naik satuan.
+            (new LogStock())->insertLog([
+                'log_date'     => now(),
+                'log_kode'     => $p->production_code,
+                'log_type'     => 2,
+                'log_category' => 1,
+                'log_item_id'  => $suppliesId,
+                'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
+                'log_jumlah'   => $butuhTersedia,
+                'unit_id'      => $stokBawah->unit_id,
+            ]);
+
+            // Jejak konversi kalau memang naik satuan: satuan asal keluar (cat 2), satuan hasil
+            // masuk (cat 1) -- pola sama persis dengan deleteProductIssuesDetail().
+            if ($naikLevel !== []) {
+                $naik = (int) $butuhTersedia - (int) $base['qty'];
+                if ($naik > 0) {
                     (new LogStock())->insertLog([
                         'log_date'     => now(),
                         'log_kode'     => $p->production_code,
                         'log_type'     => 2,
-                        'log_category' => 1,
+                        'log_category' => 2,
                         'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
-                        'log_jumlah'   => $kembalikanDos,
-                        'unit_id'      => $sr->su_id_1,
-                    ]);
-                }
-
-                // Kembalikan sisa piece kalau ada
-                if ($sisaPiece > 0) {
-                    $stokBawah->ss_stock += $sisaPiece;
-                    $stokBawah->save();
-
-                    (new LogStock())->insertLog([
-                        'log_date'     => now(),
-                        'log_kode'     => $p->production_code,
-                        'log_type'     => 2,
-                        'log_category' => 1,
-                        'log_item_id'  => $suppliesId,
-                        'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
-                        'log_jumlah'   => $sisaPiece,
+                        'log_notes'    => "Konversi unit (Naik satuan) pembatalan produksi " . LogStock::actorSuffix(),
+                        'log_jumlah'   => $naik,
                         'unit_id'      => $stokBawah->unit_id,
                     ]);
                 }
-            } else {
-                // Tidak ada relasi atau jumlah kurang dari 1 DOS — kembalikan langsung ke unit terkecil
-                $stokBawah->ss_stock += $butuhTersedia;
-                $stokBawah->save();
-
-                (new LogStock())->insertLog([
-                    'log_date'     => now(),
-                    'log_kode'     => $p->production_code,
-                    'log_type'     => 2,
-                    'log_category' => 1,
-                    'log_item_id'  => $suppliesId,
-                    'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
-                    'log_jumlah'   => $butuhTersedia,
-                    'unit_id'      => $stokBawah->unit_id,
-                ]);
+                foreach ($naikLevel as $credit) {
+                    if ($credit['qty'] <= 0) continue;
+                    (new LogStock())->insertLog([
+                        'log_date'     => now(),
+                        'log_kode'     => $p->production_code,
+                        'log_type'     => 2,
+                        'log_category' => 1,
+                        'log_item_id'  => $suppliesId,
+                        'log_notes'    => "Konversi unit (Hasil naik satuan) pembatalan produksi " . LogStock::actorSuffix(),
+                        'log_jumlah'   => $credit['qty'],
+                        'unit_id'      => $credit['unit_id'],
+                    ]);
+                }
             }
         }
 

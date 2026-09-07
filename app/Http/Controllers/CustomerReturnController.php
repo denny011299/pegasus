@@ -14,6 +14,7 @@ use App\Models\SuppliesStock;
 use App\Support\CustomerReturnCreation;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
+use App\Support\SuppliesUnitStock;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -404,39 +405,29 @@ class CustomerReturnController extends Controller
             ])->all();
         $this->validateSupplyDetails($details);
 
-        foreach ($details as $detail) {
-            $stock = SuppliesStock::withoutGlobalScope('active_warehouse')
-                ->where('supplies_id', $detail['supplies_id'])
-                ->where('unit_id', $detail['unit_id'])
-                ->where('warehouse_id', $detail['warehouse_id'])
-                ->lockForUpdate()
-                ->first();
-            if (! $stock) {
-                $stock = new SuppliesStock([
-                    'supplies_id' => $detail['supplies_id'],
-                    'unit_id' => $detail['unit_id'],
-                    'warehouse_id' => $detail['warehouse_id'],
-                    'ss_stock' => 0,
-                    'status' => 1,
-                    'created_by' => $this->userId(),
-                ]);
-            }
-            $stock->status = 1;
-            $stock->ss_stock = (int) $stock->ss_stock + $detail['qty'];
-            $stock->created_by = $this->userId();
-            $stock->save();
+        // Follow-up to GitHub #132/#159 (2026-09-07): kembaran persis acceptProduct() di bawah --
+        // dulu di sini cuma `$stock->ss_stock += qty` polos di satuan yang dikembalikan, tanpa
+        // roll-up sama sekali (flagged-but-not-fixed saat #132 ditutup, karena belum ada
+        // SuppliesUnitStock::addQty() untuk dipakai). Sekarang lewat SuppliesUnitStock::addQty()
+        // dengan $rollUp cuma untuk gudang UTAMA -- gudang eceran tetap kredit flat.
+        $mainWarehouseIds = DB::table('warehouses as w')
+            ->join('warehouse_types as wt', 'wt.id', '=', 'w.warehouse_type_id')
+            ->whereIn('w.id', collect($details)->pluck('warehouse_id')->unique()->all())
+            ->where('wt.is_main_warehouse', 1)
+            ->pluck('w.id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
 
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode' => $record->return_group ?: $record->return_number,
-                'log_type' => 2,
-                'log_category' => 1,
-                'log_item_id' => $detail['supplies_id'],
-                'log_notes' => 'Pengembalian bahan/kemasan dari armada ' . $customerName,
-                'log_jumlah' => $detail['qty'],
-                'unit_id' => $detail['unit_id'],
-                'warehouse_id' => $detail['warehouse_id'],
-            ]);
+        foreach ($details as $detail) {
+            SuppliesUnitStock::addQty(
+                $detail['warehouse_id'],
+                $detail['supplies_id'],
+                $detail['unit_id'],
+                (float) $detail['qty'],
+                $record->return_group ?: $record->return_number,
+                'Pengembalian bahan/kemasan dari armada ' . $customerName,
+                rollUp: in_array($detail['warehouse_id'], $mainWarehouseIds, true)
+            );
         }
 
         $record->status = 2;
