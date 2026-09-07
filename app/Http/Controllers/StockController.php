@@ -32,6 +32,7 @@ use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
+use App\Support\UnitRollUp;
 use App\Support\UnitStockSorter;
 use App\Support\StockOpname\OpnameLifecycle;
 use App\Support\StockOpname\OpnameLineReader;
@@ -1807,293 +1808,61 @@ class StockController extends Controller
         }
     }
 
+    // GitHub #157 (2026-09-07): dulu method ini memutasi ps_stock/ss_stock langsung (flat, tanpa
+    // roll-up -- sama seperti bug #155) untuk dokumen `product_issues` yang statusnya MASIH
+    // PENDING (belum di-ACC), dan melakukannya lewat 3 blok terpisah yang saling tumpang tindih
+    // (stockCheck() dengan efek samping bongkar, "Kembalikan stock semua" yang MENGANGGAP SEMUA
+    // baris detail adalah retur supplier walau dokumennya retur Armada -- akan crash
+    // `SuppliesVariant::find()` pada product_variant_id, dan pengurangan ps_stock manual untuk
+    // baris baru). Itu melanggar invariant yang sudah diverifikasi test lain
+    // (ProductIssuesFlowTest): stok baru boleh berubah saat accProductIssues(), insert/update
+    // dokumen pending TIDAK PERNAH menyentuh stok. Endpoint ini juga sudah dikonfirmasi TIDAK
+    // reachable dari UI produksi hari ini -- tombol edit sengaja disembunyikan (lihat
+    // cdocs/docs/flows/produk-bermasalah/FLOW.md). Sekarang disamakan persis dengan
+    // insertProductIssue(): pre-check stok murni-baca (productIssuesStockPrecheck(), retur ke
+    // supplier saja) sebelum menulis apa pun, lalu HANYA menyentuh product_issues/
+    // product_issues_details -- tidak pernah ps_stock/ss_stock.
     function updateProductIssue(Request $req)
     {
         $data = $req->all();
-        $image = $req->photo;
 
-        // Hilangkan prefix base64
-        $image = preg_replace('/^data:image\/\w+;base64,/', '', $image);
+        if ($req->photo) {
+            $image = preg_replace('/^data:image\/\w+;base64,/', '', $req->photo);
+            $imageData = base64_decode($image);
+            $imageName = 'photo_' . time() . '.png';
+            file_put_contents(public_path('issue/' . $imageName), $imageData);
+            $data["pi_img"] = $imageName;
+        }
 
-        // Decode
-        $imageData = base64_decode($image);
+        $items = json_decode($data['items'], true);
+        $tipeReturn = (int) ($data['tipe_return'] ?? 0);
 
-        // Nama file
-        $imageName = 'photo_' . time() . '.png';
+        if ($tipeReturn === 1) {
+            $stockFail = $this->productIssuesStockPrecheck($items, 1);
+            if ($stockFail !== null) {
+                $stockFail['header'] = 'Gagal Update';
+                return response()->json($stockFail);
+            }
+        }
 
-        // Path tujuan di public/produksi
-        $path = public_path('issue/' . $imageName);
-        // Simpan file
-        file_put_contents($path, $imageData);
-        $data["pi_img"] = $imageName;
-
-        $id = [];
-
-        // if ($data['tipe_return'] == 1) {
-        //     $inv = PurchaseOrderDetailInvoice::find($data['ref_num']);
-        //     $po = PurchaseOrder::find($inv->po_id);
-        //     $data['po_id'] = $po->po_id;
-        // }
-        // Ditambahkan (2026-08-24): dulu tidak ada transaksi di sini sama sekali. Perhatikan
-        // urutannya -- updateProductIssues() di bawah SUDAH memutasi stok, baru setelah itu blok
-        // "Cek stock" menjalankan stockCheck() yang bisa `return -1`. Artinya jalur gagal yang
-        // normal pun meninggalkan mutasi stok yang terlanjur tersimpan. Sekarang seluruh method
-        // (write + cek + loop detail di bawah) satu transaksi, jadi setiap `return -1` ikut
-        // ter-rollback bersih.
         DB::beginTransaction();
         try {
-        $pi = (new ProductIssues())->updateProductIssues($data);
+            $pi = (new ProductIssues())->updateProductIssues($data);
 
-        // Cek stock
-        $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
-        $stockKurang = [];
-        if (count($getPi) > 0) {
-            foreach ($getPi as $key => $val) {
-                foreach (json_decode($data['items'], true) as $key => $value) {
-                    if ($data['tipe_return'] == 1) {
-                        if ($value['supplies_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']) {
-                            $val['tipe_return'] = $data['tipe_return'];
-                            $val['pid_qty'] = $value['pid_qty'];
-                            $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) {
-                                $stockKurang[] = $value['supplies_name']
-                                    ?? $this->productIssuesItemLabel($value, 1);
-                            }
-                        }
-                    }
-                    if ($data['tipe_return'] == 2) {
-                        if ($value['product_variant_id'] == $val['item_id'] && $value['unit_id'] == $val['unit_id']) {
-                            $val['tipe_return'] = $data['tipe_return'];
-                            $val['pid_qty'] = $value['pid_qty'];
-                            $c = (new ProductIssuesDetail())->stockCheck($val);
-                            if ($c == -1) {
-                                $stockKurang[] = $value['product_name']
-                                    ?? $this->productIssuesItemLabel($value, 2);
-                            }
-                        }
-                    }
-                }
+            $id = [];
+            foreach ($items as $value) {
+                $value['pi_id'] = $pi->pi_id;
+                if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
+
+                $t = !isset($value["pid_id"])
+                    ? (new ProductIssuesDetail())->insertProductIssuesDetail($value)
+                    : (new ProductIssuesDetail())->updateProductIssuesDetail($value);
+
+                array_push($id, $t);
             }
-        }
-        if (count($stockKurang) > 0) {
-            DB::rollBack();
-            return response()->json([
-                'status' => -1,
-                'header' => 'Gagal Update',
-                'message' => 'Stok tidak mencukupi: ' . implode(', ', array_unique($stockKurang)),
-            ]);
-        }
-        // Pengecekan invoice
-        // if (isset($pi->ref_num) && $pi->ref_num > 0){
-        // $bermasalah = [];
-        // foreach (json_decode($data['items'], true) as $key => $value) {
-        //     $inv = PurchaseOrderDetailInvoice::find($pi->ref_num);
-        //     $po = PurchaseOrder::find($inv->po_id);
-        //     $pod = PurchaseOrderDetail::where('po_id', $po->po_id)->get();
-
-        //     $ada = -1;
-        //     foreach ($pod as $key => $detail) {
-        //         if ($detail['supplies_variant_id'] == $value['supplies_variant_id'] && $detail['unit_id'] == $value['unit_id']) {
-        //             $ada = 1;
-        //             break;
-        //         }
-        //     }
-        //     if ($ada == -1) {
-        //         array_push($bermasalah, $value['supplies_name']);
-        //     }
-        // }
-        // if (count($bermasalah) > 0) {
-        //     return [
-        //         "status"=>-1,
-        //         "message"=>"Bahan tidak ditemukan dalam invoice : ".implode(", ",$bermasalah)
-        //     ];
-        // }
-
-        // Kembalikan stock semua
-        $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
-        if (count($getPi) > 0) {
-            foreach ($getPi as $key => $val) {
-                // Kembalikan stock invoice
-                // $total = 0;
-                // foreach ($pod as $key => $detail) {
-                //     if ($val->item_id == $detail['supplies_variant_id'] && $val->unit_id == $detail['unit_id']){
-                //         $detail['pod_qty'] += $val['pid_qty'];
-                //         $detail['pod_subtotal'] = $detail['pod_harga'] * $detail['pod_qty'];
-                //         $detail->save();
-                //     }
-                //     $total += $detail['pod_subtotal'];
-                // }
-                // if ($po->jenis_discount == "persen"){
-                //     $total -= $total * $po->po_discount/100;
-                // } else {
-                //     $total -= $po->po_discount;
-                // }
-                // $total += $total * $po->po_ppn/100;
-                // $total += $po->po_cost;
-
-                // $inv->poi_total = $total;
-                // $inv->save();
-                // $po->po_total = $total;
-                // $po->save();
-
-                // Kembalikan stock
-                $svr = SuppliesVariant::find($val->item_id);
-                $ss = SuppliesStock::where('supplies_id', $svr->supplies_id)->where('unit_id', $val->unit_id)->first();
-                $ss->ss_stock += $val['pid_qty'];
-                $ss->save();
-
-                // Catat Log
-                $logNotes = "";
-                $spr = Supplier::find($svr->supplier_id);
-                $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => 2,
-                    'log_category' => 1,
-                    'log_item_id' => $svr->supplies_id,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $val['pid_qty'],
-                    'unit_id'    => $val['unit_id'],
-                ]);
-            }
-        }
-        // }
-
-        foreach (json_decode($data['items'], true) as $key => $value) {
-            $value['pi_id'] = $data["pi_id"];
-            if (isset($pi->ref_num)) $value['ref_num'] = $pi->ref_num;
-
-            if (!isset($value["pid_id"])) {
-                if ($pi->tipe_return == 2) {
-                    $getPi = ProductIssuesDetail::where('pi_id', $pi->pi_id)->where('status', '>=', 1)->get();
-                    if (count($getPi) > 0) {
-                        foreach ($getPi as $key => $val) {
-                            $ps = ProductStock::where('product_variant_id', $value['product_variant_id'])->where('unit_id', $val->unit_id)->first();
-
-                            $ps->ps_stock -= $val->pid_qty;
-                            $ps->save();
-
-                            // Catat Log
-                            $logNotes = "";
-                            $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
-                            (new LogStock())->insertLog([
-                                'log_date' => now(),
-                                'log_kode'    => $pi->pi_code,
-                                'log_type'    => 1,
-                                'log_category' => 2,
-                                'log_item_id' => $value['product_variant_id'],
-                                'log_notes'  => $logNotes,
-                                'log_jumlah' => $val['pid_qty'],
-                                'unit_id'    => $val['unit_id'],
-                            ]);
-                        }
-                    }
-                }
-
-                // Pengurangan stock
-                $t = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
-
-                // Catat Log
-                $logNotes = "";
-                $logCategory = 0;
-                $logType = 0;
-                $itemId = 0;
-                if ($pi->tipe_return == 1) {
-                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
-                    $spr = Supplier::find($sup->supplier_id);
-
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
-                    $logCategory = 2;
-                    $logType = 2;
-
-                    $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2) {
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
-                    $logCategory = 1;
-                    $logType = 1;
-                    $itemId = $value['product_variant_id'];
-                }
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => $logType,
-                    'log_category' => $logCategory,
-                    'log_item_id' => $itemId,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $value['pid_qty'],
-                    'unit_id'    => $value['unit_id'],
-                ]);
-            } else {
-                // Catat Log
-                $logNotes = "";
-                $logCategory = 0;
-                $logType = 0;
-                $itemId = 0;
-                if ($pi->tipe_return == 1) {
-                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
-                    $spr = Supplier::find($sup->supplier_id);
-
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
-                    $logCategory = 1;
-                    $logType = 2;
-                    $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2) {
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
-                    $logCategory = 2;
-                    $logType = 1;
-                    $itemId = $value['product_variant_id'];
-                }
-
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => $logType,
-                    'log_category' => $logCategory,
-                    'log_item_id' => $itemId,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $value['pid_qty'],
-                    'unit_id'    => $value['unit_id'],
-                ]);
-
-                $t = (new ProductIssuesDetail())->updateProductIssuesDetail($value);
-
-                // Catat Log
-                $logNotes = "";
-                $logCategory = 0;
-                $logType = 0;
-                $itemId = 0;
-                if ($pi->tipe_return == 1) {
-                    $sup = SuppliesVariant::find($value['supplies_variant_id']);
-                    $spr = Supplier::find($sup->supplier_id);
-
-                    $logNotes = 'Perubahan data produk bermasalah retur supplier ' . $spr->supplier_name . ' ' . LogStock::actorSuffix();
-                    $logCategory = 2;
-                    $logType = 2;
-                    $itemId = $sup->supplies_id;
-                } elseif ($pi->tipe_return == 2) {
-                    $logNotes = 'Perubahan data produk bermasalah retur Armada ' . LogStock::actorSuffix();
-                    $logCategory = 1;
-                    $logType = 1;
-                    $itemId = $value['product_variant_id'];
-                }
-
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode'    => $pi->pi_code,
-                    'log_type'    => $logType,
-                    'log_category' => $logCategory,
-                    'log_item_id' => $itemId,
-                    'log_notes'  => $logNotes,
-                    'log_jumlah' => $value['pid_qty'],
-                    'unit_id'    => $value['unit_id'],
-                ]);
-            }
-            array_push($id, $t);
-
-        }
-        ProductIssuesDetail::where('pi_id', '=', $data["pi_id"])->whereNotIn("pid_id", $id)->update(["status" => 0]);
-        DB::commit();
+            ProductIssuesDetail::where('pi_id', '=', $pi->pi_id)->whereNotIn("pid_id", $id)->update(["status" => 0]);
+            DB::commit();
+            return 1;
         } catch (\Throwable $e) {
             DB::rollBack();
             throw $e;
@@ -3152,9 +2921,17 @@ class StockController extends Controller
             return response()->json(['status' => 0, 'message' => 'Data tidak valid'], 422);
         }
 
+        // GitHub #158 (2026-09-07): dulu qty ditambahkan flat ke ps_stock (`$row->ps_stock += $qty`)
+        // tanpa roll-up sama sekali -- kalau hasilnya melewati rasio ke satuan yang lebih besar
+        // (mis. 12 Piece = 1 Dos), stok tetap menumpuk di satuan kecil selamanya, pola bug yang
+        // sama dengan #155. Sekarang lewat ProductUnitStock::addQty() dengan $rollUp aktif kalau
+        // gudang aktif adalah gudang utama -- sama seperti accProduction() (GH #19/#151) dan fix
+        // #155. Pengurangan ps_safety_stock TETAP flat di satuan asal apa adanya (safety stock
+        // memang cuma ditumpuk per satuan, bukan barang fisik yang perlu dikonversi ke atas).
+        $isMainWarehouse = ProductStock::warehouseIsMain($warehouseId) === true;
+
         DB::beginTransaction();
         try {
-            $logger = new LogStock();
             $moved = 0;
             foreach ($items as $item) {
                 $unitId = (int) ($item['unit_id'] ?? 0);
@@ -3177,20 +2954,22 @@ class StockController extends Controller
                     throw new \RuntimeException('Qty transfer melebihi safety stock');
                 }
                 $row->ps_safety_stock = round($safety - $qty, 4);
-                $row->ps_stock = round((float) $row->ps_stock + $qty, 4);
                 $row->save();
 
-                $logger->insertLog([
-                    'log_date' => now(),
-                    'log_kode' => 'SS' . $row->ps_id,
-                    'log_type' => 1,
-                    'log_category' => 1,
-                    'log_item_id' => $variantId,
-                    'log_notes' => 'Transfer Safety Stock ke Stok Produk',
-                    'log_jumlah' => $qty,
-                    'unit_id' => $unitId,
-                    'warehouse_id' => $warehouseId,
-                ]);
+                $add = ProductUnitStock::addQty(
+                    $warehouseId,
+                    (int) $row->product_id,
+                    $variantId,
+                    $unitId,
+                    $qty,
+                    'SS' . $row->ps_id,
+                    'Transfer Safety Stock ke Stok Produk',
+                    $isMainWarehouse,
+                    $isMainWarehouse ? UnitRollUp::allowedProductUnitIds($variantId, $warehouseId) : null
+                );
+                if (! ($add['ok'] ?? false)) {
+                    throw new \RuntimeException($add['message'] ?? 'Gagal tambah stok produk');
+                }
                 $moved++;
             }
             if ($moved === 0) {
