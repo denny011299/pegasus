@@ -228,11 +228,13 @@
         $('#tablePurchaseModal tbody').html("");
         item.forEach((item,index) => {
             // console.log(item)
+            var selectedUnit = item.unit_id_select || (item.supplies_unit[0] && item.supplies_unit[0].unit_id);
             var opsi = "";
             item.supplies_unit.forEach(element => {
-                opsi += `<option value='${element.unit_id}'>${element.unit_short_name}</option>`;
+                var isSelected = (element.unit_id == selectedUnit) ? 'selected' : '';
+                opsi += `<option value='${element.unit_id}' ${isSelected}>${element.unit_short_name}</option>`;
             });
-            
+
             $('#tablePurchaseModal tbody').append(`
                 <tr>
                     <td style="width:16%">${item.supplies_name}</td>
@@ -260,6 +262,13 @@
         var index = $(this).attr("index");
         item.splice(index,1);
         refreshItem();
+    });
+
+    $(document).on("change",".units_id",function(){
+        var index = $(this).closest('tr').find('.qtyPesanan').attr("index");
+        if (item[index]) {
+            item[index].unit_id_select = $(this).val();
+        }
     });
 
     $(document).on("change",".qtyPesanan",function(){
