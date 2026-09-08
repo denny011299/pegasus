@@ -673,54 +673,61 @@ class SupplierController extends Controller
      * Unit atas dicari lewat RELASI (su_id_1), bukan posisi array — pelajaran dari
      * ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.
      */
-    private function bongkarSuppliesUntilEnough(int $suppliesId, int $unitId, int $qty, $sv, &$p): void
+    private function bongkarSuppliesUntilEnough(int $suppliesId, int $unitId, int $qty, $sv, &$p, int $safety = 0): void
     {
-        $chain = UnitRollUp::suppliesChain($suppliesId);
-        $safety = 0;
+        // Diperbaiki (2026-09-08, GitHub #165): dulu ini bongkar 1 unit atas per iterasi lewat
+        // while-loop, tiap iterasi menulis 2 baris log -- kalau selisihnya besar (mis. butuh 100
+        // Piece dari DOS), histori jadi puluhan baris "Konversi unit (Bongkar/Hasil)" 1 per 1.
+        // Sekarang dihitung sekaligus berapa unit atas yang dibutuhkan lalu dibongkar & di-log
+        // dalam SATU langkah per level satuan.
+        if ($safety > 20) return; // guard kedalaman rantai satuan (bukan jumlah unit)
 
-        while ($safety < 500) {
-            $safety++;
-
-            $target = SuppliesStock::where('supplies_id', $suppliesId)
-                ->where('unit_id', $unitId)->where('status', 1)->first();
-            if (! $target || $target->ss_stock >= $qty) {
-                return; // sudah cukup (atau tidak ada baris sama sekali — biarkan guard di atas yang bicara)
-            }
-
-            // Cari satuan tepat di atas $unitId lewat relasi.
-            $rel = null;
-            foreach ($chain as $link) {
-                if ($link['small'] === $unitId) { $rel = $link; break; }
-            }
-            if ($rel === null || $rel['ratio'] <= 0) return;
-
-            $atas = SuppliesStock::where('supplies_id', $suppliesId)
-                ->where('unit_id', $rel['big'])->where('status', 1)->first();
-
-            // Satuan atas kosong → coba isi dulu dari satuan di atasnya lagi (rekursif satu tingkat).
-            if (! $atas || $atas->ss_stock <= 0) {
-                if ($atas === null) return;
-                $this->bongkarSuppliesUntilEnough($suppliesId, (int) $rel['big'], 1, $sv, $p);
-                $atas->refresh();
-                if ($atas->ss_stock <= 0) return;
-            }
-
-            $atas->ss_stock -= 1;
-            $atas->save();
-            $target->ss_stock += $rel['ratio'];
-            $target->save();
-
-            (new LogStock())->insertLog([
-                'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
-                'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Bongkar) pembatalan PO',
-                'log_jumlah' => 1, 'unit_id' => (int) $rel['big'],
-            ]);
-            (new LogStock())->insertLog([
-                'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
-                'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Hasil) pembatalan PO',
-                'log_jumlah' => (int) $rel['ratio'], 'unit_id' => $unitId,
-            ]);
+        $target = SuppliesStock::where('supplies_id', $suppliesId)
+            ->where('unit_id', $unitId)->where('status', 1)->first();
+        if (! $target || $target->ss_stock >= $qty) {
+            return; // sudah cukup (atau tidak ada baris sama sekali — biarkan guard di atas yang bicara)
         }
+
+        // Cari satuan tepat di atas $unitId lewat relasi.
+        $chain = UnitRollUp::suppliesChain($suppliesId);
+        $rel = null;
+        foreach ($chain as $link) {
+            if ($link['small'] === $unitId) { $rel = $link; break; }
+        }
+        if ($rel === null || $rel['ratio'] <= 0) return;
+
+        $deficit = $qty - $target->ss_stock;
+        $needAtas = (int) ceil($deficit / $rel['ratio']);
+
+        $atas = SuppliesStock::where('supplies_id', $suppliesId)
+            ->where('unit_id', $rel['big'])->where('status', 1)->first();
+        if (! $atas) return;
+
+        // Satuan atas tidak cukup → coba isi dulu dari satuan di atasnya lagi (rekursif).
+        if ($atas->ss_stock < $needAtas) {
+            $this->bongkarSuppliesUntilEnough($suppliesId, (int) $rel['big'], $needAtas, $sv, $p, $safety + 1);
+            $atas->refresh();
+        }
+
+        $take = min($needAtas, $atas->ss_stock);
+        if ($take <= 0) return;
+
+        $atas->ss_stock -= $take;
+        $atas->save();
+        $hasil = $take * $rel['ratio'];
+        $target->ss_stock += $hasil;
+        $target->save();
+
+        (new LogStock())->insertLog([
+            'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
+            'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Bongkar) pembatalan PO',
+            'log_jumlah' => $take, 'unit_id' => (int) $rel['big'],
+        ]);
+        (new LogStock())->insertLog([
+            'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
+            'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Hasil) pembatalan PO',
+            'log_jumlah' => $hasil, 'unit_id' => $unitId,
+        ]);
     }
 
     function tolakPO(Request $req) {
