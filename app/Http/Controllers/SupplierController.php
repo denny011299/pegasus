@@ -597,9 +597,14 @@ class SupplierController extends Controller
             $value["pdod_qty"] = $value["pod_qty"];
             $value["statusPO"] = 2;
             $value["status"] = 2;
-            (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
 
-            // Catat Log
+            // Catat Log "masuk" DULU, baru insertPoDeliveryDetail() (yang menaikkan satuan lewat
+            // UnitRollUp dan bisa menulis log konversi "keluar" + "hasil naik satuan" di
+            // dalamnya) -- lihat docblock insertPoDeliveryDetail(). Urutan sebelumnya terbalik
+            // (insertPoDeliveryDetail() dipanggil duluan), jadi histori terbaca keluar → konversi
+            // → baru masuk, membingungkan (GitHub #167). insertPoDeliveryDetail() sendiri sudah
+            // mengasumsikan log "masuk" ditulis caller lebih dulu -- ini hanya menyamakan urutan
+            // panggilan dengan asumsi itu, tanpa mengubah isi logic-nya.
             $sv = SuppliesVariant::find($value['supplies_variant_id']);
             $sup = Supplier::find($sv->supplier_id);
             (new LogStock())->insertLog([
@@ -612,6 +617,8 @@ class SupplierController extends Controller
                 'log_jumlah' => $value["pdod_qty"],
                 'unit_id'    => $value['unit_id'],
             ]);
+
+            (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
         }
         $s = Supplier::find($data["po_supplier"]);
         $due  = date('Y-m-d', strtotime('+'.$s->supplier_top.' days'));

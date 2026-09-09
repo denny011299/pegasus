@@ -2,6 +2,7 @@
 
 namespace Tests\Workflow;
 
+use App\Models\LogStock;
 use App\Models\PurchaseOrder;
 use App\Models\Supplier;
 use App\Models\Supplies;
@@ -214,5 +215,38 @@ class PurchaseOrderReceiptRollUpFlowTest extends TestCase
             'log_type' => 2, 'log_category' => 1, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
             'log_jumlah' => 1, 'unit_id' => self::DOS,
         ]);
+    }
+
+    /**
+     * GitHub #167: the raw "Pembelian bahan mentah masuk" log was inserted AFTER
+     * insertPoDeliveryDetail() had already written its "Naik satuan" (keluar) / "Hasil naik satuan"
+     * (masuk) conversion legs, so the history read keluar → konversi → masuk -- confusing, since
+     * nothing had "gone out" before the purchase itself ever landed. The masuk-first log must be
+     * the earliest row, followed by the conversion legs in their existing keluar-then-masuk order.
+     */
+    public function test_purchase_log_is_written_before_the_rollup_conversion_legs(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$supplies, $variant, , , $supplier] = $this->createFixture();
+
+        // 26 Piece = 2 DOS + 2 Piece -> triggers a roll-up conversion.
+        $this->createAndApprovePo($variant, $supplier, 26);
+
+        $logs = LogStock::where('log_type', 2)
+            ->where('log_item_id', $supplies->supplies_id)
+            ->orderBy('log_id')
+            ->get();
+
+        $this->assertStringStartsWith(
+            'Pembelian bahan mentah '.$supplier->supplier_name,
+            $logs[0]->log_notes
+        );
+        $this->assertSame(1, (int) $logs[0]->log_category, 'purchase masuk log must be first');
+
+        $this->assertSame('Konversi unit (Naik satuan)', $logs[1]->log_notes);
+        $this->assertSame(2, (int) $logs[1]->log_category, 'bongkar leg (keluar) comes after the purchase log');
+
+        $this->assertSame('Konversi unit (Hasil naik satuan)', $logs[2]->log_notes);
+        $this->assertSame(1, (int) $logs[2]->log_category, 'hasil leg (masuk) comes last');
     }
 }
