@@ -24,8 +24,9 @@ var transferKeepPhotoProofOnClose = false; // true = #modalKonfirmasi ditutup se
 var transferViewPhotoParent = ""; // parent modal yang di-restore setelah #modalViewPhoto
 var transferThenShipProofBase64 = ""; // bukti foto utk kombo Simpan+Kirim (edit mode, tanpa #modalKonfirmasi)
 var transferPendingThenShip = false; // true = habis ambil foto, lanjutkan otomatis Simpan+Kirim
-var transferCreateRequestMode = false; // eceran create: label request / penerima = aktif
+var transferCreateRequestMode = false; // retail atau main request UI
 var transferIsRetailRequest = false; // create ATAU edit retail_request
+var transferIsMainRequest = false; // create ATAU edit main_request
 var transferScanMode = false;
 var stockLoadPending = 0;
 var retailUnitValidationPending = 0;
@@ -180,11 +181,15 @@ function assertKonfirmasiPhotoProof() {
     return false;
 }
 
-/** Request eceran: apakah approval `type` ini yang melengkapi approval → auto-Kirim. */
+/** Request: apakah approval `type` ini yang melengkapi QC/Ops → auto-Kirim (retail) / auto-Terima (main). */
 function willTransferAutoShip(type) {
     var qcOk = !transferQcRequired || type === "qc" || transferQcApproved;
     var opsOk = !transferOpsRequired || type === "ops" || transferOpsApproved;
     return qcOk && opsOk;
+}
+
+function willTransferAutoAccept(type) {
+    return transferIsMainRequest && willTransferAutoShip(type);
 }
 
 $(document).on("click", "#btn-konfirmasi-photo-proof", function () {
@@ -610,11 +615,16 @@ function inisialisasi() {
                         row.is_retail_request === true ||
                         row.is_retail_request === 1 ||
                         row.source_type === "retail_request";
+                    var isMainReq =
+                        row.is_main_request === true ||
+                        row.is_main_request === 1 ||
+                        row.source_type === "main_request";
                     var activeWh =
                         typeof getActiveWarehouseId === "function"
                             ? String(getActiveWarehouseId() || "")
                             : "";
                     var fromWh = String(row.from_warehouse_id || "");
+                    var toWh = String(row.to_warehouse_id || "");
                     // Request eceran status=1 di gudang besar:
                     // Requested → Need Approval → (approval lengkap auto-Kirim, jarang "Siap Kirim")
                     if (status === 1 && isRetailReq && activeWh && activeWh === fromWh) {
@@ -633,6 +643,26 @@ function inisialisasi() {
                         }
                         if (phase === "ready") {
                             return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Siap Kirim</span>';
+                        }
+                        return '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Requested</span>';
+                    }
+                    // Request utama status=2 di gudang utama: fase sebelum auto-Terima
+                    if (status === 2 && isMainReq && activeWh && activeWh === toWh) {
+                        var phaseMain = row.approval_phase || "";
+                        if (!phaseMain) {
+                            var qcReqM = row.qc_required === true || row.qc_required === 1;
+                            var opsReqM = row.ops_required === true || row.ops_required === 1;
+                            var qcOkM = row.qc_approved === true || row.qc_approved === 1;
+                            var opsOkM = row.ops_approved === true || row.ops_approved === 1;
+                            if (qcReqM && !qcOkM) phaseMain = "requested";
+                            else if (opsReqM && !opsOkM) phaseMain = "need_approval";
+                            else phaseMain = "ready";
+                        }
+                        if (phaseMain === "need_approval") {
+                            return '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>';
+                        }
+                        if (phaseMain === "ready") {
+                            return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Siap Terima</span>';
                         }
                         return '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Requested</span>';
                     }
@@ -747,19 +777,27 @@ function inisialisasi() {
                     var canDelete = row.can_delete === true || row.can_delete === 1;
                     var canReject = row.can_reject === true || row.can_reject === 1;
                     var canCancelKirim = row.can_cancel_kirim === true || row.can_cancel_kirim === 1;
+                    var canApproveQc =
+                        row.can_approve_qc === true || row.can_approve_qc === 1;
+                    var canApproveOps =
+                        row.can_approve_ops === true || row.can_approve_ops === 1;
                     var pending = status === 1;
-                    // Pending: selalu bisa dibuka (view). Edit unlock di modal jika can_edit.
-                    var canOpenPending = pending;
+                    // Pending ATAU perlu proses di modal add (QC/Ops main_request, Kirim, dll)
+                    var canOpenModal =
+                        pending ||
+                        canShip ||
+                        canApproveQc ||
+                        canApproveOps;
 
-                    // Pending: satu tombol buka modal (view/edit/transfer/tolak di dalam modal)
-                    var openBtn = canOpenPending
-                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnOpenTransfer text-primary" title="${canEdit ? 'Lihat / Edit / Proses' : 'Lihat / Proses Transfer'}" data-id="${row.id}">
+                    var openBtn = canOpenModal
+                        ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnOpenTransfer text-primary" title="Lihat / Proses Transfer" data-id="${row.id}">
                                 <i class="fe fe-eye"></i>
                            </a>`
                         : "";
 
+                    // View-only hanya jika tidak ada aksi di modal add (termasuk approve QC/Ops)
                     var viewBtn =
-                        !pending && !canEdit && !canAcc
+                        !canOpenModal && !canEdit && !canAcc
                             ? `<a href="javascript:void(0);" class="me-2 p-2 btn-action-icon btnViewTransfer" title="Lihat Detail" data-id="${row.id}">
                                 <i class="fe fe-eye"></i>
                            </a>`
@@ -774,10 +812,14 @@ function inisialisasi() {
                         row.is_retail_request === true ||
                         row.is_retail_request === 1 ||
                         row.source_type === "retail_request";
-                    // Retail: Cancel = reject (can_reject). Non-retail: soft-delete (can_delete).
-                    var delBtn = isRetailRequest
+                    var isMainRequest =
+                        row.is_main_request === true ||
+                        row.is_main_request === 1 ||
+                        row.source_type === "main_request";
+                    // Request: Cancel = reject (can_reject). Non-request: soft-delete (can_delete).
+                    var delBtn = isRetailRequest || isMainRequest
                         ? canReject
-                            ? `<a href="javascript:void(0);" class="p-2 btn-action-icon btnDeleteTransfer text-danger" title="Cancel" data-id="${row.id}" data-status="${status}" data-retail-request="1">
+                            ? `<a href="javascript:void(0);" class="p-2 btn-action-icon btnDeleteTransfer text-danger" title="Cancel" data-id="${row.id}" data-status="${status}" data-retail-request="${isRetailRequest ? 1 : 0}">
                                 <i class="fe fe-x-circle"></i>
                            </a>`
                             : ""
@@ -832,17 +874,26 @@ function initTransferAutocompletes() {
     var parent = "#add_stock_transfer";
     autocompleteStaff("#transfer_sender_id", parent);
     if (mode === 1) {
-        transferCreateRequestMode = isActiveWarehouseRetail();
-        transferIsRetailRequest = transferCreateRequestMode;
+        transferIsRetailRequest = isActiveWarehouseRetail();
+        transferIsMainRequest =
+            typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true;
+        transferCreateRequestMode = transferIsRetailRequest || transferIsMainRequest;
     }
     initTransferWarehouseAutocompletes();
-    applyTransferRouteLabels(transferIsRetailRequest);
+    applyTransferRouteLabels(transferCreateRequestMode);
 }
 
 /** Autocomplete gudang sesuai mode request vs transfer biasa. */
 function initTransferWarehouseAutocompletes() {
     var parent = "#add_stock_transfer";
-    if (transferIsRetailRequest) {
+    if (transferIsMainRequest) {
+        // Gudang Request = eceran (yang kirim); penerima = utama aktif
+        autocompleteWarehouse("#transfer_from_warehouse_id", parent, {
+            retailOnly: true,
+            placeholder: "Pilih gudang eceran",
+        });
+        autocompleteWarehouse("#transfer_to_warehouse_id", parent, { mainFirst: true });
+    } else if (transferIsRetailRequest) {
         // Gudang Request = pilih gudang utama (stok diminta)
         autocompleteWarehouse("#transfer_from_warehouse_id", parent, {
             mainOnly: true,
@@ -2452,6 +2503,7 @@ function resetTransferForm() {
     transferOpsApproved = false;
     transferCreateRequestMode = false;
     transferIsRetailRequest = false;
+    transferIsMainRequest = false;
     transferScanMode = false;
     transferThenShipProofBase64 = "";
     transferPendingThenShip = false;
@@ -2560,8 +2612,8 @@ function setTransferFormLocked(locked) {
     if (transferFormLocked) {
         lockTransferFromWarehouse();
         lockTransferToWarehouse();
-    } else if (transferIsRetailRequest) {
-        // Request eceran: Gudang Request (from) boleh diubah; penerima (to) terkunci
+    } else if (transferIsRetailRequest || transferIsMainRequest) {
+        // Request: Gudang Request (from) boleh diubah; penerima (to) terkunci
         unlockTransferFromWarehouse();
         lockTransferToWarehouse();
     } else {
@@ -2725,12 +2777,6 @@ $(document).on("show.bs.modal", "#add_stock_transfer", function () {
 });
 
 $(document).on("click", ".btnAdd", function () {
-    if (typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true) {
-        if (typeof toastr !== "undefined") {
-            toastr.warning("", "Tambah Stock Transfer dari gudang utama sementara dinonaktifkan");
-        }
-        return;
-    }
     mode = 1;
     if (!$("#add_stock_transfer").length) return;
     $("#add_stock_transfer").removeAttr("data-id");
@@ -2744,7 +2790,9 @@ $(document).on("click", ".btnAdd", function () {
         setDefaultReceivingWarehouse();
         $("#add_stock_transfer .modal-title").text("Request Stock Transfer");
         $("#add_stock_transfer .transfer-modal-subtitle").text(
-            "Request stok dari gudang lain ke gudang aktif"
+            transferIsMainRequest
+                ? "Request stok dari gudang eceran ke gudang utama aktif"
+                : "Request stok dari gudang lain ke gudang aktif"
         );
     }
     setTransferFormLocked(false);
@@ -3670,9 +3718,19 @@ function approveStockTransfer(type) {
                     transferCanShip = false;
                     transferCanReject = false;
                 }
+                if (res.auto_accepted == 1 || res.auto_accepted === true) {
+                    transferCanAcc = false;
+                    transferCanApproveQc = false;
+                    transferCanApproveOps = false;
+                }
                 if (table) table.ajax.reload(null, false);
-                // Auto-Kirim setelah Ops Acc: jangan buka ulang detail (status sudah Kirim).
-                if (res.auto_shipped == 1 || res.auto_shipped === true) {
+                // Auto-Kirim / auto-Terima: tutup detail.
+                if (
+                    res.auto_shipped == 1 ||
+                    res.auto_shipped === true ||
+                    res.auto_accepted == 1 ||
+                    res.auto_accepted === true
+                ) {
                     $("#add_stock_transfer").modal("hide");
                     return;
                 }
@@ -3715,13 +3773,17 @@ $(document).on("click", ".btn-approve-qc-transfer", function () {
         if (typeof toastr !== "undefined") toastr.error("", "ID transfer tidak ditemukan");
         return;
     }
+    var msg = transferIsMainRequest
+        ? "Setujui penerimaan ini (QC)? Setelah disetujui, menunggu approval Kepala Operasional."
+        : "Setujui request ini (QC)? Setelah disetujui, menunggu approval Kepala Operasional.";
     showTransferModalKonfirmasi(
-        "Setujui request ini (QC)? Setelah disetujui, menunggu approval Kepala Operasional.",
+        msg,
         "btn-approve-qc-stock-transfer",
         id,
         null,
         false,
-        willTransferAutoShip("qc")
+        // Bukti foto hanya untuk auto-Kirim retail; auto-Terima main tidak butuh foto baru.
+        willTransferAutoShip("qc") && !transferIsMainRequest
     );
 });
 $(document).on("click", ".btn-approve-ops-transfer", function () {
@@ -3730,13 +3792,16 @@ $(document).on("click", ".btn-approve-ops-transfer", function () {
         if (typeof toastr !== "undefined") toastr.error("", "ID transfer tidak ditemukan");
         return;
     }
+    var msg = transferIsMainRequest
+        ? "Setujui penerimaan ini (Kepala Operasional)? Stok akan masuk gudang utama (Terkirim)."
+        : "Setujui request ini (Kepala Operasional)? Stok gudang asal akan dipotong dan status menjadi Kirim — gudang eceran dapat menerima.";
     showTransferModalKonfirmasi(
-        "Setujui request ini (Kepala Operasional)? Stok gudang asal akan dipotong dan status menjadi Kirim — gudang eceran dapat menerima.",
+        msg,
         "btn-approve-ops-stock-transfer",
         id,
         null,
         false,
-        willTransferAutoShip("ops")
+        willTransferAutoShip("ops") && !transferIsMainRequest
     );
 });
 
@@ -3852,10 +3917,15 @@ function loadTransferDetailForEdit(id) {
                 res.source_type === "retail_request" ||
                 res.is_retail_request === 1 ||
                 res.is_retail_request === true;
+            var isMainRequest =
+                res.source_type === "main_request" ||
+                res.is_main_request === 1 ||
+                res.is_main_request === true;
             transferIsRetailRequest = !!isRetailRequest;
+            transferIsMainRequest = !!isMainRequest;
             transferCreateRequestMode = false;
             initTransferWarehouseAutocompletes();
-            applyTransferRouteLabels(transferIsRetailRequest);
+            applyTransferRouteLabels(transferIsRetailRequest || transferIsMainRequest);
             $("#transfer_date").val(res.transfer_date);
             if ($("#transfer_date").data("DateTimePicker")) {
                 $("#transfer_date").data("DateTimePicker").date(res.transfer_date);

@@ -57,9 +57,20 @@ Badge phases (status=1, di gudang asal): `requested` → `need_approval` → `re
 - QC/Ops di gudang asal boleh **tolak** → langsung cancel (status=3).
 - **Elevated approvers** (role Direksi / Developer via `StockTransferApproval::isElevatedApprover`) bypass warehouse assignment; act as QC then Ops sequentially.
 
-### 2. Manual / other transfers
+### 2. Main request (`source_type = main_request`)
 
-- Gudang utama buat sendiri, eceran↔eceran, **production** (`source_type = production`).
+Gudang **utama** minta stok dari gudang **eceran** (FROM eceran → TO utama).
+
+1. Eceran **Acc Kirim** (tanpa QC/Ops)
+2. QC → Kepala Ops di **gudang tujuan (utama)**, status Kirim
+3. Setelah lengkap → **auto Terima** (stok masuk utama)
+
+Badge phases (status=2, di gudang tujuan): sama `requested` / `need_approval` / `ready` (Siap Terima).
+Direksi / Developer boleh ganti QC & Ops seperti retail.
+
+### 3. Manual / other transfers
+
+- Eceran↔eceran, **production** (`source_type = production`).
 - **Tanpa** QC/Ops approval.
 - Alur lama: **Acc/Tolak Kirim** lalu **Acc/Tolak Terima**.
 - Production ST: no auto Kirim+Terima; no soft-delete via delete button.

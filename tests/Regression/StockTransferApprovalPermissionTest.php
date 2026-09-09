@@ -225,4 +225,169 @@ class StockTransferApprovalPermissionTest extends TestCase
         $header->refresh();
         $this->assertGreaterThan(0, (int) $header->qc_approved_by);
     }
+
+    /** @return array{header: StockTransfer, variant: ProductVariant} */
+    private function createShippedMainRequestWithStock(): array
+    {
+        $category = new Category();
+        $category->category_name = 'REG ST MainReq Cat ' . uniqid();
+        $category->status = 1;
+        $category->save();
+
+        $product = new Product();
+        $product->product_name = 'REG ST MainReq Product ' . uniqid();
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([$this->pieceUnitId]);
+        $product->unit_id = $this->pieceUnitId;
+        $product->status = 1;
+        $product->save();
+
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'REG ST MainReq Variant';
+        $variant->product_variant_sku = 'REG-ST-MR-' . uniqid();
+        $variant->product_variant_price = 0;
+        $variant->retail_unit = $this->pieceUnitId;
+        $variant->status = 1;
+        $variant->save();
+
+        // Stok di eceran (asal kirim)
+        $stockRetail = new ProductStock();
+        $stockRetail->product_id = $product->product_id;
+        $stockRetail->product_variant_id = $variant->product_variant_id;
+        $stockRetail->unit_id = $this->pieceUnitId;
+        $stockRetail->warehouse_id = $this->warehouseIds['retail'];
+        $stockRetail->ps_stock = 50;
+        $stockRetail->status = 1;
+        $stockRetail->save();
+
+        // Baris stok tujuan (utama) biar addQty tidak gagal provisioning
+        $stockMain = new ProductStock();
+        $stockMain->product_id = $product->product_id;
+        $stockMain->product_variant_id = $variant->product_variant_id;
+        $stockMain->unit_id = $this->pieceUnitId;
+        $stockMain->warehouse_id = $this->warehouseIds['main'];
+        $stockMain->ps_stock = 0;
+        $stockMain->status = 1;
+        $stockMain->save();
+
+        $header = new StockTransfer();
+        $header->transfer_code = 'REG-ST-MR-' . uniqid();
+        $header->transfer_date = now()->toDateString();
+        $header->sender_id = (int) (session('user')->staff_id ?? 1);
+        $header->from_warehouse_id = $this->warehouseIds['retail'];
+        $header->to_warehouse_id = $this->warehouseIds['main'];
+        $header->source_type = 'main_request';
+        $header->status = 2; // sudah Kirim dari eceran
+        $header->acc_by = (int) (session('user')->staff_id ?? 1);
+        $header->save();
+
+        $detail = new StockTransferDetail();
+        $detail->st_id = $header->st_id;
+        $detail->product_id = $product->product_id;
+        $detail->product_variant_id = $variant->product_variant_id;
+        $detail->unit_id = $this->pieceUnitId;
+        $detail->qty = 2;
+        $detail->status = 1;
+        $detail->save();
+
+        return ['header' => $header, 'variant' => $variant];
+    }
+
+    public function test_main_can_create_main_request_to_retail(): void
+    {
+        $staff = $this->actingAsStaffWithOnlyPermission('Stock Transfer', ['view', 'create', 'others']);
+        $staff->role_id = RoleIds::DIREKSI;
+        $staff->role_name = 'Direksi';
+        session(['user' => $staff]);
+
+        $link = new StaffWarehouse();
+        $link->staff_id = (int) $staff->staff_id;
+        $link->warehouse_id = $this->warehouseIds['main'];
+        $link->is_kepala_cabang = 0;
+        $link->save();
+
+        $this->withActiveWarehouse($this->warehouseIds['main']);
+
+        $category = new Category();
+        $category->category_name = 'REG ST Create Cat ' . uniqid();
+        $category->status = 1;
+        $category->save();
+        $product = new Product();
+        $product->product_name = 'REG ST Create Product ' . uniqid();
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([$this->pieceUnitId]);
+        $product->unit_id = $this->pieceUnitId;
+        $product->status = 1;
+        $product->save();
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'V';
+        $variant->product_variant_sku = 'REG-ST-C-' . uniqid();
+        $variant->product_variant_price = 0;
+        $variant->retail_unit = $this->pieceUnitId;
+        $variant->status = 1;
+        $variant->save();
+        $stock = new ProductStock();
+        $stock->product_id = $product->product_id;
+        $stock->product_variant_id = $variant->product_variant_id;
+        $stock->unit_id = $this->pieceUnitId;
+        $stock->warehouse_id = $this->warehouseIds['retail'];
+        $stock->ps_stock = 20;
+        $stock->status = 1;
+        $stock->save();
+
+        $response = $this->post('/insertStockTransfer', [
+            'transfer_date' => now()->format('d-m-Y'),
+            'sender_id' => (int) session('user')->staff_id,
+            'from_warehouse_id' => $this->warehouseIds['retail'],
+            'to_warehouse_id' => $this->warehouseIds['main'],
+            'note' => 'main request test',
+            'items' => [[
+                'product_variant_id' => $variant->product_variant_id,
+                'unit_id' => $this->pieceUnitId,
+                'qty' => 1,
+            ]],
+        ]);
+        $response->assertOk()->assertJson(['status' => 1]);
+        $stId = (int) ($response->json('id') ?? 0);
+        $this->assertGreaterThan(0, $stId);
+        $header = StockTransfer::find($stId);
+        $this->assertSame('main_request', $header->source_type);
+        $this->assertSame(1, (int) $header->status);
+    }
+
+    public function test_direksi_can_approve_qc_then_ops_on_main_request_auto_accept(): void
+    {
+        $this->actingAsElevatedApprover(RoleIds::DIREKSI);
+        ['header' => $header] = $this->createShippedMainRequestWithStock();
+        $this->withActiveWarehouse($this->warehouseIds['main']);
+
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertOk()
+            ->assertJsonPath('is_main_request', 1)
+            ->assertJsonPath('can_approve_qc', true)
+            ->assertJsonPath('can_approve_ops', false)
+            ->assertJsonPath('can_acc', false);
+
+        $this->post('/approveStockTransfer', ['id' => $header->st_id, 'type' => 'qc'])
+            ->assertOk()
+            ->assertJson(['status' => 1]);
+
+        $header->refresh();
+        $this->assertGreaterThan(0, (int) $header->qc_approved_by);
+        $this->assertSame(2, (int) $header->status);
+
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertOk()
+            ->assertJsonPath('can_approve_ops', true);
+
+        $this->post('/approveStockTransfer', ['id' => $header->st_id, 'type' => 'ops'])
+            ->assertOk()
+            ->assertJson(['status' => 1, 'auto_accepted' => 1]);
+
+        $header->refresh();
+        $this->assertGreaterThan(0, (int) $header->ops_approved_by);
+        $this->assertSame(4, (int) $header->status, 'Final Ops approval auto-accepts main request.');
+    }
 }

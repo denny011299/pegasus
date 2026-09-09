@@ -7,16 +7,19 @@ use App\Models\StaffWarehouse;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Approval berurut hanya untuk request eceran (source_type=retail_request):
- * gudang eceran minta stok dari gudang utama (FROM utama → TO eceran).
+ * Approval berurut Stock Transfer request antar gudang utama ↔ eceran.
  *
- * 1. Staf QC & Gudang (jika ada di gudang asal)
- * 2. Kepala Operasional (jika ada di gudang asal)
- * 3. Setelah approval lengkap → otomatis Kirim (potong stok); eceran hanya Terima
+ * retail_request (eceran minta dari utama): FROM utama → TO eceran
+ *   1. QC &/atau Kepala Ops di gudang asal (utama), status pending
+ *   2. Setelah lengkap → auto Kirim; eceran hanya Terima
  *
- * Transfer lain (utama buat sendiri, eceran↔eceran, produksi): tanpa QC/Ops —
- * Acc/Tolak Kirim & Acc/Tolak Terima seperti alur lama.
- * Terima: tanpa edit qty (qty diterima = qty kirim).
+ * main_request (utama minta dari eceran): FROM eceran → TO utama
+ *   1. Eceran Acc Kirim (tanpa QC/Ops)
+ *   2. QC &/atau Kepala Ops di gudang tujuan (utama), status Kirim
+ *   3. Setelah lengkap → auto Terima (stok masuk utama)
+ *
+ * Direksi / Developer boleh ganti QC & Kepala Ops (isElevatedApprover).
+ * Transfer lain (produksi, biasa): tanpa QC/Ops.
  */
 class StockTransferApproval
 {
@@ -32,10 +35,56 @@ class StockTransferApproval
         return $fromIsMain === true && $toIsMain === false;
     }
 
+    public static function isMainRequestRoute(
+        ?string $sourceType,
+        ?bool $fromIsMain,
+        ?bool $toIsMain
+    ): bool {
+        if ($sourceType !== 'main_request') {
+            return false;
+        }
+
+        return $fromIsMain === false && $toIsMain === true;
+    }
+
+    /** Gudang tempat QC/Ops berlaku untuk route ini (asal untuk retail, tujuan untuk main). */
+    public static function approvalWarehouseId(
+        ?string $sourceType,
+        ?bool $fromIsMain,
+        ?bool $toIsMain,
+        int $fromWarehouseId,
+        int $toWarehouseId
+    ): int {
+        if (self::isMainRequestRoute($sourceType, $fromIsMain, $toIsMain)) {
+            return $toWarehouseId;
+        }
+        if (self::isRetailRequestRoute($sourceType, $fromIsMain, $toIsMain)) {
+            return $fromWarehouseId;
+        }
+
+        return 0;
+    }
+
     /**
-     * Perlu langkah approval sebelum Kirim (ada QC dan/atau Kepala Ops di gudang asal).
+     * Perlu langkah approval QC/Ops (di gudang approvalWarehouseId).
      */
     public static function requiresApproval(
+        ?string $sourceType,
+        ?bool $fromIsMain,
+        ?bool $toIsMain,
+        int $fromWarehouseId = 0,
+        int $toWarehouseId = 0
+    ): bool {
+        $wh = self::approvalWarehouseId($sourceType, $fromIsMain, $toIsMain, $fromWarehouseId, $toWarehouseId);
+        if ($wh <= 0) {
+            return false;
+        }
+
+        return self::qcRequiredAtWarehouse($wh) || self::opsRequiredAtWarehouse($wh);
+    }
+
+    /** retail_request: approval sebelum Kirim. */
+    public static function requiresShipApproval(
         ?string $sourceType,
         ?bool $fromIsMain,
         ?bool $toIsMain,
@@ -44,12 +93,22 @@ class StockTransferApproval
         if (! self::isRetailRequestRoute($sourceType, $fromIsMain, $toIsMain)) {
             return false;
         }
-        if ($fromWarehouseId <= 0) {
-            return true;
+
+        return self::requiresApproval($sourceType, $fromIsMain, $toIsMain, $fromWarehouseId, 0);
+    }
+
+    /** main_request: approval sebelum Terima (stok masuk). */
+    public static function requiresReceiveApproval(
+        ?string $sourceType,
+        ?bool $fromIsMain,
+        ?bool $toIsMain,
+        int $toWarehouseId = 0
+    ): bool {
+        if (! self::isMainRequestRoute($sourceType, $fromIsMain, $toIsMain)) {
+            return false;
         }
 
-        return self::qcRequiredAtWarehouse($fromWarehouseId)
-            || self::opsRequiredAtWarehouse($fromWarehouseId);
+        return self::requiresApproval($sourceType, $fromIsMain, $toIsMain, 0, $toWarehouseId);
     }
 
     public static function qcRequiredAtWarehouse(int $warehouseId): bool
@@ -84,13 +143,13 @@ class StockTransferApproval
             ->exists();
     }
 
-    public static function isFullyApproved($header, int $fromWarehouseId = 0): bool
+    public static function isFullyApproved($header, int $approvalWarehouseId = 0): bool
     {
-        $qcReq = $fromWarehouseId > 0
-            ? self::qcRequiredAtWarehouse($fromWarehouseId)
+        $qcReq = $approvalWarehouseId > 0
+            ? self::qcRequiredAtWarehouse($approvalWarehouseId)
             : true;
-        $opsReq = $fromWarehouseId > 0
-            ? self::opsRequiredAtWarehouse($fromWarehouseId)
+        $opsReq = $approvalWarehouseId > 0
+            ? self::opsRequiredAtWarehouse($approvalWarehouseId)
             : true;
 
         if (! $qcReq && ! $opsReq) {
@@ -106,13 +165,13 @@ class StockTransferApproval
         return true;
     }
 
-    public static function canApproveQc($header, int $fromWarehouseId): bool
+    public static function canApproveQc($header, int $approvalWarehouseId): bool
     {
-        return self::qcRequiredAtWarehouse($fromWarehouseId)
+        return self::qcRequiredAtWarehouse($approvalWarehouseId)
             && ! self::isQcApproved($header);
     }
 
-    /** Direksi / Okejob (Developer) — bypass QC & Kepala Ops gudang asal. */
+    /** Direksi / Okejob (Developer) — bypass QC & Kepala Ops. */
     public static function isElevatedApprover($user): bool
     {
         if (! $user) {
@@ -126,7 +185,17 @@ class StockTransferApproval
 
     public static function isAtOriginForApproval($user, int $fromWarehouseId, int $activeWarehouseId): bool
     {
-        if ($activeWarehouseId <= 0 || $activeWarehouseId !== $fromWarehouseId) {
+        return self::isAtWarehouseForApproval($user, $fromWarehouseId, $activeWarehouseId);
+    }
+
+    public static function isAtDestinationForApproval($user, int $toWarehouseId, int $activeWarehouseId): bool
+    {
+        return self::isAtWarehouseForApproval($user, $toWarehouseId, $activeWarehouseId);
+    }
+
+    public static function isAtWarehouseForApproval($user, int $warehouseId, int $activeWarehouseId): bool
+    {
+        if ($activeWarehouseId <= 0 || $activeWarehouseId !== $warehouseId) {
             return false;
         }
         if (self::isElevatedApprover($user)) {
@@ -135,18 +204,18 @@ class StockTransferApproval
 
         $assignedWh = Staff::assignedWarehouseIds($user);
 
-        return $assignedWh === [] || in_array($fromWarehouseId, $assignedWh, true);
+        return $assignedWh === [] || in_array($warehouseId, $assignedWh, true);
     }
 
-    public static function canApproveOps($header, int $fromWarehouseId): bool
+    public static function canApproveOps($header, int $approvalWarehouseId): bool
     {
-        if (! self::opsRequiredAtWarehouse($fromWarehouseId)) {
+        if (! self::opsRequiredAtWarehouse($approvalWarehouseId)) {
             return false;
         }
         if (self::isOpsApproved($header)) {
             return false;
         }
-        if (self::qcRequiredAtWarehouse($fromWarehouseId) && ! self::isQcApproved($header)) {
+        if (self::qcRequiredAtWarehouse($approvalWarehouseId) && ! self::isQcApproved($header)) {
             return false;
         }
 
@@ -154,17 +223,22 @@ class StockTransferApproval
     }
 
     /**
-     * Tolak request di gudang asal (besar): hanya QC / Kepala Ops.
+     * Tolak di gudang approval (QC / Kepala Ops).
      * QC hanya sebelum QC approve; Ops hanya setelah QC approve (jika QC wajib).
      */
-    public static function canRejectAtOrigin($user, $header, int $fromWarehouseId): bool
+    public static function canRejectAtOrigin($user, $header, int $approvalWarehouseId): bool
     {
-        $actor = self::resolveActorRole($user, $fromWarehouseId, $header);
+        return self::canRejectAtApprovalWarehouse($user, $header, $approvalWarehouseId);
+    }
+
+    public static function canRejectAtApprovalWarehouse($user, $header, int $approvalWarehouseId): bool
+    {
+        $actor = self::resolveActorRole($user, $approvalWarehouseId, $header);
         if ($actor === 'qc') {
             return ! self::isQcApproved($header);
         }
         if ($actor === 'ops') {
-            if (self::qcRequiredAtWarehouse($fromWarehouseId) && ! self::isQcApproved($header)) {
+            if (self::qcRequiredAtWarehouse($approvalWarehouseId) && ! self::isQcApproved($header)) {
                 return false;
             }
 
@@ -175,14 +249,23 @@ class StockTransferApproval
     }
 
     /**
-     * Cancel request dari gudang eceran: hanya pemohon (sender), sebelum ada approval.
-     * Setelah QC/Ops approve → tidak bisa cancel dari eceran.
+     * Cancel request dari gudang pemohon (tujuan): hanya sender, sebelum ada approval.
+     * Dipakai retail_request (eceran) dan main_request (utama) saat masih pending.
      */
     public static function canCancelRetailRequestAtDestination(
         $user,
         $header,
         int $toWarehouseId,
         int $fromWarehouseId
+    ): bool {
+        return self::canCancelRequestAtDestination($user, $header, $toWarehouseId, $fromWarehouseId);
+    }
+
+    public static function canCancelRequestAtDestination(
+        $user,
+        $header,
+        int $toWarehouseId,
+        int $approvalWarehouseIdForOpsCheck = 0
     ): bool {
         if (! $user || $toWarehouseId <= 0) {
             return false;
@@ -198,7 +281,8 @@ class StockTransferApproval
         if (self::isQcApproved($header) || self::isOpsApproved($header)) {
             return false;
         }
-        if ($fromWarehouseId > 0 && self::resolveActorRole($user, $fromWarehouseId, $header) === 'ops') {
+        if ($approvalWarehouseIdForOpsCheck > 0
+            && self::resolveActorRole($user, $approvalWarehouseIdForOpsCheck, $header) === 'ops') {
             return false;
         }
 
@@ -216,17 +300,28 @@ class StockTransferApproval
     }
 
     /**
-     * Fase badge list (gudang asal / besar) untuk retail_request status=1.
+     * Fase badge: requested → need_approval → ready.
+     * Retail: status=1 di gudang asal. Main: status=2 di gudang tujuan.
      *
      * @return 'requested'|'need_approval'|'ready'|null
      */
-    public static function retailRequestPhase($header, int $fromWarehouseId): ?string
+    public static function retailRequestPhase($header, int $approvalWarehouseId): ?string
     {
-        if ($fromWarehouseId <= 0) {
+        return self::approvalPhase($header, $approvalWarehouseId);
+    }
+
+    public static function mainRequestPhase($header, int $approvalWarehouseId): ?string
+    {
+        return self::approvalPhase($header, $approvalWarehouseId);
+    }
+
+    public static function approvalPhase($header, int $approvalWarehouseId): ?string
+    {
+        if ($approvalWarehouseId <= 0) {
             return null;
         }
-        $qcReq = self::qcRequiredAtWarehouse($fromWarehouseId);
-        $opsReq = self::opsRequiredAtWarehouse($fromWarehouseId);
+        $qcReq = self::qcRequiredAtWarehouse($approvalWarehouseId);
+        $opsReq = self::opsRequiredAtWarehouse($approvalWarehouseId);
         if ($qcReq && ! self::isQcApproved($header)) {
             return 'requested';
         }
