@@ -1038,9 +1038,11 @@ class SupplierController extends Controller
             $value['retur_pembelian'] = 1;
             $value['total_retur'] = $total_retur;
             $value['po_id'] = $data['po_id'];
-            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
-            // Catat Log
+            // Catat Log DULU, baru deleteProductIssuesDetail() (yang menaikkan satuan lewat
+            // UnitRollUp dan bisa menulis log konversi "keluar"/"hasil naik satuan" di dalamnya --
+            // lihat docblock-nya). Urutan sebelumnya terbalik, bug yang sama dengan GitHub #167 di
+            // accPO(): histori terbaca keluar → konversi → masuk, membingungkan.
             $sup = SuppliesVariant::find($value['supplies_variant_id']);
 
             (new LogStock())->insertLog([
@@ -1053,6 +1055,8 @@ class SupplierController extends Controller
                 'log_jumlah' => $value['rsd_qty'],
                 'unit_id'    => $value['unit_id'],
             ]);
+
+            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
         }
         foreach ($returs as $key => $value) {
             (new ReturnSuppliesDetail())->deleteReturnSuppliesDetail($value);
