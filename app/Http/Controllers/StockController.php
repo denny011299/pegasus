@@ -2117,9 +2117,12 @@ class StockController extends Controller
             }
 
             $value['po_id'] = $pi['po_id'];
-            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
 
-            // Catat Log
+            // Catat Log DULU, baru deleteProductIssuesDetail() (yang untuk tipe_return==1 menaikkan
+            // satuan lewat UnitRollUp dan bisa menulis log konversi "keluar"/"hasil naik satuan" di
+            // dalamnya -- lihat docblock ProductIssuesDetail::deleteProductIssuesDetail()). Urutan
+            // sebelumnya terbalik, sama seperti bug GitHub #167 di SupplierController::accPO(): log
+            // masuk baru ditulis SETELAH konversi, jadi histori terbaca keluar → konversi → masuk.
             $logNotes    = "";
             $logCategory = 0;
             $logType     = 0;
@@ -2150,6 +2153,8 @@ class StockController extends Controller
                 'log_jumlah'   => $value['pid_qty'],
                 'unit_id'      => $value['unit_id'],
             ]);
+
+            (new ProductIssuesDetail())->deleteProductIssuesDetail($value);
         }
         DB::commit();
         } catch (\Throwable $e) {
