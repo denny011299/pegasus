@@ -1021,6 +1021,54 @@
 </div>
 @endif
 
+@if(Route::is(['pendingStockOperation']))
+{{-- Filter: Tanggal + Jenis + Status + Reset — lebar sama (3+3+3+3) --}}
+<div class="profit-menu card pending-stock-filter">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tanggal</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="form-control" id="pso_filter_date"
+                        placeholder="Pilih rentang / hari" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Jenis</label>
+                <select class="form-select" id="pso_filter_source">
+                    <option value="">Semua Jenis</option>
+                    <option value="production_acc">Produksi ACC</option>
+                    <option value="stock_transfer_ship">Kirim ST</option>
+                    <option value="stock_transfer_accept">Terima ST</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Status</label>
+                <select class="form-select" id="pso_filter_status">
+                    <option value="1" selected>Menunggu</option>
+                    <option value="2">Applied</option>
+                    <option value="3">Dibatalkan</option>
+                    <option value="">Semua Status</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary w-100 btn-clear-pso-filter d-flex align-items-center justify-content-center gap-1.5"
+                    style="height: 42px; border-radius: 8px; font-size: 13px; font-weight: 600;" title="Reset Filter">
+                    <i class="fe fe-rotate-ccw" style="font-size: 13px;"></i>
+                    <span>Reset</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 @if(Route::is(['stockTransfer']))
 {{-- Filter urutan: Tanggal (3) + Gudang Dari (5) + Status (2) + Reset (2) = 12 Kolom Penuh --}}
 <div class="profit-menu card stock-transfer-filter">

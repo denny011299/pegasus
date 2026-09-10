@@ -249,6 +249,17 @@ class CustomerProductReturnController extends Controller
     {
         $this->authorizeAbility('others');
 
+        $warehouseIds = CustomerProductReturnDetail::where('return_id', $returnId)
+            ->where('status', 1)
+            ->pluck('warehouse_id');
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+            $warehouseIds,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        );
+        if ($softBlock !== null) {
+            return response()->json(['success' => false, 'message' => $softBlock], 422);
+        }
+
         DB::transaction(function () use ($returnId) {
             $record = CustomerProductReturn::where('return_id', $returnId)->lockForUpdate()->firstOrFail();
             if ((int) $record->status !== 1) {

@@ -581,6 +581,20 @@ class SupplierController extends Controller
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
             ]);
         }
+
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $activeWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         // Ditambahkan (2026-08-24): dulu penerimaan barang ini TIDAK transaksional sama sekali,
         // padahal insertPoDeliveryDetail() di dalam loop menambah ss_stock per item. Gagal di tengah
         // (item ke-3 dari 5 error) meninggalkan stok bahan bertambah sebagian, PurchaseOrderDelivery

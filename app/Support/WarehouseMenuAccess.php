@@ -24,6 +24,8 @@ class WarehouseMenuAccess
      */
     public const NON_SIDEBAR_MODULES = [
         'Safety Stock',
+        // Monitoring antrian: cukup role view; jangan tergantung whitelist sidebar_menus gudang.
+        'Antrian Mutasi Stok',
     ];
 
     public static function isMainOnlyMenu(string $module): bool

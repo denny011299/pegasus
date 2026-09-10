@@ -239,7 +239,7 @@
 <script src="{{ URL::asset('/assets/plugins/moment/moment.min.js') }}"></script>
 <script src="{{ URL::asset('/assets/js/bootstrap-datetimepicker.min.js') }}"></script>
 
-@if (Route::is(['income-report', 'low-stock-report', 'payment-report', 'tax-purchase', 'tax-sales', 'stockTransfer', 'salesOrder']))
+@if (Route::is(['income-report', 'low-stock-report', 'payment-report', 'tax-purchase', 'tax-sales', 'stockTransfer', 'salesOrder', 'pendingStockOperation']))
   <script src="{{ URL::asset('/assets/plugins/daterangepicker/daterangepicker.js') }}"></script>
 @endif
 

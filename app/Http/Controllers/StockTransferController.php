@@ -1816,12 +1816,80 @@ class StockTransferController extends Controller
                 $locked->save();
 
                 if ($isRetailRequest && StockTransferApproval::isFullyApproved($locked, $fromWh)) {
-                    $this->shipLockedTransfer($locked, $staffId, $proofPath);
-                    $autoShipped = true;
+                    $psoSvc = app(\App\Support\PendingStockOperationService::class);
+                    $opGuard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+                    if ($psoSvc->hasPendingForSource(
+                        \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+                        $stId
+                    )) {
+                        throw new \RuntimeException($psoSvc->pendingMessageForSource(
+                            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP
+                        ));
+                    }
+                    $psoSvc->flushStaleIfUnblocked(
+                        $fromWh,
+                        \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                        $staffId
+                    );
+                    if ($opGuard->isBlocked(
+                        $fromWh,
+                        \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+                    )) {
+                        $psoSvc->enqueue([
+                            'warehouse_id' => $fromWh,
+                            'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                            'source_type' => \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+                            'source_id' => $stId,
+                            'source_code' => $locked->transfer_code,
+                            'payload' => [
+                                'staff_id' => $staffId,
+                                'ship_proof_path' => $proofPath,
+                            ],
+                            'created_by' => $staffId,
+                        ]);
+                        // Status tetap 1; bukti disimpan di payload antrian.
+                    } else {
+                        $this->shipLockedTransfer($locked, $staffId, $proofPath);
+                        $autoShipped = true;
+                    }
                 }
                 if ($isMainRequest && StockTransferApproval::isFullyApproved($locked, $toWh)) {
-                    $this->acceptLockedTransfer($locked, $staffId, null, []);
-                    $autoAccepted = true;
+                    $psoSvc = app(\App\Support\PendingStockOperationService::class);
+                    $opGuard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+                    if ($psoSvc->hasPendingForSource(
+                        \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+                        $stId
+                    )) {
+                        throw new \RuntimeException($psoSvc->pendingMessageForSource(
+                            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT
+                        ));
+                    }
+                    $psoSvc->flushStaleIfUnblocked(
+                        $toWh,
+                        \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                        $staffId
+                    );
+                    if ($opGuard->isBlocked(
+                        $toWh,
+                        \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+                    )) {
+                        $psoSvc->enqueue([
+                            'warehouse_id' => $toWh,
+                            'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                            'source_type' => \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+                            'source_id' => $stId,
+                            'source_code' => $locked->transfer_code,
+                            'payload' => [
+                                'staff_id' => $staffId,
+                                'accept_note' => null,
+                                'received_map' => [],
+                            ],
+                            'created_by' => $staffId,
+                        ]);
+                    } else {
+                        $this->acceptLockedTransfer($locked, $staffId, null, []);
+                        $autoAccepted = true;
+                    }
                 }
             });
         } catch (Throwable $e) {
@@ -1893,6 +1961,67 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => $gate]);
         }
 
+        $pso = app(\App\Support\PendingStockOperationService::class);
+        $fromWh = (int) $header->from_warehouse_id;
+        if ($pso->hasPendingForSource(
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            $stId
+        )) {
+            return response()->json([
+                'status' => -1,
+                'message' => $pso->pendingMessageForSource(
+                    \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP
+                ),
+            ]);
+        }
+
+        $guard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+        $pso->flushStaleIfUnblocked(
+            $fromWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+            (int) (Session::get('user')->staff_id ?? 0) ?: null
+        );
+        if ($guard->isBlocked($fromWh, \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT)) {
+            try {
+                $proofPath = $this->storeShipProof($req);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $e->getMessage() ?: 'Bukti foto wajib diunggah',
+                ]);
+            }
+            $user = Session::get('user');
+            try {
+                $pso->enqueue([
+                    'warehouse_id' => $fromWh,
+                    'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                    'source_type' => \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+                    'source_id' => $stId,
+                    'source_code' => $header->transfer_code,
+                    'payload' => [
+                        'staff_id' => (int) ($user->staff_id ?? 0),
+                        'ship_proof_path' => $proofPath,
+                    ],
+                    'created_by' => (int) ($user->staff_id ?? 0),
+                ]);
+            } catch (Throwable $e) {
+                $this->deleteShipProof($proofPath);
+
+                return response()->json([
+                    'status' => -1,
+                    'message' => $e->getMessage() ?: 'Gagal masuk antrian mutasi stok',
+                ]);
+            }
+
+            return response()->json([
+                'status' => 1,
+                'queued' => 1,
+                'message' => $pso->enqueueInfoMessage(
+                    \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP
+                ),
+            ]);
+        }
+
         try {
             $proofPath = $this->storeShipProof($req);
         } catch (Throwable $e) {
@@ -1940,6 +2069,42 @@ class StockTransferController extends Controller
             'status' => 1,
             'message' => 'Stock transfer dikirim, stok gudang asal dipotong',
         ]);
+    }
+
+    /**
+     * Potong stok + set status=2. Caller harus sudah lockForUpdate header status=1.
+     */
+    public function runShipLockedForQueue(int $stId, int $accBy, ?string $shipProofPath = null): void
+    {
+        $lockedHeader = StockTransfer::query()
+            ->where('st_id', $stId)
+            ->where('status', 1)
+            ->lockForUpdate()
+            ->first();
+        if (! $lockedHeader) {
+            throw new \RuntimeException('Transfer sudah diproses / bukan Pending');
+        }
+        $this->shipLockedTransfer($lockedHeader, $accBy, $shipProofPath);
+    }
+
+    /**
+     * Kredit tujuan + status=4. Caller harus lockForUpdate header status=2.
+     */
+    public function runAcceptLockedForQueue(
+        int $stId,
+        int $receiverId,
+        ?string $acceptNote = null,
+        array $receivedMap = []
+    ): void {
+        $lockedHeader = StockTransfer::query()
+            ->where('st_id', $stId)
+            ->where('status', 2)
+            ->lockForUpdate()
+            ->first();
+        if (! $lockedHeader) {
+            throw new \RuntimeException('Transfer sudah diproses atau belum berstatus Kirim');
+        }
+        $this->acceptLockedTransfer($lockedHeader, $receiverId, $acceptNote, $receivedMap);
     }
 
     /**
@@ -2222,6 +2387,31 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => $gate]);
         }
 
+        $pso = app(\App\Support\PendingStockOperationService::class);
+        $toWh = (int) $header->to_warehouse_id;
+        if ($pso->hasPendingForSource(
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+            $stId
+        )) {
+            return response()->json([
+                'status' => -1,
+                'message' => $pso->pendingMessageForSource(
+                    \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT
+                ),
+            ]);
+        }
+        if ($pso->hasPendingForSource(
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            $stId
+        )) {
+            return response()->json([
+                'status' => -1,
+                'message' => $pso->pendingMessageForSource(
+                    \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP
+                ),
+            ]);
+        }
+
         $user = Session::get('user');
         // Penerima = user yang ACC (dikunci, tidak bisa diganti dari request)
         $receiverId = (int) ($user->staff_id ?? 0);
@@ -2247,6 +2437,43 @@ class StockTransferController extends Controller
                 ?? $item['qty']
                 ?? 0
             );
+        }
+
+        $guard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+        $pso->flushStaleIfUnblocked(
+            $toWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+            $receiverId > 0 ? $receiverId : null
+        );
+        if ($guard->isBlocked($toWh, \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT)) {
+            try {
+                $pso->enqueue([
+                    'warehouse_id' => $toWh,
+                    'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                    'source_type' => \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+                    'source_id' => $stId,
+                    'source_code' => $header->transfer_code,
+                    'payload' => [
+                        'staff_id' => $receiverId,
+                        'accept_note' => $acceptNote,
+                        'received_map' => $receivedMap,
+                    ],
+                    'created_by' => $receiverId,
+                ]);
+            } catch (Throwable $e) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $e->getMessage() ?: 'Gagal masuk antrian mutasi stok',
+                ]);
+            }
+
+            return response()->json([
+                'status' => 1,
+                'queued' => 1,
+                'message' => $pso->enqueueInfoMessage(
+                    \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT
+                ),
+            ]);
         }
 
         $before = $this->snapshotTransfer((int) $header->st_id);
@@ -2299,6 +2526,19 @@ class StockTransferController extends Controller
         $gate = $this->assertCanReject($header);
         if ($gate !== true) {
             return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        $pso = app(\App\Support\PendingStockOperationService::class);
+        foreach ([
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+        ] as $src) {
+            if ($pso->hasPendingForSource($src, $stId)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $pso->pendingMessageForSource($src),
+                ]);
+            }
         }
 
         $isProduction = $header->source_type === 'production';
@@ -2379,6 +2619,19 @@ class StockTransferController extends Controller
         $gate = $this->assertCanCancelKirim($header);
         if ($gate !== true) {
             return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        $pso = app(\App\Support\PendingStockOperationService::class);
+        foreach ([
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
+        ] as $src) {
+            if ($pso->hasPendingForSource($src, $stId)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $pso->pendingMessageForSource($src),
+                ]);
+            }
         }
 
         $before = $this->snapshotTransfer((int) $header->st_id);
@@ -3160,6 +3413,13 @@ class StockTransferController extends Controller
         if ($status !== 1 || $activeWarehouseId <= 0) {
             return false;
         }
+        // Kirim sudah masuk antrian mutasi → anggap sudah di-ACC pengirim (tunda stok).
+        if ($header && app(\App\Support\PendingStockOperationService::class)->hasPendingForSource(
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            (int) ($header->st_id ?? 0)
+        )) {
+            return false;
+        }
         // Request eceran: setelah QC/Ops approve → tidak bisa edit (eceran maupun besar).
         if ($isRetailRequest
             && (StockTransferApproval::isQcApproved($header)
@@ -3307,6 +3567,12 @@ class StockTransferController extends Controller
 
         if ((int) $header->status !== 1) {
             return 'Transfer sudah diproses';
+        }
+        if (app(\App\Support\PendingStockOperationService::class)->hasPendingForSource(
+            \App\Models\PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
+            (int) $header->st_id
+        )) {
+            return 'Kirim sudah masuk Antrian Mutasi Stok; tidak bisa diedit sampai opname selesai.';
         }
         if ($activeWh <= 0) {
             return 'Edit/hapus membutuhkan gudang aktif.';
