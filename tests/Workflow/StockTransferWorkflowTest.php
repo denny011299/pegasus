@@ -16,9 +16,10 @@ use Tests\TestCase;
 
 /**
  * Stock Transfer real-case matrix (docs/backlog-stock-multi-gudang.md):
- * - Main → Main: ship unit as-is, receive same unit (no conversion/packing).
- * - Main → Retail: may ship DOS/default; Terima converts to retail_unit.
- * - Retail → Main: retail ships Piece only; main receives Piece.
+ * - Main → Main: ship unit as-is; Terima roll-up ke satuan atas (jika cukup).
+ * - Main → Retail: may ship DOS/default; Terima converts to retail_unit (no roll-up).
+ * - Retail → Main: boleh request DOS/satuan chain; Kirim potong ekuivalen retail; Terima di
+ *   utama + roll-up ke satuan atas.
  * - Kirim: packing OFF; main source may unpack ancestors; Cancel restores from logs.
  *
  * Real seed warehouse ids: 1 = Gudang Pusat (main), 2 = Gudang Eceran Toko (retail).
@@ -410,21 +411,16 @@ class StockTransferWorkflowTest extends TestCase
     }
 
     /**
-     * Real case pergudangan: receiving into a MAIN destination keeps the shipped unit
-     * as-is (no repack to product default unit). Ship 50 Piece main→main → destination
-     * gets 50 Piece, not 4 DOS + 2 Piece / 4.1667 DOS.
+     * Terima ke gudang utama: roll-up ke satuan atas jika qty cukup
+     * (1 DOS = 12 Piece → terima 50 Piece = 4 DOS + 2 Piece).
      */
-    public function test_receiving_into_a_main_warehouse_keeps_sent_unit_without_conversion(): void
+    public function test_receiving_into_a_main_warehouse_rolls_up_to_higher_unit(): void
     {
         $this->actingAsSuperAdminStaff();
 
-        // Default unit = DOS — old behaviour would have forced receive into DOS.
         $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID);
         $this->createDosPieceRelation($fx['variant']);
         $mainWarehouse2 = $this->createSecondMainWarehouse();
-        // assertCanAcc() fails closed against a staff with SOME assignments not covering the
-        // destination -- real data assigns staff, unlike the old near-empty default seed. See
-        // ActingAsStaff::assignWarehousesToActingStaff()'s doc.
         $this->assignWarehousesToActingStaff(self::MAIN_WAREHOUSE_ID, (int) $mainWarehouse2->id);
 
         $sourcePieceStock = $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
@@ -460,13 +456,12 @@ class StockTransferWorkflowTest extends TestCase
             ->where('unit_id', self::PIECE_UNIT_ID)
             ->first();
 
-        $this->assertTrue(
-            $destDos === null || (float) $destDos->ps_stock === 0.0,
-            'main destination must NOT auto-pack Piece into DOS'
-        );
+        $this->assertNotNull($destDos);
+        $this->assertSame(4.0, (float) $destDos->ps_stock, '50 Piece → 4 DOS (ratio 12)');
         $this->assertNotNull($destPiece);
-        $this->assertSame(50.0, (float) $destPiece->ps_stock, '50 Piece received as 50 Piece');
+        $this->assertSame(2.0, (float) $destPiece->ps_stock, 'sisa 2 Piece setelah roll-up');
 
+        // Dokumen ST tetap catat satuan/qty terima sebelum roll-up fisik.
         $detail = StockTransferDetail::query()->where('st_id', $header->st_id)->first();
         $this->assertSame(self::PIECE_UNIT_ID, (int) $detail->received_unit_id);
         $this->assertSame(50.0, (float) $detail->qty_received);
@@ -575,5 +570,78 @@ class StockTransferWorkflowTest extends TestCase
             ->first();
         $this->assertNotNull($detail);
         $this->assertEquals(8, (float) $detail->qty);
+    }
+
+    /**
+     * main_request: eceran → utama boleh request DOS; Kirim potong Piece ekuivalen;
+     * Terima kredit DOS di gudang utama.
+     */
+    public function test_retail_to_main_request_allows_dos_and_cuts_retail_on_ship(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId('Stock Transfer');
+        $this->assignWarehousesToActingStaff($retailWarehouseId, self::MAIN_WAREHOUSE_ID);
+
+        $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID, retailUnit: self::PIECE_UNIT_ID);
+        $this->createDosPieceRelation($fx['variant']);
+        $retailPiece = $this->createProductStock($fx['variant'], $retailWarehouseId, self::PIECE_UNIT_ID, 36);
+
+        $stockRes = $this->get('/getTransferSourceStock?' . http_build_query([
+            'warehouse_id' => $retailWarehouseId,
+            'product_variant_id' => $fx['variant']->product_variant_id,
+            'to_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+        ]));
+        $stockRes->assertOk();
+        $unitIds = collect($stockRes->json('units'))->pluck('unit_id')->map(fn ($id) => (int) $id);
+        $this->assertTrue($unitIds->contains(self::DOS_UNIT_ID), 'DOS harus muncul di opsi satuan eceran→utama');
+        $this->assertTrue($unitIds->contains(self::PIECE_UNIT_ID));
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $create = $this->post('/insertStockTransfer', [
+            'transfer_date' => now()->format('d-m-Y'),
+            'sender_id' => (int) session('user')->staff_id,
+            'from_warehouse_id' => $retailWarehouseId,
+            'to_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'note' => 'main request DOS',
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::DOS_UNIT_ID,
+                'qty' => 2,
+            ]],
+        ]);
+        $create->assertOk()->assertJson(['status' => 1]);
+        $stId = (int) $create->json('id');
+        $this->assertSame('main_request', StockTransfer::find($stId)->source_type);
+
+        $this->withActiveWarehouse($retailWarehouseId);
+        $this->post('/shipStockTransfer', ['id' => $stId, 'proof_base64' => self::PROOF_BASE64])
+            ->assertOk()
+            ->assertJson(['status' => 1]);
+
+        $retailPiece->refresh();
+        $this->assertSame(12.0, (float) $retailPiece->ps_stock, '2 DOS x 12 Piece = 24 Piece terpotong');
+
+        $detail = StockTransferDetail::query()->where('st_id', $stId)->where('status', 1)->first();
+        $this->assertSame(self::DOS_UNIT_ID, (int) $detail->unit_id);
+
+        $header = StockTransfer::find($stId);
+        $header->qc_approved_by = (int) session('user')->staff_id;
+        $header->ops_approved_by = (int) session('user')->staff_id;
+        $header->save();
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $this->post('/accStockTransfer', ['id' => $stId])
+            ->assertOk()
+            ->assertJson(['status' => 1]);
+
+        $destDos = ProductStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', self::MAIN_WAREHOUSE_ID)
+            ->where('product_variant_id', $fx['variant']->product_variant_id)
+            ->where('unit_id', self::DOS_UNIT_ID)
+            ->first();
+        $this->assertNotNull($destDos);
+        $this->assertSame(2.0, (float) $destDos->ps_stock, 'utama terima 2 DOS sesuai satuan request');
+        $this->assertSame(self::DOS_UNIT_ID, (int) $detail->fresh()->received_unit_id);
     }
 }

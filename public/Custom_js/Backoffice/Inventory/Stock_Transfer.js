@@ -280,6 +280,16 @@ function transferDefaultUnit(raw) {
  * Satuan dari data autocomplete (pr_unit) — tanpa nunggu fetch stok.
  * preferRetail: gudang asal eceran → langsung lock ke retail_unit (hindari flash Jerigen/DOS).
  */
+function transferSourcePreferRetailOnly() {
+    // main_request: tujuan = gudang utama aktif → boleh DOS/chain (jangan lock Piece).
+    if (transferIsMainRequest) return false;
+    // Eceran → eceran / tujuan belum jelas utama: lock retail.
+    return (
+        selectedTransferWarehouseIsMain("#transfer_from_warehouse_id") === false &&
+        selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") !== true
+    );
+}
+
 function transferUnitsFromRaw(raw, opts) {
     raw = raw || {};
     opts = opts || {};
@@ -317,9 +327,9 @@ function transferUnitsFromRaw(raw, opts) {
 }
 
 function renderTransferDraftDefault(raw) {
-    // Asal eceran: seed langsung satuan eceran dari autocomplete (bukan default produk).
+    // Asal eceran (bukan ke utama): seed retail. Eceran→utama: multi satuan dari pr_unit.
+    var preferRetail = transferSourcePreferRetailOnly();
     var sourceIsMain = selectedTransferWarehouseIsMain("#transfer_from_warehouse_id");
-    var preferRetail = sourceIsMain === false;
     var packed = transferUnitsFromRaw(raw, { preferRetail: preferRetail });
     var $unit = $("#transfer_unit_input").empty().removeClass("is-invalid");
     transferDraft.defaultUnitInvalid = false;
@@ -969,6 +979,7 @@ function applyTransferRouteLabels(requestMode) {
         $modal.find(".st-label-sender-field").text("Yang Request");
         $modal.find(".st-label-to-card").text("Pihak Penerima");
         $modal.find(".st-label-to-field").text("Gudang yang menerima");
+        $modal.find(".st-label-date-text").text("Tanggal Request");
     } else {
         $row.removeClass("st-request-mode");
         $modal.find(".st-card-asal, .st-card-arrow, .st-card-tujuan").css("order", "");
@@ -979,11 +990,26 @@ function applyTransferRouteLabels(requestMode) {
         $modal.find(".st-label-sender-field").text("Pengirim");
         $modal.find(".st-label-to-card").html("Ke (Tujuan)");
         $modal.find(".st-label-to-field").html("Gudang Tujuan");
+        $modal.find(".st-label-date-text").text("Tanggal Pengiriman");
     }
     syncSenderFieldPlacement(requestMode);
 }
 
 /** Mode request: Yang Request + tanggal di kiri (penerima); catatan di kanan (request). */
+function syncDateProofRow($dateSlot, $proofSlot, hasProof) {
+    if (!$dateSlot || !$dateSlot.length) return;
+    $dateSlot.removeClass("col-12 col-6");
+    if (hasProof && $proofSlot && $proofSlot.length) {
+        $dateSlot.addClass("col-6");
+        $proofSlot.removeClass("d-none col-12").addClass("col-6");
+    } else {
+        $dateSlot.addClass("col-12");
+        if ($proofSlot && $proofSlot.length) {
+            $proofSlot.addClass("d-none").removeClass("col-12").addClass("col-6");
+        }
+    }
+}
+
 function syncSenderFieldPlacement(requestMode) {
     var $senderBlock = $("#st-sender-block");
     var $dateBlock = $("#st-date-block");
@@ -1019,12 +1045,8 @@ function syncSenderFieldPlacement(requestMode) {
         if ($proofBlock.length && $tujuanProof.length && $asalProof.length) {
             $tujuanProof.append($proofBlock);
             $asalProof.addClass("d-none");
-            if (hasProof) {
-                $tujuanProof.removeClass("d-none");
-            } else {
-                $tujuanProof.addClass("d-none");
-            }
         }
+        syncDateProofRow($tujuanDate, $tujuanProof, hasProof);
         // Kanan (request): gudang request + catatan
         $asalNote.removeClass("d-none").append($noteBlock);
         $tujuanNote.addClass("d-none");
@@ -1039,12 +1061,8 @@ function syncSenderFieldPlacement(requestMode) {
         if ($proofBlock.length && $asalProof.length && $tujuanProof.length) {
             $asalProof.append($proofBlock);
             $tujuanProof.addClass("d-none");
-            if (hasProof) {
-                $asalProof.removeClass("d-none");
-            } else {
-                $asalProof.addClass("d-none");
-            }
         }
+        syncDateProofRow($asalDate, $asalProof, hasProof);
         $tujuanNote.removeClass("d-none").append($noteBlock);
         $asalNote.addClass("d-none");
         $fromCol.removeClass("col-12").addClass("col-6");
@@ -1084,7 +1102,7 @@ function unlockTransferToWarehouse() {
     }
 }
 
-/** Mode request eceran: penerima = gudang aktif (terkunci). */
+/** Mode request: penerima = gudang aktif (terkunci). */
 function setDefaultReceivingWarehouse() {
     var id = typeof getActiveWarehouseId === "function" ? getActiveWarehouseId() : null;
     var wh = window.activeWarehouse || {};
@@ -1098,9 +1116,14 @@ function setDefaultReceivingWarehouse() {
     var $el = $("#transfer_to_warehouse_id");
     if (!$el.length) return;
     fillSelectOption($el, id, text);
+    // retail_request → penerima eceran (0); main_request → penerima utama (1)
+    var isMain =
+        typeof isActiveMainWarehouse === "function" && isActiveMainWarehouse() === true ? 1 : 0;
+    var $opt = $el.find("option:selected");
+    if ($opt.length) $opt.attr("data-is_main_warehouse", isMain);
     if ($el.hasClass("select2-hidden-accessible")) {
         var data = $el.select2("data") || [];
-        if (data[0]) data[0].is_main_warehouse = 0;
+        if (data[0]) data[0].is_main_warehouse = isMain;
     }
     lockTransferToWarehouse();
 }
@@ -1178,7 +1201,14 @@ function renderTransferDraftStock(stock) {
     var defaultUnitId =
         (stock && stock.default_unit_id) || (defaultUnit && defaultUnit.unit_id) || null;
     var sourceIsMain = stock && stock.warehouse_is_main === true;
-    if (!sourceIsMain && stock && stock.warehouse_is_main === false && stock.retail_unit_id) {
+    // Lock retail hanya eceran→eceran; eceran→utama pakai units dari API (multi).
+    if (
+        !sourceIsMain &&
+        stock &&
+        stock.warehouse_is_main === false &&
+        stock.retail_unit_id &&
+        transferSourcePreferRetailOnly()
+    ) {
         units = units.filter(function (unit) {
             return String(unit.unit_id) === String(stock.retail_unit_id);
         });
@@ -2025,7 +2055,11 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
 
             stock = stock || { units: [] };
             var units = Array.isArray(stock.units) ? stock.units.slice() : [];
-            if (stock.warehouse_is_main === false && stock.retail_unit_id) {
+            if (
+                stock.warehouse_is_main === false &&
+                stock.retail_unit_id &&
+                transferSourcePreferRetailOnly()
+            ) {
                 units = units.filter(function (unit) {
                     return String(unit.unit_id) === String(stock.retail_unit_id);
                 });
@@ -2454,8 +2488,7 @@ function addTransferDraft() {
         draftUnitById($("#transfer_unit_input").val()) ||
         (function () {
             var packed = transferUnitsFromRaw(raw, {
-                preferRetail:
-                    selectedTransferWarehouseIsMain("#transfer_from_warehouse_id") === false,
+                preferRetail: transferSourcePreferRetailOnly(),
             });
             var id = $("#transfer_unit_input").val();
             return (
@@ -2487,7 +2520,8 @@ function addTransferDraft() {
         var units = transferDraft.stock.units.slice();
         if (
             transferDraft.stock.warehouse_is_main === false &&
-            transferDraft.stock.retail_unit_id
+            transferDraft.stock.retail_unit_id &&
+            transferSourcePreferRetailOnly()
         ) {
             units = units.filter(function (unit) {
                 return String(unit.unit_id) === String(transferDraft.stock.retail_unit_id);
@@ -2578,6 +2612,8 @@ function resetTransferForm() {
     transferPendingThenShip = false;
     $("#st-ship-proof-slot-asal, #st-ship-proof-slot-tujuan, #st-ship-proof-slot").addClass("d-none");
     $("#st-ship-proof-link").removeAttr("data-url");
+    syncDateProofRow($("#st-date-slot-asal"), $("#st-ship-proof-slot-asal"), false);
+    syncDateProofRow($("#st-date-slot-tujuan"), $("#st-ship-proof-slot-tujuan"), false);
     clearTransferStockLoads();
     retailUnitValidationPending = 0;
     retailValidationRun++;
@@ -3262,6 +3298,7 @@ $(document).on("click", ".btnViewTransfer", function () {
     $("#view_transfer_approval_block").addClass("d-none");
     $("#view-ship-proof-slot").addClass("d-none");
     $("#view-ship-proof-link").removeAttr("data-url");
+    syncDateProofRow($("#view-date-slot"), $("#view-ship-proof-slot"), false);
     $("#tableViewItems tbody").html(
         '<tr class="empty-row"><td colspan="5" class="text-center text-muted">Memuat data...</td></tr>'
     );
@@ -3290,10 +3327,10 @@ $(document).on("click", ".btnViewTransfer", function () {
             $("#lbl_view_accept_note").text(res.accept_note || "-");
             if (res.ship_proof_url) {
                 $("#view-ship-proof-link").attr("data-url", res.ship_proof_url);
-                $("#view-ship-proof-slot").removeClass("d-none");
+                syncDateProofRow($("#view-date-slot"), $("#view-ship-proof-slot"), true);
             } else {
-                $("#view-ship-proof-slot").addClass("d-none");
                 $("#view-ship-proof-link").removeAttr("data-url");
+                syncDateProofRow($("#view-date-slot"), $("#view-ship-proof-slot"), false);
             }
 
             fillViewTransferApproval(res);
@@ -4016,21 +4053,15 @@ function loadTransferDetailForEdit(id) {
                 $("#transfer_date").data("DateTimePicker").date(res.transfer_date);
             }
             $("#transfer_note").val(res.note || "");
-            // Bukti foto pengiriman (GitHub #140) — tombol Lihat Foto di modal, bukan di tabel.
+            // Bukti foto pengiriman (GitHub #140) — sebaris tanggal (col-6) saat ada foto.
             if (res.ship_proof_url) {
                 $("#st-ship-proof-link").attr("data-url", res.ship_proof_url);
-                var isReq = Boolean(transferIsRetailRequest || transferIsMainRequest);
-                if (isReq) {
-                    $("#st-ship-proof-slot-tujuan").removeClass("d-none");
-                    $("#st-ship-proof-slot-asal").addClass("d-none");
-                } else {
-                    $("#st-ship-proof-slot-asal").removeClass("d-none");
-                    $("#st-ship-proof-slot-tujuan").addClass("d-none");
-                }
             } else {
-                $("#st-ship-proof-slot-asal, #st-ship-proof-slot-tujuan, #st-ship-proof-slot").addClass("d-none");
                 $("#st-ship-proof-link").removeAttr("data-url");
             }
+            syncSenderFieldPlacement(
+                Boolean(transferIsRetailRequest || transferIsMainRequest)
+            );
             setDefaultSender();
             fillSelectOption($("#transfer_from_warehouse_id"), res.from_warehouse_id, res.from_warehouse_name);
             fillSelectOption($("#transfer_to_warehouse_id"), res.to_warehouse_id, res.to_warehouse_name);
@@ -4681,6 +4712,7 @@ $(document).on("click", ".btnAccept", function () {
     $("#lbl_accept_sender, #lbl_accept_from, #lbl_accept_date, #lbl_accept_to, #lbl_accept_ship_note").text("-");
     $("#accept-ship-proof-slot").addClass("d-none");
     $("#accept-ship-proof-link").removeAttr("data-url");
+    syncDateProofRow($("#accept-date-slot"), $("#accept-ship-proof-slot"), false);
     renderAcceptItems([]);
     // Jangan init autocomplete — penerima dikunci ke user login
     var $recv = $("#accept_receiver_id");
@@ -4716,10 +4748,10 @@ $(document).on("click", ".btnAccept", function () {
             // Bukti foto pengiriman (GitHub #140) — tombol Lihat Foto di modal ACC.
             if (res.ship_proof_url) {
                 $("#accept-ship-proof-link").attr("data-url", res.ship_proof_url);
-                $("#accept-ship-proof-slot").removeClass("d-none");
+                syncDateProofRow($("#accept-date-slot"), $("#accept-ship-proof-slot"), true);
             } else {
-                $("#accept-ship-proof-slot").addClass("d-none");
                 $("#accept-ship-proof-link").removeAttr("data-url");
+                syncDateProofRow($("#accept-date-slot"), $("#accept-ship-proof-slot"), false);
             }
             $("#accept_note").val(res.accept_note || "");
             // Penerima ACC = user login, dikunci (tidak bisa diganti)
