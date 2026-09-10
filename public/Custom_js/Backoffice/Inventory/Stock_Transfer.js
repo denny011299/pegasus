@@ -1871,6 +1871,87 @@ function fetchSourceStock(productVariantId, done, item) {
     return xhr;
 }
 
+/** Snapshot qty/satuan terakhir yang lolos cek stok (untuk revert edit). */
+function rememberTransferRowOkSnapshot(item) {
+    if (!item) return;
+    item._last_ok_qty = item.qty;
+    item._last_ok_unit_id = item.unit_id;
+    item._last_ok_unit_name = item.unit_name;
+    item._last_ok_unit_short_name = item.unit_short_name;
+}
+
+function clearTransferRowShortageMode(item) {
+    if (!item) return;
+    delete item._on_shortage;
+    delete item._merge_prev_qty;
+}
+
+/**
+ * Stok kurang / satuan invalid saat tambah: jangan biarkan baris invalid di list.
+ * - drop: hapus baris baru (atau batalkan merge qty)
+ * - revert: kembalikan qty/satuan ke yang terakhir OK
+ * @returns {boolean} true = sudah di-handle (jangan mark stock_invalid)
+ */
+function rejectInsufficientTransferRow(item, message) {
+    if (!item) return false;
+    var mode = item._on_shortage;
+    if (mode !== "drop" && mode !== "revert") {
+        return false;
+    }
+
+    abortTransferRowXhrs(item);
+    clearTimeout(item._validation_timer);
+    item._validation_timer = null;
+    item._validation_run = (item._validation_run || 0) + 1;
+
+    if (mode === "drop" && item._merge_prev_qty != null) {
+        item.qty = item._merge_prev_qty;
+        item.stock_loading = false;
+        item.stock_invalid = false;
+        item.stock_error = null;
+        clearTransferRowShortageMode(item);
+        refreshTransferItemsTable();
+        syncTransferSaveButton();
+        if (typeof toastr !== "undefined") {
+            toastr.error("", message || "Stok tidak mencukupi");
+        }
+        return true;
+    }
+
+    if (mode === "drop") {
+        var dropIdx = transferItems.indexOf(item);
+        if (dropIdx !== -1) {
+            transferItems.splice(dropIdx, 1);
+        }
+        refreshTransferItemsTable();
+        syncTransferSaveButton();
+        if (typeof toastr !== "undefined") {
+            toastr.error("", message || "Stok tidak mencukupi");
+        }
+        return true;
+    }
+
+    // revert edit qty/satuan
+    if (item._last_ok_qty != null) {
+        item.qty = item._last_ok_qty;
+    }
+    if (item._last_ok_unit_id != null) {
+        item.unit_id = item._last_ok_unit_id;
+        item.unit_name = item._last_ok_unit_name || item.unit_name;
+        item.unit_short_name = item._last_ok_unit_short_name || item.unit_short_name;
+    }
+    item.stock_loading = false;
+    item.stock_invalid = false;
+    item.stock_error = null;
+    clearTransferRowShortageMode(item);
+    refreshTransferItemsTable();
+    syncTransferSaveButton();
+    if (typeof toastr !== "undefined") {
+        toastr.error("", message || "Stok tidak mencukupi");
+    }
+    return true;
+}
+
 function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
     if (!item || transferItems.indexOf(item) === -1) return;
 
@@ -1920,6 +2001,10 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
 
     function fail(message) {
         if (isCurrent()) {
+            if (rejectInsufficientTransferRow(item, message)) {
+                finish();
+                return;
+            }
             item.stock_invalid = true;
             item.stock_error = message;
         }
@@ -1961,15 +2046,22 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
             success: function (res) {
                 if (!isCurrent()) return;
                 if (!res) {
+                    if (rejectInsufficientTransferRow(item, "Stok gagal divalidasi. Coba lagi.")) {
+                        return;
+                    }
                     item.stock_invalid = true;
                     item.stock_error = "Stok gagal divalidasi. Coba lagi.";
                     return;
                 }
                 if (res.matrix_error) {
-                    item.stock_invalid = true;
-                    item.stock_error =
+                    var matrixMsg =
                         res.message ||
                         "Satuan terpilih tidak valid untuk rute gudang ini";
+                    if (rejectInsufficientTransferRow(item, matrixMsg)) {
+                        return;
+                    }
+                    item.stock_invalid = true;
+                    item.stock_error = matrixMsg;
                     return;
                 }
 
@@ -1981,30 +2073,47 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
                         String(row.unit_id) === String(item.unit_id)
                     );
                 });
-                item.stock_invalid = !!shortage;
-                item.available_qty = shortage ? parseFloat(shortage.available) || 0 : null;
-                item.stock_error = shortage
-                    ? "Stok tidak cukup. Tersedia: " +
-                      formatTransferQty(shortage.available) +
-                      " " +
-                      transferUnitLabel(item)
-                    : null;
-                if (shortage && showToast && typeof toastr !== "undefined") {
-                    toastr.error("", item.stock_error);
+                if (shortage) {
+                    var shortageMsg =
+                        "Stok tidak cukup. Tersedia: " +
+                        formatTransferQty(shortage.available) +
+                        " " +
+                        transferUnitLabel(item);
+                    if (rejectInsufficientTransferRow(item, shortageMsg)) {
+                        return;
+                    }
+                    item.stock_invalid = true;
+                    item.available_qty = parseFloat(shortage.available) || 0;
+                    item.stock_error = shortageMsg;
+                    if (showToast && typeof toastr !== "undefined") {
+                        toastr.error("", item.stock_error);
+                    }
+                    return;
                 }
+
+                item.stock_invalid = false;
+                item.available_qty = null;
+                item.stock_error = null;
+                rememberTransferRowOkSnapshot(item);
+                clearTransferRowShortageMode(item);
             },
             error: function (xhr, textStatus) {
                 if (isAjaxAbort(xhr, textStatus) || !isCurrent()) return;
-                item.stock_invalid = true;
-                item.stock_error =
+                var errMsg =
                     (xhr.responseJSON && xhr.responseJSON.message) ||
                     "Stok gagal divalidasi. Coba lagi.";
+                if (rejectInsufficientTransferRow(item, errMsg)) {
+                    return;
+                }
+                item.stock_invalid = true;
+                item.stock_error = errMsg;
             },
             complete: function (xhr, textStatus) {
                 if (item._check_stock_xhr === xhr) {
                     item._check_stock_xhr = null;
                 }
                 if (isAjaxAbort(xhr, textStatus)) return;
+                // Sudah di-drop/revert → finish tetap aman (idempotent flags)
                 finish();
             },
         });
@@ -2438,9 +2547,15 @@ function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
             stock_invalid: false,
             stock_error: null,
             stock_loading: true,
+            _on_shortage: "drop",
         });
         existing = transferItems.length - 1;
     } else {
+        transferItems[existing]._merge_prev_qty = parseInt(
+            transferItems[existing].qty,
+            10
+        ) || 0;
+        transferItems[existing]._on_shortage = "drop";
         transferItems[existing].qty =
             (parseInt(transferItems[existing].qty, 10) || 0) + qty;
         transferItems[existing].stock_loading = true;
@@ -3132,6 +3247,10 @@ $(document).on("input", ".transfer-qty", function () {
     }
     $(this).removeClass("is-invalid");
     if (transferItems[idx]) {
+        if (transferItems[idx]._last_ok_qty == null) {
+            rememberTransferRowOkSnapshot(transferItems[idx]);
+        }
+        transferItems[idx]._on_shortage = "revert";
         transferItems[idx].qty = val;
         scheduleTransferRowValidation(transferItems[idx]);
     }
@@ -3143,6 +3262,10 @@ $(document).on("change", ".transfer-qty", function () {
     if (transferItems[idx]) {
         clearTimeout(transferItems[idx]._validation_timer);
         transferItems[idx]._validation_timer = null;
+        if (transferItems[idx]._last_ok_qty == null) {
+            rememberTransferRowOkSnapshot(transferItems[idx]);
+        }
+        transferItems[idx]._on_shortage = "revert";
         validateOptimisticTransferRow(transferItems[idx], true);
     }
 });
@@ -3151,6 +3274,10 @@ $(document).on("change", ".transfer-unit", function () {
     var idx = parseInt($(this).attr("data-index"), 10);
     if (!transferItems[idx]) return;
     var unitId = $(this).val();
+    if (transferItems[idx]._last_ok_qty == null) {
+        rememberTransferRowOkSnapshot(transferItems[idx]);
+    }
+    transferItems[idx]._on_shortage = "revert";
     transferItems[idx].unit_id = unitId;
     var selectedUnit = (transferItems[idx].units || []).find(function (unit) {
         return String(unit.unit_id) === String(unitId);
