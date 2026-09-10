@@ -195,7 +195,7 @@
   @include('components.modals.cash-category.add-cash-category')
 @endif
 
-@if (Route::is(['stockProduct']))
+@if (Route::is(['stockProduct', 'stockChemical']))
   @include('components.modals.stock-product.modal-safety-stock')
 
   <!-- Add coupons -->

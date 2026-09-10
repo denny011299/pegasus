@@ -2394,11 +2394,50 @@ class StockController extends Controller
     // Stock
     public function Stock()
     {
-        return view('Backoffice.Inventory.Stock_Product');
+        return view('Backoffice.Inventory.Stock_Product', [
+            'stockPage' => $this->stockPageConfig(Product::KIND_PRODUCT),
+        ]);
+    }
+
+    public function StockChemical()
+    {
+        return view('Backoffice.Inventory.Stock_Product', [
+            'stockPage' => $this->stockPageConfig(Product::KIND_CHEMICAL),
+        ]);
+    }
+
+    private function stockPageConfig(string $kind): array
+    {
+        $kind = Product::normalizeKind($kind);
+        $isChemical = $kind === Product::KIND_CHEMICAL;
+
+        return [
+            'product_kind' => $kind,
+            'page_title' => $isChemical ? 'Stok Bahan Kimia' : 'Stok Produk',
+            'get_url' => $isChemical ? '/getStockChemical' : '/getStock',
+            'search_placeholder' => $isChemical ? 'Cari Bahan Kimia' : 'Cari Produk',
+            'zero_records' => $isChemical ? 'Bahan kimia tidak ditemukan' : 'Produk tidak ditemukan',
+            'history_title' => $isChemical ? 'Lihat Histori Bahan Kimia' : 'Lihat Histori Produk',
+            'empty_history' => $isChemical
+                ? 'Bahan kimia ini belum ada riwayat perubahan stok'
+                : 'Produk ini belum ada riwayat perubahan stok',
+            'name_label' => $isChemical ? 'Nama Bahan Kimia' : 'Nama Produk',
+        ];
     }
 
     function getStock(Request $req)
     {
+        return $this->getStockByKind($req, Product::KIND_PRODUCT);
+    }
+
+    function getStockChemical(Request $req)
+    {
+        return $this->getStockByKind($req, Product::KIND_CHEMICAL);
+    }
+
+    private function getStockByKind(Request $req, string $kind)
+    {
+        $kind = Product::normalizeKind($kind);
         $warehouseId = $req->warehouse_id ?: Session::get('active_warehouse_id');
         $warehouseId = $warehouseId ? (int) $warehouseId : null;
 
@@ -2429,6 +2468,17 @@ class StockController extends Controller
 
             // Tanpa gudang aktif: jangan query berat
             if (! $warehouseId) {
+                return response()->json([
+                    'draw' => $draw,
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                    'view_mode' => $viewMode,
+                    'is_main_warehouse' => $isMain ? 1 : 0,
+                ]);
+            }
+
+            if (! Product::hasKindColumn() && $kind === Product::KIND_CHEMICAL) {
                 return response()->json([
                     'draw' => $draw,
                     'recordsTotal' => 0,
@@ -2471,13 +2521,20 @@ class StockController extends Controller
                 ->where('product_variants.status', 1)
                 ->where('pr.status', 1);
 
+            if (Product::hasKindColumn()) {
+                $base->where('pr.product_kind', $kind);
+            }
+
             // Total tanpa search — query lebih ringan (tanpa category join untuk count)
-            $recordsTotal = ProductVariant::query()
+            $recordsTotalQuery = ProductVariant::query()
                 ->from('product_variants')
                 ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
                 ->where('product_variants.status', 1)
-                ->where('pr.status', 1)
-                ->count('product_variants.product_variant_id');
+                ->where('pr.status', 1);
+            if (Product::hasKindColumn()) {
+                $recordsTotalQuery->where('pr.product_kind', $kind);
+            }
+            $recordsTotal = $recordsTotalQuery->count('product_variants.product_variant_id');
 
             if ($search !== '') {
                 $like = '%' . $search . '%';
@@ -2518,8 +2575,9 @@ class StockController extends Controller
                 ->get();
 
             $variantIds = $rows->pluck('product_variant_id')->all();
-            $stocksByVariant = [];
             $relationsByVariant = collect();
+            $stocksByVariant = [];
+            $units = collect();
 
             if ($variantIds !== []) {
                 // Batch stock (1 query)

@@ -9,6 +9,9 @@
     { "Id": 7, "Modules": "Produk", "SubModules": "Stok Produk" },
     { "Id": 8, "Modules": "Produk", "SubModules": "Safety Stock" },
 
+    { "Id": 48, "Modules": "Bahan Kimia", "SubModules": "Daftar Bahan Kimia" },
+    { "Id": 49, "Modules": "Bahan Kimia", "SubModules": "Stok Bahan Kimia" },
+
     { "Id": 9, "Modules": "Bahan Mentah", "SubModules": "Daftar Bahan Mentah" },
     { "Id": 10, "Modules": "Bahan Mentah", "SubModules": "Stok Bahan Mentah" },
 

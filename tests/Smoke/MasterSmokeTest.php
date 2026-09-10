@@ -27,6 +27,8 @@ class MasterSmokeTest extends TestCase
             'product' => ['/product', 'Daftar Produk'],
             'stockProduct' => ['/stockProduct', 'Stok Produk'],
             'barcodePrint' => ['/barcodePrint', 'Daftar Produk'],
+            'chemical' => ['/chemical', 'Daftar Bahan Kimia'],
+            'stockChemical' => ['/stockChemical', 'Stok Bahan Kimia'],
             'supplies' => ['/supplies', 'Daftar Bahan Mentah'],
             'stockSupplies' => ['/stockSupplies', 'Stok Bahan Mentah'],
             'customer (Armada)' => ['/customer', 'Armada'],

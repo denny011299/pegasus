@@ -473,6 +473,27 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/transferSafetyToStock', [StockController::class, 'transferSafetyToStock'])->name('transferSafetyToStock');
     });
 
+    Route::middleware('check.access:Daftar Bahan Kimia|view')->group(function () {
+        Route::get('/chemical', [ProductController::class, 'Chemical'])->name('chemical');
+        Route::get('/getChemical', [ProductController::class, 'getChemical'])->name('getChemical');
+    });
+    Route::middleware('check.access:Daftar Bahan Kimia|create')->group(function () {
+        Route::get('/insertChemical', [ProductController::class, 'viewInsertChemical'])->name('viewInsertChemical');
+        Route::post('/insertChemical', [ProductController::class, 'insertChemical'])->name('insertChemical');
+    });
+    Route::middleware('check.access:Daftar Bahan Kimia|edit')->group(function () {
+        Route::get('/updateChemical/{id}', [ProductController::class, 'ViewUpdateChemical'])->name('ViewUpdateChemical');
+        Route::post('/updateChemical', [ProductController::class, 'updateChemical'])->name('updateChemical');
+    });
+    Route::middleware('check.access:Daftar Bahan Kimia|delete')->group(function () {
+        Route::post('/deleteChemical', [ProductController::class, 'deleteChemical'])->name('deleteChemical');
+    });
+
+    Route::middleware('check.access:Stok Bahan Kimia|view')->group(function () {
+        Route::get('/stockChemical', [StockController::class, 'StockChemical'])->name('stockChemical');
+        Route::get('/getStockChemical', [StockController::class, 'getStockChemical'])->name('getStockChemical');
+    });
+
     Route::middleware('check.access:Daftar Bahan Mentah|view')->group(function () {
         Route::get('/supplies', [ProductController::class, 'Supplies'])->name('supplies');
         Route::get('/getSupplies', [ProductController::class, 'getSupplies'])->name('getSupplies');

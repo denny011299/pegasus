@@ -107,7 +107,7 @@
 
             @component('components.page-header')
                 @slot('title')
-                    Stok Produk
+                    {{ $stockPage['page_title'] ?? 'Stok Produk' }}
                 @endslot
             @endcomponent
 
@@ -249,7 +249,7 @@
                 </div>
                 <div class="modal-body px-4 py-4">
                     <div class="mb-4">
-                        <label class="form-label text-muted fw-semibold mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.4px;">Nama Produk</label>
+                        <label class="form-label text-muted fw-semibold mb-1" style="font-size:11px; text-transform:uppercase; letter-spacing:.4px;">{{ $stockPage['name_label'] ?? 'Nama Produk' }}</label>
                         <div class="fw-semibold" id="emo-product-name" style="font-size:14px; color:#0f172a;">—</div>
                     </div>
                     <div class="row g-3">
@@ -283,6 +283,7 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
+        window.stockPageConfig = @json($stockPage);
     </script>
     <script src="{{asset('Custom_js/Backoffice/Inventory/Stock_Product.js')}}?v={{time()}}"></script>
 @endsection
