@@ -13,8 +13,14 @@ class Supplies extends Model
     protected $primaryKey = "supplies_id";
     public $timestamps = true;
     public $incrementing = true;
+
+    public const KIND_SUPPLY = 'supply';
+    public const KIND_TRADING = 'trading';
+
     protected $fillable = [
         'supplies_name',
+        'supplies_kind',
+        'trading_product_variant_id',
         'supplies_desc',
         'supplies_unit',
         'supplies_alert',
@@ -25,7 +31,30 @@ class Supplies extends Model
     protected $casts = [
         'lead_time_days' => 'integer',
         'safety_stock' => 'integer',
+        'trading_product_variant_id' => 'integer',
     ];
+
+    public static function hasKindColumn(): bool
+    {
+        static $has = null;
+        if ($has === null) {
+            $has = \Illuminate\Support\Facades\Schema::hasColumn('supplies', 'supplies_kind');
+        }
+
+        return $has;
+    }
+
+    public static function normalizeKind(?string $kind): string
+    {
+        return $kind === self::KIND_TRADING
+            ? self::KIND_TRADING
+            : self::KIND_SUPPLY;
+    }
+
+    public static function isTradingKind(?string $kind): bool
+    {
+        return self::normalizeKind($kind) === self::KIND_TRADING;
+    }
 
     /**
      * Query dasar untuk Data Bahan External API (App\Http\Controllers\ExternalApi\V1\
@@ -45,11 +74,15 @@ class Supplies extends Model
             "supplies_id" => null,
             "supplies_name" => null,
             "supplies_desc" => null,
+            "supplies_kind" => null,
         ], $data);
         $result = Supplies::where('status', '=', 1);
         if ($data["supplies_id"]) $result->where('supplies_id', '=', $data["supplies_id"]);
         if ($data["supplies_name"]) $result->where('supplies_name', 'like', '%' . $data["supplies_name"] . '%');
         if ($data["supplies_desc"]) $result->where('supplies_desc', 'like', '%' . $data["supplies_desc"] . '%');
+        if (self::hasKindColumn() && $data["supplies_kind"] !== null && $data["supplies_kind"] !== '') {
+            $result->where('supplies_kind', self::normalizeKind($data['supplies_kind']));
+        }
         $result->orderBy('supplies_name', 'asc');
 
         $result = $result->get();
@@ -353,6 +386,45 @@ class Supplies extends Model
             $value->created_by_name = $value->created_by
                 ? ($staffNames->get((int) $value->created_by) ?? '-')
                 : '-';
+
+            if (self::hasKindColumn()) {
+                $value->supplies_kind = self::normalizeKind($value->supplies_kind ?? self::KIND_SUPPLY);
+                $value->is_trading = self::isTradingKind($value->supplies_kind) ? 1 : 0;
+            } else {
+                $value->supplies_kind = self::KIND_SUPPLY;
+                $value->is_trading = 0;
+                $value->trading_product_variant_id = null;
+            }
+        }
+
+        // Label varian produk untuk form Trading
+        if (self::hasKindColumn()) {
+            $tradingIds = $result
+                ->pluck('trading_product_variant_id')
+                ->filter(fn ($id) => (int) $id > 0)
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+            $tradingLabels = [];
+            if ($tradingIds !== []) {
+                $pvRows = ProductVariant::whereIn('product_variant_id', $tradingIds)
+                    ->where('status', 1)
+                    ->get(['product_variant_id', 'product_id', 'product_variant_name', 'product_variant_sku']);
+                $productNames = Product::whereIn('product_id', $pvRows->pluck('product_id')->unique()->all())
+                    ->pluck('product_name', 'product_id');
+                foreach ($pvRows as $pv) {
+                    $pname = $productNames[(int) $pv->product_id] ?? '';
+                    $label = trim($pname . ' — ' . ($pv->product_variant_name ?? '') . ' (' . ($pv->product_variant_sku ?? '-') . ')');
+                    $tradingLabels[(int) $pv->product_variant_id] = $label !== '' ? $label : ('PV #' . $pv->product_variant_id);
+                }
+            }
+            foreach ($result as $value) {
+                $tpid = (int) ($value->trading_product_variant_id ?? 0);
+                $value->trading_product_variant_label = $tpid > 0
+                    ? ($tradingLabels[$tpid] ?? ('PV #' . $tpid))
+                    : null;
+            }
         }
 
         return $result->keyBy('supplies_id');
@@ -368,6 +440,13 @@ class Supplies extends Model
         $t->supplies_default_unit = $data["supplies_default_unit"];
         $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
         $t->safety_stock = max(0, (int) ($data["safety_stock"] ?? 0));
+        if (self::hasKindColumn()) {
+            $kind = self::normalizeKind($data['supplies_kind'] ?? self::KIND_SUPPLY);
+            $t->supplies_kind = $kind;
+            $t->trading_product_variant_id = self::isTradingKind($kind)
+                ? (int) ($data['trading_product_variant_id'] ?? 0) ?: null
+                : null;
+        }
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;
@@ -383,6 +462,13 @@ class Supplies extends Model
         $t->supplies_default_unit = $data["supplies_default_unit"];
         $t->lead_time_days = max(0, (int) ($data["lead_time_days"] ?? 0));
         $t->safety_stock = max(0, (int) ($data["safety_stock"] ?? 0));
+        if (self::hasKindColumn()) {
+            $kind = self::normalizeKind($data['supplies_kind'] ?? self::KIND_SUPPLY);
+            $t->supplies_kind = $kind;
+            $t->trading_product_variant_id = self::isTradingKind($kind)
+                ? (int) ($data['trading_product_variant_id'] ?? 0) ?: null
+                : null;
+        }
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
         return $t->supplies_id;

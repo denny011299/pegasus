@@ -1021,6 +1021,29 @@
 </div>
 @endif
 
+@if(Route::is(['supplies']))
+<div class="profit-menu card">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Jenis</label>
+                <select class="form-select" id="filter_supplies_kind">
+                    <option value="">Semua</option>
+                    <option value="supply">Bahan Mentah</option>
+                    <option value="trading">Trading</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-3 col-md-6 col-sm-12">
+            <div class="d-flex gap-2 mb-3">
+                <a class="btn btn-primary btn-filter-supplies-kind" href="javascript:void(0);">Filter</a>
+                <a class="btn btn-outline-secondary btn-clear-supplies-kind" href="javascript:void(0);">Clear</a>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 @if(Route::is(['stockTransfer']))
 {{-- Filter urutan: Tanggal (3) + Gudang Dari (5) + Status (2) + Reset (2) = 12 Kolom Penuh --}}
 <div class="profit-menu card stock-transfer-filter">

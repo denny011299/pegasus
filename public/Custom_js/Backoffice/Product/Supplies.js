@@ -3,11 +3,28 @@
     var idUnits = [];
     $(document).ready(function(){
         inisialisasi();
-        refreshSupplies();
         autocompleteUnit("#supplies_unit","#add_supplies .modal-content");
         autocompleteVariant("#supplies_variant","#add_supplies .modal-content");
-        
-        
+        syncTradingProductRow();
+    });
+
+    function syncTradingProductRow() {
+        var kind = $("#supplies_kind").val() || "supply";
+        if (kind === "trading") {
+            $("#row-trading-product").removeClass("d-none");
+            // Init ulang setelah visible — Select2 di d-none sering rusak scroll/ukuran
+            autocompleteProductVariantOnly("#trading_product_variant_id", "body");
+        } else {
+            $("#row-trading-product").addClass("d-none");
+            if ($("#trading_product_variant_id").hasClass("select2-hidden-accessible")) {
+                $("#trading_product_variant_id").select2("destroy");
+            }
+            $("#trading_product_variant_id").removeClass("is-invalid").empty().val(null);
+        }
+    }
+
+    $(document).on("change", "#supplies_kind", function () {
+        syncTradingProductRow();
     });
     
     $(document).on('click','.btnAdd',function(){
@@ -22,6 +39,9 @@
         $('#unit_id').html("-");
         $('#alert').val(0);
         $('#lead_time_days, #safety_stock').val(0);
+        $('#supplies_kind').val('supply');
+        $('#trading_product_variant_id').empty().val(null).trigger('change');
+        syncTradingProductRow();
         $('#tbVariant').html("")
         addRow();
         $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
@@ -69,98 +89,133 @@
         autocompleteSupplier($newSelect, '#add_supplies .modal-content');
     }
     
+    function setSuppliesTableLoading(isLoading) {
+        var $wrap = $("#tableSupplies-wrap");
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
     function inisialisasi() {
-        table = $('#tableSupplies').DataTable({
-            bFilter: true,
-            sDom: 'fBtlpi',
-            lengthMenu: [10, 25, 50, 100],
-            ordering: true,
+        var $suppliesTable = $("#tableSupplies");
+
+        $suppliesTable
+            .on("preXhr.dt", function () {
+                setSuppliesTableLoading(true);
+            })
+            .on("xhr.dt", function () {
+                setTimeout(function () {
+                    setSuppliesTableLoading(false);
+                }, 0);
+            });
+
+        table = $suppliesTable.DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            responsive: false,
             autoWidth: false,
             scrollX: false,
+            bFilter: true,
+            sDom: "fBtlpi",
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
+            ordering: true,
+            order: [[0, "asc"]],
+            searchDelay: 400,
             language: {
-                search: ' ',
-                sLengthMenu: '_MENU_',
+                search: " ",
+                sLengthMenu: "_MENU_",
                 searchPlaceholder: "Cari Bahan Mentah",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
-                    previous: '<i class="fa fa-angle-left"></i> '
+                    previous: '<i class="fa fa-angle-left"></i> ',
+                },
+            },
+            ajax: {
+                url: "/getSupplies",
+                type: "GET",
+                data: function (d) {
+                    d.supplies_kind = $("#filter_supplies_kind").val() || "";
+                },
+                error: function (err) {
+                    setSuppliesTableLoading(false);
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    console.error("Gagal load:", err);
                 },
             },
             columns: [
-                { data: "supplies_name", width: "25%" },
-                { data: "variant_values", width: "25%" },
-                { data: "unit_values", width: "12%" },
+                { data: "supplies_name", width: "20%" },
+                {
+                    data: "kind_badge",
+                    width: "10%",
+                    className: "text-center align-middle",
+                    orderable: true,
+                    render: function (data, type, row) {
+                        var kind = (row && row.supplies_kind ? row.supplies_kind : "").toLowerCase();
+                        var isTrading = kind === "trading" || (typeof data === "string" && data.indexOf("Trading") !== -1);
+                        if (type === "sort" || type === "filter") {
+                            return isTrading ? "Trading" : "Bahan Mentah";
+                        }
+                        if (isTrading) {
+                            return '<span class="badge rounded-pill" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Trading</span>';
+                        }
+                        return '<span class="badge rounded-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Bahan Mentah</span>';
+                    },
+                },
+                { data: "variant_values", width: "20%", orderable: false },
+                { data: "unit_values", width: "12%", orderable: false },
                 { data: "desc", width: "15%" },
-                { data: "created_by_name", defaultContent: "-", width: "10%" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
-                { data: "action", class: "text-center align-middle", width: "13%" },
+                {
+                    data: "created_by_name",
+                    defaultContent: "-",
+                    width: "10%",
+                    render: function (data) {
+                        return typeof renderCreatedByName === "function"
+                            ? renderCreatedByName(data)
+                            : data;
+                    },
+                },
+                {
+                    data: "action",
+                    className: "text-center align-middle",
+                    width: "13%",
+                    orderable: false,
+                    searchable: false,
+                },
             ],
-            initComplete: (settings, json) => {
-                $('.dataTables_filter').appendTo('#tableSearch');
-                $('.dataTables_filter').appendTo('.search-input');
-                $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
+            initComplete: function () {
+                var $filter = $(".dataTables_filter");
+                $filter.appendTo(".search-input");
+                $filter.find("label").prepend('<i class="fa fa-search"></i> ');
+                this.api().columns.adjust();
+                $("#tableSupplies-wrap")
+                    .removeClass("dt-pending")
+                    .addClass("dt-ready");
+                setSuppliesTableLoading(false);
+            },
+            drawCallback: function () {
+                this.api().columns.adjust();
+                setSuppliesTableLoading(false);
+                if (typeof feather !== "undefined") feather.replace();
             },
         });
     }
 
     function refreshSupplies() {
-        $.ajax({
-            url: "/getSupplies",
-            method: "get",
-            success: function (e) {
-                if (!Array.isArray(e)) {
-                    e = e.original || [];
-                }
-
-                table.clear().draw(); 
-                // Manipulasi data sebelum masuk ke tabel
-                for (let i = 0; i < e.length; i++) {
-                    if (e[i].supplies_desc == null) e[i].desc = '-';
-                    else e[i].desc = e[i].supplies_desc;
-                    e[i].variant_values = "";
-                    e[i].sup_variant.forEach((element,index) => {
-                         e[i].variant_values += element.supplies_variant_name;
-                         if(index< e[i].sup_variant.length-1){
-                            e[i].variant_values += ", ";
-                         }
-                    });
-                    e[i].unit_values = "";
-                    e[i].units.forEach((element,index) => {
-                        
-                         e[i].unit_values += element.unit_name;
-                         if(index< e[i].units.length-1){
-                            e[i].unit_values += ", ";
-                         }
-                    });
-                    var se =
-                        roleIconEdit(
-                            "Daftar Bahan Mentah",
-                            "me-2 btn-action-icon p-2 btn_edit",
-                            'data-id="' +
-                                e[i].supplies_id +
-                                '" data-bs-target="#edit-supplies"'
-                        ) +
-                        roleIconDelete(
-                            "Daftar Bahan Mentah",
-                            "p-2 btn-action-icon btn_delete",
-                            'data-id="' +
-                                e[i].supplies_id +
-                                '" href="javascript:void(0);"'
-                        );
-                    e[i].action =
-                        se ||
-                        '<span class="text-muted small">—</span>';
-                }
-
-                table.rows.add(e).draw();
-                feather.replace(); // Biar icon feather muncul lagi
-            },
-            error: function (err) {
-                if (handlePermissionError(err)) return;
-                console.error("Gagal load:", err);
-            }
-        });
+        if (table) table.ajax.reload(null, false);
     }
+
+    $(document).on("click", ".btn-filter-supplies-kind", function () {
+        refreshSupplies();
+    });
+    $(document).on("click", ".btn-clear-supplies-kind", function () {
+        $("#filter_supplies_kind").val("");
+        refreshSupplies();
+    });
+    $(document).on("change", "#filter_supplies_kind", function () {
+        refreshSupplies();
+    });
 
     $(document).on("click",".btn-save",function(){
        LoadingButton(this);
@@ -183,6 +238,13 @@
             valid=-1;
             $('#row-satuan .select2-selection--single').addClass('is-invalids');
         }
+        if (($("#supplies_kind").val() || "supply") === "trading") {
+            if (!$("#trading_product_variant_id").val()) {
+                valid = -1;
+                $("#trading_product_variant_id").addClass("is-invalid");
+                $("#row-trading-product .select2-selection--single").addClass("is-invalids");
+            }
+        }
 
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
@@ -197,6 +259,10 @@
             supplies_default_unit:$('#unit_id').val(),
             lead_time_days:Math.max(0, parseInt($('#lead_time_days').val(), 10) || 0),
             safety_stock:Math.max(0, parseInt($('#safety_stock').val(), 10) || 0),
+            supplies_kind: $('#supplies_kind').val() || 'supply',
+            trading_product_variant_id: ($('#supplies_kind').val() === 'trading')
+                ? ($('#trading_product_variant_id').val() || '')
+                : '',
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token
@@ -320,6 +386,14 @@
         $('#alert').val(data.supplies_alert);
         $('#lead_time_days').val(Math.max(0, parseInt(data.lead_time_days, 10) || 0));
         $('#safety_stock').val(Math.max(0, parseInt(data.safety_stock, 10) || 0));
+        $('#supplies_kind').val(data.supplies_kind || 'supply');
+        syncTradingProductRow();
+        if (data.trading_product_variant_id) {
+            var tLabel = data.trading_product_variant_label || ('PV #' + data.trading_product_variant_id);
+            $('#trading_product_variant_id').append(
+                new Option(tLabel, data.trading_product_variant_id, true, true)
+            ).trigger('change');
+        }
         $('#tbVariant').html("");
         $('#tbRelasi').html("");
 
