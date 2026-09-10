@@ -10,30 +10,10 @@ use Illuminate\Support\Facades\Session;
 
 class Product extends Model
 {
-    public const KIND_PRODUCT = 'product';
-    public const KIND_CHEMICAL = 'chemical';
-
     protected $table = "products";
     protected $primaryKey = "product_id";
     public $timestamps = true;
     public $incrementing = true;
-
-    public static function normalizeKind(?string $kind): string
-    {
-        return $kind === self::KIND_CHEMICAL
-            ? self::KIND_CHEMICAL
-            : self::KIND_PRODUCT;
-    }
-
-    public static function hasKindColumn(): bool
-    {
-        static $has = null;
-        if ($has === null) {
-            $has = \Illuminate\Support\Facades\Schema::hasColumn('products', 'product_kind');
-        }
-
-        return $has;
-    }
 
     /** Dipakai lewat eager-load opsional (?show_category=) pada External API. */
     public function category(): BelongsTo
@@ -74,14 +54,9 @@ class Product extends Model
             "product_name" => null,
             "category_id"  => null,
             "product_id"  => null,
-            "product_kind" => null,
         ], $data);
 
         $result = Product::where("status", "=", 1);
-
-        if (self::hasKindColumn() && $data["product_kind"] !== null && $data["product_kind"] !== '') {
-            $result->where('product_kind', self::normalizeKind($data['product_kind']));
-        }
 
         if ($data["product_name"]) {
             $result->where("product_name", "like", "%" . $data["product_name"] . "%");
@@ -199,9 +174,6 @@ class Product extends Model
     {
         $t = new Product();
         $t->product_name = $data["product_name"];
-        if (self::hasKindColumn()) {
-            $t->product_kind = self::normalizeKind($data['product_kind'] ?? self::KIND_PRODUCT);
-        }
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
         $t->unit_id = $data["unit_id"];
@@ -216,7 +188,6 @@ class Product extends Model
     {
         $t = Product::find($data["product_id"]);
         $t->product_name = $data["product_name"];
-        // product_kind tidak diubah di update — tetap sesuai master (Produk vs Bahan Kimia)
         $t->category_id  = $data["category_id"];
         $t->product_unit = $data["product_unit"];
         $t->unit_id = $data["unit_id"];

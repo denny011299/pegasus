@@ -120,136 +120,46 @@ class ProductController extends Controller
         return (new Variant())->deleteVariant($data);
     }
 
-    // Product / Bahan Kimia (product_kind)
-    private function productPageConfig(string $kind): array
-    {
-        $kind = Product::normalizeKind($kind);
-        $isChemical = $kind === Product::KIND_CHEMICAL;
-
-        return [
-            'product_kind' => $kind,
-            'page_title' => $isChemical ? 'Bahan Kimia' : 'Produk',
-            'module_name' => $isChemical ? 'Daftar Bahan Kimia' : 'Daftar Produk',
-            'list_url' => $isChemical ? '/chemical' : '/product',
-            'get_url' => $isChemical ? '/getChemical' : '/getProduct',
-            'insert_url' => $isChemical ? '/insertChemical' : '/insertProduct',
-            'update_url' => $isChemical ? '/updateChemical' : '/updateProduct',
-            'delete_url' => $isChemical ? '/deleteChemical' : '/deleteProduct',
-            'edit_url_prefix' => $isChemical ? '/updateChemical/' : '/updateProduct/',
-            'search_placeholder' => $isChemical ? 'Cari Bahan Kimia' : 'Cari Produk',
-            'delete_confirm' => $isChemical
-                ? 'Apakah yakin ingin menghapus bahan kimia ini?'
-                : 'Apakah yakin ingin menghapus produk ini?',
-            'delete_success' => $isChemical
-                ? 'Berhasil delete bahan kimia'
-                : 'Berhasil delete produk',
-            'name_label' => $isChemical ? 'Nama Bahan Kimia' : 'Nama Produk',
-            'add_label' => $isChemical ? 'Tambah Bahan Kimia' : 'Tambah Produk',
-            'update_label' => $isChemical ? 'Update Bahan Kimia' : 'Update Produk',
-            'insert_success' => $isChemical ? 'Berhasil Tambah Bahan Kimia' : 'Berhasil Tambah Produk',
-            'update_success' => $isChemical ? 'Berhasil Update Bahan Kimia' : 'Berhasil Update Produk',
-        ];
-    }
-
+    // Product
     public function Product()
     {
-        return view('Backoffice.Product.Product', [
-            'productPage' => $this->productPageConfig(Product::KIND_PRODUCT),
-        ]);
-    }
-
-    public function Chemical()
-    {
-        return view('Backoffice.Product.Product', [
-            'productPage' => $this->productPageConfig(Product::KIND_CHEMICAL),
-        ]);
+        return view('Backoffice.Product.Product');
     }
 
     function viewInsertProduct()
     {
-        return $this->viewInsertByKind(Product::KIND_PRODUCT);
-    }
-
-    function viewInsertChemical()
-    {
-        return $this->viewInsertByKind(Product::KIND_CHEMICAL);
-    }
-
-    private function viewInsertByKind(string $kind)
-    {
-        $cfg = $this->productPageConfig($kind);
-        $param["mode"] = 1;
+        $param["mode"] = 1; // 1 = insert, 2 = update
         $param["data"] = [];
-        $param["title"] = $kind === Product::KIND_CHEMICAL ? 'Insert Bahan Kimia' : 'Insert Produk';
-        $param["productPage"] = $cfg;
+        $param["title"] = "Insert Produk";
         return view('Backoffice.Product.insertProduct')->with($param);
     }
 
     function ViewUpdateProduct($id)
     {
-        return $this->viewUpdateByKind($id, Product::KIND_PRODUCT);
-    }
-
-    function ViewUpdateChemical($id)
-    {
-        return $this->viewUpdateByKind($id, Product::KIND_CHEMICAL);
-    }
-
-    private function viewUpdateByKind($id, string $kind)
-    {
-        $kind = Product::normalizeKind($kind);
-        $rows = (new Product())->getProduct(["product_id" => $id]);
-        if ($rows->isEmpty()) {
-            abort(404);
-        }
-        $row = $rows[0];
-        if (Product::hasKindColumn()) {
-            $rowKind = Product::normalizeKind($row->product_kind ?? Product::KIND_PRODUCT);
-            if ($rowKind !== $kind) {
-                abort(404);
-            }
-        } elseif ($kind === Product::KIND_CHEMICAL) {
-            abort(404);
-        }
-
-        $cfg = $this->productPageConfig($kind);
-        $param["mode"] = 2;
-        $param["data"] = $row;
-        $param["title"] = $kind === Product::KIND_CHEMICAL ? 'Update Bahan Kimia' : 'Update Produk';
-        $param["productPage"] = $cfg;
+        $param["mode"] = 2; // 1 = insert, 2 = update
+        $param["data"] = (new Product())->getProduct(["product_id" => $id])[0];
+        $param["title"] = "Update Produk";
         return view('Backoffice.Product.insertProduct')->with($param);
     }
 
     function getProduct(Request $req)
     {
-        return $this->getProductByKind($req, Product::KIND_PRODUCT);
-    }
-
-    function getChemical(Request $req)
-    {
-        return $this->getProductByKind($req, Product::KIND_CHEMICAL);
-    }
-
-    private function getProductByKind(Request $req, string $kind)
-    {
         // Server-side DataTables (Yajra-compatible JSON)
         if ($req->has('draw')) {
-            return $this->getProductDataTable($req, $kind);
+            return $this->getProductDataTable($req);
         }
 
         // Legacy (client-side / pemakaian lain)
-        $data = (new Product())->getProduct(['product_kind' => Product::normalizeKind($kind)]);
+        $data = (new Product())->getProduct();
         return response()->json($data);
     }
 
     /**
-     * DataTables server-side untuk halaman Daftar Produk / Bahan Kimia.
+     * DataTables server-side untuk halaman Daftar Produk.
      * Response: draw, recordsTotal, recordsFiltered, data[]
      */
-    private function getProductDataTable(Request $req, string $kind = Product::KIND_PRODUCT)
+    private function getProductDataTable(Request $req)
     {
-        $kind = Product::normalizeKind($kind);
-        $cfg = $this->productPageConfig($kind);
         $draw = (int) $req->input('draw', 1);
         $start = max(0, (int) $req->input('start', 0));
         $length = (int) $req->input('length', 10);
@@ -281,17 +191,6 @@ class ProductController extends Controller
             ->leftJoin('categories as cat', 'cat.category_id', '=', 'products.category_id')
             ->leftJoin('staffs as st', 'st.staff_id', '=', 'products.created_by')
             ->where('products.status', 1);
-
-        if (Product::hasKindColumn()) {
-            $base->where('products.product_kind', $kind);
-        } elseif ($kind === Product::KIND_CHEMICAL) {
-            return response()->json([
-                'draw' => $draw,
-                'recordsTotal' => 0,
-                'recordsFiltered' => 0,
-                'data' => [],
-            ]);
-        }
 
         $recordsTotal = (clone $base)->count('products.product_id');
 
@@ -382,8 +281,8 @@ class ProductController extends Controller
             : collect();
 
         $user = Session::get('user');
-        $canEdit = RoleAccess::can($user, $cfg['module_name'], 'edit');
-        $canDelete = RoleAccess::can($user, $cfg['module_name'], 'delete');
+        $canEdit = RoleAccess::can($user, 'Daftar Produk', 'edit');
+        $canDelete = RoleAccess::can($user, 'Daftar Produk', 'delete');
 
         $data = [];
         foreach ($rows as $row) {
@@ -424,8 +323,7 @@ class ProductController extends Controller
                 'action' => $this->buildProductActionHtml(
                     (int) $row->product_id,
                     $canEdit,
-                    $canDelete,
-                    $cfg['edit_url_prefix']
+                    $canDelete
                 ),
             ];
         }
@@ -438,17 +336,12 @@ class ProductController extends Controller
         ]);
     }
 
-    private function buildProductActionHtml(
-        int $productId,
-        bool $canEdit,
-        bool $canDelete,
-        string $editUrlPrefix = '/updateProduct/'
-    ): string
+    private function buildProductActionHtml(int $productId, bool $canEdit, bool $canDelete): string
     {
         $html = '';
 
         if ($canEdit) {
-            $html .= '<a class="me-2 btn-action-icon p-2 btn_edit" href="' . e($editUrlPrefix) . $productId . '">'
+            $html .= '<a class="me-2 btn-action-icon p-2 btn_edit" href="/updateProduct/' . $productId . '">'
                 . '<i class="fe fe-edit"></i></a>';
         }
 
@@ -523,18 +416,7 @@ class ProductController extends Controller
 
     function insertProduct(Request $req)
     {
-        return $this->insertProductByKind($req, Product::KIND_PRODUCT);
-    }
-
-    function insertChemical(Request $req)
-    {
-        return $this->insertProductByKind($req, Product::KIND_CHEMICAL);
-    }
-
-    private function insertProductByKind(Request $req, string $kind)
-    {
         $data = $req->all();
-        $data['product_kind'] = Product::normalizeKind($kind);
 
         // // Pengecekan Unique
         // $productName = trim(strtolower($data['product_name']));
@@ -586,21 +468,7 @@ class ProductController extends Controller
 
     function updateProduct(Request $req)
     {
-        return $this->updateProductByKind($req, Product::KIND_PRODUCT);
-    }
-
-    function updateChemical(Request $req)
-    {
-        return $this->updateProductByKind($req, Product::KIND_CHEMICAL);
-    }
-
-    private function updateProductByKind(Request $req, string $kind)
-    {
         $data = $req->all();
-        if (! $this->productMatchesKind((int) ($data['product_id'] ?? 0), Product::normalizeKind($kind))) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 404);
-        }
-
         $id = [];
         $variant = $this->sanitizeVariantValues(json_decode($data['product_variant'], true) ?: []);
         $safetyPayload = $this->extractSafetyPayload($variant);
@@ -681,37 +549,8 @@ class ProductController extends Controller
 
     function deleteProduct(Request $req)
     {
-        return $this->deleteProductByKind($req, Product::KIND_PRODUCT);
-    }
-
-    function deleteChemical(Request $req)
-    {
-        return $this->deleteProductByKind($req, Product::KIND_CHEMICAL);
-    }
-
-    private function deleteProductByKind(Request $req, string $kind)
-    {
         $data = $req->all();
-        if (! $this->productMatchesKind((int) ($data['product_id'] ?? 0), Product::normalizeKind($kind))) {
-            return response()->json(['message' => 'Data tidak ditemukan'], 404);
-        }
         return (new Product())->deleteProduct($data);
-    }
-
-    private function productMatchesKind(int $productId, string $kind): bool
-    {
-        if ($productId < 1) {
-            return false;
-        }
-        $product = Product::where('product_id', $productId)->where('status', 1)->first();
-        if (! $product) {
-            return false;
-        }
-        if (! Product::hasKindColumn()) {
-            return $kind === Product::KIND_PRODUCT;
-        }
-
-        return Product::normalizeKind($product->product_kind ?? Product::KIND_PRODUCT) === $kind;
     }
 
     function getProductVariant(Request $req)
@@ -861,192 +700,8 @@ class ProductController extends Controller
 
     function getSupplies(Request $req)
     {
-        if ($req->has('draw')) {
-            return $this->getSuppliesDataTable($req);
-        }
-
         $data = (new Supplies())->getSupplies($req->all());
         return response()->json($data);
-    }
-
-    /**
-     * DataTables server-side daftar Bahan Mentah.
-     * Response: draw, recordsTotal, recordsFiltered, data[]
-     */
-    private function getSuppliesDataTable(Request $req)
-    {
-        $draw = (int) $req->input('draw', 1);
-        $start = max(0, (int) $req->input('start', 0));
-        $length = (int) $req->input('length', 10);
-        if ($length < 1) {
-            $length = 10;
-        }
-        if ($length > 100) {
-            $length = 100;
-        }
-
-        $search = trim((string) data_get($req->input('search'), 'value', ''));
-        $kindFilter = trim((string) $req->input('supplies_kind', ''));
-        $orderColIdx = (int) data_get($req->input('order'), '0.column', 0);
-        $orderDir = strtolower((string) data_get($req->input('order'), '0.dir', 'asc')) === 'desc'
-            ? 'desc'
-            : 'asc';
-
-        $columns = [
-            0 => 'supplies.supplies_name',
-            1 => 'supplies.supplies_kind',
-            2 => 'supplies.supplies_name',
-            3 => 'supplies.supplies_name',
-            4 => 'supplies.supplies_desc',
-            5 => 'st.staff_name',
-            6 => 'supplies.supplies_id',
-        ];
-        $orderCol = $columns[$orderColIdx] ?? 'supplies.supplies_name';
-        if ($orderCol === 'supplies.supplies_kind' && ! Supplies::hasKindColumn()) {
-            $orderCol = 'supplies.supplies_name';
-        }
-
-        $base = Supplies::query()
-            ->from('supplies')
-            ->leftJoin('staffs as st', 'st.staff_id', '=', 'supplies.created_by')
-            ->where('supplies.status', 1);
-
-        if (Supplies::hasKindColumn() && $kindFilter !== '') {
-            $base->where('supplies.supplies_kind', Supplies::normalizeKind($kindFilter));
-        }
-
-        $recordsTotal = (clone $base)->count('supplies.supplies_id');
-
-        if ($search !== '') {
-            $like = '%' . $search . '%';
-            $base->where(function ($q) use ($like) {
-                $q->where('supplies.supplies_name', 'like', $like)
-                    ->orWhere('supplies.supplies_desc', 'like', $like)
-                    ->orWhere('st.staff_name', 'like', $like)
-                    ->orWhereExists(function ($sq) use ($like) {
-                        $sq->select(DB::raw(1))
-                            ->from('supplies_variants')
-                            ->whereColumn('supplies_variants.supplies_id', 'supplies.supplies_id')
-                            ->where('supplies_variants.status', 1)
-                            ->where(function ($vq) use ($like) {
-                                $vq->where('supplies_variants.supplies_variant_name', 'like', $like)
-                                    ->orWhere('supplies_variants.supplies_variant_sku', 'like', $like);
-                            });
-                    });
-                if (Supplies::hasKindColumn()) {
-                    $q->orWhere('supplies.supplies_kind', 'like', $like);
-                }
-            });
-        }
-
-        $recordsFiltered = (clone $base)->count('supplies.supplies_id');
-
-        $select = [
-            'supplies.supplies_id',
-            'supplies.supplies_name',
-            'supplies.supplies_desc',
-            'supplies.created_by',
-            'st.staff_name as created_by_name',
-        ];
-        if (Supplies::hasKindColumn()) {
-            $select[] = 'supplies.supplies_kind';
-            $select[] = 'supplies.trading_product_variant_id';
-        }
-
-        $rows = $base
-            ->select($select)
-            ->orderBy($orderCol, $orderDir)
-            ->orderBy('supplies.supplies_id', 'asc')
-            ->skip($start)
-            ->take($length)
-            ->get();
-
-        $ids = $rows->pluck('supplies_id')->map(fn ($id) => (int) $id)->all();
-        $bulk = (new Supplies())->getSuppliesBulk($ids);
-
-        $user = Session::get('user');
-        $canEdit = RoleAccess::can($user, 'Daftar Bahan Mentah', 'edit');
-        $canDelete = RoleAccess::can($user, 'Daftar Bahan Mentah', 'delete');
-
-        $data = [];
-        foreach ($rows as $row) {
-            $full = $bulk->get((int) $row->supplies_id);
-            $item = $full
-                ? json_decode(json_encode($full), true)
-                : [
-                    'supplies_id' => (int) $row->supplies_id,
-                    'supplies_name' => $row->supplies_name,
-                    'supplies_desc' => $row->supplies_desc,
-                    'created_by_name' => $row->created_by_name ?: '-',
-                    'sup_variant' => [],
-                    'units' => [],
-                    'supplies_relasi' => [],
-                ];
-
-            $kind = Supplies::hasKindColumn()
-                ? Supplies::normalizeKind($item['supplies_kind'] ?? $row->supplies_kind ?? Supplies::KIND_SUPPLY)
-                : Supplies::KIND_SUPPLY;
-            $item['supplies_kind'] = $kind;
-            $item['kind_badge'] = $kind === Supplies::KIND_TRADING
-                ? '<span class="badge bg-info-transparent text-info">Trading</span>'
-                : '<span class="badge bg-secondary-transparent text-secondary">Bahan Mentah</span>';
-            $item['desc'] = ($item['supplies_desc'] ?? null) !== null && $item['supplies_desc'] !== ''
-                ? $item['supplies_desc']
-                : '-';
-
-            $variants = $item['sup_variant'] ?? [];
-            $item['variant_values'] = $variants !== []
-                ? implode(', ', array_map(
-                    fn ($v) => (string) ($v['supplies_variant_name'] ?? ''),
-                    $variants
-                ))
-                : '-';
-
-            $units = $item['units'] ?? [];
-            $item['unit_values'] = $units !== []
-                ? implode(', ', array_map(
-                    fn ($u) => (string) ($u['unit_name'] ?? $u['unit_short_name'] ?? ''),
-                    $units
-                ))
-                : '-';
-
-            $item['created_by_name'] = $item['created_by_name'] ?? ($row->created_by_name ?: '-');
-            $item['action'] = $this->buildSuppliesActionHtml(
-                (int) $row->supplies_id,
-                $canEdit,
-                $canDelete
-            );
-
-            $data[] = $item;
-        }
-
-        return response()->json([
-            'draw' => $draw,
-            'recordsTotal' => $recordsTotal,
-            'recordsFiltered' => $recordsFiltered,
-            'data' => $data,
-        ]);
-    }
-
-    private function buildSuppliesActionHtml(int $suppliesId, bool $canEdit, bool $canDelete): string
-    {
-        $html = '';
-
-        if ($canEdit) {
-            $html .= '<a class="me-2 btn-action-icon p-2 btn_edit" data-id="' . $suppliesId
-                . '" data-bs-target="#edit-supplies" href="javascript:void(0);">'
-                . '<i class="fe fe-edit"></i></a>';
-        }
-
-        if ($canDelete) {
-            $html .= '<a class="p-2 btn-action-icon btn_delete" data-id="' . $suppliesId
-                . '" href="javascript:void(0);">'
-                . '<i class="fe fe-trash-2"></i></a>';
-        }
-
-        return $html !== ''
-            ? $html
-            : '<span class="text-muted small">—</span>';
     }
 
     function insertSupplies(Request $req)
@@ -1061,11 +716,6 @@ class ProductController extends Controller
             return response()->json([
                 'message' => 'Nama bahan sudah digunakan'
             ]);
-        }
-
-        $kindError = $this->validateSuppliesTradingLink($data);
-        if ($kindError !== null) {
-            return response()->json(['message' => $kindError]);
         }
 
         $id = (new Supplies())->insertSupplies($data);
@@ -1084,10 +734,6 @@ class ProductController extends Controller
     function updateSupplies(Request $req)
     {
         $data = $this->sanitizeSuppliesValues($req->all());
-        $kindError = $this->validateSuppliesTradingLink($data);
-        if ($kindError !== null) {
-            return response()->json(['message' => $kindError]);
-        }
         $id = [];
         $id_r = [];
         $before = Supplies::find($data["supplies_id"]);
@@ -1218,35 +864,8 @@ class ProductController extends Controller
     {
         $data['lead_time_days'] = max(0, (int) ($data['lead_time_days'] ?? 0));
         $data['safety_stock'] = max(0, (int) ($data['safety_stock'] ?? 0));
-        if (Supplies::hasKindColumn()) {
-            $data['supplies_kind'] = Supplies::normalizeKind($data['supplies_kind'] ?? Supplies::KIND_SUPPLY);
-            $data['trading_product_variant_id'] = Supplies::isTradingKind($data['supplies_kind'])
-                ? (int) ($data['trading_product_variant_id'] ?? 0)
-                : 0;
-        }
 
         return $data;
-    }
-
-    /** @return string|null error message */
-    private function validateSuppliesTradingLink(array $data): ?string
-    {
-        if (! Supplies::hasKindColumn()) {
-            return null;
-        }
-        if (! Supplies::isTradingKind($data['supplies_kind'] ?? null)) {
-            return null;
-        }
-        $pvId = (int) ($data['trading_product_variant_id'] ?? 0);
-        if ($pvId <= 0) {
-            return 'Trading wajib pilih varian produk yang direlasikan';
-        }
-        $pv = ProductVariant::where('product_variant_id', $pvId)->where('status', 1)->first();
-        if (! $pv) {
-            return 'Varian produk relasi tidak ditemukan / tidak aktif';
-        }
-
-        return null;
     }
 
     /** Simpan payload safety terpisah (per index variant) sebelum strip dari save variant. */

@@ -851,11 +851,6 @@
                         $canShow('Stok Produk');
                     @endphp
                     @php
-                        $showBahanKimia =
-                        $canShow('Daftar Bahan Kimia') ||
-                        $canShow('Stok Bahan Kimia');
-                    @endphp
-                    @php
                         $showBahan =
                         $canShow('Daftar Bahan Mentah') ||
                         $canShow('Stok Bahan Mentah');
@@ -869,7 +864,7 @@
                         $canShow('Stok Opname Bahan Mentah');
                     @endphp
 
-                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahanKimia || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok'))
+                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok'))
                         <li class="menu-title"><span>Master</span></li>
                         @if ($showMaster)
                             <li class="submenu">
@@ -933,24 +928,6 @@
                                 <li>
                                     <a href="{{ url('barcodePrint') }}" class="{{ Request::is('barcodePrint') ? 'active' : '' }}">
                                         <i class="fa fa-barcode"></i> <span>Cetak Barcode</span>
-                                    </a>
-                                </li>
-                            @endif
-                        @endif
-
-                        @if ($showBahanKimia)
-                            @if ($canShow('Daftar Bahan Kimia'))
-                                <li>
-                                    <a href="{{ url('chemical') }}" class="{{ Request::is('chemical') ? 'active' : '' }}">
-                                        <i class="fe fe-droplet"></i> <span>Daftar Bahan Kimia</span>
-                                    </a>
-                                </li>
-                            @endif
-
-                            @if ($canShow('Stok Bahan Kimia'))
-                                <li>
-                                    <a href="{{ url('stockChemical') }}" class="{{ Request::is('stockChemical') ? 'active' : '' }}">
-                                        <i class="fa fa-flask"></i> <span>Stok Bahan Kimia</span>
                                     </a>
                                 </li>
                             @endif

@@ -76,7 +76,7 @@
 
             @component('components.page-header')
                 @slot('title')
-                    {{ $productPage['page_title'] ?? 'Produk' }}
+                    Produk
                 @endslot
             @endcomponent
 
@@ -122,7 +122,7 @@
                                 <table class="table table-center table-hover" id="tableProduct">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th>{{ ($productPage['name_label'] ?? 'Nama Produk') }}</th>
+                                            <th>Nama Produk</th>
                                             <th>Kategori</th>
                                             <th>Satuan</th>
                                             <th>Variasi</th>
@@ -145,7 +145,6 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
-        window.productPageConfig = @json($productPage);
     </script>
     <script src="{{ asset('Custom_js/Backoffice/Product/Product.js') }}"></script>
 @endsection

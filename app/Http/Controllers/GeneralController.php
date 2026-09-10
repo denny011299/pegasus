@@ -69,16 +69,12 @@ class GeneralController extends Controller
      * parameter request, bukan route yang tetap (GitHub #68).
      */
     function getLog(Request $req){
-        $logType = (int) $req->input('log_type');
-        $user = Session::get('user');
-        $allowed = match ($logType) {
-            // Bahan Kimia pakai pipeline produk (log_type=1) — izinkan modul kimia juga
-            1 => RoleAccess::can($user, 'Daftar Produk', 'view')
-                || RoleAccess::can($user, 'Daftar Bahan Kimia', 'view'),
-            2 => RoleAccess::can($user, 'Daftar Bahan Mentah', 'view'),
-            default => false,
+        $module = match ((int) $req->input('log_type')) {
+            1 => 'Daftar Produk',
+            2 => 'Daftar Bahan Mentah',
+            default => null,
         };
-        if (! $allowed) {
+        if ($module === null || !RoleAccess::can(Session::get('user'), $module, 'view')) {
             abort(403, 'Unauthorized');
         }
 

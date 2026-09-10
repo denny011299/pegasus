@@ -61,7 +61,7 @@
                                             <div class="input-block mb-3">
                                                 <label>Nama<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="product_name"
-                                                    placeholder="Input {{ $productPage['name_label'] ?? 'Nama Produk' }}">
+                                                    placeholder="Input Nama Produk">
                                             </div>
                                         </div>
                                         <div class="col-12 col-md-4">
@@ -141,7 +141,7 @@
                                 </div>
                                 <div class="add-customer-btns text-end">
                                     <a class="btn btn-outline-secondary btn-clear">Clear</a>
-                                    <a class="btn btn-primary btn-save">{{ $productPage['add_label'] ?? 'Tambah Produk' }}</a>
+                                    <a class="btn btn-primary btn-save">Tambah Produk</a>
                                 </div>
                             </form>
                         </div>
@@ -202,7 +202,6 @@
         var mode = "{{ $mode }}";
         var data = {!! json_encode($data) !!};
         var canAccessSafetyStock = false;
-        window.productPageConfig = @json($productPage);
     </script>
     <script src="{{asset('Custom_js/Backoffice/Product/insertProduct.js')}}?v={{time()}}"></script>
 @endsection
