@@ -113,10 +113,10 @@
                     </select>
                   </div>
                   <div class="col-12">
-                    <label class="text-muted mb-0.5"
-                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                    <label class="text-muted d-flex align-items-center"
+                      style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;"><i
                         class="fe fe-file-text me-1 text-success"></i>Catatan Penerimaan</label>
-                    <input type="text" class="form-control mt-0.5" id="accept_note" placeholder="Masukkan catatan tambahan bila ada..."
+                    <input type="text" class="form-control" id="accept_note" placeholder="Masukkan catatan tambahan bila ada..."
                       style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;">
                   </div>
                 </div>

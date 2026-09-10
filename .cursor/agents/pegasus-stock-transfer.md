@@ -65,8 +65,11 @@ Gudang **utama** minta stok dari gudang **eceran** (FROM eceran → TO utama).
 2. QC → Kepala Ops di **gudang tujuan (utama)**, status Kirim
 3. Setelah lengkap → **auto Terima** (stok masuk utama)
 
+Direksi / Developer boleh ganti QC & Ops seperti retail (berurut: QC dulu, baru Ops — tidak skip).
+
+**Cancel Kirim** (status=2): gudang asal **atau** gudang tujuan (request), permission `others` — restore stok ke asal.
+
 Badge phases (status=2, di gudang tujuan): sama `requested` / `need_approval` / `ready` (Siap Terima).
-Direksi / Developer boleh ganti QC & Ops seperti retail.
 
 ### 3. Manual / other transfers
 

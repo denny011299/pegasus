@@ -35,39 +35,39 @@
                 {{-- Section Asal / Request (BE: from) — di mode request dipindah ke kanan via CSS order --}}
                 <div class="col-md-5 st-card-asal">
                   <div class="d-flex flex-column h-100">
-                    <div class="d-flex align-items-center gap-2 mb-1.5">
+                    <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bfdbfe;">
                         <i class="fe fe-log-out st-card-asal-icon" style="font-size:11px;"></i>
                         <span class="st-label-from-card">Dari (Asal)</span>
                       </span>
                     </div>
-                    <div class="row g-2 mt-0 flex-grow-1">
+                    <div class="row gx-2 gy-3 mt-0 flex-grow-1">
                       <div class="col-6" id="st-sender-slot-asal">
                         <div id="st-sender-block">
-                          <label class="text-muted mb-0.5 st-label-sender-field"
-                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">Pengirim</label>
-                          <select class="form-select form-control fill select2 mt-0.5" id="transfer_sender_id"
+                          <label class="text-muted d-flex align-items-center st-label-sender-field"
+                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;">Pengirim</label>
+                          <select class="form-select form-control fill select2" id="transfer_sender_id"
                             style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;" disabled>
                             <option value="">Pilih Staff</option>
                           </select>
                         </div>
                       </div>
                       <div class="col-6" id="st-from-warehouse-col">
-                        <label class="text-muted mb-0.5 st-label-from-field"
-                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">Gudang /
+                        <label class="text-muted d-flex align-items-center st-label-from-field"
+                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;">Gudang /
                           Toko Asal</label>
-                        <select class="form-select form-control fill select2 mt-0.5" id="transfer_from_warehouse_id"
+                        <select class="form-select form-control fill select2" id="transfer_from_warehouse_id"
                           style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;" disabled>
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-12" id="st-date-slot-asal">
+                      <div class="col-6" id="st-date-slot-asal">
                         <div id="st-date-block" class="d-flex flex-column">
-                          <label class="text-muted mb-0.5"
-                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                          <label class="text-muted d-flex align-items-center"
+                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;"><i
                               class="fe fe-calendar me-1 text-primary"></i>Tanggal Pengiriman</label>
-                          <div class="position-relative mt-0.5">
+                          <div class="position-relative">
                             <input type="text" class="form-control datetimepicker" id="transfer_date"
                               placeholder="Pilih Tanggal"
                               style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;padding-right:32px;width:100%;">
@@ -76,6 +76,7 @@
                           </div>
                         </div>
                       </div>
+                      <div class="col-6 d-none" id="st-ship-proof-slot-asal"></div>
                       <div class="col-12 d-none" id="st-note-slot-asal"></div>
                     </div>
                   </div>
@@ -96,44 +97,46 @@
                 {{-- Section Tujuan / Penerima (BE: to) — di mode request dipindah ke kiri via CSS order --}}
                 <div class="col-md-5 st-card-tujuan">
                   <div class="d-flex flex-column h-100">
-                    <div class="d-flex align-items-center gap-2 mb-1.5">
+                    <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#f0fdf4; color:#15803d; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bbf7d0;">
                         <i class="fe fe-log-in" style="font-size:11px;"></i>
                         <span class="st-label-to-card">Ke (Tujuan)</span>
                       </span>
                     </div>
-                    <div class="row g-2 mt-0 flex-grow-1">
+                    <div class="row gx-2 gy-3 mt-0 flex-grow-1">
                       <div class="col-6 d-none" id="st-sender-slot-tujuan"></div>
                       <div class="col-12" id="st-to-warehouse-col">
-                        <label class="text-muted mb-0.5 st-label-to-field"
-                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;">Gudang
+                        <label class="text-muted d-flex align-items-center st-label-to-field"
+                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;">Gudang
                           Tujuan</label>
-                        <select class="form-select form-control fill select2 mt-0.5" id="transfer_to_warehouse_id"
+                        <select class="form-select form-control fill select2" id="transfer_to_warehouse_id"
                           style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;">
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-12 d-none" id="st-date-slot-tujuan"></div>
+                      <div class="col-6 d-none" id="st-date-slot-tujuan"></div>
                       {{-- Bukti foto pengiriman (GitHub #140) — muncul hanya jika ada foto --}}
-                      <div class="col-12 d-none" id="st-ship-proof-slot">
-                        <label class="text-muted mb-0.5"
-                          style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
-                            class="fe fe-camera me-1 text-primary"></i>Bukti Foto Kirim</label>
-                        <button type="button" class="btn w-100 p-0 btn-view-st-ship-proof" id="st-ship-proof-link"
-                          data-parent="#add_stock_transfer"
-                          style="border-radius:8px;height:42px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:#fff;border:none;font-weight:600;box-shadow:0 4px 12px rgba(59,130,246,.3);">
-                          <div class="d-flex align-items-center justify-content-center w-100 h-100">
-                            <i class="fe fe-image me-1"></i> Lihat Foto
+                      <div class="col-6 d-none" id="st-ship-proof-slot-tujuan">
+                        <div id="st-ship-proof-block" class="d-flex flex-column">
+                          <label class="text-muted d-flex align-items-center"
+                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;"><i
+                              class="fe fe-camera me-1 text-primary"></i>Bukti Foto Kirim</label>
+                          <div class="w-100">
+                            <button type="button" class="btn btn-sm w-100 btn-view-st-ship-proof d-flex align-items-center justify-content-center gap-1.5 fw-semibold" id="st-ship-proof-link"
+                              data-parent="#add_stock_transfer"
+                              style="border-radius:6px;height:34px;font-size:12px;border:1px solid #bfdbfe;color:#1d4ed8;background:#eff6ff;transition:all 0.2s ease-in-out;">
+                              <i class="fe fe-image" style="font-size:12px;"></i> <span>Lihat Foto</span>
+                            </button>
                           </div>
-                        </button>
+                        </div>
                       </div>
                       <div class="col-12" id="st-note-slot-tujuan">
                         <div id="st-note-block" class="d-flex flex-column">
-                          <label class="text-muted mb-0.5"
-                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
+                          <label class="text-muted d-flex align-items-center"
+                            style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;"><i
                               class="fe fe-file-text me-1 text-success"></i>Catatan (Opsional)</label>
-                          <input type="text" class="form-control mt-0.5" id="transfer_note" placeholder="Masukkan catatan tambahan..."
+                          <input type="text" class="form-control" id="transfer_note" placeholder="Masukkan catatan tambahan..."
                             style="height:34px;border-radius:6px;font-size:12.5px;border-color:#cbd5e1;">
                         </div>
                       </div>

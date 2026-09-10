@@ -12,6 +12,7 @@ var transferFormLocked = false;
 var transferCanEdit = false;
 var transferCanShip = false;
 var transferCanReject = false;
+var transferCanCancelKirim = false;
 var transferCanApproveQc = false;
 var transferCanApproveOps = false;
 var transferRequiresApproval = false;
@@ -275,9 +276,15 @@ function transferDefaultUnit(raw) {
     };
 }
 
-/** Satuan dari data autocomplete (pr_unit) — tanpa nunggu fetch stok. */
-function transferUnitsFromRaw(raw) {
+/**
+ * Satuan dari data autocomplete (pr_unit) — tanpa nunggu fetch stok.
+ * preferRetail: gudang asal eceran → langsung lock ke retail_unit (hindari flash Jerigen/DOS).
+ */
+function transferUnitsFromRaw(raw, opts) {
     raw = raw || {};
+    opts = opts || {};
+    var preferRetail = opts.preferRetail === true;
+    var retailUnitId = parseInt(raw.retail_unit, 10) || 0;
     var units = [];
     var seen = {};
     var list = Array.isArray(raw.pr_unit) ? raw.pr_unit : [];
@@ -296,11 +303,24 @@ function transferUnitsFromRaw(raw) {
         units.unshift(def);
         seen[def.unit_id] = true;
     }
+
+    if (preferRetail && retailUnitId > 0) {
+        var retail = units.find(function (unit) {
+            return String(unit.unit_id) === String(retailUnitId);
+        });
+        if (retail) {
+            return { units: [retail], defaultUnit: retail };
+        }
+    }
+
     return { units: units, defaultUnit: def };
 }
 
 function renderTransferDraftDefault(raw) {
-    var packed = transferUnitsFromRaw(raw);
+    // Asal eceran: seed langsung satuan eceran dari autocomplete (bukan default produk).
+    var sourceIsMain = selectedTransferWarehouseIsMain("#transfer_from_warehouse_id");
+    var preferRetail = sourceIsMain === false;
+    var packed = transferUnitsFromRaw(raw, { preferRetail: preferRetail });
     var $unit = $("#transfer_unit_input").empty().removeClass("is-invalid");
     transferDraft.defaultUnitInvalid = false;
 
@@ -326,7 +346,11 @@ function renderTransferDraftDefault(raw) {
     var selected = packed.defaultUnit || packed.units[0];
     $unit.prop("disabled", false).val(String(selected.unit_id));
     // Seed sementara supaya +Tambah bisa dipakai sebelum stok selesai load
-    transferDraft.stock = { units: packed.units };
+    transferDraft.stock = {
+        units: packed.units,
+        warehouse_is_main: sourceIsMain,
+        retail_unit_id: preferRetail ? parseInt(raw.retail_unit, 10) || null : null,
+    };
     $("#transfer_stock_available")
         .text("Memuat stok...")
         .removeClass("text-danger");
@@ -897,7 +921,7 @@ function initTransferWarehouseAutocompletes() {
         // Gudang Request = pilih gudang utama (stok diminta)
         autocompleteWarehouse("#transfer_from_warehouse_id", parent, {
             mainOnly: true,
-            placeholder: "Pilih gudang request",
+            placeholder: "Pilih gudang yang di-request",
         });
         autocompleteWarehouse("#transfer_to_warehouse_id", parent, { mainFirst: true });
     } else {
@@ -921,9 +945,9 @@ function applyTransferRouteLabels(requestMode) {
         $modal.find(".st-card-asal").css("order", "3");
         $arrow.removeClass("fe-arrow-right").addClass("fe-arrow-left");
         $arrowText.text("REQUEST");
-        // Card BE-from (kanan visual) = Gudang Request (yang kirim)
-        $modal.find(".st-label-from-card").text("Gudang Request");
-        $modal.find(".st-label-from-field").text("Gudang Request");
+        // Card BE-from (kanan visual) = Gudang yang di Request (yang kirim)
+        $modal.find(".st-label-from-card").text("Gudang yang di Request");
+        $modal.find(".st-label-from-field").text("Gudang yang di Request");
         $modal.find(".st-label-sender-field").text("Yang Request");
         // Card BE-to (kiri visual) = Gudang Penerima
         $modal.find(".st-label-to-card").text("Gudang Penerima");
@@ -947,10 +971,13 @@ function syncSenderFieldPlacement(requestMode) {
     var $senderBlock = $("#st-sender-block");
     var $dateBlock = $("#st-date-block");
     var $noteBlock = $("#st-note-block");
+    var $proofBlock = $("#st-ship-proof-block");
     var $asalSender = $("#st-sender-slot-asal");
     var $tujuanSender = $("#st-sender-slot-tujuan");
     var $asalDate = $("#st-date-slot-asal");
     var $tujuanDate = $("#st-date-slot-tujuan");
+    var $asalProof = $("#st-ship-proof-slot-asal");
+    var $tujuanProof = $("#st-ship-proof-slot-tujuan");
     var $asalNote = $("#st-note-slot-asal");
     var $tujuanNote = $("#st-note-slot-tujuan");
     var $fromCol = $("#st-from-warehouse-col");
@@ -964,23 +991,43 @@ function syncSenderFieldPlacement(requestMode) {
         } catch (e) {}
     }
 
+    var hasProof = Boolean($("#st-ship-proof-link").attr("data-url"));
+
     if (requestMode) {
-        // Kiri (penerima): Yang Request + gudang penerima + tanggal
+        // Kiri (penerima): Yang Request + gudang penerima + tanggal + bukti foto (jika ada)
         $tujuanSender.removeClass("d-none").append($senderBlock);
         $asalSender.addClass("d-none");
         $tujuanDate.removeClass("d-none").append($dateBlock);
         $asalDate.addClass("d-none");
+        if ($proofBlock.length && $tujuanProof.length && $asalProof.length) {
+            $tujuanProof.append($proofBlock);
+            $asalProof.addClass("d-none");
+            if (hasProof) {
+                $tujuanProof.removeClass("d-none");
+            } else {
+                $tujuanProof.addClass("d-none");
+            }
+        }
         // Kanan (request): gudang request + catatan
         $asalNote.removeClass("d-none").append($noteBlock);
         $tujuanNote.addClass("d-none");
         $fromCol.removeClass("col-6").addClass("col-12");
         $toCol.removeClass("col-12").addClass("col-6");
     } else {
-        // Normal: pengirim+asal+tanggal kiri; tujuan+catatan kanan
+        // Normal: pengirim+asal+tanggal+bukti foto (jika ada) kiri; tujuan+catatan kanan
         $asalSender.removeClass("d-none").append($senderBlock);
         $tujuanSender.addClass("d-none");
         $asalDate.removeClass("d-none").append($dateBlock);
         $tujuanDate.addClass("d-none");
+        if ($proofBlock.length && $asalProof.length && $tujuanProof.length) {
+            $asalProof.append($proofBlock);
+            $tujuanProof.addClass("d-none");
+            if (hasProof) {
+                $asalProof.removeClass("d-none");
+            } else {
+                $asalProof.addClass("d-none");
+            }
+        }
         $tujuanNote.removeClass("d-none").append($noteBlock);
         $asalNote.addClass("d-none");
         $fromCol.removeClass("col-12").addClass("col-6");
@@ -1568,7 +1615,8 @@ function refreshTransferItemsTable() {
             : item.stock_invalid
               ? " transfer-row-stock-error"
               : "";
-        var unitDisabled = locked || item.stock_loading ? "disabled" : "";
+        // Satuan tetap bisa dipilih saat stok loading — jangan block UI nunggu AJAX
+        var unitDisabled = locked ? "disabled" : "";
         var unitControl = item.retail_invalid
             ? `
                 <select class="form-select form-select-sm transfer-retail-unit" data-index="${index}" ${locked ? "disabled" : ""}>
@@ -1682,7 +1730,7 @@ function patchTransferItemsRow(item) {
         if (!$unit.is(":focus")) {
             $unit.html(buildUnitOptions(item)).val(String(item.unit_id));
         }
-        $unit.prop("disabled", locked || !!item.stock_loading);
+        $unit.prop("disabled", locked);
         $unit.siblings("small.text-muted").remove();
     }
 }
@@ -2388,7 +2436,10 @@ function addTransferDraft() {
     var selectedUnit =
         draftUnitById($("#transfer_unit_input").val()) ||
         (function () {
-            var packed = transferUnitsFromRaw(raw);
+            var packed = transferUnitsFromRaw(raw, {
+                preferRetail:
+                    selectedTransferWarehouseIsMain("#transfer_from_warehouse_id") === false,
+            });
             var id = $("#transfer_unit_input").val();
             return (
                 packed.units.find(function (u) {
@@ -2494,6 +2545,7 @@ function resetTransferForm() {
     transferCanEdit = false;
     transferCanShip = false;
     transferCanReject = false;
+    transferCanCancelKirim = false;
     transferCanApproveQc = false;
     transferCanApproveOps = false;
     transferRequiresApproval = false;
@@ -2507,7 +2559,7 @@ function resetTransferForm() {
     transferScanMode = false;
     transferThenShipProofBase64 = "";
     transferPendingThenShip = false;
-    $("#st-ship-proof-slot").addClass("d-none");
+    $("#st-ship-proof-slot-asal, #st-ship-proof-slot-tujuan, #st-ship-proof-slot").addClass("d-none");
     $("#st-ship-proof-link").removeAttr("data-url");
     clearTransferStockLoads();
     retailUnitValidationPending = 0;
@@ -2687,6 +2739,7 @@ function syncTransferModalChrome() {
         var hasAccAction =
             transferCanShip ||
             transferCanReject ||
+            transferCanCancelKirim ||
             transferCanApproveQc ||
             transferCanApproveOps;
         setTransferModalMode(hasAccAction ? "confirm" : "form");
@@ -2702,7 +2755,7 @@ function syncTransferModalChrome() {
             $editBtn.addClass("d-none").removeClass("d-inline-flex");
         }
         $save.addClass("d-none").removeClass("d-inline-flex");
-        if (transferCanReject) {
+        if (transferCanReject || transferCanCancelKirim) {
             $reject.removeClass("d-none").addClass("d-inline-flex");
             var sourceType = $("#add_stock_transfer").attr("data-source-type") || "";
             var isRetailReq = sourceType === "retail_request";
@@ -2711,8 +2764,11 @@ function syncTransferModalChrome() {
                     ? String(getActiveWarehouseId() || "")
                     : "";
             var fromWh = String($("#transfer_from_warehouse_id").val() || "");
-            // Gudang besar (asal request): Tolak. Eceran pemohon: Cancel.
-            if (isRetailReq && activeWh && fromWh && activeWh === fromWh) {
+            if (transferCanCancelKirim) {
+                // Status Kirim: kembalikan stok ke gudang asal
+                $reject.html('<i class="fe fe-x me-1"></i>Cancel Kirim');
+            } else if (isRetailReq && activeWh && fromWh && activeWh === fromWh) {
+                // Gudang besar (asal request): Tolak. Eceran pemohon: Cancel.
                 $reject.html('<i class="fe fe-x me-1"></i>Tolak');
             } else if (isRetailReq) {
                 $reject.html('<i class="fe fe-x me-1"></i>Cancel');
@@ -2759,6 +2815,7 @@ function syncTransferEditActions(canShip, canReject, canEdit, opts) {
     opts = opts || {};
     transferCanShip = !!canShip;
     transferCanReject = !!canReject;
+    transferCanCancelKirim = !!opts.canCancelKirim;
     transferCanEdit = !!canEdit;
     transferCanApproveQc = !!opts.canApproveQc;
     transferCanApproveOps = !!opts.canApproveOps;
@@ -3415,7 +3472,7 @@ $(document).on("click", ".btn-save-transfer", function () {
         if (typeof toastr !== "undefined") {
             toastr.warning(
                 "",
-                transferIsRetailRequest ? "Pilih gudang request" : "Pilih gudang asal"
+                transferIsRetailRequest ? "Pilih gudang yang di-request" : "Pilih gudang asal"
             );
         }
     }
@@ -3832,6 +3889,17 @@ $(document).on("click", ".btn-reject-transfer", function () {
     var id = $("#add_stock_transfer").attr("data-id");
     var sourceType = $("#add_stock_transfer").attr("data-source-type") || "";
     if (!id) return;
+    if (transferCanCancelKirim) {
+        // Hide modal detail dulu — jangan tumpuk 2 modal
+        showTransferModalKonfirmasi(
+            "Cancel Kirim transfer ini? Stok akan dikembalikan ke gudang asal.",
+            "btn-cancel-kirim-stock-transfer",
+            id,
+            "#add_stock_transfer",
+            true
+        );
+        return;
+    }
     if (sourceType === "production") {
         showProductionRejectOverTransfer(id);
         return;
@@ -3934,9 +4002,16 @@ function loadTransferDetailForEdit(id) {
             // Bukti foto pengiriman (GitHub #140) — tombol Lihat Foto di modal, bukan di tabel.
             if (res.ship_proof_url) {
                 $("#st-ship-proof-link").attr("data-url", res.ship_proof_url);
-                $("#st-ship-proof-slot").removeClass("d-none");
+                var isReq = Boolean(transferIsRetailRequest || transferIsMainRequest);
+                if (isReq) {
+                    $("#st-ship-proof-slot-tujuan").removeClass("d-none");
+                    $("#st-ship-proof-slot-asal").addClass("d-none");
+                } else {
+                    $("#st-ship-proof-slot-asal").removeClass("d-none");
+                    $("#st-ship-proof-slot-tujuan").addClass("d-none");
+                }
             } else {
-                $("#st-ship-proof-slot").addClass("d-none");
+                $("#st-ship-proof-slot-asal, #st-ship-proof-slot-tujuan, #st-ship-proof-slot").addClass("d-none");
                 $("#st-ship-proof-link").removeAttr("data-url");
             }
             setDefaultSender();
@@ -3968,6 +4043,8 @@ function loadTransferDetailForEdit(id) {
                 res.can_reject === true || res.can_reject === 1,
                 res.can_edit === true || res.can_edit === 1,
                 {
+                    canCancelKirim:
+                        res.can_cancel_kirim === true || res.can_cancel_kirim === 1,
                     canApproveQc: res.can_approve_qc === true || res.can_approve_qc === 1,
                     canApproveOps: res.can_approve_ops === true || res.can_approve_ops === 1,
                     requiresApproval: res.requires_approval === true || res.requires_approval === 1,
@@ -4442,11 +4519,13 @@ $(document).on("click", "#btn-reject-stock-transfer", function () {
 $(document).on("click", ".btnCancelKirimTransfer", function () {
     var id = $(this).attr("data-id");
     if (!id) return;
-    showModalDanger(
+    showTransferModalKonfirmasi(
         "Cancel Kirim transfer ini? Stok akan dikembalikan ke gudang asal.",
-        "btn-cancel-kirim-stock-transfer"
+        "btn-cancel-kirim-stock-transfer",
+        id,
+        null,
+        true
     );
-    $("#modalDanger #btn-cancel-kirim-stock-transfer").attr("data-id", id);
 });
 
 $(document).on("click", ".btn-reject-accept-transfer", function () {
@@ -4455,17 +4534,20 @@ $(document).on("click", ".btn-reject-accept-transfer", function () {
         if (typeof toastr !== "undefined") toastr.error("", "ID transfer tidak ditemukan");
         return;
     }
-    showModalDanger(
+    showTransferModalKonfirmasi(
         "Tolak transfer? Stok akan dikembalikan ke gudang asal.",
-        "btn-cancel-kirim-stock-transfer"
+        "btn-cancel-kirim-stock-transfer",
+        id,
+        "#accept_stock_transfer",
+        true
     );
-    $("#modalDanger #btn-cancel-kirim-stock-transfer").attr("data-id", id);
 });
 
 $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
     var $confirmBtn = $(this);
     if ($confirmBtn.data("busy")) return;
-    var id = $confirmBtn.attr("data-id");
+    var id =
+        $confirmBtn.attr("data-id") || $("#modalKonfirmasi").attr("data-transfer-id");
     if (!id) return;
     $confirmBtn.data("busy", true);
     LoadingButton($confirmBtn);
@@ -4482,13 +4564,15 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
                 $confirmBtn,
                 '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
             );
-            if (typeof closeModalDanger === "function") closeModalDanger();
             if (!res || res.status != 1) {
+                if (typeof closeModalConfirm === "function") closeModalConfirm();
                 if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal cancel kirim");
                 }
                 return;
             }
+            markTransferOverlayDone();
+            if (typeof closeModalConfirm === "function") closeModalConfirm();
             if (typeof toastr !== "undefined") toastr.success("", res.message || "Cancel Kirim berhasil");
             $("#accept_stock_transfer").modal("hide");
             $("#add_stock_transfer").modal("hide");
@@ -4500,7 +4584,7 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
                 $confirmBtn,
                 '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
             );
-            if (typeof closeModalDanger === "function") closeModalDanger();
+            if (typeof closeModalConfirm === "function") closeModalConfirm();
             var msg =
                 (xhr.responseJSON && xhr.responseJSON.message) ||
                 "Gagal cancel kirim stock transfer";
@@ -4632,10 +4716,15 @@ $(document).on("click", ".btnAccept", function () {
                 $recv.trigger("change.select2");
             }
             renderAcceptItems(res.items || []);
-            // Tolak terima: selalu hide dulu (kode tetap ada)
-            $("#accept_stock_transfer .btn-reject-accept-transfer")
-                .addClass("d-none")
-                .removeClass("d-inline-flex");
+            // Tolak setelah Kirim = Cancel Kirim (kembalikan stok asal); hanya jika may cancel
+            var canCancelKirim =
+                res.can_cancel_kirim === true || res.can_cancel_kirim === 1;
+            var $tolakAccept = $("#accept_stock_transfer .btn-reject-accept-transfer");
+            if (canCancelKirim) {
+                $tolakAccept.removeClass("d-none").addClass("d-inline-flex");
+            } else {
+                $tolakAccept.addClass("d-none").removeClass("d-inline-flex");
+            }
             $("#accept_stock_transfer").modal("show");
         },
         error: function () {

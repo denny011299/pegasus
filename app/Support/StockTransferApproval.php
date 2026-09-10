@@ -4,21 +4,23 @@ namespace App\Support;
 
 use App\Models\Staff;
 use App\Models\StaffWarehouse;
+use App\Models\Warehouse;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * Approval berurut Stock Transfer request antar gudang utama ↔ eceran.
  *
  * retail_request (eceran minta dari utama): FROM utama → TO eceran
- *   1. QC &/atau Kepala Ops di gudang asal (utama), status pending
+ *   1. QC lalu Kepala Ops di gudang asal (utama), status pending
  *   2. Setelah lengkap → auto Kirim; eceran hanya Terima
  *
  * main_request (utama minta dari eceran): FROM eceran → TO utama
  *   1. Eceran Acc Kirim (tanpa QC/Ops)
- *   2. QC &/atau Kepala Ops di gudang tujuan (utama), status Kirim
+ *   2. QC lalu Kepala Ops di gudang tujuan (utama), status Kirim
  *   3. Setelah lengkap → auto Terima (stok masuk utama)
  *
- * Direksi / Developer boleh ganti QC & Kepala Ops (isElevatedApprover).
+ * Di gudang utama kedua tahap selalu wajib. Direksi / Developer boleh
+ * menggantikan orang QC atau Kepala Ops (berurut — tidak skip tahap).
  * Transfer lain (produksi, biasa): tanpa QC/Ops.
  */
 class StockTransferApproval
@@ -111,15 +113,34 @@ class StockTransferApproval
         return self::requiresApproval($sourceType, $fromIsMain, $toIsMain, 0, $toWarehouseId);
     }
 
+    /**
+     * Gudang utama: tahap QC selalu wajib (Staf QC atau pengganti Direksi/Developer).
+     * Gudang non-utama: hanya jika ada Staf QC assigned.
+     */
     public static function qcRequiredAtWarehouse(int $warehouseId): bool
     {
-        return $warehouseId > 0 && Staff::qcGudangForWarehouse($warehouseId) !== [];
+        if ($warehouseId <= 0) {
+            return false;
+        }
+        if (self::warehouseIsMain($warehouseId) === true) {
+            return true;
+        }
+
+        return Staff::qcGudangForWarehouse($warehouseId) !== [];
     }
 
+    /**
+     * Gudang utama: tahap Kepala Ops selalu wajib (Kepala atau pengganti Direksi/Developer).
+     * Jangan skip Ops hanya karena belum ada is_kepala_cabang — elevated tetap harus stamp Ops.
+     * Gudang non-utama: hanya jika ada Kepala aktif.
+     */
     public static function opsRequiredAtWarehouse(int $warehouseId): bool
     {
         if ($warehouseId <= 0) {
             return false;
+        }
+        if (self::warehouseIsMain($warehouseId) === true) {
+            return true;
         }
         if (! Schema::hasTable('staff_warehouses')
             || ! Schema::hasColumn('staff_warehouses', 'is_kepala_cabang')) {
@@ -141,6 +162,23 @@ class StockTransferApproval
             ->where('status', 1)
             ->whereIn('staff_id', $kepalaIds)
             ->exists();
+    }
+
+    /** @return bool|null null = gudang/type tidak ketemu */
+    public static function warehouseIsMain(int $warehouseId): ?bool
+    {
+        if ($warehouseId <= 0) {
+            return null;
+        }
+
+        $warehouse = Warehouse::query()
+            ->with('type:id,is_main_warehouse')
+            ->find($warehouseId, ['id', 'warehouse_type_id']);
+        if (! $warehouse || ! $warehouse->type) {
+            return null;
+        }
+
+        return (int) $warehouse->type->is_main_warehouse === 1;
     }
 
     public static function isFullyApproved($header, int $approvalWarehouseId = 0): bool
@@ -171,7 +209,7 @@ class StockTransferApproval
             && ! self::isQcApproved($header);
     }
 
-    /** Direksi / Okejob (Developer) — bypass QC & Kepala Ops. */
+    /** Direksi / Developer — boleh menggantikan QC atau Kepala Ops (berurut, tidak skip tahap). */
     public static function isElevatedApprover($user): bool
     {
         if (! $user) {
