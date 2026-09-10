@@ -78,7 +78,7 @@
                       <div class="fw-bold text-dark mt-0.5" id="lbl_view_sender" style="font-size:12.5px;">-</div>
                     </div>
 
-                    <div class="col-6">
+                    <div class="col-12" id="view-date-slot">
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-calendar me-1 text-primary"></i> Tanggal Pengiriman</div>

@@ -62,11 +62,11 @@
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-6" id="st-date-slot-asal">
+                      <div class="col-12" id="st-date-slot-asal">
                         <div id="st-date-block" class="d-flex flex-column">
-                          <label class="text-muted d-flex align-items-center"
+                          <label class="text-muted d-flex align-items-center st-label-date-field"
                             style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;margin-bottom:6px;"><i
-                              class="fe fe-calendar me-1 text-primary"></i>Tanggal Pengiriman</label>
+                              class="fe fe-calendar me-1 text-primary"></i><span class="st-label-date-text">Tanggal Pengiriman</span></label>
                           <div class="position-relative">
                             <input type="text" class="form-control datetimepicker" id="transfer_date"
                               placeholder="Pilih Tanggal"
@@ -76,6 +76,7 @@
                           </div>
                         </div>
                       </div>
+                      {{-- Sebaris dengan tanggal saat ada foto (JS: col-6 + col-6) --}}
                       <div class="col-6 d-none" id="st-ship-proof-slot-asal"></div>
                       <div class="col-12 d-none" id="st-note-slot-asal"></div>
                     </div>
@@ -115,7 +116,7 @@
                           <option value="">Pilih toko atau gudang</option>
                         </select>
                       </div>
-                      <div class="col-6 d-none" id="st-date-slot-tujuan"></div>
+                      <div class="col-12 d-none" id="st-date-slot-tujuan"></div>
                       {{-- Bukti foto pengiriman (GitHub #140) — muncul hanya jika ada foto --}}
                       <div class="col-6 d-none" id="st-ship-proof-slot-tujuan">
                         <div id="st-ship-proof-block" class="d-flex flex-column">

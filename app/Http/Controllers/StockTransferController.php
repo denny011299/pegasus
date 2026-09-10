@@ -14,6 +14,7 @@ use App\Models\Warehouse;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
 use App\Support\StockTransferApproval;
+use App\Support\UnitRollUp;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ use Throwable;
  * Reject/Tolak → pending langsung Cancel (status=3); QC/Kepala Ops di gudang asal boleh tolak
  * Transfer lain → Acc/Tolak Kirim & Acc/Tolak Terima (tanpa QC/Ops, tanpa edit qty terima)
  * Ship (ACC)   → Pending→Kirim (manual untuk non-retail; retail auto setelah Ops ACC)
- * Accept (ACC) → Kirim→Terkirim: konversi + tambah stok tujuan, status=4
+ * Accept (ACC) → Kirim→Terkirim: konversi + tambah stok tujuan (+ roll-up di gudang utama), status=4
  * Cancel       → Pending→Cancel (status=3); stok tetap di sumber (produksi: tidak hangus)
  * Cancel Kirim → Kirim→Cancel Kirim (status=5), restore stok sumber
  * Delete       → pending saja, status=0
@@ -1076,6 +1077,16 @@ class StockTransferController extends Controller
         // ditolak sejak frontend, sebelum user menekan Simpan.
         if ($toWarehouseId > 0) {
             $destinationIsMain = $this->warehouseIsMain($toWarehouseId);
+            // Eceran → utama: tampilkan multi satuan (setara stok retail), bukan lock Piece saja.
+            if ($sourceIsMain === false && $destinationIsMain === true && $retailUnitId > 0) {
+                $snapshot = $this->expandEceranSourceUnitsForMainDestination(
+                    $snapshot,
+                    $warehouseId,
+                    $variantId,
+                    (int) ($product->unit_id ?? 0),
+                    $retailUnitId
+                );
+            }
             $units = collect((array) ($snapshot['units'] ?? []));
             $unitErrors = [];
 
@@ -1120,16 +1131,30 @@ class StockTransferController extends Controller
 
             $snapshot['units'] = $units->all();
             $snapshot['unit_order'] = $units->pluck('unit_id')->map(fn ($id) => (int) $id)->all();
-            // Tampilkan stok fisik per satuan (ps_stock), sama dengan batas Kirim.
-            $snapshot['stock_text'] = $units->isEmpty()
-                ? '0'
-                : $units->map(fn ($unit) => number_format(
-                    (float) ($unit['ps_stock'] ?? 0),
-                    0,
-                    ',',
-                    '.'
-                )
-                    . ' ' . ($unit['unit_name'] ?? $unit['unit_short_name'] ?? '-'))->implode(', ');
+            // Stok Asal = fisik di gudang asal. Eceran hanya retail_unit (bukan ekuivalen DOS/Jerigen).
+            if ($sourceIsMain === false && $retailUnitId > 0) {
+                $retailRow = $units->first(
+                    fn ($unit) => (int) ($unit['unit_id'] ?? 0) === $retailUnitId
+                );
+                $snapshot['stock_text'] = $retailRow
+                    ? number_format(
+                        (float) ($retailRow['ps_stock'] ?? $retailRow['available_qty'] ?? 0),
+                        0,
+                        ',',
+                        '.'
+                    ) . ' ' . ($retailRow['unit_name'] ?? $retailRow['unit_short_name'] ?? '-')
+                    : '0';
+            } else {
+                $snapshot['stock_text'] = $units->isEmpty()
+                    ? '0'
+                    : $units->map(fn ($unit) => number_format(
+                        (float) ($unit['ps_stock'] ?? $unit['available_qty'] ?? 0),
+                        0,
+                        ',',
+                        '.'
+                    )
+                        . ' ' . ($unit['unit_name'] ?? $unit['unit_short_name'] ?? '-'))->implode(', ');
+            }
         }
 
         $snapshot['warehouse_is_main'] = $sourceIsMain;
@@ -1293,9 +1318,14 @@ class StockTransferController extends Controller
             ]);
         }
         $sourceIsMain = $this->warehouseIsMain($warehouseId);
+        $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
+            $normalized,
+            $warehouseId,
+            $toWarehouseId
+        );
         $result = ProductUnitStock::checkItems(
             $warehouseId,
-            $this->applySourceAvailabilityMode($normalized, $sourceIsMain)
+            $this->applySourceAvailabilityMode($stockItems, $sourceIsMain)
         );
 
         if (! $result['ok']) {
@@ -1334,10 +1364,15 @@ class StockTransferController extends Controller
         }
 
         ProductUnitStock::clearCache();
+        $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
+            $items,
+            $payload['from_warehouse_id'],
+            $payload['to_warehouse_id']
+        );
         $check = ProductUnitStock::checkItems(
             $payload['from_warehouse_id'],
             $this->applySourceAvailabilityMode(
-                $items,
+                $stockItems,
                 $this->warehouseIsMain($payload['from_warehouse_id'])
             )
         );
@@ -1496,10 +1531,15 @@ class StockTransferController extends Controller
 
                 ProductUnitStock::clearCache();
                 $isProductionTransfer = $header->source_type === 'production';
+                $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
+                    $items,
+                    $payload['from_warehouse_id'],
+                    $payload['to_warehouse_id']
+                );
                 $check = ProductUnitStock::checkItems(
                     $payload['from_warehouse_id'],
                     $this->applySourceAvailabilityMode(
-                        $items,
+                        $stockItems,
                         $this->warehouseIsMain($payload['from_warehouse_id']),
                         $isProductionTransfer
                     )
@@ -1935,9 +1975,15 @@ class StockTransferController extends Controller
 
         ProductUnitStock::clearCache();
         $sourceIsMain = $this->warehouseIsMain((int) $lockedHeader->from_warehouse_id);
+        // Eceran → utama: stok fisik hanya retail_unit — konversi qty request (DOS dll) ke retail sebelum cek/potong.
+        $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
+            $items,
+            (int) $lockedHeader->from_warehouse_id,
+            (int) $lockedHeader->to_warehouse_id
+        );
         $check = ProductUnitStock::checkItems(
             (int) $lockedHeader->from_warehouse_id,
-            $this->applySourceAvailabilityMode($items, $sourceIsMain, $isProduction)
+            $this->applySourceAvailabilityMode($stockItems, $sourceIsMain, $isProduction)
         );
         if (! $check['ok']) {
             $names = array_map(fn ($s) => $s['label'], $check['shortages']);
@@ -1946,7 +1992,7 @@ class StockTransferController extends Controller
 
         $code = $lockedHeader->transfer_code;
         $allowUnpack = $sourceIsMain === true;
-        foreach ($items as $item) {
+        foreach ($stockItems as $item) {
             $cut = ProductUnitStock::deductQty(
                 (int) $lockedHeader->from_warehouse_id,
                 (int) $item['product_variant_id'],
@@ -2061,6 +2107,9 @@ class StockTransferController extends Controller
             }
 
             if ($qtyReceived > 0) {
+                // Gudang utama: roll-up ke satuan paling atas yang cukup (sama pola Produksi ACC).
+                // Gudang eceran: tetap flat di retail_unit — jangan naik satuan.
+                $rollUp = $destinationIsMain === true;
                 $add = ProductUnitStock::addQty(
                     (int) $lockedHeader->to_warehouse_id,
                     (int) $d->product_id,
@@ -2068,7 +2117,11 @@ class StockTransferController extends Controller
                     $targetUnitId,
                     $qtyReceived,
                     $code,
-                    'Stock Transfer ' . $code . ' - masuk gudang tujuan'
+                    'Stock Transfer ' . $code . ' - masuk gudang tujuan',
+                    $rollUp,
+                    $rollUp
+                        ? UnitRollUp::ladderUnitIds((int) $d->product_variant_id)
+                        : null
                 );
                 if (! $add['ok']) {
                     throw new \RuntimeException($add['message'] ?? 'Gagal tambah stok tujuan');
@@ -2694,7 +2747,9 @@ class StockTransferController extends Controller
         }
 
         // Gudang utama: multi satuan (harus bisa dikonversi ke default).
-        // Gudang eceran: hanya satuan eceran.
+        // Gudang eceran → utama (main_request): boleh satuan se-chain retail (DOS dll);
+        //   stok fisik eceran tetap dipotong di retail_unit saat Kirim (konversi).
+        // Gudang eceran → eceran / tujuan belum dipilih: hanya satuan eceran.
         if ($sourceIsMain) {
             if ($sentUnitId !== $defaultUnitId
                 && ! ProductUnitStock::canConvertUnits(
@@ -2715,7 +2770,19 @@ class StockTransferController extends Controller
                     'target_unit_id' => null,
                 ];
             }
-            if ($sentUnitId !== $retailUnitId) {
+            if ($destinationIsMain === true) {
+                if ($sentUnitId !== $retailUnitId
+                    && ! ProductUnitStock::canConvertUnits(
+                        $sentUnitId,
+                        $retailUnitId,
+                        (int) $variant->product_variant_id
+                    )) {
+                    return [
+                        'error' => 'Satuan request tidak berada dalam rantai konversi satuan eceran',
+                        'target_unit_id' => null,
+                    ];
+                }
+            } elseif ($sentUnitId !== $retailUnitId) {
                 return [
                     'error' => 'Gudang eceran hanya boleh mengirim dalam satuan eceran',
                     'target_unit_id' => null,
@@ -2877,6 +2944,125 @@ class StockTransferController extends Controller
         return array_map(function ($item) use ($sourceIsMain) {
             $item['allow_packing'] = false;
             $item['allow_unpack'] = $sourceIsMain === true;
+            return $item;
+        }, $items);
+    }
+
+    /**
+     * Eceran → utama: daftar satuan = chain (DOS/Piece/…), available = setara stok retail_unit.
+     *
+     * @param  array<string, mixed>  $snapshot
+     * @return array<string, mixed>
+     */
+    protected function expandEceranSourceUnitsForMainDestination(
+        array $snapshot,
+        int $warehouseId,
+        int $productVariantId,
+        int $defaultUnitId,
+        int $retailUnitId
+    ): array {
+        $anchorId = $defaultUnitId > 0 ? $defaultUnitId : $retailUnitId;
+        $candidates = ProductUnitStock::sourceSnapshot(
+            $warehouseId,
+            $productVariantId,
+            true,
+            $anchorId,
+            $retailUnitId
+        );
+        $retailAvail = ProductUnitStock::totalAvailable(
+            $warehouseId,
+            $productVariantId,
+            $retailUnitId,
+            false,
+            false
+        );
+
+        $units = [];
+        foreach ((array) ($candidates['units'] ?? []) as $unit) {
+            $unitId = (int) ($unit['unit_id'] ?? 0);
+            if ($unitId <= 0) {
+                continue;
+            }
+            if ($unitId !== $retailUnitId
+                && ! ProductUnitStock::canConvertUnits($unitId, $retailUnitId, $productVariantId)) {
+                continue;
+            }
+            $available = $unitId === $retailUnitId
+                ? $retailAvail
+                : floor(ProductUnitStock::convertQty(
+                    $retailAvail,
+                    $retailUnitId,
+                    $unitId,
+                    $productVariantId
+                ));
+            $units[] = [
+                'unit_id' => $unitId,
+                'unit_name' => (string) ($unit['unit_name'] ?? '-'),
+                'unit_short_name' => (string) ($unit['unit_short_name'] ?? '-'),
+                // Fisik eceran hanya di retail; satuan lain = ekuivalen request (floor).
+                'ps_stock' => $unitId === $retailUnitId ? $retailAvail : 0.0,
+                'ps_stock_text' => number_format(
+                    $unitId === $retailUnitId ? $retailAvail : 0.0,
+                    0,
+                    ',',
+                    '.'
+                ),
+                'available_qty' => (float) $available,
+            ];
+        }
+
+        $snapshot['units'] = $units;
+        $snapshot['unit_order'] = array_map(fn ($u) => (int) $u['unit_id'], $units);
+        $retailRow = collect($units)->first(
+            fn ($u) => (int) ($u['unit_id'] ?? 0) === $retailUnitId
+        );
+        $snapshot['stock_text'] = $retailRow
+            ? number_format((float) ($retailRow['ps_stock'] ?? $retailAvail), 0, ',', '.')
+                . ' ' . ($retailRow['unit_name'] ?? $retailRow['unit_short_name'] ?? '-')
+            : number_format($retailAvail, 0, ',', '.');
+
+        return $snapshot;
+    }
+
+    /**
+     * Potong stok eceran selalu di retail_unit: konversi qty satuan request → retail.
+     *
+     * @param  array<int, array{product_variant_id:int,unit_id:int,qty:float,label?:string}>  $items
+     * @return array<int, array{product_variant_id:int,unit_id:int,qty:float,label?:string}>
+     */
+    protected function normalizeEceranOutboundItemsForStockCut(
+        array $items,
+        int $fromWarehouseId,
+        int $toWarehouseId
+    ): array {
+        if ($this->warehouseIsMain($fromWarehouseId) !== false
+            || $this->warehouseIsMain($toWarehouseId) !== true) {
+            return $items;
+        }
+
+        $variantIds = collect($items)->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique();
+        $variants = ProductVariant::query()
+            ->whereIn('product_variant_id', $variantIds)
+            ->get()
+            ->keyBy('product_variant_id');
+
+        return array_map(function ($item) use ($variants) {
+            $variantId = (int) ($item['product_variant_id'] ?? 0);
+            $unitId = (int) ($item['unit_id'] ?? 0);
+            $qty = (float) ($item['qty'] ?? 0);
+            $retailUnitId = (int) ($variants->get($variantId)?->retail_unit ?? 0);
+            if ($retailUnitId <= 0 || $unitId === $retailUnitId || $qty <= 0) {
+                return $item;
+            }
+            $converted = ProductUnitStock::convertQty($qty, $unitId, $retailUnitId, $variantId);
+            if ($converted <= 0) {
+                throw new \RuntimeException(
+                    'Konversi satuan request ke satuan eceran gagal untuk varian #' . $variantId
+                );
+            }
+            $item['unit_id'] = $retailUnitId;
+            $item['qty'] = $converted;
+
             return $item;
         }, $items);
     }

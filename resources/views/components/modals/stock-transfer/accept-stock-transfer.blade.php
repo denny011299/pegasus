@@ -47,13 +47,13 @@
                         class="fe fe-user me-1 text-primary"></i>Pengirim</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_sender">-</div>
                   </div>
-                  <div class="col-6">
+                  <div class="col-12" id="accept-date-slot">
                     <div class="text-muted"
                       style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                         class="fe fe-calendar me-1 text-primary"></i>Tanggal Pengiriman</div>
                     <div class="fw-bold text-dark mt-0.5" style="font-size:12.5px;" id="lbl_accept_date">-</div>
                   </div>
-                  {{-- Bukti foto pengiriman (GitHub #140) --}}
+                  {{-- Bukti foto pengiriman (GitHub #140) — sebaris dengan tanggal saat ada foto --}}
                   <div class="col-6 d-none" id="accept-ship-proof-slot">
                     <div class="text-muted"
                       style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
