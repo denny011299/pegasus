@@ -938,19 +938,18 @@ function applyTransferRouteLabels(requestMode) {
     var $arrowText = $modal.find(".st-route-arrow-text");
 
     if (requestMode) {
-        // UI: kiri = penerima (to), kanan = request/kirim (from) — card dibalik via order
+        // UI LTR: kiri = pihak penerima (to), kanan = pihak pengirim (from)
         $row.addClass("st-request-mode");
         $modal.find(".st-card-tujuan").css("order", "1");
         $modal.find(".st-card-arrow").css("order", "2");
         $modal.find(".st-card-asal").css("order", "3");
-        $arrow.removeClass("fe-arrow-right").addClass("fe-arrow-left");
-        $arrowText.text("REQUEST");
-        // Card BE-from (kanan visual) = Gudang yang di Request (yang kirim)
-        $modal.find(".st-label-from-card").text("Gudang yang di Request");
-        $modal.find(".st-label-from-field").text("Gudang yang di Request");
+        // Panah ke kanan = ke pihak pengirim (yang diminta kirim stok)
+        $arrow.removeClass("fe-arrow-left").addClass("fe-arrow-right");
+        $arrowText.text("MEREQUEST");
+        $modal.find(".st-label-from-card").text("Pihak Pengirim");
+        $modal.find(".st-label-from-field").text("Gudang yang mengirim");
         $modal.find(".st-label-sender-field").text("Yang Request");
-        // Card BE-to (kiri visual) = Gudang Penerima
-        $modal.find(".st-label-to-card").text("Gudang Penerima");
+        $modal.find(".st-label-to-card").text("Pihak Penerima");
         $modal.find(".st-label-to-field").text("Gudang yang menerima");
     } else {
         $row.removeClass("st-request-mode");
