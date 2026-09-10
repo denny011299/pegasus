@@ -57,6 +57,42 @@
         gap: 10px;
     }
 
+    /* Badge counter Antrian Mutasi Stok */
+    #sidebar .sidebar-menu li > a .pso-pending-badge {
+        margin-left: auto !important;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 6px;
+        border-radius: 999px;
+        background: #ef4444 !important;
+        color: #ffffff !important;
+        font-size: 10px !important;
+        font-weight: 800 !important;
+        line-height: 18px !important;
+        text-align: center;
+        display: inline-flex !important;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+    }
+    #sidebar .sidebar-menu li > a.active .pso-pending-badge {
+        background: #ffffff !important;
+        color: #1d4ed8 !important;
+        box-shadow: none;
+    }
+    body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a .pso-pending-badge {
+        position: absolute !important;
+        top: 4px !important;
+        right: 4px !important;
+        margin: 0 !important;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 4px;
+        font-size: 9px !important;
+        line-height: 14px !important;
+    }
+
     /* Fix for Mini-Sidebar (Collapsed) Mode */
     body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a {
         justify-content: center !important;
@@ -864,7 +900,7 @@
                         $canShow('Stok Opname Bahan Mentah');
                     @endphp
 
-                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok'))
+                    @if ($showMaster || $showGudangMenu || $showProduk || $showBahan || $showInventory || $canShow('Armada') || $canShow('Pemasok') || $canShow('Antrian Mutasi Stok'))
                         <li class="menu-title"><span>Master</span></li>
                         @if ($showMaster)
                             <li class="submenu">
@@ -997,6 +1033,29 @@
                                             class="{{ Request::is('stockOpnameBahan') ? 'active' : '' }}">Stok Opname Bahan Mentah</a></li>
                                     @endif
                                 </ul>
+                            </li>
+                        @endif
+
+                        @if ($canShow('Antrian Mutasi Stok'))
+                            @php
+                                $psoPendingBadge = 0;
+                                try {
+                                    if (\Illuminate\Support\Facades\Schema::hasTable('pending_stock_operations')) {
+                                        $psoPendingBadge = app(\App\Support\PendingStockOperationService::class)
+                                            ->countPending((int) (Session::get('active_warehouse_id') ?? 0));
+                                    }
+                                } catch (\Throwable $e) {
+                                    $psoPendingBadge = 0;
+                                }
+                            @endphp
+                            <li>
+                                <a class="{{ Request::is('pendingStockOperation') ? 'active' : '' }}" href="{{ url('pendingStockOperation') }}">
+                                    <i class="fe fe-layers"></i>
+                                    <span>Antrian Mutasi Stok</span>
+                                    @if ($psoPendingBadge > 0)
+                                        <span class="pso-pending-badge" id="pso-pending-badge">{{ $psoPendingBadge > 99 ? '99+' : $psoPendingBadge }}</span>
+                                    @endif
+                                </a>
                             </li>
                         @endif
                     @endif

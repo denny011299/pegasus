@@ -4,6 +4,7 @@ namespace App\Support;
 
 use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
+use App\Support\StockOpname\OpenOpnameGuard;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 
@@ -71,6 +72,19 @@ class SalesOrderApproval
         $plan = SalesOrderStock::buildPlan($lines, $retailWh > 0 ? $retailWh : null);
         if (! ($plan['ok'] ?? false)) {
             return $plan;
+        }
+
+        $softBlock = PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+            collect($plan['plan'] ?? [])->pluck('warehouse_id'),
+            OpenOpnameGuard::DOMAIN_PRODUCT
+        );
+        if ($softBlock !== null) {
+            return [
+                'ok' => false,
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ];
         }
 
         try {

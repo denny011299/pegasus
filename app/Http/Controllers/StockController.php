@@ -88,6 +88,27 @@ class StockController extends Controller
         return trim((string) ($name ?? ''));
     }
 
+    /** Auto-apply antrian hanya jika jendela opname WH+domain sudah tutup total. */
+    private function flushPendingStockAfterOpnameClose(int $warehouseId, string $domain, ?int $appliedBy): void
+    {
+        if ($warehouseId <= 0) {
+            return;
+        }
+        $guard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+        if ($guard->isBlocked($warehouseId, $domain)) {
+            return;
+        }
+        try {
+            app(\App\Support\PendingStockOperationService::class)->applyAllForWarehouse(
+                $warehouseId,
+                $domain,
+                $appliedBy
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
     /**
      * Rancang ulang 2026-08-27 (merged from main's efef95e): dokumen baru ditulis ke
      * stock_opname_lines (satu baris per satuan, angka betulan), BUKAN lagi ke
@@ -878,6 +899,12 @@ class StockController extends Controller
 
             DB::commit();
 
+            $this->flushPendingStockAfterOpnameClose(
+                (int) ($sto->warehouse_id ?? 0),
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+                (int) ($sto->acc_by ?? 0) ?: null
+            );
+
             return 1;
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -908,6 +935,12 @@ class StockController extends Controller
                 $lifecycle->stampDecision($sto, $sto->acc_by);
             });
         }
+
+        $this->flushPendingStockAfterOpnameClose(
+            (int) ($sto->warehouse_id ?? 0),
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+            (int) ($sto->acc_by ?? 0) ?: null
+        );
     }
 
     function generateStockOpname($id)
@@ -1478,6 +1511,12 @@ class StockController extends Controller
 
             DB::commit();
 
+            $this->flushPendingStockAfterOpnameClose(
+                (int) ($stob->warehouse_id ?? 0),
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
+                (int) ($stob->acc_by ?? 0) ?: null
+            );
+
             return 1;
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -1505,6 +1544,12 @@ class StockController extends Controller
                 $lifecycle->stampDecision($stob, $stob->acc_by);
             });
         }
+
+        $this->flushPendingStockAfterOpnameClose(
+            (int) ($stob->warehouse_id ?? 0),
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
+            (int) ($stob->acc_by ?? 0) ?: null
+        );
     }
 
     function generateStockOpnameBahan($id)
@@ -2175,6 +2220,19 @@ class StockController extends Controller
                 "status" => -2,
                 "header" => "Gagal ACC",
                 "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+            ]);
+        }
+
+        $activeWh = (int) (ProductStock::resolveWarehouseId() ?: Session::get('active_warehouse_id') ?? 0);
+        $issueDomain = ((int) $pi->tipe_return === 1)
+            ? \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+            : \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT;
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked($activeWh, $issueDomain);
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
             ]);
         }
 
@@ -2934,6 +2992,14 @@ class StockController extends Controller
         }
         if ($variantId <= 0 || $warehouseId <= 0 || ! is_array($items) || $items === []) {
             return response()->json(['status' => 0, 'message' => 'Data tidak valid'], 422);
+        }
+
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $warehouseId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        );
+        if ($softBlock !== null) {
+            return response()->json(['status' => -1, 'message' => $softBlock]);
         }
 
         // GitHub #158 (2026-09-07): dulu qty ditambahkan flat ke ps_stock (`$row->ps_stock += $qty`)

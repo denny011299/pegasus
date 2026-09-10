@@ -17,6 +17,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
 use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\PendingStockOperationController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\SynchronizationController;
 use App\Http\Controllers\UserController;
@@ -225,6 +226,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Stok Opname Produk|others')->group(function () {
         Route::post('/accStockOpname', [StockController::class, 'accStockOpname'])->name('accStockOpname');
         Route::post('/tolakStockOpname', [StockController::class, 'tolakStockOpname'])->name('tolakStockOpname');
+    });
+
+    Route::middleware('check.access:Antrian Mutasi Stok|view')->group(function () {
+        Route::get('/pendingStockOperation', [PendingStockOperationController::class, 'index'])->name('pendingStockOperation');
+        Route::get('/getPendingStockOperation', [PendingStockOperationController::class, 'getPendingStockOperation'])->name('getPendingStockOperation');
+        Route::get('/getPendingStockOperationDetail', [PendingStockOperationController::class, 'getPendingStockOperationDetail'])->name('getPendingStockOperationDetail');
+        Route::get('/getPendingStockOperationCount', [PendingStockOperationController::class, 'getPendingStockOperationCount'])->name('getPendingStockOperationCount');
     });
 
     // Stock Transfer (scaffold — logic menyusul setelah UI Gemini)

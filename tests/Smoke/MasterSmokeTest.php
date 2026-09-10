@@ -36,6 +36,7 @@ class MasterSmokeTest extends TestCase
             'stockAlertSupplies' => ['/stockAlertSupplies', 'Peringatan Stok Bahan Mentah'],
             'stockOpname' => ['/stockOpname', 'Stok Opname Produk'],
             'stockOpnameBahan' => ['/stockOpnameBahan', 'Stok Opname Bahan Mentah'],
+            'pendingStockOperation' => ['/pendingStockOperation', 'Antrian Mutasi Stok'],
         ];
     }
 
