@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Support\ProductUnitStock;
 use App\Support\UnitRollUp;
 use Illuminate\Database\Eloquent\Model;
 
@@ -50,13 +49,6 @@ class PurchaseOrderDeliveryDetail extends Model
         $t->save();
         if(isset($data["statusPO"])&&$data["statusPO"]==2){
             $sv = SuppliesVariant::find($data["supplies_variant_id"]);
-            $supplies = Supplies::find($sv->supplies_id);
-
-            // Trading: stok masuk ke product_variant yang direlasikan (bukan supplies_stocks).
-            if ($supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null)) {
-                $this->creditTradingProductStock($supplies, $sv, $data);
-                return $t->pdod_id;
-            }
 
             // Ditambahkan (2026-08-25): penerimaan barang PO dulu flat (`ss_stock += pdod_qty`)
             // tanpa konversi satuan -- 24 Piece yang dibeli tetap 24 Piece walaupun 1 DOS = 12 Piece,
@@ -137,57 +129,6 @@ class PurchaseOrderDeliveryDetail extends Model
             }
         }
         return $t->pdod_id;
-    }
-
-    /**
-     * ACC PO Trading → ProductUnitStock::addQty + roll-up ladder produk (pola produksi).
-     * Stok bahan mentah tidak berubah.
-     */
-    private function creditTradingProductStock($supplies, $sv, array $data): void
-    {
-        $pvId = (int) ($supplies->trading_product_variant_id ?? 0);
-        if ($pvId <= 0) {
-            throw new \RuntimeException(
-                'Bahan Trading "' . ($supplies->supplies_name ?? '') . '" belum punya relasi varian produk'
-            );
-        }
-
-        $pv = ProductVariant::where('product_variant_id', $pvId)->where('status', 1)->first();
-        if (! $pv) {
-            throw new \RuntimeException('Varian produk relasi Trading tidak ditemukan / tidak aktif');
-        }
-
-        $warehouseId = SuppliesStock::resolveWarehouseId();
-        if ($warehouseId <= 0) {
-            throw new \RuntimeException('Gudang aktif tidak valid untuk penerimaan Trading');
-        }
-
-        $unitId = (int) ($data['unit_id'] ?? 0);
-        $qty = (float) ($data['pdod_qty'] ?? 0);
-        $poCode = (string) ($data['po_number'] ?? '-');
-        $notes = (string) ($data['trading_log_notes']
-            ?? ('Pembelian Trading ' . ($supplies->supplies_name ?? '') . ' ' . LogStock::actorSuffix()));
-
-        // Gudang eceran: jangan roll-up. Gudang utama: roll-up penuh seperti produksi.
-        $wh = Warehouse::with('type')->find($warehouseId);
-        $isMainWh = $wh && $wh->type && (int) ($wh->type->is_main_warehouse ?? 0) === 1;
-        $rollUp = (bool) $isMainWh;
-        $allowed = $rollUp ? UnitRollUp::ladderUnitIds($pvId) : null;
-
-        $add = ProductUnitStock::addQty(
-            $warehouseId,
-            (int) $pv->product_id,
-            $pvId,
-            $unitId,
-            $qty,
-            $poCode,
-            $notes,
-            $rollUp,
-            $allowed
-        );
-        if (! ($add['ok'] ?? false)) {
-            throw new \RuntimeException($add['message'] ?? 'Gagal menambah stok produk untuk bahan Trading');
-        }
     }
 
     // DEPRECATED (2026-08-04): only reachable via the deprecated manual PO Delivery workflow
