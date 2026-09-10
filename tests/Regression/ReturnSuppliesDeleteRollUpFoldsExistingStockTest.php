@@ -2,6 +2,7 @@
 
 namespace Tests\Regression;
 
+use App\Models\LogStock;
 use App\Models\PurchaseOrder;
 use App\Models\ReturnSupplies;
 use App\Models\Supplier;
@@ -153,5 +154,24 @@ class ReturnSuppliesDeleteRollUpFoldsExistingStockTest extends TestCase
 
         $po = PurchaseOrder::findOrFail($poId);
         $this->assertSame($qty * 1000, (int) $po->po_total, 'po_total is restored by cancelling the return');
+
+        // GitHub #167 (same log-order bug found in SupplierController::accPO()): the "Pembatalan
+        // retur pembelian ... masuk" log must be written BEFORE deleteProductIssuesDetail()'s
+        // "Konversi unit" legs, not after -- otherwise the history reads keluar → konversi → masuk.
+        $logs = LogStock::where('log_type', 2)
+            ->where('log_item_id', $supplies->supplies_id)
+            ->orderBy('log_id')
+            ->get();
+        $cancelLogIndex = $logs->search(fn ($l) => str_starts_with($l->log_notes, 'Pembatalan retur pembelian'));
+        $this->assertNotFalse($cancelLogIndex, 'the cancellation masuk log must exist');
+        foreach ($logs as $i => $log) {
+            if (str_starts_with($log->log_notes, 'Konversi unit')) {
+                $this->assertGreaterThan(
+                    $cancelLogIndex,
+                    $i,
+                    'conversion leg "'.$log->log_notes.'" must come after the cancellation masuk log'
+                );
+            }
+        }
     }
 }
