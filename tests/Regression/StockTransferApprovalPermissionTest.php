@@ -390,4 +390,140 @@ class StockTransferApprovalPermissionTest extends TestCase
         $this->assertGreaterThan(0, (int) $header->ops_approved_by);
         $this->assertSame(4, (int) $header->status, 'Final Ops approval auto-accepts main request.');
     }
+
+    /**
+     * Gudang utama tanpa Kepala: tahap Ops tetap wajib.
+     * Developer/Direksi boleh ganti QC lalu Ops — tidak auto-accept setelah QC saja.
+     */
+    public function test_elevated_qc_on_main_without_kepala_still_requires_ops(): void
+    {
+        // Simulasikan bug live: gudang utama tanpa is_kepala_cabang.
+        StaffWarehouse::query()
+            ->where('warehouse_id', $this->warehouseIds['main'])
+            ->update(['is_kepala_cabang' => 0]);
+
+        $this->actingAsElevatedApprover(RoleIds::DEVELOPER);
+        ['header' => $header] = $this->createShippedMainRequestWithStock();
+        $this->withActiveWarehouse($this->warehouseIds['main']);
+
+        $this->assertTrue(StockTransferApproval::opsRequiredAtWarehouse($this->warehouseIds['main']));
+        $this->assertTrue(StockTransferApproval::qcRequiredAtWarehouse($this->warehouseIds['main']));
+
+        $this->post('/approveStockTransfer', ['id' => $header->st_id, 'type' => 'qc'])
+            ->assertOk()
+            ->assertJson(['status' => 1, 'auto_accepted' => 0]);
+
+        $header->refresh();
+        $this->assertSame(2, (int) $header->status, 'Setelah QC masih Kirim — menunggu Ops');
+        $this->assertNull($header->ops_approved_by);
+
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertOk()
+            ->assertJsonPath('can_approve_ops', true)
+            ->assertJsonPath('can_approve_qc', false);
+
+        $this->post('/approveStockTransfer', ['id' => $header->st_id, 'type' => 'ops'])
+            ->assertOk()
+            ->assertJson(['status' => 1, 'auto_accepted' => 1]);
+
+        $header->refresh();
+        $this->assertSame(4, (int) $header->status);
+    }
+
+    /**
+     * Bug: list flag can_cancel_kirim true for main_request di gudang tujuan,
+     * tapi assertCanCancelKirim hanya mengizinkan retail_request → API gagal.
+     * Cancel Kirim di tujuan harus restore stok ke eceran (asal).
+     */
+    public function test_main_request_cancel_kirim_at_destination_restores_origin_stock(): void
+    {
+        $staff = $this->actingAsStaffWithOnlyPermission('Stock Transfer', ['view', 'others']);
+        $this->assignWarehousesToActingStaff(
+            $this->warehouseIds['retail'],
+            $this->warehouseIds['main']
+        );
+        session(['user' => $staff]);
+
+        $category = new Category();
+        $category->category_name = 'REG ST CancelMR Cat ' . uniqid();
+        $category->status = 1;
+        $category->save();
+        $product = new Product();
+        $product->product_name = 'REG ST CancelMR Product ' . uniqid();
+        $product->category_id = $category->category_id;
+        $product->product_unit = json_encode([$this->pieceUnitId]);
+        $product->unit_id = $this->pieceUnitId;
+        $product->status = 1;
+        $product->save();
+        $variant = new ProductVariant();
+        $variant->product_id = $product->product_id;
+        $variant->product_variant_name = 'V';
+        $variant->product_variant_sku = 'REG-ST-CMR-' . uniqid();
+        $variant->product_variant_price = 0;
+        $variant->retail_unit = $this->pieceUnitId;
+        $variant->status = 1;
+        $variant->save();
+
+        $stockRetail = new ProductStock();
+        $stockRetail->product_id = $product->product_id;
+        $stockRetail->product_variant_id = $variant->product_variant_id;
+        $stockRetail->unit_id = $this->pieceUnitId;
+        $stockRetail->warehouse_id = $this->warehouseIds['retail'];
+        $stockRetail->ps_stock = 20;
+        $stockRetail->status = 1;
+        $stockRetail->save();
+
+        $stockMain = new ProductStock();
+        $stockMain->product_id = $product->product_id;
+        $stockMain->product_variant_id = $variant->product_variant_id;
+        $stockMain->unit_id = $this->pieceUnitId;
+        $stockMain->warehouse_id = $this->warehouseIds['main'];
+        $stockMain->ps_stock = 0;
+        $stockMain->status = 1;
+        $stockMain->save();
+
+        $header = new StockTransfer();
+        $header->transfer_code = 'REG-ST-CMR-' . uniqid();
+        $header->transfer_date = now()->toDateString();
+        $header->sender_id = (int) $staff->staff_id;
+        $header->from_warehouse_id = $this->warehouseIds['retail'];
+        $header->to_warehouse_id = $this->warehouseIds['main'];
+        $header->source_type = 'main_request';
+        $header->status = 1;
+        $header->save();
+
+        $detail = new StockTransferDetail();
+        $detail->st_id = $header->st_id;
+        $detail->product_id = $product->product_id;
+        $detail->product_variant_id = $variant->product_variant_id;
+        $detail->unit_id = $this->pieceUnitId;
+        $detail->qty = 3;
+        $detail->status = 1;
+        $detail->save();
+
+        $this->withActiveWarehouse($this->warehouseIds['retail']);
+        $this->post('/shipStockTransfer', [
+            'id' => $header->st_id,
+            'proof_base64' => self::PROOF_BASE64,
+        ])
+            ->assertOk()
+            ->assertJson(['status' => 1]);
+
+        $stockRetail->refresh();
+        $this->assertSame(17.0, (float) $stockRetail->ps_stock, 'Kirim potong 3 dari eceran');
+
+        $this->withActiveWarehouse($this->warehouseIds['main']);
+        $this->get('/getStockTransferDetail?id=' . $header->st_id)
+            ->assertOk()
+            ->assertJsonPath('can_cancel_kirim', true);
+
+        $this->post('/cancelKirimStockTransfer', ['id' => $header->st_id])
+            ->assertOk()
+            ->assertJson(['status' => 1]);
+
+        $header->refresh();
+        $stockRetail->refresh();
+        $this->assertSame(5, (int) $header->status, 'Cancel Kirim');
+        $this->assertSame(20.0, (float) $stockRetail->ps_stock, 'Stok kembali ke eceran');
+    }
 }

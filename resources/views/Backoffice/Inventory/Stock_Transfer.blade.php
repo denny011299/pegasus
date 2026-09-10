@@ -58,17 +58,24 @@
         }
         #accept_stock_transfer .btn-view-st-ship-proof,
         #view_stock_transfer .btn-view-st-ship-proof,
+        #add_stock_transfer .btn-view-st-ship-proof,
         #konfirmasi-photo-view-btn {
             transition: filter 0.15s ease-in-out;
         }
         #accept_stock_transfer .btn-view-st-ship-proof:hover,
-        #view_stock_transfer .btn-view-st-ship-proof:hover {
+        #view_stock_transfer .btn-view-st-ship-proof:hover,
+        #add_stock_transfer .btn-view-st-ship-proof:hover {
             background: #dbeafe !important;
             border-color: #93c5fd !important;
             color: #1e40af !important;
         }
         #konfirmasi-photo-view-btn:hover {
             filter: brightness(0.95);
+        }
+        #add_stock_transfer .st-card-asal label,
+        #add_stock_transfer .st-card-tujuan label,
+        #accept_stock_transfer label {
+            margin-bottom: 6px !important;
         }
         .stock-transfer-filter .form-control,
         .stock-transfer-filter .form-select {

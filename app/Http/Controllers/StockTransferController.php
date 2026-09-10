@@ -2992,7 +2992,7 @@ class StockTransferController extends Controller
     }
 
     /**
-     * Cancel Kirim di gudang asal; untuk utama→eceran juga boleh di gudang tujuan (Tolak terima).
+     * Cancel Kirim di gudang asal; untuk request (retail/main) juga boleh di gudang tujuan (Tolak).
      *
      * @param  array<int, int>  $assignedWh
      */
@@ -3003,7 +3003,7 @@ class StockTransferController extends Controller
         int $staffId,
         int $activeWarehouseId,
         array $assignedWh,
-        bool $isRetailRequest = false
+        bool $isWarehouseRequest = false
     ): bool {
         if ($status !== 2 || $staffId <= 0 || $activeWarehouseId <= 0) {
             return false;
@@ -3011,7 +3011,7 @@ class StockTransferController extends Controller
         if ($activeWarehouseId === $fromWarehouseId && $fromWarehouseId > 0) {
             return $assignedWh === [] || in_array($fromWarehouseId, $assignedWh, true);
         }
-        if ($isRetailRequest
+        if ($isWarehouseRequest
             && $toWarehouseId > 0
             && $activeWarehouseId === $toWarehouseId) {
             return $assignedWh === [] || in_array($toWarehouseId, $assignedWh, true);
@@ -3216,7 +3216,7 @@ class StockTransferController extends Controller
             . '.';
     }
 
-    /** Cancel Kirim: gudang asal, atau tujuan (Tolak terima) untuk utama→eceran. @return true|string */
+    /** Cancel Kirim: gudang asal, atau tujuan (Tolak) untuk warehouse request. @return true|string */
     protected function assertCanCancelKirim(StockTransfer $header)
     {
         $user = Session::get('user');
@@ -3233,10 +3233,16 @@ class StockTransferController extends Controller
             return 'User login tidak valid';
         }
 
-        $isRetailRequest = StockTransferApproval::isRetailRequestRoute(
+        $fromIsMain = $this->warehouseIsMain($fromWh);
+        $toIsMain = $this->warehouseIsMain($toWh);
+        $isWarehouseRequest = StockTransferApproval::isRetailRequestRoute(
             $header->source_type,
-            $this->warehouseIsMain($fromWh),
-            $this->warehouseIsMain($toWh)
+            $fromIsMain,
+            $toIsMain
+        ) || StockTransferApproval::isMainRequestRoute(
+            $header->source_type,
+            $fromIsMain,
+            $toIsMain
         );
         if ($activeWh === $fromWh && $fromWh > 0) {
             if ($assignedWh !== [] && ! in_array($fromWh, $assignedWh, true)) {
@@ -3245,7 +3251,7 @@ class StockTransferController extends Controller
 
             return true;
         }
-        if ($isRetailRequest && $activeWh === $toWh && $toWh > 0) {
+        if ($isWarehouseRequest && $activeWh === $toWh && $toWh > 0) {
             if ($assignedWh !== [] && ! in_array($toWh, $assignedWh, true)) {
                 return 'Anda tidak punya akses ke gudang tujuan transfer ini';
             }
@@ -3254,7 +3260,7 @@ class StockTransferController extends Controller
         }
 
         return 'Cancel Kirim hanya di gudang asal'
-            . ($isRetailRequest ? ' atau Tolak di gudang eceran tujuan' : '')
+            . ($isWarehouseRequest ? ' atau Tolak di gudang tujuan (request)' : '')
             . '.';
     }
 
