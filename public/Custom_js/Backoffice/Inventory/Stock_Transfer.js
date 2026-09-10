@@ -934,8 +934,26 @@ function applyTransferRouteLabels(requestMode) {
     var $modal = $("#add_stock_transfer");
     if (!$modal.length) return;
     var $row = $modal.find(".st-route-row");
-    var $arrow = $modal.find(".st-route-arrow-icon");
     var $arrowText = $modal.find(".st-route-arrow-text");
+
+    function setRouteArrow(pointRight) {
+        var featherName = pointRight ? "arrow-right" : "arrow-left";
+        var cls = "fe fe-" + featherName + " text-white st-route-arrow-icon";
+        var $icon = $modal.find(".st-route-arrow-icon");
+        // Feather sudah ganti <i> → <svg>; class change tidak ubah arah panah.
+        var html =
+            '<i class="' +
+            cls +
+            '" style="font-size:14px;" data-feather="' +
+            featherName +
+            '"></i>';
+        if ($icon.length) {
+            $icon.replaceWith(html);
+        }
+        if (typeof feather !== "undefined" && typeof feather.replace === "function") {
+            feather.replace();
+        }
+    }
 
     if (requestMode) {
         // UI LTR: kiri = pihak penerima (to), kanan = pihak pengirim (from)
@@ -944,7 +962,7 @@ function applyTransferRouteLabels(requestMode) {
         $modal.find(".st-card-arrow").css("order", "2");
         $modal.find(".st-card-asal").css("order", "3");
         // Panah ke kanan = ke pihak pengirim (yang diminta kirim stok)
-        $arrow.removeClass("fe-arrow-left").addClass("fe-arrow-right");
+        setRouteArrow(true);
         $arrowText.text("MEREQUEST");
         $modal.find(".st-label-from-card").text("Pihak Pengirim");
         $modal.find(".st-label-from-field").text("Gudang yang mengirim");
@@ -954,7 +972,7 @@ function applyTransferRouteLabels(requestMode) {
     } else {
         $row.removeClass("st-request-mode");
         $modal.find(".st-card-asal, .st-card-arrow, .st-card-tujuan").css("order", "");
-        $arrow.removeClass("fe-arrow-left").addClass("fe-arrow-right");
+        setRouteArrow(true);
         $arrowText.text("TRANSFER");
         $modal.find(".st-label-from-card").text("Dari (Asal)");
         $modal.find(".st-label-from-field").html("Gudang / Toko Asal");
