@@ -1,5 +1,6 @@
     var mode = 1;
     var table;
+    var productPage = window.productPageConfig || {};
 
     $(document).ready(function () {
         inisialisasi();
@@ -41,7 +42,7 @@
             language: {
                 search: " ",
                 sLengthMenu: "_MENU_",
-                searchPlaceholder: "Cari Produk",
+                searchPlaceholder: productPage.search_placeholder || "Cari Produk",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -49,7 +50,7 @@
                 },
             },
             ajax: {
-                url: "/getProduct",
+                url: productPage.get_url || "/getProduct",
                 type: "GET",
             },
             columns: [
@@ -101,14 +102,17 @@
 
     $(document).on("click", ".btn_delete", function () {
         var data = $("#tableProduct").DataTable().row($(this).parents("tr")).data();
-        showModalDelete("Apakah yakin ingin menghapus produk ini?", "btn-delete-product");
+        showModalDelete(
+            productPage.delete_confirm || "Apakah yakin ingin menghapus produk ini?",
+            "btn-delete-product"
+        );
         $("#btn-delete-product").attr("product_id", data.product_id);
         $("#modalDelete").modal("show");
     });
 
     $(document).on("click", "#btn-delete-product", function () {
         $.ajax({
-            url: "/deleteProduct",
+            url: productPage.delete_url || "/deleteProduct",
             data: {
                 product_id: $("#btn-delete-product").attr("product_id"),
                 _token: token,
@@ -117,7 +121,11 @@
             success: function (e) {
                 $(".modal").modal("hide");
                 refreshProduct();
-                notifikasi("success", "Berhasil Delete", "Berhasil delete produk");
+                notifikasi(
+                    "success",
+                    "Berhasil Delete",
+                    productPage.delete_success || "Berhasil delete produk"
+                );
             },
             error: function (e) {
                 if (handlePermissionError(e)) return;

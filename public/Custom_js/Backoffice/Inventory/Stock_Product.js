@@ -8,6 +8,19 @@
     var canEditSafetyStock = false;
     var stockXhr = null;
     var safetyRow = null;
+    var stockPage = window.stockPageConfig || {};
+
+    function stockGetUrl() {
+        return stockPage.get_url || "/getStock";
+    }
+
+    function stockSearchPlaceholder() {
+        return stockPage.search_placeholder || "Cari Produk";
+    }
+
+    function stockZeroRecords() {
+        return stockPage.zero_records || "Produk tidak ditemukan";
+    }
 
     function resolveSafetyStockAccess() {
         return typeof hasAccessAction === "function"
@@ -60,7 +73,7 @@
         }
 
         stockXhr = $.ajax({
-            url: "/getStock",
+            url: stockGetUrl(),
             type: "GET",
             data: $.extend({}, data, { warehouse_id: warehouseId }),
             beforeSend: function () {
@@ -124,10 +137,10 @@
             language: {
                 search: " ",
                 sLengthMenu: "_MENU_",
-                searchPlaceholder: searchPlaceholder || "Cari Produk",
+                searchPlaceholder: searchPlaceholder || stockSearchPlaceholder(),
                 info: "_START_ - _END_ of _TOTAL_ items",
                 emptyTable: "Tidak ada data stok untuk gudang ini",
-                zeroRecords: "Produk tidak ditemukan",
+                zeroRecords: stockZeroRecords(),
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
                     previous: '<i class="fa fa-angle-left"></i> ',
@@ -533,7 +546,7 @@
         $("#tableStockRetail-wrap").hide();
         ensureSafetyHeader($("#tableStock"), false);
 
-        var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
+        var opts = dtBaseOptions(stockSearchPlaceholder(), [[1, "asc"]]);
         opts.columns = buildStockTableColumns();
         opts.drawCallback = function () {
             setStockTableLoading(false);
@@ -556,7 +569,7 @@
         $("#tableStock-wrap").hide();
         ensureSafetyHeader($("#tableStockRetail"), false);
 
-        var opts = dtBaseOptions("Cari Produk", [[1, "asc"]]);
+        var opts = dtBaseOptions(stockSearchPlaceholder(), [[1, "asc"]]);
         opts.columns = buildStockTableColumns();
         opts.autoWidth = false;
         opts.drawCallback = function () {
@@ -636,7 +649,7 @@
 
     function openHistoryModalLoading() {
         setHistoryLogLoading(true);
-        $("#add_stock_product .modal-title").html("Lihat Histori Produk");
+        $("#add_stock_product .modal-title").html(stockPage.history_title || "Lihat Histori Produk");
         bindLogScroll();
         $("#add_stock_product").modal("show");
     }
@@ -771,7 +784,7 @@
                         $("#add_stock_product #tableLog tbody").html(`
                             <tr class="empty-log">
                                 <td colspan="7" class="text-center text-muted py-4">
-                                    Produk ini belum ada riwayat perubahan stok
+                                    ${stockPage.empty_history || "Produk ini belum ada riwayat perubahan stok"}
                                 </td>
                             </tr>
                         `);

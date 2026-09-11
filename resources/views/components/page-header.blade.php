@@ -56,6 +56,14 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['chemical']))
+                    @roleCan('Daftar Bahan Kimia', 'create')
+                    <li>
+                        <a class="btn btn-primary" href="/insertChemical"><i class="fa fa-plus-circle me-2"
+                                aria-hidden="true"></i>Tambah Bahan Kimia</a>
+                    </li>
+                    @endroleCan
+                @endif
                 @if (Route::is(['supplies']))
                     @roleCan('Daftar Bahan Mentah', 'create')
                     <li>
