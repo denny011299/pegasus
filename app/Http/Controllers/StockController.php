@@ -654,17 +654,16 @@ class StockController extends Controller
     function accStockOpname(Request $req)
     {
         $data = $req->all();
-        $stod = json_decode($data['item'], true);
-        $sto = StockOpname::find($data['sto_id']);
-
-        if (! is_array($stod) || count($stod) === 0) {
+        $sto = StockOpname::find($data['sto_id'] ?? null);
+        if (! $sto) {
             return response()->json([
                 'status' => -1,
                 'header' => 'Gagal ACC',
-                'message' => 'Tidak ada item produk pada dokumen ini',
+                'message' => 'Dokumen stock opname tidak ditemukan',
             ]);
         }
 
+        $stod = json_decode($data['item'] ?? '[]', true);
         $warehouseId = (int) (
             ($sto->warehouse_id ?? null)
             ?: (Session::get('active_warehouse_id') ?? 0)
@@ -699,13 +698,17 @@ class StockController extends Controller
             ]);
         }
 
-        // Rancang ulang 2026-08-27: dokumen versi baru mengambil angkanya DARI DATABASE.
-        // Alur lama menulis ps_stock = $u['real_qty'] yang dikirim ULANG oleh browser penyetuju
-        // (#btn-acc-sto di CreateStockOpname.js men-scrape ulang tabel di layar lalu POST lagi) --
-        // artinya isi stok live ditentukan oleh halaman di layar orang yang menyetujui, bukan oleh
-        // dokumen yang disetujui. Untuk dokumen versi baru $data['item'] DIABAIKAN TOTAL.
+        // V2: angka dari DB — item scrape FE diabaikan (boleh kosong).
         if (! $sto->is_old_version) {
             return $this->accStockOpnameV2($sto, $warehouseId);
+        }
+
+        if (! is_array($stod) || count($stod) === 0) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Gagal ACC',
+                'message' => 'Tidak ada item produk pada dokumen ini',
+            ]);
         }
 
         // GitHub #53 follow-up: bekukan stod_system/stod_selisih ke nilai SEBENARNYA yang dipakai

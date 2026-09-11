@@ -92,7 +92,10 @@ $(document).ready(function () {
                 // draft orang lain sudah 404 di server.
                 $("#status").val("Draft");
             } else if (data.status == 1) {
-                $(".save-tolak,.save-terima").show();
+                $(".save-tolak,.save-terima")
+                    .prop("disabled", false)
+                    .removeAttr("aria-busy")
+                    .show();
                 $("#status").val("Menunggu Approval");
             } else if (data.status == 2) {
                 $(".save-tolak,.save-terima").hide();
@@ -736,9 +739,8 @@ $(document).on("click", ".save-terima", function () {
 $(document).on("click", "#btn-acc-sto", function () {
     LoadingButton(this);
 
-    $("#filter_pr_name").val("");
-    renderMode2(data.item);
-
+    // V2 ACC membaca angka dari DB — scrape layar tidak wajib. Kirim item minimal
+    // supaya legacy tetap dapat payload; backend V2 mengabaikannya.
     productSubmit = [];
     $(".row-stock").each(function () {
         let row = $(this);
@@ -764,7 +766,6 @@ $(document).on("click", "#btn-acc-sto", function () {
                 val === "" || val === null || val === undefined
                     ? -1
                     : (convertToAngka(String(val)) || 0);
-            // GitHub #78: mirrors insertData() above -- blank stays blank, no fallback to system.
             let counted = realQty !== -1;
 
             units.push({
@@ -792,14 +793,23 @@ $(document).on("click", "#btn-acc-sto", function () {
         url: "/accStockOpname",
         data: {
             sto_id: data.sto_id,
-            item: JSON.stringify(productSubmit),
+            item: JSON.stringify(productSubmit.length ? productSubmit : (data.item || [])),
             _token: token,
         },
         method: "post",
         success: function (e) {
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
-            if (typeof e === "object" && e !== null) {
-                notifikasi("error", e.header, e.message);
+            ResetLoadingButton("#btn-acc-sto", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
+            var ok = e === 1 || e === "1" || (e && Number(e.status) === 1);
+            if (!ok && typeof e === "object" && e !== null) {
+                notifikasi(
+                    "error",
+                    e.header || "Gagal ACC",
+                    e.message || "Terjadi kesalahan saat approve",
+                );
+                return false;
+            }
+            if (!ok) {
+                notifikasi("error", "Gagal ACC", "Respons server tidak dikenali");
                 return false;
             }
             $("#modalDelete .modal-body").html("");
@@ -817,9 +827,10 @@ $(document).on("click", "#btn-acc-sto", function () {
             }, 150);
         },
         error: function (e) {
-            ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
+            ResetLoadingButton("#btn-acc-sto", '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
             if (handlePermissionError(e)) return;
             console.log(e);
+            notifikasi("error", "Gagal ACC", "Terjadi kesalahan jaringan/server");
         },
     });
 });
