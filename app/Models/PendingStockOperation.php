@@ -32,6 +32,8 @@ class PendingStockOperation extends Model
 
     public const SOURCE_STOCK_TRANSFER_ACCEPT = 'stock_transfer_accept';
 
+    public const SOURCE_PURCHASE_ORDER_ACC = 'purchase_order_acc';
+
     protected $fillable = [
         'warehouse_id',
         'domain',

@@ -1460,13 +1460,29 @@ $(document).on("click", "#btn-acc-po", function () {
         success: function (e) {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
-            if (e.status == -2){
-                notifikasi('error', e.header, e.message);
-                window.open('/purchaseOrder', '_self');
-                return false;
+            ResetLoadingButton("#btn-acc-po", "Terima");
+            if (e && typeof e === "object") {
+                if (e.status == -2){
+                    notifikasi('error', e.header, e.message);
+                    window.open('/purchaseOrder', '_self');
+                    return false;
+                }
+                if (e.status == -1) {
+                    notifikasi('error', e.header || 'Gagal Approve', e.message || 'Gagal approve pembelian');
+                    return false;
+                }
+                // Opname bahan aktif → masuk antrian; PO tetap menunggu, stok belum naik
+                if (e.queued == 1 || e.queued === true) {
+                    notifikasi(
+                        "info",
+                        e.header || "Antrian Mutasi Stok",
+                        e.message || "Masuk antrian. Stok belum bertambah sampai opname selesai."
+                    );
+                    window.open('/purchaseOrder', '_self');
+                    return false;
+                }
             }
             $('#po_status').val(2).trigger('change');
-            ResetLoadingButton("#btn-acc-po", "Terima");
             notifikasi(
                 "success",
                 "Berhasil Approve",

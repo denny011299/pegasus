@@ -1042,6 +1042,7 @@
                     <option value="production_acc">Produksi ACC</option>
                     <option value="stock_transfer_ship">Kirim ST</option>
                     <option value="stock_transfer_accept">Terima ST</option>
+                    <option value="purchase_order_acc">ACC Pembelian</option>
                 </select>
             </div>
         </div>

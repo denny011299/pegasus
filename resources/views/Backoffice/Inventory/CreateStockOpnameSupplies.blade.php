@@ -146,6 +146,40 @@
             flex-shrink: 0;
         }
 
+        #tb-stock-wrap {
+            position: relative;
+        }
+        #tb-stock-wrap.is-loading .stock-opname-table-loading {
+            display: flex !important;
+        }
+        #tb-stock-wrap.is-loading #tb-stock-table tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+        .stock-opname-table-loading {
+            display: none;
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.72);
+            border-radius: 8px;
+        }
+        .stock-opname-table-loading > div {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+            color: #1e293b;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
         #tb-stock-wrap.opname-submitting {
             pointer-events: none;
             opacity: 0.65;
@@ -356,7 +390,13 @@
             <div class="card-body">
 
                             <!-- Table Container -->
-                            <div class="table-responsive" style="overflow-x: auto;">
+                            <div class="table-responsive" id="tb-stock-wrap" style="overflow-x: auto;">
+                                <div class="stock-opname-table-loading" aria-live="polite" aria-busy="true">
+                                  <div>
+                                    <span class="spinner-border spinner-border-sm text-primary" role="status"></span>
+                                    <span>Memuat bahan...</span>
+                                  </div>
+                                </div>
                                 <table class="table table-hover mb-0" id="tb-stock-table">
                                     <thead class="thead-light">
                                         <tr>

@@ -149,6 +149,7 @@ class PendingStockOperationController extends Controller
             PendingStockOperation::SOURCE_PRODUCTION_ACC => 'Produksi ACC',
             PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP => 'Kirim ST',
             PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT => 'Terima ST',
+            PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC => 'ACC Pembelian',
             default => $type,
         };
     }

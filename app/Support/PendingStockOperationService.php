@@ -3,10 +3,13 @@
 namespace App\Support;
 
 use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\SupplierController;
 use App\Models\PendingStockOperation;
 use App\Models\Production;
+use App\Models\PurchaseOrder;
 use App\Models\StockTransfer;
 use App\Support\StockOpname\OpenOpnameGuard;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -54,6 +57,8 @@ class PendingStockOperationService
                 'Masih ada progress di Antrian Mutasi Stok (Kirim). Belum bisa dilanjutkan sampai opname selesai.',
             PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT =>
                 'Masih ada progress di Antrian Mutasi Stok (Terima). Belum bisa dilanjutkan sampai opname selesai.',
+            PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC =>
+                'Masih ada progress di Antrian Mutasi Stok (ACC Pembelian). Belum bisa dilanjutkan sampai opname selesai.',
             default =>
                 'Masih ada progress di Antrian Mutasi Stok. Belum bisa dilanjutkan sampai opname selesai.',
         };
@@ -105,6 +110,8 @@ class PendingStockOperationService
                 'Masuk Antrian Mutasi Stok (Kirim). Stok asal belum dipotong sampai opname selesai.',
             PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT =>
                 'Masuk Antrian Mutasi Stok (Terima). Stok tujuan belum bertambah sampai opname selesai.',
+            PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC =>
+                'Masuk Antrian Mutasi Stok (ACC Pembelian). Stok belum bertambah sampai opname selesai.',
             default =>
                 'Masuk Antrian Mutasi Stok. Mutasi menunggu opname selesai.',
         };
@@ -218,6 +225,7 @@ class PendingStockOperationService
             PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP,
             PendingStockOperation::SOURCE_STOCK_TRANSFER_ACCEPT,
             PendingStockOperation::SOURCE_PRODUCTION_ACC,
+            PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC,
         ];
 
         foreach ($order as $sourceType) {
@@ -333,6 +341,58 @@ class PendingStockOperationService
                 throw new RuntimeException((string) ($data['message'] ?? 'Gagal apply Produksi ACC dari antrian'));
             }
 
+            return;
+        }
+
+        if ($row->source_type === PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC) {
+            $po = PurchaseOrder::query()->find((int) $row->source_id);
+            if (! $po) {
+                $row->status = PendingStockOperation::STATUS_CANCELLED;
+                $row->error_message = 'Pesanan pembelian tidak ditemukan';
+                $row->save();
+
+                return;
+            }
+            if ((int) $po->status !== 1) {
+                return;
+            }
+
+            $whId = (int) ($payload['request']['warehouse_id'] ?? $row->warehouse_id ?? 0);
+            if ($whId > 0) {
+                Session::put('active_warehouse_id', $whId);
+            }
+
+            $accData = is_array($payload['request']['data'] ?? null)
+                ? $payload['request']['data']
+                : ['po_id' => (int) $po->po_id];
+
+            $req = Request::create('/accPO', 'POST', [
+                'data' => $accData,
+                'from_pending_stock_queue' => 1,
+            ]);
+            $req->setLaravelSession(app('session')->driver());
+
+            /** @var SupplierController $ctl */
+            $ctl = app(SupplierController::class);
+            $response = $ctl->accPO($req);
+
+            if ($response instanceof JsonResponse) {
+                $data = (array) $response->getData(true);
+                $status = (int) ($data['status'] ?? 0);
+                if ($status === -2) {
+                    return;
+                }
+                if (! empty($data['queued'])) {
+                    throw new RuntimeException('Replay ACC Pembelian masih masuk antrian');
+                }
+                if ($status === -1 || (isset($data['status']) && $status !== 1)) {
+                    throw new RuntimeException((string) ($data['message'] ?? 'Gagal apply ACC Pembelian dari antrian'));
+                }
+
+                return;
+            }
+
+            // Legacy success: due date string / plain response
             return;
         }
 

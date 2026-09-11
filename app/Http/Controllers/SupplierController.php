@@ -153,6 +153,19 @@ class SupplierController extends Controller
 
     function insertPoDelivery(Request $req)
     {
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $activeWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         $data = $req->all();
  
         $id = (new PurchaseOrderDelivery())->insertPoDelivery($data);
@@ -188,6 +201,19 @@ class SupplierController extends Controller
     }
     function accPoDelivery(Request $req)
     {
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $activeWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         $data = $req->all();
          $id = [];
          $bermasalah = [];
@@ -582,17 +608,68 @@ class SupplierController extends Controller
             ]);
         }
 
-        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
-        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
-            $activeWh,
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
-        );
-        if ($softBlock !== null) {
-            return response()->json([
-                'status' => -1,
-                'header' => 'Stock Opname',
-                'message' => $softBlock,
-            ]);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $staffId = (int) (Session::get('user')->staff_id ?? 0);
+
+        // Antrian: defer ACC stok kalau gudang sedang opname bahan (skip saat replay dari queue).
+        if (! (int) ($req->input('from_pending_stock_queue') ?? 0)) {
+            $pso = app(\App\Support\PendingStockOperationService::class);
+            $opGuard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
+            $pso->flushStaleIfUnblocked(
+                $activeWh,
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
+                $staffId ?: null
+            );
+            if ($pso->hasPendingForSource(
+                \App\Models\PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC,
+                (int) $po->po_id
+            )) {
+                return response()->json([
+                    'status' => 1,
+                    'queued' => 1,
+                    'header' => 'Antrian Mutasi Stok',
+                    'message' => $pso->pendingMessageForSource(
+                        \App\Models\PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC
+                    ),
+                ]);
+            }
+            if ($activeWh > 0 && $opGuard->isBlocked(
+                $activeWh,
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+            )) {
+                try {
+                    $pso->enqueue([
+                        'warehouse_id' => $activeWh,
+                        'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
+                        'source_type' => \App\Models\PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC,
+                        'source_id' => (int) $po->po_id,
+                        'source_code' => (string) ($po->po_number ?? ''),
+                        'payload' => [
+                            'staff_id' => $staffId,
+                            'request' => [
+                                'warehouse_id' => $activeWh,
+                                'data' => $data,
+                            ],
+                        ],
+                        'created_by' => $staffId ?: null,
+                    ]);
+                } catch (\Throwable $e) {
+                    return response()->json([
+                        'status' => -1,
+                        'header' => 'Antrian Mutasi Stok',
+                        'message' => $e->getMessage() ?: 'Gagal masuk antrian mutasi stok',
+                    ]);
+                }
+
+                return response()->json([
+                    'status' => 1,
+                    'queued' => 1,
+                    'header' => 'Antrian Mutasi Stok',
+                    'message' => $pso->enqueueInfoMessage(
+                        \App\Models\PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC
+                    ),
+                ]);
+            }
         }
 
         // Ditambahkan (2026-08-24): dulu penerimaan barang ini TIDAK transaksional sama sekali,
@@ -778,6 +855,32 @@ class SupplierController extends Controller
             ]);
         }
 
+        // Soft-block retur hanya saat menyentuh stok; ACC menunggu tetap boleh ditolak tanpa mutasi.
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        if ((int) $p->status === 2) {
+            $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                $activeWh,
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+            );
+            if ($softBlock !== null) {
+                return response()->json([
+                    'status' => -1,
+                    'header' => 'Stock Opname',
+                    'message' => $softBlock,
+                ]);
+            }
+        }
+
+        // Batalkan antrian ACC PO kalau masih menunggu (tolak sebelum apply).
+        \App\Models\PendingStockOperation::query()
+            ->where('source_type', \App\Models\PendingStockOperation::SOURCE_PURCHASE_ORDER_ACC)
+            ->where('source_id', (int) $p->po_id)
+            ->where('status', \App\Models\PendingStockOperation::STATUS_PENDING)
+            ->update([
+                'status' => \App\Models\PendingStockOperation::STATUS_CANCELLED,
+                'error_message' => 'Dibatalkan karena PO ditolak',
+            ]);
+
         DB::beginTransaction();
         try {
             // QC-3: retur pembelian aktif harus dibatalkan dulu (PI → Ditolak + stok retur
@@ -891,6 +994,19 @@ class SupplierController extends Controller
             return [
                 "status"=>-1,
                 "message"=>"Jumlah retur melebihi total pembelian"
+            ];
+        }
+
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $activeWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return [
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
             ];
         }
 

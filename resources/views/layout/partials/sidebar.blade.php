@@ -57,40 +57,62 @@
         gap: 10px;
     }
 
-    /* Badge counter Antrian Mutasi Stok */
+    /* Badge notifikasi Antrian Mutasi Stok */
+    #sidebar .sidebar-menu li > a[href*="pendingStockOperation"] {
+        font-size: 12.5px !important;
+        gap: 8px !important;
+        padding: 9px 10px !important;
+    }
     #sidebar .sidebar-menu li > a .pso-pending-badge {
+        flex: 0 0 auto !important;
+        flex-grow: 0 !important;
+        flex-shrink: 0 !important;
         margin-left: auto !important;
-        min-width: 18px;
-        height: 18px;
-        padding: 0 6px;
-        border-radius: 999px;
-        background: #ef4444 !important;
+        min-width: 18px !important;
+        height: 18px !important;
+        padding: 0 4px !important;
+        border-radius: 9999px !important;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
         color: #ffffff !important;
         font-size: 10px !important;
-        font-weight: 800 !important;
-        line-height: 18px !important;
-        text-align: center;
+        font-weight: 700 !important;
+        line-height: 15px !important;
+        text-align: center !important;
         display: inline-flex !important;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+        align-items: center !important;
+        justify-content: center !important;
+        box-shadow: 0 2px 5px rgba(239, 68, 68, 0.45) !important;
+        letter-spacing: 0 !important;
+        border: 1.5px solid #ffffff !important;
+        box-sizing: border-box !important;
+        overflow: visible !important;
+        transition: transform 0.15s ease, box-shadow 0.15s ease !important;
+    }
+    #sidebar .sidebar-menu li > a:hover .pso-pending-badge {
+        transform: scale(1.08);
+        box-shadow: 0 3px 8px rgba(239, 68, 68, 0.55) !important;
     }
     #sidebar .sidebar-menu li > a.active .pso-pending-badge {
-        background: #ffffff !important;
-        color: #1d4ed8 !important;
-        box-shadow: none;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 6px rgba(239, 68, 68, 0.5) !important;
+        border-color: #ffffff;
     }
     body.mini-sidebar:not(.expand-menu) #sidebar .sidebar-menu li > a .pso-pending-badge {
         position: absolute !important;
-        top: 4px !important;
-        right: 4px !important;
+        top: 8px !important;
+        right: 10px !important;
         margin: 0 !important;
-        min-width: 14px;
-        height: 14px;
-        padding: 0 4px;
-        font-size: 9px !important;
-        line-height: 14px !important;
+        min-width: 9px;
+        width: 9px;
+        height: 9px;
+        padding: 0;
+        font-size: 0 !important;
+        line-height: 0 !important;
+        border-radius: 50%;
+        overflow: hidden;
+        border: 1.5px solid #ffffff;
+        box-shadow: 0 2px 5px rgba(239, 68, 68, 0.6) !important;
     }
 
     /* Fix for Mini-Sidebar (Collapsed) Mode */
@@ -130,7 +152,7 @@
     }
 
     /* Span text */
-    #sidebar .sidebar-menu li > a > span {
+    #sidebar .sidebar-menu li > a > span:not(.pso-pending-badge):not(.badge):not(.menu-arrow) {
         flex: 1;
         white-space: nowrap;
         overflow: hidden;
@@ -1049,7 +1071,7 @@
                                 }
                             @endphp
                             <li>
-                                <a class="{{ Request::is('pendingStockOperation') ? 'active' : '' }}" href="{{ url('pendingStockOperation') }}">
+                                <a class="{{ Request::is('pendingStockOperation') ? 'active' : '' }}" href="{{ url('pendingStockOperation') }}" title="Antrian Mutasi Stok">
                                     <i class="fe fe-layers"></i>
                                     <span>Antrian Mutasi Stok</span>
                                     @if ($psoPendingBadge > 0)

@@ -689,6 +689,7 @@
             url: "/getDashboardOverview",
             method: "get",
             data: { period: period },
+            timeout: 120000,
             success: function (data) {
                 var f = data.filter || {};
                 $("#dash_filter_label").text(
@@ -803,7 +804,11 @@
             error: function (xhr) {
                 setDashTablesLoading(false);
                 if (handlePermissionError(xhr)) return;
-                $("#dash_filter_label").text("Gagal memuat dashboard.");
+                var msg = "Gagal memuat dashboard.";
+                if (xhr && (xhr.statusText === "timeout" || xhr.status === 0)) {
+                    msg = "Gagal memuat dashboard (timeout). Coba Terapkan lagi.";
+                }
+                $("#dash_filter_label").text(msg);
             },
         });
     }

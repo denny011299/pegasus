@@ -7,6 +7,20 @@ var searchBahanDebounce = null;
 var canEditDraft = false;
 autocompleteCategory("#kategori", null, 1);
 
+/** Pastikan #tanggal punya YYYY-MM-DD sebelum kirim — jangan biarkan stob_date kosong. */
+function ensureOpnameTanggal() {
+    var $t = $("#tanggal");
+    var v = ($t.val() || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+        v =
+            typeof moment === "function"
+                ? moment().format("YYYY-MM-DD")
+                : new Date().toISOString().slice(0, 10);
+        $t.val(v);
+    }
+    return v;
+}
+
 $(document).ready(function () {
     //    if(data.category_id!=null)$('#category_id').append(`<option value="${data.category_id}">${data.category_name}</option>`).trigger("change");
     //    if(mode==2){
@@ -15,9 +29,7 @@ $(document).ready(function () {
     loadStaff();
     if (mode == 1) {
         refreshStockOpname();
-        var yesterday = moment().format("YYYY-MM-DD");
-        // Autofill ke input
-        $("#tanggal").val(yesterday);
+        ensureOpnameTanggal();
         $("#status").val("-");
 
         if (sessionUser) {
@@ -35,7 +47,8 @@ $(document).ready(function () {
         }
     } else {
         console.log(data);
-        $("#tanggal").val(data.stob_date);
+        $("#tanggal").val(data.stob_date || "");
+        ensureOpnameTanggal();
         $("#catatan").val(data.stob_notes);
         supplies = data.item;
 
@@ -168,6 +181,8 @@ function refreshStockOpname(callback) {
     if (stockOpnameXhr) stockOpnameXhr.abort();
     var reqId = ++stockOpnameReqSeq;
 
+    setOpnameTableBusy(true);
+
     stockOpnameXhr = $.ajax({
         url: "/getSupplies",
         method: "get",
@@ -254,9 +269,14 @@ function refreshStockOpname(callback) {
             supplies = e;
         },
         error: function (e) {
+            if (e && e.statusText === "abort") return;
             if (handlePermissionError(e)) return;
             if (reqId !== stockOpnameReqSeq) return;
             console.log(e);
+        },
+        complete: function () {
+            if (reqId !== stockOpnameReqSeq) return;
+            setOpnameTableBusy(false);
         },
     });
 }
@@ -411,6 +431,7 @@ $(document).on("change", "#category_id", function () {
 });
 
 $(document).on("click", ".btn-save", function () {
+    if (!guardOpnameNotBusy(this, "Tambah Stok Opname")) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchBahanDebounce);
@@ -422,6 +443,7 @@ $(document).on("click", ".btn-save", function () {
 });
 
 $(document).on("click", ".btn-save-draft", function () {
+    if (!guardOpnameNotBusy(this, "Simpan sebagai Draft")) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchBahanDebounce);
@@ -445,6 +467,7 @@ $(document).on("click", ".btn-save-draft", function () {
 });
 
 $(document).on("click", ".btn-ajukan", function () {
+    if (!guardOpnameNotBusy(this, "Ajukan")) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchBahanDebounce);
@@ -472,7 +495,12 @@ $(document).on("click", ".btn-ajukan", function () {
                             return;
                         }
                         toastr.success("", "Berhasil mengajukan Stock Opname");
-                        window.location.href = "/stockOpnameBahan";
+                        if (typeof window.notifyOpenOpnameStatusChanged === "function") {
+                            window.notifyOpenOpnameStatusChanged();
+                        }
+                        setTimeout(function () {
+                            window.location.href = "/stockOpnameBahan";
+                        }, 150);
                     },
                     error: function (e) {
                         setStockOpnameFormLocked(false);
@@ -487,6 +515,7 @@ $(document).on("click", ".btn-ajukan", function () {
 });
 
 $(document).on("click", ".btn-delete-draft", function () {
+    if (!guardOpnameNotBusy(this, "Hapus Draft")) return;
     showModalDelete(
         "Apakah yakin ingin menghapus draft ini?",
         "btn-delete-draft-confirm",
@@ -510,7 +539,12 @@ $(document).on("click", "#btn-delete-draft-confirm", function () {
             $("#modalDelete .modal-body").html("");
             $(".modal").modal("hide");
             notifikasi("success", "Berhasil Hapus", "Draft berhasil dihapus");
-            window.location.href = "/stockOpnameBahan";
+            if (typeof window.notifyOpenOpnameStatusChanged === "function") {
+                window.notifyOpenOpnameStatusChanged();
+            }
+            setTimeout(function () {
+                window.location.href = "/stockOpnameBahan";
+            }, 150);
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Delete");
@@ -676,7 +710,7 @@ function insertData(options) {
     }
 
     param = {
-        stob_date: $("#tanggal").val(),
+        stob_date: ensureOpnameTanggal(),
         staff_id: $("#penanggung-jawab").val(),
         // category_id: -1,
         stob_notes: $("#catatan").val(),
@@ -712,8 +746,13 @@ function insertData(options) {
                 return;
             }
             toastr.success("", "Berhasil Tambah Stock Opname");
+            if (typeof window.notifyOpenOpnameStatusChanged === "function") {
+                window.notifyOpenOpnameStatusChanged();
+            }
             // Spinner tetap sampai redirect.
-            window.location.href = "/stockOpnameBahan";
+            setTimeout(function () {
+                window.location.href = "/stockOpnameBahan";
+            }, 150);
         },
         error: function (e) {
             setStockOpnameFormLocked(false);
@@ -731,11 +770,7 @@ $(document).on("click", ".btnBack", function () {
 
 //konfirmasi acc
 $(document).on("click", ".save-terima", function () {
-    var tbId = $(this).closest("table").attr("id");
-    var data = $("#" + tbId)
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data(); //ambil data dari table
+    if (!guardOpnameNotBusy(this, "Terima")) return;
     showModalKonfirmasi(
         "Apakah yakin ingin Approve stock opname ini?",
         "btn-acc-stob",
@@ -818,7 +853,12 @@ $(document).on("click", "#btn-acc-stob", function () {
                 "Berhasil Approve",
                 "Berhasil approve stock opname",
             );
-            window.open("/stockOpnameBahan", "_self");
+            if (typeof window.notifyOpenOpnameStatusChanged === "function") {
+                window.notifyOpenOpnameStatusChanged();
+            }
+            setTimeout(function () {
+                window.open("/stockOpnameBahan", "_self");
+            }, 150);
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Konfirmasi");
@@ -829,6 +869,7 @@ $(document).on("click", "#btn-acc-stob", function () {
 });
 
 $(document).on("click", ".save-tolak", function () {
+    if (!guardOpnameNotBusy(this, "Tolak")) return;
     showModalDelete(
         "Apakah yakin ingin menolak stock opname ini?",
         "btn-tolak-stob",
@@ -854,7 +895,12 @@ $(document).on("click", "#btn-tolak-stob", function () {
                 "Berhasil Tolak",
                 "Berhasil tolak Stock Opname",
             );
-            window.open("/stockOpnameBahan", "_self");
+            if (typeof window.notifyOpenOpnameStatusChanged === "function") {
+                window.notifyOpenOpnameStatusChanged();
+            }
+            setTimeout(function () {
+                window.open("/stockOpnameBahan", "_self");
+            }, 150);
         },
         error: function (e) {
             ResetLoadingButton(".btn-konfirmasi", "Delete");

@@ -2108,6 +2108,10 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
           warehouse_id: warehouseId
         },
         success: function(response) {
+          try {
+            localStorage.setItem("pegasus_active_warehouse_ping", String(warehouseId) + ":" + Date.now());
+            localStorage.setItem("pegasus_opname_status_ping", String(Date.now()));
+          } catch (err) {}
           window.location.reload();
         },
         error: function() {
@@ -2116,4 +2120,195 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       });
     });
   });
+</script>
+<script>
+  // Badge opname: source of truth = session server + DB (GET /getOpenOpnameStatus).
+  // Antar browser/device = poll saja (BroadcastChannel hanya same-browser).
+  (function () {
+    var POLL_MS = 5000;
+    var POLL_MS_HIDDEN = 15000;
+    var timer = null;
+    var lastKey = "";
+    var lastRev = null;
+    var lastOpenKey = null;
+    var lastServerTime = 0;
+    var inFlight = false;
+    var pollAgain = false;
+    var channel = null;
+    var STORAGE_KEY = "pegasus_opname_status_ping";
+    var WH_KEY = "pegasus_active_warehouse_ping";
+
+    try {
+      if (typeof BroadcastChannel !== "undefined") {
+        channel = new BroadcastChannel("pegasus_opname_status");
+        channel.onmessage = function () { poll(); };
+      }
+    } catch (e) {}
+
+    function isOpen(v) {
+      return v === true || v === 1 || v === "1" || v === "true";
+    }
+
+    function fullLabel(kind, open) {
+      if (kind === "product") {
+        return open ? "Opname Produk aktif" : "Opname Produk nonaktif";
+      }
+      return open ? "Opname Bahan aktif" : "Opname Bahan nonaktif";
+    }
+
+    function setLamp($el, open, kind) {
+      if (!$el || !$el.length) return;
+      var tip = fullLabel(kind, !!open);
+      $el.each(function () {
+        var $one = $(this);
+        if (open) $one.addClass("is-on");
+        else $one.removeClass("is-on");
+        $one.attr("data-open", open ? "1" : "0");
+        $one.find(".opname-status-label").text(tip);
+        $one.attr("title", tip).attr("data-bs-original-title", tip);
+        try {
+          var tipInst = $one.data("bs.tooltip");
+          if (tipInst && typeof tipInst.setContent === "function") {
+            tipInst.setContent({ ".tooltip-inner": tip });
+          }
+        } catch (err) {}
+      });
+    }
+
+    function syncClientWarehouse(whId) {
+      var id = parseInt(whId, 10);
+      if (!(id > 0)) return;
+      window.activeWarehouseId = id;
+      $("#opname-lamp-group").attr("data-warehouse-id", id);
+    }
+
+    function applyStatus(res) {
+      if (!res || typeof res !== "object") return;
+      if (!(Number(res.ok) === 1 || Number(res.status) === 1)) return;
+
+      // Abaikan response usang (request yang berangkat sebelum ACC di browser lain)
+      var serverTime = Number(res.server_time || 0);
+      if (serverTime > 0 && lastServerTime > 0 && serverTime < lastServerTime) {
+        return;
+      }
+      if (serverTime > 0) lastServerTime = serverTime;
+
+      syncClientWarehouse(res.warehouse_id);
+
+      var product = res.product || {};
+      var supplies = res.supplies || {};
+      var productOpen = isOpen(product.open) || isOpen(res.product_open);
+      var suppliesOpen = isOpen(supplies.open) || isOpen(res.supplies_open);
+      var anyOpen = isOpen(res.any_open) || productOpen || suppliesOpen;
+      var rev = res.rev != null ? String(res.rev) : null;
+      var openKey = [productOpen ? 1 : 0, suppliesOpen ? 1 : 0].join("|");
+
+      setLamp($(".opname-status-badge[data-domain='product'], #opname-lamp-product"), productOpen, "product");
+      setLamp($(".opname-status-badge[data-domain='supplies'], #opname-lamp-supplies"), suppliesOpen, "supplies");
+
+      var $fab = $("#opname-open-fab");
+      if ($fab.length) {
+        if (!anyOpen) {
+          $fab.stop(true, true).hide().css("display", "none").attr("aria-hidden", "true");
+          lastKey = "off";
+        } else {
+          var text = "Opname aktif";
+          var href = product.url || "/stockOpname";
+          if (productOpen && !suppliesOpen) {
+            text = fullLabel("product", true);
+            href = product.url || "/stockOpname";
+          } else if (suppliesOpen && !productOpen) {
+            text = fullLabel("supplies", true);
+            href = supplies.url || "/stockOpnameBahan";
+          } else if (productOpen && suppliesOpen) {
+            text = "Opname Produk & Bahan aktif";
+            href = product.url || "/stockOpname";
+          }
+
+          var key = [productOpen, product.code || "", suppliesOpen, supplies.code || "", href].join("|");
+          $fab.attr("href", href).attr("title", text);
+          $fab.find(".opname-open-fab-text").text(text);
+          lastKey = key;
+          $fab.css("display", "inline-flex").attr("aria-hidden", "false");
+        }
+      }
+
+      if (lastOpenKey !== null && openKey !== lastOpenKey) {
+        pingPeers();
+      } else if (rev !== null && lastRev !== null && rev !== lastRev) {
+        pingPeers();
+      }
+      lastOpenKey = openKey;
+      if (rev !== null) lastRev = rev;
+    }
+
+    function poll() {
+      if (inFlight) {
+        pollAgain = true;
+        return;
+      }
+      inFlight = true;
+      $.ajax({
+        url: "/getOpenOpnameStatus",
+        method: "GET",
+        data: { _: Date.now() },
+        dataType: "json",
+        cache: false,
+        headers: {
+          "Cache-Control": "no-cache",
+          "Pragma": "no-cache"
+        }
+      }).done(applyStatus).always(function () {
+        inFlight = false;
+        if (pollAgain) {
+          pollAgain = false;
+          poll();
+        }
+      });
+    }
+
+    function pingPeers() {
+      try {
+        if (channel) channel.postMessage({ t: Date.now() });
+      } catch (e) {}
+      try {
+        localStorage.setItem(STORAGE_KEY, String(Date.now()));
+      } catch (e) {}
+    }
+
+    function schedule() {
+      if (timer) clearInterval(timer);
+      var ms = document.visibilityState === "hidden" ? POLL_MS_HIDDEN : POLL_MS;
+      timer = setInterval(poll, ms);
+    }
+
+    window.notifyOpenOpnameStatusChanged = function () {
+      pingPeers();
+      poll();
+    };
+
+    window.addEventListener("storage", function (ev) {
+      if (ev.key === STORAGE_KEY || ev.key === WH_KEY) poll();
+    });
+
+    window.addEventListener("pageshow", function () {
+      poll();
+      schedule();
+    });
+
+    window.addEventListener("online", function () {
+      poll();
+      schedule();
+    });
+
+    $(document).ready(function () {
+      poll();
+      schedule();
+    });
+    document.addEventListener("visibilitychange", function () {
+      schedule();
+      if (document.visibilityState === "visible") poll();
+    });
+    $(window).on("focus", function () { poll(); });
+  })();
 </script>

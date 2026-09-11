@@ -115,6 +115,8 @@ Route::middleware(checkLogin::class)->group(function () {
     // jadi check.access middleware yang statis per-route tidak bisa mengekspresikan ini --
     // GeneralController::getLog() sendiri yang memvalidasi lewat RoleAccess.
     Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
+    // Indikator lamp opname (semua staf login — soft-block relevan di semua modul)
+    Route::get('/getOpenOpnameStatus', [StockController::class, 'getOpenOpnameStatus'])->name('getOpenOpnameStatus');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
         Route::get('/category', [ProductController::class, 'Category'])->name('category');
