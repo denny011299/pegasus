@@ -235,20 +235,22 @@
                     @endroleCan
                 @endif
                 @if (Route::is(['cash']))
-                    @roleCanAny(['Kas', 'Kas Operasional'], 'create')
+                    {{-- Halaman Kas Besar hanya POST ke /insertCash (dijaga Kas|create) --}}
+                    @roleCan('Kas', 'create')
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pencatatan</a>
                     </li>
-                    @endroleCanAny
+                    @endroleCan
                 @endif
                 @if (Route::is(['pettyCash']))
-                    @roleCanAny(['Kas', 'Kas Operasional'], 'create')
+                    {{-- Halaman Kas Kecil hanya POST ke /insertPettyCash (dijaga Kas|create) --}}
+                    @roleCan('Kas', 'create')
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Kas Kecil</a>
                     </li>
-                    @endroleCanAny
+                    @endroleCan
                 @endif
                 @if (Route::is(['operationalCash']))
                     @roleCanAny(['Kas', 'Kas Operasional'], 'create')
