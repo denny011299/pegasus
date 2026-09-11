@@ -21,8 +21,9 @@ use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use Barryvdh\DomPDF\Facade\Pdf;
-use App\Support\UnitRollUp;
 use App\Support\HutangDataTable;
+use App\Support\ProductUnitStock;
+use App\Support\UnitRollUp;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -688,26 +689,33 @@ class SupplierController extends Controller
             $value["pdod_qty"] = $value["pod_qty"];
             $value["statusPO"] = 2;
             $value["status"] = 2;
+            $value["po_number"] = $po->po_number;
 
-            // Catat Log "masuk" DULU, baru insertPoDeliveryDetail() (yang menaikkan satuan lewat
-            // UnitRollUp dan bisa menulis log konversi "keluar" + "hasil naik satuan" di
-            // dalamnya) -- lihat docblock insertPoDeliveryDetail(). Urutan sebelumnya terbalik
-            // (insertPoDeliveryDetail() dipanggil duluan), jadi histori terbaca keluar → konversi
-            // → baru masuk, membingungkan (GitHub #167). insertPoDeliveryDetail() sendiri sudah
-            // mengasumsikan log "masuk" ditulis caller lebih dulu -- ini hanya menyamakan urutan
-            // panggilan dengan asumsi itu, tanpa mengubah isi logic-nya.
+            // Catat Log "masuk" DULU untuk bahan mentah, baru insertPoDeliveryDetail()
+            // (UnitRollUp bisa menulis log konversi) — GitHub #167. Trading: credit stok
+            // produk + log type 1 di dalam insertPoDeliveryDetail / ProductUnitStock::addQty.
             $sv = SuppliesVariant::find($value['supplies_variant_id']);
-            $sup = Supplier::find($sv->supplier_id);
-            (new LogStock())->insertLog([
-                'log_date' => now(),
-                'log_kode'    => $po->po_number,
-                'log_type'    => 2,
-                'log_category' => 1,
-                'log_item_id' => $sv->supplies_id,
-                'log_notes'  => "Pembelian bahan mentah " . $sup->supplier_name . " " . LogStock::actorSuffix(),
-                'log_jumlah' => $value["pdod_qty"],
-                'unit_id'    => $value['unit_id'],
-            ]);
+            $supplies = $sv ? Supplies::find($sv->supplies_id) : null;
+            $isTrading = $supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null);
+            $sup = $sv ? Supplier::find($sv->supplier_id) : null;
+            $supplierName = $sup->supplier_name ?? '-';
+
+            if ($isTrading) {
+                $value['trading_log_notes'] = "Pembelian Trading " . $supplierName . " " . LogStock::actorSuffix();
+            }
+
+            if (! $isTrading && $sv) {
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode'    => $po->po_number,
+                    'log_type'    => 2,
+                    'log_category' => 1,
+                    'log_item_id' => $sv->supplies_id,
+                    'log_notes'  => "Pembelian bahan mentah " . $supplierName . " " . LogStock::actorSuffix(),
+                    'log_jumlah' => $value["pdod_qty"],
+                    'unit_id'    => $value['unit_id'],
+                ]);
+            }
 
             (new PurchaseOrderDeliveryDetail())->insertPoDeliveryDetail($value);
         }
@@ -915,6 +923,29 @@ class SupplierController extends Controller
                         continue;
                     }
 
+                    $supplies = Supplies::find($sv->supplies_id);
+                    if ($supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null)) {
+                        $pvId = (int) ($supplies->trading_product_variant_id ?? 0);
+                        $warehouseId = SuppliesStock::resolveWarehouseId();
+                        $avail = $pvId > 0
+                            ? ProductUnitStock::totalAvailable(
+                                $warehouseId,
+                                $pvId,
+                                (int) $value->unit_id,
+                                false,
+                                true
+                            )
+                            : 0;
+                        if ($avail < (int) $value->pod_qty) {
+                            $name = trim(($value->pod_nama ?? '') . ' ' . ($value->pod_variant ?? ''));
+                            if ($name === '') {
+                                $name = $sv->supplies_variant_name ?? 'Trading';
+                            }
+                            $kurang[] = $name !== '' ? $name : 'Trading';
+                        }
+                        continue;
+                    }
+
                     if (!$this->suppliesLadderHasEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty)) {
                         $name = trim(($value->pod_nama ?? '') . ' ' . ($value->pod_variant ?? ''));
                         if ($name === '' && $sv) {
@@ -934,6 +965,30 @@ class SupplierController extends Controller
 
                 foreach ($details as $value) {
                     $sv = SuppliesVariant::find($value->supplies_variant_id);
+                    $supplies = $sv ? Supplies::find($sv->supplies_id) : null;
+                    $sup = $sv ? Supplier::find($sv->supplier_id) : null;
+                    $supplierName = $sup->supplier_name ?? '-';
+
+                    if ($supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null)) {
+                        $pvId = (int) ($supplies->trading_product_variant_id ?? 0);
+                        $warehouseId = SuppliesStock::resolveWarehouseId();
+                        $deduct = ProductUnitStock::deductQty(
+                            $warehouseId,
+                            $pvId,
+                            (int) $value->unit_id,
+                            (float) $value->pod_qty,
+                            $p->po_number,
+                            "Pembatalan pembelian Trading " . $supplierName . " " . LogStock::actorSuffix(),
+                            false,
+                            true
+                        );
+                        if (! ($deduct['ok'] ?? false)) {
+                            throw new \RuntimeException(
+                                $deduct['message'] ?? 'Gagal mengurangi stok produk Trading'
+                            );
+                        }
+                        continue;
+                    }
 
                     // Bongkar satuan besar dulu kalau satuan yang dipesan tidak cukup sendirian
                     // (lihat komentar di blok validasi di atas). Kalau sudah cukup, ini no-op.
@@ -947,14 +1002,13 @@ class SupplierController extends Controller
                     $s->ss_stock -= $value->pod_qty;
                     $s->save();
 
-                    $sup = Supplier::find($sv->supplier_id);
                     (new LogStock())->insertLog([
                         'log_date' => now(),
                         'log_kode'    => $p->po_number,
                         'log_type'    => 2,
                         'log_category' => 2,
                         'log_item_id' => $sv->supplies_id,
-                        'log_notes'  => "Pembatalan pembelian bahan mentah " . $sup->supplier_name . " " . LogStock::actorSuffix(),
+                        'log_notes'  => "Pembatalan pembelian bahan mentah " . $supplierName . " " . LogStock::actorSuffix(),
                         'log_jumlah' => $value->pod_qty,
                         'unit_id'    => $value->unit_id,
                     ]);

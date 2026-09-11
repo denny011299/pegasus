@@ -1008,6 +1008,30 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
+  /**
+   * Bootstrap modal sering menelan wheel — list Select2 kelihatan scrollbar
+   * tapi tidak ikut scroll. Stop propagation di hasil dropdown.
+   */
+  function attachSelect2ModalScrollFix($el) {
+    $el.off('select2:open.pgScrollFix');
+    $el.on('select2:open.pgScrollFix', function () {
+      setTimeout(function () {
+        var $opts = $('.select2-container--open .select2-results__options').last();
+        if (!$opts.length) return;
+        $opts.css({
+          'overflow-y': 'auto',
+          'max-height': '260px',
+          '-webkit-overflow-scrolling': 'touch',
+          'overscroll-behavior': 'contain',
+        });
+        $opts.off('wheel.pgScrollFix mousewheel.pgScrollFix DOMMouseScroll.pgScrollFix');
+        $opts.on('wheel.pgScrollFix mousewheel.pgScrollFix DOMMouseScroll.pgScrollFix', function (e) {
+          e.stopPropagation();
+        });
+      }, 0);
+    });
+  }
+
   function autocompleteBom(id, modalParent = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
@@ -1304,9 +1328,12 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
       placeholder: "Pilih Produk",
       closeOnSelect: true,
       allowClear: true,
+      minimumResultsForSearch: 0,
       width: "100%",
       dropdownParent: modalParent ? $(modalParent) : "",
     });
+    attachSelect2SearchOpenFix($(id));
+    attachSelect2ModalScrollFix($(id));
   }
 
   function autocompleteCustomer(id, modalParent = null) {
