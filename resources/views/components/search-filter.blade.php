@@ -1021,8 +1021,6 @@
 </div>
 @endif
 
-@endif
-
 @if(Route::is(['pendingStockOperation']))
 {{-- Filter: Tanggal + Jenis + Status + Reset — lebar sama (3+3+3+3) --}}
 <div class="profit-menu card pending-stock-filter">
