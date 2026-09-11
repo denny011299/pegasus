@@ -1,5 +1,5 @@
   <div class="modal modal-xl custom-modal fade" id="add_supplies" role="dialog" data-bs-backdrop="static"
-    data-bs-keyboard="false">
+    data-bs-keyboard="false" data-bs-focus="false" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-md">
       <div class="modal-content">
         <div class="modal-header border-0 pb-0">
@@ -18,6 +18,22 @@
                     <label>Nama<span class="text-danger">*</span></label>
                     <input type="text" class="form-control fill" id="supplies_name"
                       placeholder="Input Nama Bahan Mentah">
+                  </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                  <div class="input-block mb-3">
+                    <label>Jenis<span class="text-danger">*</span></label>
+                    <select class="form-select fill" id="supplies_kind">
+                      <option value="supply" selected>Bahan Mentah</option>
+                      <option value="trading">Trading</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-12 col-lg-8 d-none" id="row-trading-product">
+                  <div class="input-block mb-3">
+                    <label>Relasi Varian Produk<span class="text-danger">*</span></label>
+                    <select class="form-select select2" id="trading_product_variant_id" style="width:100%;"></select>
+                    <small class="text-muted">Stok pembelian masuk ke varian produk ini (bukan stok bahan mentah).</small>
                   </div>
                 </div>
                 <div class="col-12 col-lg-4">
