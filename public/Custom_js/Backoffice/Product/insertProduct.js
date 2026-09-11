@@ -4,9 +4,16 @@ var rowId = 0;
 var relasi =[];
 var modeRelasi=0;
 var canAccessSafetyStock = false;
+var productPage = window.productPageConfig || {};
 autocompleteVariant("#product_variant");
 autocompleteCategory("#product_category");
 autocompleteUnit("#product_unit");
+
+function productSaveLabel() {
+    return mode == 1
+        ? (productPage.add_label || "Tambah Produk")
+        : (productPage.update_label || "Update Produk");
+}
 
 function refreshSafetyStockAccess() {
     canAccessSafetyStock = typeof hasAccessAction === "function"
@@ -28,7 +35,7 @@ function refreshSafetyStockAccess() {
 
 $(document).ready(function() {
     refreshSafetyStockAccess();
-    $('.btn-save').html(mode == 1?"Tambah Produk" : "Update Produk");
+    $('.btn-save').html(productSaveLabel());
     if (mode == 1) {
         canAdd=true;
         $('#tbVariant').html("")
@@ -213,7 +220,7 @@ $(document).on("click",".btn-save",function(){
     LoadingButton(this);
     $('.is-invalid').removeClass('is-invalid');
 
-    var url ="/insertProduct";
+    var url = productPage.insert_url || "/insertProduct";
     var valid=1;
     if(modeRelasi==0){
         $(".fill").each(function(){
@@ -226,7 +233,7 @@ $(document).on("click",".btn-save",function(){
 
     if(valid==-1){
         notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
-        ResetLoadingButton('.btn-save', mode == 1?"Tambah Produk" : "Update Produk");
+        ResetLoadingButton('.btn-save', productSaveLabel());
         return false;
     };
 
@@ -263,7 +270,7 @@ $(document).on("click",".btn-save",function(){
     param.product_relasi = JSON.stringify(relasi);
 
     if(mode==2){
-        url="/updateProduct";
+        url = productPage.update_url || "/updateProduct";
         param.product_id = data.product_id;
     }
 
@@ -274,11 +281,11 @@ $(document).on("click",".btn-save",function(){
         method:"post",
         headers: { 'X-CSRF-TOKEN': token },
         success:function(e){
-            ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
+            ResetLoadingButton(".btn-save", productSaveLabel());
             if (e == 1){
                 if(modeRelasi==0){
-                    if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Produk");
-                    else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Produk");
+                    if(mode==1)notifikasi('success', "Berhasil Insert", productPage.insert_success || "Berhasil Tambah Produk");
+                    else if(mode==2)notifikasi('success', "Berhasil Update", productPage.update_success || "Berhasil Update Produk");
                     afterInsert();
                 }
                 else{
@@ -293,7 +300,7 @@ $(document).on("click",".btn-save",function(){
             }
         },
         error:function(e){
-            ResetLoadingButton(".btn-save", mode == 1?"Tambah Produk" : "Update Produk");
+            ResetLoadingButton(".btn-save", productSaveLabel());
             if (handlePermissionError(e)) return;
             console.log(e);
         }
@@ -301,7 +308,7 @@ $(document).on("click",".btn-save",function(){
 });
 
 function afterInsert() {
-    window.location.href = "/product";
+    window.location.href = productPage.list_url || "/product";
 }
 
 $(document).on("click","#btnAddRowRelasi",function(){
