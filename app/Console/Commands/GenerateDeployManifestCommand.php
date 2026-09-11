@@ -24,7 +24,8 @@ class GenerateDeployManifestCommand extends Command
 
     public function handle(): int
     {
-        if (! is_dir(base_path('.git'))) {
+        // Worktree: .git adalah file pointer, bukan folder.
+        if (! is_dir(base_path('.git')) && ! is_file(base_path('.git'))) {
             $this->error('Tidak ada folder .git di sini -- jalankan perintah ini dari repo git (bukan dari server production), lalu upload deploy/manifest.json yang dihasilkan.');
 
             return self::FAILURE;
