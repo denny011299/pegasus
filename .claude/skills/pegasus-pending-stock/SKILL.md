@@ -12,8 +12,9 @@ description: >-
 ## Product rules
 
 - Scope = gudang yang opname **open hari ini** (`status=1` + `sto_date`/`stob_date` = today).
-- Queue: Produksi ACC, ST Kirim (asal), ST Terima (tujuan).
-- Soft-block: PO ACC, SO ACC, retur, product issues, safety→stock.
+- Queue: Produksi ACC, ST Kirim (asal), ST Terima (tujuan), **ACC Pembelian (bahan)**.
+- Soft-block: SO ACC, retur, product issues, safety→stock; retur/tolak-PO-setelah-ACC (mutasi stok).
+- ACC Pembelian saat opname bahan open → enqueue (`purchase_order_acc`), PO tetap status menunggu, stok belum naik; apply setelah opname close / lazy flush.
 - No new ST status. Ship queued → ST stays `1`. Accept queued → ST stays `2`.
 - Apply order: ship → accept → production_acc via existing paths (roll-up untouched).
 - After opname ACC/tolak: apply only if `!OpenOpnameGuard::isBlocked(WH, domain)`.
