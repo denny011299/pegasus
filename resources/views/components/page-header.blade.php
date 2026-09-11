@@ -206,6 +206,9 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['pendingStockOperation']))
+                    {{-- Monitoring only — tanpa tombol create --}}
+                @endif
                 @if (Route::is(['stockTransfer']))
                     @roleCan('Stock Transfer', 'create')
                     <li>

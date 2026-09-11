@@ -36,6 +36,7 @@ use App\Support\UnitRollUp;
 use App\Support\UnitStockSorter;
 use App\Support\StockOpname\OpnameLifecycle;
 use App\Support\StockOpname\OpnameLineReader;
+use App\Support\StockOpname\OpenOpnameGuard;
 use App\Support\StockOpname\BahanOpnameLifecycle;
 use App\Support\StockOpname\BahanOpnameLineReader;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -44,10 +45,37 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 
-use function Symfony\Component\Clock\now;
-
 class StockController extends Controller
 {
+    /** Status opname open (draft/menunggu hari ini) untuk lamp header + FAB — polling lintas browser/device. */
+    public function getOpenOpnameStatus(Request $req)
+    {
+        // Selalu session/gudang aktif server — jangan percaya warehouse_id dari client
+        // (tab lain bisa kirim gudang stale setelah ganti gudang di tab berbeda).
+        $whId = ProductStock::resolveWarehouseId(null);
+        $rev = \App\Support\StockOpname\OpenOpnameStatusSignal::rev($whId);
+        // Cache singkat per rev — kurangi beban DB saat banyak tab poll (artisan serve single-thread)
+        $snap = \Illuminate\Support\Facades\Cache::remember(
+            'opname_open_status_'.$whId.'_'.$rev,
+            3,
+            fn () => app(OpenOpnameGuard::class)->statusForWarehouse($whId)
+        );
+
+        return response()->json(array_merge([
+            'ok' => 1,
+            'status' => 1,
+            'warehouse_id' => $whId,
+            'rev' => $rev,
+            'server_time' => time(),
+            'product_open' => ! empty($snap['product']['open']) ? 1 : 0,
+            'supplies_open' => ! empty($snap['supplies']['open']) ? 1 : 0,
+        ], $snap))->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
     // Stock Opname
     public function StockOpname()
     {
@@ -94,6 +122,9 @@ class StockController extends Controller
         if ($warehouseId <= 0) {
             return;
         }
+        // Signal badge realtime di browser lain (poll cepat baca rev).
+        \App\Support\StockOpname\OpenOpnameStatusSignal::bump($warehouseId);
+
         $guard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
         if ($guard->isBlocked($warehouseId, $domain)) {
             return;
@@ -153,6 +184,9 @@ class StockController extends Controller
     function insertStockOpname(Request $req)
     {
         $data = $req->all();
+        if (empty($data['sto_date'])) {
+            $data['sto_date'] = now()->toDateString();
+        }
         $rawItems = json_decode($req->item, true) ?: [];
         if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'units')) {
             return response()->json(['status' => -1, 'message' => $msg]);
@@ -176,6 +210,11 @@ class StockController extends Controller
             // tanpa syarat baik untuk .btn-save (langsung publish) maupun .btn-save-draft (no-op,
             // publish sesungguhnya terjadi nanti di submitStockOpname()).
             $lifecycle->publish(StockOpname::find($id));
+
+            $wh = (int) (StockOpname::query()->whereKey($id)->value('warehouse_id') ?? 0);
+            if ($wh > 0) {
+                \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+            }
 
             return response()->json(['status' => 1, 'sto_id' => $id]);
         });
@@ -280,6 +319,11 @@ class StockController extends Controller
             $lifecycle->rollUpUnits($sto->refresh());
             $lifecycle->publish($sto->refresh());
 
+            $wh = (int) ($sto->warehouse_id ?? 0);
+            if ($wh > 0) {
+                \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+            }
+
             return 1;
         });
     }
@@ -293,7 +337,13 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
         }
 
-        return (new StockOpname())->deleteStockOpname($data);
+        $wh = (int) ($sto->warehouse_id ?? 0);
+        $result = (new StockOpname())->deleteStockOpname($data);
+        if ($wh > 0) {
+            \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+        }
+
+        return $result;
     }
 
     // Stock Opname Detail
@@ -787,6 +837,13 @@ class StockController extends Controller
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
         DB::commit();
+
+        $this->flushPendingStockAfterOpnameClose(
+            (int) ($sto->warehouse_id ?? 0),
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
+            (int) ($sto->acc_by ?? 0) ?: null
+        );
+
         return 1;
         } catch (\Throwable $e) {
             DB::rollBack();
@@ -1065,6 +1122,9 @@ class StockController extends Controller
     function insertStockOpnameBahan(Request $req)
     {
         $data = $req->all();
+        if (empty($data['stob_date'])) {
+            $data['stob_date'] = now()->toDateString();
+        }
         $rawItems = json_decode($req->item, true) ?: [];
         if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'sp_units')) {
             return response()->json(['status' => -1, 'message' => $msg]);
@@ -1083,6 +1143,11 @@ class StockController extends Controller
                 $lifecycle->rollUpUnits(StockOpnameBahan::find($id));
             }
             $lifecycle->publish(StockOpnameBahan::find($id));
+
+            $wh = (int) (StockOpnameBahan::query()->whereKey($id)->value('warehouse_id') ?? 0);
+            if ($wh > 0) {
+                \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+            }
 
             return response()->json(['status' => 1, 'stob_id' => $id]);
         });
@@ -1174,6 +1239,11 @@ class StockController extends Controller
             $lifecycle->rollUpUnits($stob->refresh());
             $lifecycle->publish($stob->refresh());
 
+            $wh = (int) ($stob->warehouse_id ?? 0);
+            if ($wh > 0) {
+                \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+            }
+
             return 1;
         });
     }
@@ -1187,7 +1257,13 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan menghapus draft milik staff lain"];
         }
 
-        return (new StockOpnameBahan())->deleteStockOpnameBahan($data);
+        $wh = (int) ($stob->warehouse_id ?? 0);
+        $result = (new StockOpnameBahan())->deleteStockOpnameBahan($data);
+        if ($wh > 0) {
+            \App\Support\StockOpname\OpenOpnameStatusSignal::bump($wh);
+        }
+
+        return $result;
     }
 
     // Stock Opname Detail
@@ -1414,6 +1490,13 @@ class StockController extends Controller
         $stob->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $stob->save();
         DB::commit();
+
+        $this->flushPendingStockAfterOpnameClose(
+            (int) ($stob->warehouse_id ?? 0),
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
+            (int) ($stob->acc_by ?? 0) ?: null
+        );
+
         return 1;
         } catch (\Throwable $e) {
             DB::rollBack();

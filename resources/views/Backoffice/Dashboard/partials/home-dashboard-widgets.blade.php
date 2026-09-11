@@ -592,6 +592,9 @@
 </style>
 
 <div class="dash-home">
+    <div class="d-flex justify-content-end mb-2">
+        @include('components.opname-status-badges')
+    </div>
     <div class="dash-toolbar">
         <div class="row g-2 align-items-center">
             <div class="col-sm-auto">

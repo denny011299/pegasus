@@ -155,6 +155,138 @@
 @endif
 <!-- /Main Wrapper -->
 
+@php
+  $fabWhId = (int) \App\Models\ProductStock::resolveWarehouseId(null);
+  $fabSnap = $fabWhId > 0
+      ? app(\App\Support\StockOpname\OpenOpnameGuard::class)->statusForWarehouse($fabWhId)
+      : ['product' => ['open' => false], 'supplies' => ['open' => false], 'any_open' => false];
+  $fabAny = !empty($fabSnap['any_open']);
+  $fabProduct = !empty($fabSnap['product']['open']);
+  $fabSupplies = !empty($fabSnap['supplies']['open']);
+  if ($fabProduct && !$fabSupplies) {
+      $fabText = 'Opname Produk aktif';
+      $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
+  } elseif ($fabSupplies && !$fabProduct) {
+      $fabText = 'Opname Bahan aktif';
+      $fabHref = $fabSnap['supplies']['url'] ?? url('/stockOpnameBahan');
+  } elseif ($fabAny) {
+      $fabText = 'Opname Produk & Bahan aktif';
+      $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
+  } else {
+      $fabText = 'Opname aktif';
+      $fabHref = url('/stockOpname');
+  }
+@endphp
+{{-- FAB indikator opname (slot ex theme-settings): tampil hanya jika ada opname open --}}
+<a href="{{ $fabHref }}" id="opname-open-fab" class="opname-open-fab"
+   title="{{ $fabText }}"
+   aria-hidden="{{ $fabAny ? 'false' : 'true' }}"
+   style="{{ $fabAny ? 'display:inline-flex' : 'display:none' }}">
+  <span class="opname-open-fab-dot" aria-hidden="true"></span>
+  <span class="opname-open-fab-text">{{ $fabText }}</span>
+</a>
+<style>
+  /* Badge status opname — samakan dengan dash-toolbar / card premium */
+  .opname-status-badges {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.4rem;
+  }
+  .opname-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 999px;
+    background: #ffffff;
+    border: 1px solid rgba(15, 23, 42, 0.1);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    color: #64748b !important;
+    text-decoration: none !important;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    line-height: 1.25;
+    max-width: 100%;
+    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  }
+  .opname-status-label {
+    white-space: nowrap;
+  }
+  @media (max-width: 575.98px) {
+    .opname-status-label {
+      white-space: normal;
+    }
+  }
+  .opname-status-badge:hover {
+    color: #0f172a !important;
+    border-color: rgba(29, 78, 216, 0.35);
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+  }
+  .opname-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #94a3b8;
+    flex-shrink: 0;
+  }
+  .opname-status-badge.is-on {
+    color: #166534 !important;
+    background: #f0fdf4;
+    border-color: rgba(22, 163, 74, 0.35);
+  }
+  .opname-status-badge.is-on .opname-status-dot {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+    animation: opname-status-pulse 1.6s ease-in-out infinite;
+  }
+  @keyframes opname-status-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(0.9); }
+  }
+
+  .opname-open-fab {
+    z-index: 999;
+    position: fixed;
+    right: 20px;
+    bottom: 20px;
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 0.95rem 0.6rem 0.8rem;
+    border-radius: 999px;
+    text-decoration: none !important;
+    color: #166534 !important;
+    background: #ffffff;
+    border: 1px solid rgba(22, 163, 74, 0.35);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.1);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .opname-open-fab:hover {
+    color: #14532d !important;
+    transform: translateY(-1px);
+    border-color: rgba(22, 163, 74, 0.55);
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.12);
+  }
+  .opname-open-fab-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+    animation: opname-status-pulse 1.6s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @media (max-width: 991.98px) {
+    .opname-open-fab { right: 12px; bottom: 12px; }
+  }
+</style>
+
 @include('layout.partials.footer-scripts')
 <script>
   var token = "{{ csrf_token() }}";
@@ -162,6 +294,7 @@
 <script>
   var route = "{{ Route::currentRouteName() }}";
   window.userRoleId = @json(Session::has('user') ? (int) Session::get('user')->role_id : null);
+  window.activeWarehouseId = {{ (int) \App\Models\ProductStock::resolveWarehouseId(null) }};
   @php
     $permissionListForJs = [];
     if (Session::has('user')) {

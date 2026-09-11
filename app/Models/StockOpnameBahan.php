@@ -53,7 +53,7 @@ class StockOpnameBahan extends Model
             });
         }
 
-        if ($data['stob_date']) $result->whereDate('stob_date', $data['stob_date']);
+        if (! empty($data['stob_date'])) $result->whereDate('stob_date', $data['stob_date']);
         if ($data['staff_id'])  $result->where('staff_id', $data['staff_id']);
         if ($data['stob_id'])   $result->where('stob_id', $data['stob_id']);
 
@@ -129,7 +129,7 @@ class StockOpnameBahan extends Model
     function insertStockOpnameBahan($data)
     {
         $t = new self();
-        $t->stob_date = $data['stob_date'];
+        $t->stob_date = $data['stob_date'] ?? now()->toDateString();
         $t->stob_code   = $this->generateStockOpnameBahanID();
         $t->staff_id = $data['staff_id'];
         $t->stob_notes = $data['stob_notes'] ?? null;
@@ -158,8 +158,8 @@ class StockOpnameBahan extends Model
         $t = self::find($data['stob_id']);
         if (!$t) return null;
 
-        $t->stob_date = $data['stob_date'];
-        $t->staff_id = $data['staff_id'];
+        $t->stob_date = $data['stob_date'] ?? $t->stob_date;
+        $t->staff_id = $data['staff_id'] ?? $t->staff_id;
         $t->stob_notes = $data['stob_notes'] ?? null;
         if (array_key_exists('is_draft', $data)) {
             $t->is_draft = ! empty($data['is_draft']);

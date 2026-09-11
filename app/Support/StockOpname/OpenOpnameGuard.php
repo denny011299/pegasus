@@ -69,6 +69,37 @@ class OpenOpnameGuard
         ];
     }
 
+    /**
+     * Snapshot status open opname untuk indikator UI (header lamp / FAB).
+     *
+     * @return array{
+     *   product: array{open: bool, code: ?string, id: ?int, url: string},
+     *   supplies: array{open: bool, code: ?string, id: ?int, url: string},
+     *   any_open: bool
+     * }
+     */
+    public function statusForWarehouse(int $warehouseId): array
+    {
+        $product = $warehouseId > 0 ? $this->firstBlocker($warehouseId, self::DOMAIN_PRODUCT) : null;
+        $supplies = $warehouseId > 0 ? $this->firstBlocker($warehouseId, self::DOMAIN_SUPPLIES) : null;
+
+        return [
+            'product' => [
+                'open' => $product !== null,
+                'code' => $product['code'] ?? null,
+                'id' => $product['id'] ?? null,
+                'url' => url('/stockOpname'),
+            ],
+            'supplies' => [
+                'open' => $supplies !== null,
+                'code' => $supplies['code'] ?? null,
+                'id' => $supplies['id'] ?? null,
+                'url' => url('/stockOpnameBahan'),
+            ],
+            'any_open' => $product !== null || $supplies !== null,
+        ];
+    }
+
     private function openQuery(int $warehouseId, string $domain, ?Carbon $date = null): Builder
     {
         $date = $date ?? Carbon::today();

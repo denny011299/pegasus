@@ -59,7 +59,7 @@ class StockOpname extends Model
             });
         }
 
-        if ($data['sto_date']) {
+        if (! empty($data['sto_date'])) {
             $result->whereDate('sto_date', $data['sto_date']);
         }
 
@@ -149,7 +149,8 @@ class StockOpname extends Model
     function insertStockOpname($data)
     {
         $t = new self();
-        $t->sto_date = $data['sto_date'];
+        // Fallback hari ini — jangan fatal kalau FE lupa kirim sto_date
+        $t->sto_date = $data['sto_date'] ?? now()->toDateString();
         $t->sto_code = $this->generateStockOpnameID();
         $t->staff_id = $data['staff_id'];
         $t->category_id = $data['category_id'];
@@ -184,9 +185,9 @@ class StockOpname extends Model
             return null;
         }
 
-        $t->sto_date = $data['sto_date'];
-        $t->staff_id = $data['staff_id'];
-        $t->category_id = $data['category_id'];
+        $t->sto_date = $data['sto_date'] ?? $t->sto_date;
+        $t->staff_id = $data['staff_id'] ?? $t->staff_id;
+        $t->category_id = $data['category_id'] ?? $t->category_id;
         $t->sto_notes = $data['sto_notes'] ?? null;
         // Sama seperti insertStockOpname(): kalau request ini tidak membawa is_draft sama sekali,
         // pertahankan nilai yang sudah ada (jangan diam-diam keluar dari draft/masuk ke draft).

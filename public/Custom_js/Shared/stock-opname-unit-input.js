@@ -97,6 +97,42 @@ function opnameRowAllUseSystemChecked($row) {
 }
 
 /** Kunci input tabel/header saat simpan — penanggung jawab selalu disabled. */
+var OPNAME_ACTION_BTNS =
+    ".btn-save,.btn-save-draft,.btn-ajukan,.btn-delete-draft,.save-tolak,.save-terima";
+
+function isOpnameTableLoading() {
+    return $("#tb-stock-wrap").hasClass("is-loading");
+}
+
+/**
+ * Saat tabel produk/bahan masih di-fetch: overlay loading + disable tombol aksi.
+ * Jangan re-enable kalau form sedang submit (opname-submitting).
+ */
+function setOpnameTableBusy(busy) {
+    $("#tb-stock-wrap").toggleClass("is-loading", !!busy);
+    if (busy) {
+        $(OPNAME_ACTION_BTNS).prop("disabled", true).attr("aria-busy", "true");
+        return;
+    }
+    if ($("#tb-stock-wrap").hasClass("opname-submitting")) {
+        return;
+    }
+    $(OPNAME_ACTION_BTNS).prop("disabled", false).removeAttr("aria-busy");
+}
+
+function guardOpnameNotBusy($btn, doneText) {
+    if (!isOpnameTableLoading()) return true;
+    if ($btn) ResetLoadingButton($btn, doneText);
+    if (typeof notifikasi === "function") {
+        notifikasi(
+            "warning",
+            "Mohon tunggu",
+            "Data masih dimuat. Tunggu selesai lalu coba lagi.",
+        );
+    }
+    return false;
+}
+
 function setStockOpnameFormLocked(locked) {
     $("#tbStock .real-stock, #tbStock .notes, #tbStock .use-system-stock").prop(
         "disabled",
@@ -107,9 +143,14 @@ function setStockOpnameFormLocked(locked) {
         !!locked,
     );
     $("#penanggung-jawab").prop("disabled", true).trigger("change");
+    $(OPNAME_ACTION_BTNS).prop("disabled", !!locked);
     if (locked) {
         $("#tb-stock-wrap").addClass("opname-submitting");
     } else {
         $("#tb-stock-wrap").removeClass("opname-submitting");
+        // Jangan buka tombol kalau tabel masih loading
+        if (!isOpnameTableLoading()) {
+            $(OPNAME_ACTION_BTNS).prop("disabled", false).removeAttr("aria-busy");
+        }
     }
 }
