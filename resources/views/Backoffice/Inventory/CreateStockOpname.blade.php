@@ -239,17 +239,21 @@
       box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
     }
 
-    /* Sticky Action / Search bar */
+    /* Sticky Action / Search bar — di atas overlay tabel */
     .stock-opname-toolbar {
       position: sticky;
       top: 70px;
-      z-index: 10;
+      z-index: 30;
       background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(8px);
       border-radius: 12px;
       padding: 14px 18px;
       border: 1px solid #e2e8f0;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+    .stock-opname-actions-desktop {
+      position: relative;
+      z-index: 31;
     }
 
     .stock-opname-fab {
@@ -384,10 +388,10 @@
               @if (
                   $akses->firstWhere('name', 'Stok Opname Produk') &&
                       in_array('others', $akses->firstWhere('name', 'Stok Opname Produk')->akses))
-                <button class="btn btn-outline-danger save-tolak" style="display: none; height: 40px; border-radius: 8px; font-weight: 600; padding: 0 18px;">
+                <button type="button" class="btn btn-outline-danger save-tolak" style="display: none; height: 40px; border-radius: 8px; font-weight: 600; padding: 0 18px;">
                   <i class="fe fe-x me-1"></i> Tolak
                 </button>
-                <button class="btn btn-success save-terima" style="display: none; height: 40px; border-radius: 8px; font-weight: 600; padding: 0 18px; background: linear-gradient(135deg, #16a34a, #15803d); border: none; box-shadow: 0 4px 12px rgba(22,163,74,0.25);">
+                <button type="button" class="btn btn-success save-terima" style="display: none; height: 40px; border-radius: 8px; font-weight: 600; padding: 0 18px; background: linear-gradient(135deg, #16a34a, #15803d); border: none; box-shadow: 0 4px 12px rgba(22,163,74,0.25);">
                   <i class="fe fe-check me-1"></i> Terima
                 </button>
               @endif
@@ -469,5 +473,7 @@
     var mode = @json($mode);
     var sessionUser = @json(Session::get('user'));
   </script>
+  {{-- Wajib sebelum CreateStockOpname.js (guardOpnameNotBusy / buildOpnameUnitInputHtml) --}}
+  <script src="{{ asset('Custom_js/Shared/stock-opname-unit-input.js') }}?v={{ filemtime(public_path('Custom_js/Shared/stock-opname-unit-input.js')) }}"></script>
   <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v={{ time() }}"></script>
 @endsection

@@ -446,5 +446,6 @@
         var mode = @json($mode);
         var sessionUser = @json(Session::get('user'));
     </script>
+    <script src="{{ asset('Custom_js/Shared/stock-opname-unit-input.js') }}?v={{ filemtime(public_path('Custom_js/Shared/stock-opname-unit-input.js')) }}"></script>
     <script src="{{asset('Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js')}}?v={{ time() }}"></script>
 @endsection
