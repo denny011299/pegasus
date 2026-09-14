@@ -56,10 +56,12 @@
     }
 
     function notifyError(xhr) {
+        var title = (xhr.responseJSON && xhr.responseJSON.header) || "Gagal";
+        var msg = errorMessage(xhr);
         if (typeof notifikasi === "function") {
-            notifikasi("error", "Gagal", errorMessage(xhr));
+            notifikasi("error", title, msg);
         } else if (typeof toastr !== "undefined") {
-            toastr.error(errorMessage(xhr));
+            toastr.error(msg);
         }
     }
 

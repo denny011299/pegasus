@@ -889,65 +889,21 @@ class ProductionController extends Controller
             ]);
         }
 
-        // Antrian: defer ACC stok kalau gudang utama sedang opname produk (skip saat replay dari queue).
-        if (! (int) ($data['from_pending_stock_queue'] ?? 0)) {
-            $pso = app(\App\Support\PendingStockOperationService::class);
-            $opGuard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
-            $mainWhId = (int) $mainWarehouse->id;
-            $pso->flushStaleIfUnblocked(
-                $mainWhId,
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
-                (int) (session('user')->staff_id ?? 0) ?: null
-            );
-            if ($pso->hasPendingForSource(
-                \App\Models\PendingStockOperation::SOURCE_PRODUCTION_ACC,
-                (int) $p->production_id
-            )) {
-                return response()->json([
-                    'status' => -1,
-                    'header' => 'Antrian Mutasi Stok',
-                    'message' => $pso->pendingMessageForSource(
-                        \App\Models\PendingStockOperation::SOURCE_PRODUCTION_ACC
-                    ),
-                ]);
-            }
-            if ($opGuard->isBlocked(
-                $mainWhId,
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
-            )) {
-                try {
-                    $pso->enqueue([
-                        'warehouse_id' => $mainWhId,
-                        'domain' => \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
-                        'source_type' => \App\Models\PendingStockOperation::SOURCE_PRODUCTION_ACC,
-                        'source_id' => (int) $p->production_id,
-                        'source_code' => $p->production_code,
-                        'payload' => [
-                            'staff_id' => (int) (session('user')->staff_id ?? 0),
-                            'request' => [
-                                'production_id' => (int) $p->production_id,
-                                'confirm_create_stock' => $data['confirm_create_stock'] ?? null,
-                            ],
-                        ],
-                        'created_by' => (int) (session('user')->staff_id ?? 0),
-                    ]);
-                } catch (\Throwable $e) {
-                    return response()->json([
-                        'status' => -1,
-                        'header' => 'Antrian Mutasi Stok',
-                        'message' => $e->getMessage() ?: 'Gagal masuk antrian mutasi stok',
-                    ]);
-                }
-
-                return response()->json([
-                    'status' => 1,
-                    'queued' => 1,
-                    'header' => 'Antrian Mutasi Stok',
-                    'message' => $pso->enqueueInfoMessage(
-                        \App\Models\PendingStockOperation::SOURCE_PRODUCTION_ACC
-                    ),
-                ]);
-            }
+        // Soft-block: ACC ditolak saat opname open (produk atau bahan).
+        $mainWhId = (int) $mainWarehouse->id;
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        ) ?? \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
         }
 
         $transferPlan = $this->buildProductionTransferPlan($item, (int) $mainWarehouse->id);

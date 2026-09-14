@@ -1468,17 +1468,7 @@ $(document).on("click", "#btn-acc-po", function () {
                     return false;
                 }
                 if (e.status == -1) {
-                    notifikasi('error', e.header || 'Gagal Approve', e.message || 'Gagal approve pembelian');
-                    return false;
-                }
-                // Opname bahan aktif → masuk antrian; PO tetap menunggu, stok belum naik
-                if (e.queued == 1 || e.queued === true) {
-                    notifikasi(
-                        "info",
-                        e.header || "Antrian Mutasi Stok",
-                        e.message || "Masuk antrian. Stok belum bertambah sampai opname selesai."
-                    );
-                    window.open('/purchaseOrder', '_self');
+                    notifikasi('error', e.header || 'Stock Opname', e.message || 'Gagal approve pembelian');
                     return false;
                 }
             }

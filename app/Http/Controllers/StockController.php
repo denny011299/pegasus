@@ -116,28 +116,13 @@ class StockController extends Controller
         return trim((string) ($name ?? ''));
     }
 
-    /** Auto-apply antrian hanya jika jendela opname WH+domain sudah tutup total. */
-    private function flushPendingStockAfterOpnameClose(int $warehouseId, string $domain, ?int $appliedBy): void
+    /** Signal badge realtime setelah ACC/tolak opname (poll baca rev). */
+    private function bumpOpenOpnameStatusAfterClose(int $warehouseId): void
     {
         if ($warehouseId <= 0) {
             return;
         }
-        // Signal badge realtime di browser lain (poll cepat baca rev).
         \App\Support\StockOpname\OpenOpnameStatusSignal::bump($warehouseId);
-
-        $guard = app(\App\Support\StockOpname\OpenOpnameGuard::class);
-        if ($guard->isBlocked($warehouseId, $domain)) {
-            return;
-        }
-        try {
-            app(\App\Support\PendingStockOperationService::class)->applyAllForWarehouse(
-                $warehouseId,
-                $domain,
-                $appliedBy
-            );
-        } catch (\Throwable $e) {
-            report($e);
-        }
     }
 
     /**
@@ -841,11 +826,7 @@ class StockController extends Controller
         $sto->save();
         DB::commit();
 
-        $this->flushPendingStockAfterOpnameClose(
-            (int) ($sto->warehouse_id ?? 0),
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
-            (int) ($sto->acc_by ?? 0) ?: null
-        );
+        $this->bumpOpenOpnameStatusAfterClose((int) ($sto->warehouse_id ?? 0));
 
         return 1;
         } catch (\Throwable $e) {
@@ -959,11 +940,7 @@ class StockController extends Controller
 
             DB::commit();
 
-            $this->flushPendingStockAfterOpnameClose(
-                (int) ($sto->warehouse_id ?? 0),
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
-                (int) ($sto->acc_by ?? 0) ?: null
-            );
+            $this->bumpOpenOpnameStatusAfterClose((int) ($sto->warehouse_id ?? 0));
 
             return 1;
         } catch (\Throwable $e) {
@@ -996,11 +973,7 @@ class StockController extends Controller
             });
         }
 
-        $this->flushPendingStockAfterOpnameClose(
-            (int) ($sto->warehouse_id ?? 0),
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT,
-            (int) ($sto->acc_by ?? 0) ?: null
-        );
+        $this->bumpOpenOpnameStatusAfterClose((int) ($sto->warehouse_id ?? 0));
     }
 
     function generateStockOpname($id)
@@ -1494,11 +1467,7 @@ class StockController extends Controller
         $stob->save();
         DB::commit();
 
-        $this->flushPendingStockAfterOpnameClose(
-            (int) ($stob->warehouse_id ?? 0),
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
-            (int) ($stob->acc_by ?? 0) ?: null
-        );
+        $this->bumpOpenOpnameStatusAfterClose((int) ($stob->warehouse_id ?? 0));
 
         return 1;
         } catch (\Throwable $e) {
@@ -1597,11 +1566,7 @@ class StockController extends Controller
 
             DB::commit();
 
-            $this->flushPendingStockAfterOpnameClose(
-                (int) ($stob->warehouse_id ?? 0),
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
-                (int) ($stob->acc_by ?? 0) ?: null
-            );
+            $this->bumpOpenOpnameStatusAfterClose((int) ($stob->warehouse_id ?? 0));
 
             return 1;
         } catch (\Throwable $e) {
@@ -1631,11 +1596,7 @@ class StockController extends Controller
             });
         }
 
-        $this->flushPendingStockAfterOpnameClose(
-            (int) ($stob->warehouse_id ?? 0),
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES,
-            (int) ($stob->acc_by ?? 0) ?: null
-        );
+        $this->bumpOpenOpnameStatusAfterClose((int) ($stob->warehouse_id ?? 0));
     }
 
     function generateStockOpnameBahan($id)
@@ -2310,16 +2271,17 @@ class StockController extends Controller
         }
 
         $activeWh = (int) (ProductStock::resolveWarehouseId() ?: Session::get('active_warehouse_id') ?? 0);
-        $issueDomain = ((int) $pi->tipe_return === 1)
-            ? \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
-            : \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT;
-        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked($activeWh, $issueDomain);
-        if ($softBlock !== null) {
-            return response()->json([
-                'status' => -1,
-                'header' => 'Stock Opname',
-                'message' => $softBlock,
-            ]);
+
+        // Soft-block: ACC ditolak kalau opname produk ATAU bahan open di gudang aktif.
+        if ($activeWh > 0) {
+            $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyDomainBlocked($activeWh);
+            if ($softBlock !== null) {
+                return response()->json([
+                    'status' => -1,
+                    'header' => 'Stock Opname',
+                    'message' => $softBlock,
+                ]);
+            }
         }
 
         // 1. PRE-CHECK (tanpa mutasi apa pun): hanya relevan untuk retur ke supplier — retur

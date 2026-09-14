@@ -5,7 +5,7 @@ namespace App\Support;
 use App\Support\StockOpname\OpenOpnameGuard;
 
 /**
- * Soft-block mutasi non-queue (PO/SO/retur/…) saat opname open.
+ * Soft-block mutasi stok saat opname open (tolak aksi; tanpa antrian).
  */
 class PendingStockSoftBlock
 {
@@ -14,16 +14,25 @@ class PendingStockSoftBlock
         if ($warehouseId <= 0) {
             return null;
         }
-        $svc = app(PendingStockOperationService::class);
-        // Opname kemarin sudah lewat tanggal → flush antrian usang dulu (tanpa cron).
-        $svc->flushStaleIfUnblocked($warehouseId, $domain);
 
         $guard = app(OpenOpnameGuard::class);
         if (! $guard->isBlocked($warehouseId, $domain)) {
             return null;
         }
 
-        return $svc->softBlockMessage($warehouseId, $domain);
+        $blocker = $guard->firstBlocker($warehouseId, $domain);
+        if ($blocker && ($blocker['code'] ?? '') !== '') {
+            return 'Gudang sedang Stock Opname ('.$blocker['code'].'). Mutasi stok ditolak sampai opname selesai.';
+        }
+
+        return 'Gudang sedang Stock Opname. Mutasi stok ditolak sampai opname selesai.';
+    }
+
+    /** Block kalau opname produk ATAU bahan open di gudang itu. */
+    public static function messageIfAnyDomainBlocked(int $warehouseId): ?string
+    {
+        return self::messageIfBlocked($warehouseId, OpenOpnameGuard::DOMAIN_PRODUCT)
+            ?? self::messageIfBlocked($warehouseId, OpenOpnameGuard::DOMAIN_SUPPLIES);
     }
 
     /**
@@ -47,5 +56,14 @@ class PendingStockSoftBlock
         }
 
         return null;
+    }
+
+    /**
+     * @param  iterable<int|string|null>  $warehouseIds
+     */
+    public static function messageIfAnyWarehouseAnyDomainBlocked(iterable $warehouseIds): ?string
+    {
+        return self::messageIfAnyWarehouseBlocked($warehouseIds, OpenOpnameGuard::DOMAIN_PRODUCT)
+            ?? self::messageIfAnyWarehouseBlocked($warehouseIds, OpenOpnameGuard::DOMAIN_SUPPLIES);
     }
 }
