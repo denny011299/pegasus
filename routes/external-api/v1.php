@@ -55,6 +55,12 @@ Route::prefix('master')->name('master.')->group(function () {
 
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
 
+    // GitHub #171: daftar kategori produk aktif, supaya PMO bisa meresolusi
+    // category_id yang dikirim ke POST/PUT /produk — tidak punya konsep
+    // ref id PMO seperti units, jadi hanya baca (tidak ada create/update/
+    // delete di sini, lihat catatan method MasterDataController::categories()).
+    Route::get('/categories', [MasterDataController::class, 'categories'])->name('categories');
+
     // API-002
     Route::get('/warehouses', [MasterWarehouseController::class, 'index'])->name('warehouses');
     Route::post('/warehouses', [MasterWarehouseController::class, 'store'])->name('warehouses.store');

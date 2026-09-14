@@ -186,7 +186,7 @@ class MasterArmadaController extends Controller
     private function validateCreatePayload(Request $request): array
     {
         return $request->validate([
-            'code' => ['required', 'string', 'max:10'],
+            'code' => ['required', 'string', 'max:64'],
         ] + $this->profileRules());
     }
 

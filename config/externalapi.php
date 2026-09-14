@@ -145,6 +145,7 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterUnitLinkDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterCashCategoryListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterCategoryListDoc::class,
 
         // API-002 — Data Master (batch 2)
         \App\ExternalApi\Docs\Endpoints\V1\MasterWarehouseListDoc::class,
