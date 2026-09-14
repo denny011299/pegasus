@@ -50,8 +50,8 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['name' => 'product_name', 'type' => 'string', 'required' => true, 'description' => 'Nama produk.'],
-            ['name' => 'category_id', 'type' => 'integer', 'required' => true, 'description' => 'id kategori produk. Wajib menunjuk kategori yang berstatus aktif.'],
-            ['name' => 'unit_id', 'type' => 'integer', 'required' => true, 'description' => 'id satuan default produk ini. Wajib menunjuk satuan yang berstatus aktif.'],
+            ['name' => 'category_id', 'type' => 'integer', 'required' => true, 'description' => 'id kategori produk. Wajib menunjuk kategori yang berstatus aktif — daftarnya bisa diambil dari GET /master/categories.'],
+            ['name' => 'unit_id', 'type' => 'integer', 'required' => true, 'description' => 'id satuan default produk ini. Wajib menunjuk satuan yang berstatus aktif — daftarnya bisa diambil dari GET /master/units.'],
             ['name' => 'product_unit', 'type' => 'array of integer', 'required' => true, 'description' => 'Daftar id satuan yang boleh dipakai untuk produk ini, minimal satu. Setiap unsurnya wajib menunjuk satuan yang berstatus aktif.'],
         ];
     }

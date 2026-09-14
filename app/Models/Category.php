@@ -32,6 +32,20 @@ class Category extends Model
     }
 
     /**
+     * Dipakai GET /api/external/v1/master/categories (GitHub #171) —
+     * daftar kategori produk aktif, supaya sistem eksternal (PMO) bisa
+     * meresolusi category_id yang dikirim sebagai body POST/PUT
+     * /api/external/v1/produk, sama seperti /master/units untuk unit_id.
+     */
+    function getCategoryForExternalApi()
+    {
+        return self::where('status', '=', 1)
+            ->orderBy('created_at', 'asc')
+            ->orderBy('category_id', 'asc')
+            ->select(['category_id', 'category_name']);
+    }
+
+    /**
      * True kalau ada kategori aktif lain dengan nama yang sama (case-insensitive,
      * trimmed). $excludeId dipakai saat update supaya baris itu sendiri tidak dianggap
      * bentrok dengan dirinya sendiri.
