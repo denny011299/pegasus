@@ -302,6 +302,24 @@ class CustomerController extends Controller
             ];
         }
 
+        // Soft-block: edit SO yang sudah ACC mutasi stok — ditolak saat opname produk open.
+        $soWhIds = collect($oldLines)->pluck('warehouse_id')
+            ->merge(collect($newLines)->pluck('warehouse_id'))
+            ->push($oldRetailWh)
+            ->push($newRetailWh)
+            ->push((int) (\App\Models\ProductStock::resolveWarehouseId() ?: Session::get('active_warehouse_id') ?? 0));
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+            $soWhIds,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         $newLineKeys = [];
         foreach ($newLines as $newLine) {
             $newLineKeys[$newLine['product_variant_id'] . '_' . $newLine['unit_id']] = true;

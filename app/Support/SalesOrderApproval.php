@@ -75,7 +75,8 @@ class SalesOrderApproval
         }
 
         $softBlock = PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
-            collect($plan['plan'] ?? [])->pluck('warehouse_id'),
+            collect($plan['plan'] ?? [])->pluck('warehouse_id')
+                ->push((int) (\App\Models\ProductStock::resolveWarehouseId() ?: session('active_warehouse_id') ?? 0)),
             OpenOpnameGuard::DOMAIN_PRODUCT
         );
         if ($softBlock !== null) {

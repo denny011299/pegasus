@@ -243,12 +243,15 @@ class CustomerSupplyReturnController extends Controller
         $warehouseIds = CustomerSupplyReturnDetail::where('return_id', $returnId)
             ->where('status', 1)
             ->pluck('warehouse_id');
-        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
-            $warehouseIds,
-            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseAnyDomainBlocked(
+            $warehouseIds
         );
         if ($softBlock !== null) {
-            return response()->json(['success' => false, 'message' => $softBlock], 422);
+            return response()->json([
+                'success' => false,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ], 422);
         }
 
         DB::transaction(function () use ($returnId) {

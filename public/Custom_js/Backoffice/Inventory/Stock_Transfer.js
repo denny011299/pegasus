@@ -3773,7 +3773,13 @@ $(document).on("click", ".btn-save-transfer", function () {
                 transferThenShipProofBase64 = "";
                 $("#transfer_then_ship_proof_base64").val("");
                 if (!shipRes || shipRes.status != 1) {
-                    if (typeof toastr !== "undefined") {
+                    if (typeof notifikasi === "function") {
+                        notifikasi(
+                            "error",
+                            (shipRes && shipRes.header) || "Gagal ACC kirim",
+                            (shipRes && shipRes.message) || "Gagal ACC kirim"
+                        );
+                    } else if (typeof toastr !== "undefined") {
                         toastr.error("", (shipRes && shipRes.message) || "Gagal ACC kirim");
                     }
                     if (table) table.ajax.reload(null, false);
@@ -4599,7 +4605,13 @@ $(document).on("click", "#btn-ship-stock-transfer", function () {
             );
             if (!res || res.status != 1) {
                 closeModalConfirm();
-                if (typeof toastr !== "undefined") {
+                if (typeof notifikasi === "function") {
+                    notifikasi(
+                        "error",
+                        (res && res.header) || "Gagal kirim",
+                        (res && res.message) || "Gagal kirim transfer"
+                    );
+                } else if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal kirim transfer");
                 }
                 return;
@@ -5029,7 +5041,13 @@ function submitAcceptStockTransfer(id, $loadingBtn) {
                 ResetLoadingButton($btn, idleLabel);
             }
             if (!res || res.status != 1) {
-                if (typeof toastr !== "undefined") {
+                if (typeof notifikasi === "function") {
+                    notifikasi(
+                        "error",
+                        (res && res.header) || "Gagal ACC",
+                        (res && res.message) || "Gagal ACC"
+                    );
+                } else if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal ACC");
                 }
                 return;

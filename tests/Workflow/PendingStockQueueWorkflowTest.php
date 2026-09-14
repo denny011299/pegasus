@@ -3,7 +3,6 @@
 namespace Tests\Workflow;
 
 use App\Models\Category;
-use App\Models\PendingStockOperation;
 use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
@@ -11,7 +10,6 @@ use App\Models\StockOpname;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
 use App\Models\Warehouse;
-use App\Support\PendingStockOperationService;
 use App\Support\PendingStockSoftBlock;
 use App\Support\StockOpname\OpenOpnameGuard;
 use Illuminate\Support\Facades\Schema;
@@ -19,7 +17,7 @@ use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
 /**
- * Antrian Mutasi Stok: Kirim ST di-queue saat opname open; soft-block non-queue.
+ * Soft-block mutasi saat opname open (tanpa antrian).
  */
 class PendingStockQueueWorkflowTest extends TestCase
 {
@@ -64,6 +62,9 @@ class PendingStockQueueWorkflowTest extends TestCase
         $product->product_unit = json_encode([self::PIECE_UNIT_ID]);
         $product->unit_id = self::PIECE_UNIT_ID;
         $product->status = 1;
+        if (Schema::hasColumn('products', 'product_kind')) {
+            $product->product_kind = Product::KIND_PRODUCT;
+        }
         $product->save();
 
         $variant = new ProductVariant();
@@ -97,12 +98,12 @@ class PendingStockQueueWorkflowTest extends TestCase
         $this->assertFalse($guard->isBlocked(self::OTHER_WAREHOUSE_ID, OpenOpnameGuard::DOMAIN_PRODUCT));
     }
 
-    public function test_ship_queues_when_origin_opname_open_and_apply_after_close(): void
+    public function test_ship_soft_blocks_when_origin_opname_open(): void
     {
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
-        $sto = $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
+        $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
         $fx = $this->createStockedProduct(self::MAIN_WAREHOUSE_ID, 40);
 
         $mainTypeId = (int) Warehouse::query()->findOrFail(self::MAIN_WAREHOUSE_ID)->warehouse_type_id;
@@ -135,37 +136,15 @@ class PendingStockQueueWorkflowTest extends TestCase
             'proof_base64' => self::PROOF_BASE64,
         ])
             ->assertStatus(200)
-            ->assertJson(['status' => 1, 'queued' => 1]);
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
 
         $header->refresh();
         $fx['stock']->refresh();
-        $this->assertSame(1, (int) $header->status, 'ST tetap Pending saat Kirim di-queue');
-        $this->assertSame(40.0, (float) $fx['stock']->ps_stock, 'Stok asal belum dipotong');
-
-        $pso = PendingStockOperation::query()
-            ->where('source_type', PendingStockOperation::SOURCE_STOCK_TRANSFER_SHIP)
-            ->where('source_id', $header->st_id)
-            ->where('status', PendingStockOperation::STATUS_PENDING)
-            ->first();
-        $this->assertNotNull($pso);
-
-        // Tutup jendela opname → apply antrian
-        $sto->status = 2;
-        $sto->save();
-
-        $summary = app(PendingStockOperationService::class)->applyAllForWarehouse(
-            self::MAIN_WAREHOUSE_ID,
-            OpenOpnameGuard::DOMAIN_PRODUCT,
-            (int) (session('user')->staff_id ?? 0)
-        );
-        $this->assertSame([], $summary['errors'], implode('; ', $summary['errors']));
-
-        $header->refresh();
-        $fx['stock']->refresh();
-        $pso->refresh();
-        $this->assertSame(2, (int) $header->status, 'Setelah apply: status Kirim');
-        $this->assertSame(30.0, (float) $fx['stock']->ps_stock, '40 - 10 setelah apply');
-        $this->assertSame(PendingStockOperation::STATUS_APPLIED, (int) $pso->status);
+        $this->assertSame(1, (int) $header->status);
+        $this->assertSame(40.0, (float) $fx['stock']->ps_stock);
     }
 
     public function test_soft_block_message_when_opname_open(): void
@@ -186,63 +165,51 @@ class PendingStockQueueWorkflowTest extends TestCase
         ));
     }
 
-    public function test_lazy_flush_when_opname_date_is_no_longer_today(): void
+    public function test_product_issues_soft_blocks_when_product_opname_open(): void
     {
         $this->actingAsSuperAdminStaff();
         $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
 
-        $sto = $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
-        $fx = $this->createStockedProduct(self::MAIN_WAREHOUSE_ID, 40);
+        $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
+        $fx = $this->createStockedProduct(self::MAIN_WAREHOUSE_ID, 20);
+        $qty = 4;
 
-        $mainTypeId = (int) Warehouse::query()->findOrFail(self::MAIN_WAREHOUSE_ID)->warehouse_type_id;
-        $dest = new Warehouse();
-        $dest->warehouse_name = 'PSO Stale Dest ' . uniqid();
-        $dest->warehouse_type_id = $mainTypeId;
-        $dest->status = 1;
-        $dest->save();
+        $this->post('/insertProductIssues', [
+            'tipe_return' => 2,
+            'pi_type' => 1,
+            'pi_date' => now()->format('d-m-Y'),
+            'pi_notes' => 'PSO soft-block product issues',
+            'items' => json_encode([[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'pr_name' => 'PSO PI Product',
+                'unit_id' => self::PIECE_UNIT_ID,
+                'pid_qty' => $qty,
+            ]]),
+        ])->assertStatus(200);
 
-        $header = new StockTransfer();
-        $header->transfer_code = 'PSO-STALE-' . uniqid();
-        $header->transfer_date = now()->toDateString();
-        $header->sender_id = (int) (session('user')->staff_id ?? 0);
-        $header->from_warehouse_id = self::MAIN_WAREHOUSE_ID;
-        $header->to_warehouse_id = (int) $dest->id;
-        $header->status = 1;
-        $header->save();
+        $piId = (int) \App\Models\ProductIssues::orderByDesc('pi_id')->value('pi_id');
+        $this->assertGreaterThan(0, $piId);
 
-        $detail = new StockTransferDetail();
-        $detail->st_id = $header->st_id;
-        $detail->product_id = $fx['product']->product_id;
-        $detail->product_variant_id = $fx['variant']->product_variant_id;
-        $detail->unit_id = self::PIECE_UNIT_ID;
-        $detail->qty = 10;
-        $detail->status = 1;
-        $detail->save();
+        $this->post('/accProductIssues', ['pi_id' => $piId])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
 
-        $this->post('/shipStockTransfer', [
-            'id' => $header->st_id,
-            'proof_base64' => self::PROOF_BASE64,
-        ])->assertJson(['status' => 1, 'queued' => 1]);
-
-        // Opname masih status=1 tapi tanggal kemarin → guard tidak block; lazy flush harus apply.
-        $sto->sto_date = now()->subDay()->toDateString();
-        $sto->save();
-
-        $this->assertFalse(
-            app(OpenOpnameGuard::class)->isBlocked(self::MAIN_WAREHOUSE_ID, OpenOpnameGuard::DOMAIN_PRODUCT)
-        );
-
-        $summary = app(PendingStockOperationService::class)->flushStaleIfUnblocked(
-            self::MAIN_WAREHOUSE_ID,
-            OpenOpnameGuard::DOMAIN_PRODUCT,
-            (int) (session('user')->staff_id ?? 0)
-        );
-        $this->assertNotNull($summary);
-        $this->assertSame([], $summary['errors'], implode('; ', $summary['errors']));
-
-        $header->refresh();
+        $pi = \App\Models\ProductIssues::findOrFail($piId);
         $fx['stock']->refresh();
-        $this->assertSame(2, (int) $header->status);
-        $this->assertSame(30.0, (float) $fx['stock']->ps_stock);
+        $this->assertSame(1, (int) $pi->status);
+        $this->assertSame(20.0, (float) $fx['stock']->ps_stock);
+    }
+
+    public function test_soft_block_any_domain_helper(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
+
+        $msg = PendingStockSoftBlock::messageIfAnyDomainBlocked(self::MAIN_WAREHOUSE_ID);
+        $this->assertNotNull($msg);
+        $this->assertStringContainsString('Stock Opname', $msg);
     }
 }

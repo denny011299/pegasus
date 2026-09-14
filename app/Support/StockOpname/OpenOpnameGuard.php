@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 
 /**
  * Deteksi Stock Opname terbuka (status=1 draft/menunggu) per gudang + domain.
- * Dipakai gate antrian mutasi stok — jangan campur dengan ProductionPendingStockRestorer.
+ * Dipakai soft-block mutasi stok — jangan campur dengan ProductionPendingStockRestorer.
  */
 class OpenOpnameGuard
 {

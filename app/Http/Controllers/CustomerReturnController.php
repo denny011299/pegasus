@@ -330,29 +330,28 @@ class CustomerReturnController extends Controller
 
         $bundle = $this->resolveBundle($docKey, false);
         if ($bundle) {
+            $whIds = collect();
             if ($bundle['supply']) {
-                $whIds = CustomerSupplyReturnDetail::where('return_id', $bundle['supply']->return_id)
-                    ->where('status', 1)
-                    ->pluck('warehouse_id');
-                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
-                    $whIds,
-                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+                $whIds = $whIds->merge(
+                    CustomerSupplyReturnDetail::where('return_id', $bundle['supply']->return_id)
+                        ->where('status', 1)
+                        ->pluck('warehouse_id')
                 );
-                if ($softBlock !== null) {
-                    return response()->json(['success' => false, 'message' => $softBlock], 422);
-                }
             }
             if ($bundle['product']) {
-                $whIds = CustomerProductReturnDetail::where('return_id', $bundle['product']->return_id)
-                    ->where('status', 1)
-                    ->pluck('warehouse_id');
-                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
-                    $whIds,
-                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+                $whIds = $whIds->merge(
+                    CustomerProductReturnDetail::where('return_id', $bundle['product']->return_id)
+                        ->where('status', 1)
+                        ->pluck('warehouse_id')
                 );
-                if ($softBlock !== null) {
-                    return response()->json(['success' => false, 'message' => $softBlock], 422);
-                }
+            }
+            $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseAnyDomainBlocked($whIds);
+            if ($softBlock !== null) {
+                return response()->json([
+                    'success' => false,
+                    'header' => 'Stock Opname',
+                    'message' => $softBlock,
+                ], 422);
             }
         }
 
