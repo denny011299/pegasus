@@ -5,6 +5,7 @@ use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
+use App\Http\Controllers\ExternalApi\V1\MasterStaffController;
 use App\Http\Controllers\ExternalApi\V1\MasterSuppliesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
@@ -78,6 +79,16 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
     Route::patch('/sales/connect', [MasterSalesController::class, 'connect'])->name('sales.connect');
+
+    // GitHub #177: staf non-Sales (mis. Owner) — daftar peran yang didukung
+    // ada di config('externalapi.staff_sync_roles'), BELUM final, menunggu
+    // konfirmasi PM. {staff_id} pada PUT/DELETE adalah external_ref_id, sama
+    // pola dengan /sales. Lihat catatan kelas MasterStaffController.
+    Route::get('/staff', [MasterStaffController::class, 'index'])->name('staff');
+    Route::post('/staff', [MasterStaffController::class, 'store'])->name('staff.store');
+    Route::put('/staff/{staff_id}', [MasterStaffController::class, 'update'])->name('staff.update');
+    Route::delete('/staff/{staff_id}', [MasterStaffController::class, 'destroy'])->name('staff.destroy');
+    Route::patch('/staff/connect', [MasterStaffController::class, 'connect'])->name('staff.connect');
 });
 
 /*

@@ -74,6 +74,36 @@ class Staff extends Model
             ]);
     }
 
+    /**
+     * Sama pola dengan getSalesForExternalApi(), tapi penyaringnya cocok
+     * PERSIS (bukan LIKE) dengan salah satu nama peran di $roleNames —
+     * dipakai MasterStaffController (GitHub #177) untuk staf non-Sales
+     * (mis. Owner) yang perannya dikonfigurasi lewat
+     * config('externalapi.staff_sync_roles'), bukan ditebak dari kata
+     * kunci dalam nama peran seperti "sales".
+     *
+     * @param  array<int, string>  $roleNames
+     */
+    function getStaffByRolesForExternalApi(array $roleNames)
+    {
+        return self::query()
+            ->join('roles', 'roles.role_id', '=', 'staffs.role_id')
+            ->whereIn(\DB::raw('LOWER(roles.role_name)'), array_map('strtolower', $roleNames))
+            ->where('staffs.status', '=', 1)
+            ->orderBy('staffs.created_at', 'asc')
+            ->orderBy('staffs.staff_id', 'asc')
+            ->select([
+                'staffs.staff_id',
+                'staffs.staff_name',
+                'staffs.staff_code',
+                'staffs.external_ref_id',
+                'staffs.staff_email',
+                'staffs.staff_phone',
+                'staffs.staff_address',
+                'roles.role_name',
+            ]);
+    }
+
     function getStaff($data = [])
     {
         $data = array_merge([

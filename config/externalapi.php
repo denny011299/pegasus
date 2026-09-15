@@ -124,6 +124,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Peran Non-Sales yang Boleh Disinkron (GitHub #177)
+    |--------------------------------------------------------------------------
+    |
+    | Daftar role_name (persis, tanpa peduli besar/kecil huruf) yang boleh
+    | disentuh MasterStaffController — endpoint terpisah dari /master/sales
+    | untuk staf PMO yang perannya BUKAN Sales (mis. Owner).
+    |
+    | BELUM DIKONFIRMASI PM: baru "Owner" yang disepakati di issue #177,
+    | daftar peran lain (Admin, Direksi, dst.) masih menunggu keputusan PM.
+    | Menambah peran baru cukup menambah namanya di sini — tidak ada
+    | perubahan kode lain yang diperlukan.
+    |
+    */
+    'staff_sync_roles' => ['Owner'],
+
+    /*
+    |--------------------------------------------------------------------------
     | Daftar Dokumentasi Endpoint
     |--------------------------------------------------------------------------
     |
@@ -158,6 +175,11 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffLinkDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
