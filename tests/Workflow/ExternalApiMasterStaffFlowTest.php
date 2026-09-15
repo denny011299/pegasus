@@ -106,6 +106,18 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $this->assertSame($this->ownerRoleId(), (int) $staff->role_id, 'role must always resolve server-side, never from the request body');
     }
 
+    public function test_index_does_not_expose_the_staff_role(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refId = 'ext-'.uniqid();
+        $this->createManagedStaff($refId);
+
+        $response = $this->getJson('/api/external/v1/master/staff?search='.$refId, $headers);
+
+        $response->assertStatus(200)->assertJson(['success' => true]);
+        $this->assertArrayNotHasKey('role', $response->json('data.0'), 'role must never be exposed to external callers');
+    }
+
     public function test_store_rejects_a_duplicate_external_ref_id(): void
     {
         $headers = $this->externalApiHeaders();

@@ -62,7 +62,6 @@ class MasterStaffController extends Controller
                 'email' => 'staffs.staff_email',
                 'telepon' => 'staffs.staff_phone',
                 'alamat' => 'staffs.staff_address',
-                'role' => 'roles.role_name',
                 'created_at' => 'staffs.created_at',
                 'updated_at' => 'staffs.updated_at',
             ],
@@ -392,7 +391,6 @@ class MasterStaffController extends Controller
             'email' => $staff->staff_email,
             'telepon' => $staff->staff_phone,
             'alamat' => $staff->staff_address,
-            'role' => (string) $staff->role_name,
         ];
     }
 
