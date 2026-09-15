@@ -63,7 +63,7 @@ function refreshExternalApiLog() {
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
                 e[i].requested_text = e[i].requested_at
-                    ? moment(e[i].requested_at).format('D MMM YYYY HH:mm:ss')
+                    ? `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><div><div class="fw-semibold text-dark">${moment(e[i].requested_at).format('D MMM YYYY')}</div><div style="font-size:11px;color:#94a3b8;">${moment(e[i].requested_at).format('HH:mm:ss')}</div></div></div>`
                     : '-';
                 e[i].method_badge = '<span class="badge ' + methodBadgeClass(e[i].method) + '">' + e[i].method + '</span>';
                 e[i].status_badge = '<span class="badge ' + statusBadgeClass(e[i].status_code) + '">' + e[i].status_code + '</span>';
