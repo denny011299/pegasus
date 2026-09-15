@@ -16,6 +16,12 @@ use Tests\TestCase;
  * "%like%") instead of a hard-coded "sales" keyword. The exact role list is
  * still awaiting PM confirmation (see GitHub #177) — this test only relies
  * on "Owner" being in that list, which is already agreed.
+ *
+ * Unlike sales, `role` is never a request field here — rows created via
+ * this endpoint never get login credentials, so letting the caller pick a
+ * role/permission set would be meaningless (and needless risk). role_id is
+ * resolved server-side from staff_sync_roles, same as
+ * MasterSalesController::salesRoleId().
  */
 class ExternalApiMasterStaffFlowTest extends TestCase
 {
@@ -58,18 +64,17 @@ class ExternalApiMasterStaffFlowTest extends TestCase
 
     public function test_a_request_without_an_api_key_is_rejected(): void
     {
-        $this->postJson('/api/external/v1/master/staff', ['staff_id' => 1, 'role' => 'Owner'])
+        $this->postJson('/api/external/v1/master/staff', ['staff_id' => 1])
             ->assertStatus(401);
     }
 
-    public function test_store_creates_a_new_staff_row_scoped_to_the_given_role_without_login_credentials(): void
+    public function test_store_creates_a_new_staff_row_scoped_to_the_configured_role_without_login_credentials(): void
     {
         $headers = $this->externalApiHeaders();
         $refId = 'ext-'.uniqid();
 
         $response = $this->postJson('/api/external/v1/master/staff', [
             'staff_id' => $refId,
-            'role' => 'Owner',
             'nama_depan' => 'Budi',
             'nama_belakang' => 'Santoso',
             'email' => 'budi-'.uniqid().'@example.test',
@@ -84,7 +89,7 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $this->assertNull($staff->staff_password);
     }
 
-    public function test_store_rejects_a_role_outside_the_configured_sync_list(): void
+    public function test_store_ignores_a_role_field_sent_in_the_body(): void
     {
         $headers = $this->externalApiHeaders();
         $refId = 'ext-'.uniqid();
@@ -92,11 +97,13 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $response = $this->postJson('/api/external/v1/master/staff', [
             'staff_id' => $refId,
             'role' => 'Sales',
-            'nama_depan' => 'Nope',
+            'nama_depan' => 'Ignored Role',
         ], $headers);
 
-        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
-        $this->assertFalse(Staff::where('external_ref_id', $refId)->exists());
+        $response->assertStatus(201);
+
+        $staff = Staff::where('external_ref_id', $refId)->firstOrFail();
+        $this->assertSame($this->ownerRoleId(), (int) $staff->role_id, 'role must always resolve server-side, never from the request body');
     }
 
     public function test_store_rejects_a_duplicate_external_ref_id(): void
@@ -107,7 +114,6 @@ class ExternalApiMasterStaffFlowTest extends TestCase
 
         $response = $this->postJson('/api/external/v1/master/staff', [
             'staff_id' => $refId,
-            'role' => 'Owner',
             'nama_depan' => 'Duplicate',
         ], $headers);
 

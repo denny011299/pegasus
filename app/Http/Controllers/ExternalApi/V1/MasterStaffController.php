@@ -27,6 +27,13 @@ use Illuminate\Support\Facades\DB;
  * BELUM DIKONFIRMASI PM: hanya "Owner" yang sudah disepakati per issue #177.
  * Daftar peran lain menyusul lewat config, bukan lewat perubahan endpoint.
  *
+ * role BUKAN properti yang bisa diubah lewat body — staf yang dibuat/
+ * dikelola endpoint ini TIDAK PERNAH mendapat staff_username/staff_password
+ * (sama seperti sales), jadi tidak pernah bisa login ke Pegasus sama sekali.
+ * Karena itu memberi pemanggil kendali atas role/hak akses lewat API ini
+ * tidak berguna sekaligus berisiko — role_id ditentukan otomatis di server
+ * lewat staffRoleId(), sama pola dengan MasterSalesController::salesRoleId().
+ *
  * Sisanya sengaja meniru kontrak MasterSalesController persis (dua id yang
  * dipakai, staff_username/staff_password tidak pernah diisi, dst.) supaya
  * PMO bisa memakai pola integrasi yang sama untuk kedua endpoint.
@@ -74,10 +81,14 @@ class MasterStaffController extends Controller
     /**
      * POST /api/external/v1/master/staff
      *
-     * body.role wajib diisi dan harus persis salah satu nama peran di
-     * config('externalapi.staff_sync_roles') (tanpa peduli besar/kecil
-     * huruf) — endpoint ini tidak menebak peran seperti salesRoleId(),
-     * karena bisa ada lebih dari satu peran yang dikelola.
+     * role TIDAK diterima dari body — pemanggil tidak bisa memilih peran
+     * atau hak akses staf yang dibuat lewat endpoint ini. Baris yang dibuat
+     * tidak pernah mendapat staff_username/staff_password (lihat catatan
+     * kelas), sehingga tidak bisa login ke Pegasus sama sekali; role hanya
+     * dipakai untuk mengelompokkan/menyaring data, bukan memberi hak akses
+     * yang benar-benar terpakai. Peran ditentukan otomatis lewat
+     * staffRoleId() dari config('externalapi.staff_sync_roles'), sama pola
+     * dengan MasterSalesController::salesRoleId().
      */
     public function store(Request $request): JsonResponse
     {
@@ -88,11 +99,9 @@ class MasterStaffController extends Controller
             return $this->duplicateRefError($refId);
         }
 
-        $role = $this->resolveRole($data['role']);
-
         $staff = new Staff();
         $staff->external_ref_id = $refId;
-        $staff->role_id = $role->role_id;
+        $staff->role_id = $this->staffRoleId();
         $staff->status = 1;
         $staff->created_by = null;
         $this->applyPayload($staff, $data);
@@ -245,7 +254,6 @@ class MasterStaffController extends Controller
                     $fail('staff_id wajib berupa teks atau angka.');
                 }
             }],
-            'role' => ['required', 'string'],
         ] + $this->profileRules();
 
         return $request->validate($rules);
@@ -291,35 +299,34 @@ class MasterStaffController extends Controller
     }
 
     /**
-     * body.role harus cocok PERSIS (tanpa peduli besar/kecil huruf) dengan
-     * salah satu peran di config('externalapi.staff_sync_roles') DAN harus
-     * ada di tabel roles — dijawab validation_failed kalau tidak, karena ini
-     * kesalahan pemanggil (peran yang dikirim salah/belum didukung), bukan
-     * kegagalan server seperti salesRoleId().
+     * id peran yang dipakai saat membuat staf baru lewat POST — sama pola
+     * dengan MasterSalesController::salesRoleId(): pemanggil tidak pernah
+     * memilih peran, jadi config('externalapi.staff_sync_roles') WAJIB
+     * cocok dengan persis satu baris di tabel roles. Sengaja gagal keras
+     * (500 lewat ExceptionRenderer) kalau tidak — itu berarti config atau
+     * data master peran tidak lagi sesuai asumsi endpoint ini, bukan
+     * kesalahan pemanggil yang perlu divalidasi.
+     *
+     * Begitu staff_sync_roles perlu memuat lebih dari satu peran yang bisa
+     * DIBUAT (bukan cuma dibaca/dihubungkan) lewat endpoint ini, POST harus
+     * dipecah per peran (endpoint/rute terpisah), bukan menerima role dari
+     * body lagi — lihat diskusi di PR #178.
      */
-    private function resolveRole(string $roleName): Role
+    private function staffRoleId(): int
     {
-        $allowed = array_map('strtolower', $this->syncRoles());
+        $names = array_map('strtolower', $this->syncRoles());
 
-        if (! in_array(strtolower($roleName), $allowed, true)) {
-            abort(ApiResponse::error(
-                ErrorCatalog::VALIDATION_FAILED,
-                'role "'.$roleName.'" belum didukung endpoint ini.',
-                422,
-            ));
+        $roleIds = Role::query()
+            ->whereRaw('LOWER(role_name) IN ('.implode(',', array_fill(0, count($names), '?')).')', $names)
+            ->pluck('role_id');
+
+        if ($roleIds->count() !== 1) {
+            throw new \RuntimeException(
+                'Peran staff_sync_roles tidak dapat ditentukan secara unik ('.$roleIds->count().' kecocokan).',
+            );
         }
 
-        $role = Role::query()->whereRaw('LOWER(role_name) = ?', [strtolower($roleName)])->first();
-
-        if ($role === null) {
-            abort(ApiResponse::error(
-                ErrorCatalog::VALIDATION_FAILED,
-                'role "'.$roleName.'" tidak ditemukan di data master peran.',
-                422,
-            ));
-        }
-
-        return $role;
+        return (int) $roleIds->first();
     }
 
     /**
