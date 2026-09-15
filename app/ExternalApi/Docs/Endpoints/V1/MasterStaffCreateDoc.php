@@ -36,7 +36,7 @@ class MasterStaffCreateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Membuat staf baru di Pegasus dengan peran non-Sales yang didukung (saat ini "Owner", ditentukan otomatis oleh Pegasus — bukan dipilih pemanggil), dihubungkan dengan id milik sistem pemanggil sendiri (staff_id pada body). Staf yang baru dibuat tidak mendapat akun login (staff_username/staff_password tetap kosong), sehingga tidak pernah bisa login ke Pegasus. Selalu membuat baris baru — bukan upsert; staff_id yang sudah dipakai staf lain ditolak.';
+        return 'Membuat staf baru di Pegasus tanpa peran (role_id NULL), dihubungkan dengan id milik sistem pemanggil sendiri (staff_id pada body). Endpoint ini tidak menerima/menentukan role sama sekali. Staf yang baru dibuat tidak mendapat akun login (staff_username/staff_password tetap kosong), sehingga tidak pernah bisa login ke Pegasus. Selalu membuat baris baru — bukan upsert; staff_id yang sudah dipakai staf lain ditolak.';
     }
 
     public function bodyParameters(): array
@@ -88,8 +88,7 @@ class MasterStaffCreateDoc extends ApiEndpointDoc
     {
         return [
             'staff_id dan nama_depan wajib diisi; email, nama_belakang, dan alamat boleh dikosongkan.',
-            'role BUKAN field body: peran staf yang dibuat lewat endpoint ini ditentukan otomatis oleh Pegasus (saat ini selalu "Owner"), tidak bisa dipilih atau diubah pemanggil. Staf ini tidak pernah mendapat akun login, sehingga peran/hak aksesnya tidak benar-benar terpakai untuk login — role hanya dipakai Pegasus untuk mengelompokkan data.',
-            'Daftar peran yang didukung endpoint ini (untuk dibaca/dihubungkan lewat GET dan PATCH /connect) ditentukan dari sisi Pegasus dan bisa bertambah dari waktu ke waktu.',
+            'role BUKAN field body dan tidak ditangani endpoint ini sama sekali — kalau dikirim, akan diabaikan sepenuhnya. Staf yang dibuat lewat endpoint ini selalu role_id NULL. Penanganan role bisa dipertimbangkan lagi nanti kalau memang diperlukan; ini bukan bagian dari versi pertama endpoint ini.',
             'id pada respons adalah id staf yang dibuat Pegasus sendiri (auto-increment) — SIMPAN nilai ini kalau nanti perlu memanggil PATCH /master/staff/connect (yang memakai id Pegasus, bukan staff_id/rujukan Anda).',
             'staff_id pada body dan respons adalah id milik sistem Anda sendiri, disimpan di kolom terpisah (external_ref_id) — TIDAK menjadi id staf Pegasus.',
             'Bukan upsert: mengirim staff_id yang sudah dipakai selalu ditolak dengan DUPLICATE_REF_ID. Pakai PUT /master/staff/{staff_id} untuk memperbarui staf yang rujukannya sudah ada.',

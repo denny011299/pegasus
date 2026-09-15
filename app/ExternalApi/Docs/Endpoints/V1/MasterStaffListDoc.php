@@ -36,7 +36,7 @@ class MasterStaffListDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengambil daftar staf aktif di luar Sales — peran mana saja yang didukung ditentukan dari sisi Pegasus, saat ini "Owner". Paginasi bersifat opsional.';
+        return 'Mengambil daftar staf aktif yang belum diberi peran (role) apa pun di Pegasus. Endpoint ini tidak menangani role sama sekali — lihat catatan di bawah. Paginasi bersifat opsional.';
     }
 
     public function queryParameters(): array
@@ -79,12 +79,12 @@ class MasterStaffListDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint terpisah dari GET /master/sales: yang dikembalikan di sini adalah staf yang perannya PERSIS salah satu peran yang didukung Pegasus untuk sinkronisasi non-Sales — saat ini hanya "Owner". Daftar peran ini bisa bertambah di sisi Pegasus tanpa mengubah bentuk endpoint.',
+            'Endpoint terpisah dari GET /master/sales: yang dikembalikan di sini adalah staf yang role_id-nya NULL (belum diberi peran apa pun) — bukan staf berperan tertentu seperti Sales. Staf yang sudah punya peran (Sales, Admin, Owner, dst.) TIDAK muncul lewat endpoint ini.',
             'Hanya staf berstatus aktif yang muncul.',
             'id adalah id staf pada sistem Pegasus — nilai yang dipakai pada field staff_id tiap butir body PATCH /master/staff/connect.',
             'staff_id di respons ini BUKAN id staf Pegasus — ini rujukan milik sistem pemanggil sendiri (external_ref_id), boleh null kalau staf itu belum pernah dihubungkan ke sistem eksternal mana pun. Inilah nilai yang dipakai sebagai path parameter {staff_id} pada PUT dan DELETE /master/staff.',
             'nama_depan dan nama_belakang adalah hasil pemisahan otomatis dari nama (dipisah pada spasi pertama) — untuk staf yang namanya lebih dari dua kata dan tidak pernah dibuat/diubah lewat endpoint ini, pemisahan ini bisa saja tidak sama dengan pembagian depan/belakang yang sebenarnya. Karena bukan kolom tersendiri, keduanya TIDAK bisa dipakai sebagai kunci ?sort= atau ?search=.',
-            'role staf TIDAK disertakan pada respons ini (beda dengan GET /master/sales) — staf yang dikelola endpoint ini tidak pernah mendapat akun login, jadi role/hak aksesnya tidak benar-benar terpakai dan sengaja tidak diekspos ke sistem eksternal.',
+            'role tidak ditangani endpoint ini sama sekali (baik dikirim, disimpan, maupun dikembalikan) — versi pertama ini sengaja disederhanakan begitu; penanganan role bisa dipertimbangkan lagi nanti kalau memang diperlukan.',
             'kode, email, telepon, alamat, staff_id, dan nama_belakang boleh bernilai null bila datanya memang belum diisi.',
             'Kata sandi, nama pengguna, saldo staf, dan hak akses tidak pernah dikembalikan.',
         ];

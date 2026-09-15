@@ -41,7 +41,7 @@ class MasterStaffLinkDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Menghubungkan satu atau banyak staf Pegasus yang SUDAH ADA (berperan yang didukung endpoint ini, dibuat lewat halaman admin misalnya) dengan id milik sistem Anda sendiri sekaligus, tanpa membuat staf baru. Tiap butir diproses independen — sebagian boleh berhasil walau sebagian lain gagal.';
+        return 'Menghubungkan satu atau banyak staf Pegasus yang SUDAH ADA (role_id NULL, dibuat lewat halaman admin misalnya tanpa diberi peran) dengan id milik sistem Anda sendiri sekaligus, tanpa membuat staf baru. Tiap butir diproses independen — sebagian boleh berhasil walau sebagian lain gagal.';
     }
 
     public function bodyParameters(): array
@@ -99,12 +99,12 @@ class MasterStaffLinkDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint ini SELALU menjawab 200 selama bentuk permintaannya sah — kegagalan per butir (staf tidak ditemukan/bukan peran yang didukung, map_staff_id kosong) muncul lewat success:false pada butir itu di data, bukan lewat status HTTP gagal untuk seluruh permintaan.',
+            'Endpoint ini SELALU menjawab 200 selama bentuk permintaannya sah — kegagalan per butir (staf tidak ditemukan/role_id-nya tidak NULL, map_staff_id kosong) muncul lewat success:false pada butir itu di data, bukan lewat status HTTP gagal untuk seluruh permintaan.',
             'staff_id pada tiap butir connections adalah id STAF PEGASUS — kebalikan dari PUT dan DELETE /master/staff, yang path parameternya adalah rujukan Anda sendiri.',
             'Setiap butir diproses independen, bukan satu transaksi besar: butir yang gagal tidak membatalkan butir lain yang berhasil dalam permintaan yang sama.',
             'Menimpa link yang sudah ada pada staf tujuan diperbolehkan.',
             'Kalau map_staff_id yang dikirim sedang dipegang staf LAIN, rujukan itu DILEPAS dulu dari staf itu (jadi null) sebelum dipasang ke staf tujuan — dipindah, bukan ditolak sebagai duplikat.',
-            'Endpoint ini HANYA boleh menghubungkan staf dengan peran yang didukung (dan aktif) — staff_id yang menunjuk staf lain gagal dengan NOT_FOUND pada butir itu.',
+            'Endpoint ini HANYA boleh menghubungkan staf yang role_id-nya NULL (dan aktif) — staff_id yang menunjuk staf berperan apa pun gagal dengan NOT_FOUND pada butir itu.',
             'nama_depan/nama_belakang/email/alamat tidak diubah oleh endpoint ini — hanya rujukan yang dipasang.',
         ];
     }

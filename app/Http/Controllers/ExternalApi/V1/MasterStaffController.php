@@ -6,7 +6,6 @@ use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
-use App\Models\Role;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -17,22 +16,22 @@ use Illuminate\Support\Facades\DB;
  *
  * MasterSalesController hanya menyentuh staf berperan "Sales" (lihat komentar
  * kelas itu) — hard-coded, sengaja begitu. Endpoint ini adalah kelas TERPISAH
- * (bukan perluasan MasterSalesController) untuk staf yang perannya BUKAN
- * Sales, karena syarat "peran mana yang dikelola" berbeda: di sini daftar
- * peran yang diizinkan datang dari config('externalapi.staff_sync_roles'),
- * dicocokkan PERSIS (bukan LIKE seperti "%sales%"), supaya menambah peran
- * baru cukup mengubah config, tanpa risiko menangkap peran lain yang
- * namanya kebetulan mengandung kata yang sama.
+ * (bukan perluasan MasterSalesController) untuk staf non-Sales.
  *
- * BELUM DIKONFIRMASI PM: hanya "Owner" yang sudah disepakati per issue #177.
- * Daftar peran lain menyusul lewat config, bukan lewat perubahan endpoint.
+ * KEPUTUSAN PM (komentar issue #177, 2026-09-16): lingkupnya disederhanakan —
+ * endpoint ini TIDAK menerima, menentukan, atau mengembalikan role sama
+ * sekali. Setiap staf yang dibuat/dikelola lewat endpoint ini SELALU
+ * role_id NULL — bukan "Owner" atau peran lain apa pun. "Dikelola endpoint
+ * ini" karena itu berarti persis itu: staf aktif dengan role_id NULL, tanpa
+ * kaitan ke tabel roles sama sekali (lihat isManagedStaff() dan
+ * Staff::getRoleLessStaffForExternalApi()). Penanganan role bisa
+ * dipertimbangkan lagi nanti kalau memang diperlukan — bukan bagian dari
+ * versi pertama endpoint ini.
  *
- * role BUKAN properti yang bisa diubah lewat body — staf yang dibuat/
- * dikelola endpoint ini TIDAK PERNAH mendapat staff_username/staff_password
- * (sama seperti sales), jadi tidak pernah bisa login ke Pegasus sama sekali.
- * Karena itu memberi pemanggil kendali atas role/hak akses lewat API ini
- * tidak berguna sekaligus berisiko — role_id ditentukan otomatis di server
- * lewat staffRoleId(), sama pola dengan MasterSalesController::salesRoleId().
+ * role juga BUKAN properti yang bisa diubah lewat body sejak awal — staf
+ * yang dibuat/dikelola endpoint ini TIDAK PERNAH mendapat
+ * staff_username/staff_password (sama seperti sales), jadi tidak pernah
+ * bisa login ke Pegasus sama sekali.
  *
  * Sisanya sengaja meniru kontrak MasterSalesController persis (dua id yang
  * dipakai, staff_username/staff_password tidak pernah diisi, dst.) supaya
@@ -45,13 +44,12 @@ class MasterStaffController extends Controller
     /**
      * GET /api/external/v1/master/staff
      *
-     * Sama seperti /master/sales, tapi mengambil staf dari peran-peran di
-     * config('externalapi.staff_sync_roles') alih-alih peran ber-"sales".
+     * Mengambil staf aktif yang role_id-nya NULL — lihat catatan kelas.
      */
     public function index(Request $request): JsonResponse
     {
         return $this->respondList(
-            (new Staff())->getStaffByRolesForExternalApi($this->syncRoles()),
+            (new Staff())->getRoleLessStaffForExternalApi(),
             $request,
             fn ($staff) => $this->presentRow($staff),
             sortable: [
@@ -80,14 +78,9 @@ class MasterStaffController extends Controller
     /**
      * POST /api/external/v1/master/staff
      *
-     * role TIDAK diterima dari body — pemanggil tidak bisa memilih peran
-     * atau hak akses staf yang dibuat lewat endpoint ini. Baris yang dibuat
-     * tidak pernah mendapat staff_username/staff_password (lihat catatan
-     * kelas), sehingga tidak bisa login ke Pegasus sama sekali; role hanya
-     * dipakai untuk mengelompokkan/menyaring data, bukan memberi hak akses
-     * yang benar-benar terpakai. Peran ditentukan otomatis lewat
-     * staffRoleId() dari config('externalapi.staff_sync_roles'), sama pola
-     * dengan MasterSalesController::salesRoleId().
+     * role TIDAK diterima dari body sama sekali — sekalipun dikirim, akan
+     * diabaikan sepenuhnya. role_id staf yang dibuat SELALU NULL (keputusan
+     * PM, lihat catatan kelas), tidak ditebak/di-resolve dari mana pun.
      */
     public function store(Request $request): JsonResponse
     {
@@ -100,7 +93,7 @@ class MasterStaffController extends Controller
 
         $staff = new Staff();
         $staff->external_ref_id = $refId;
-        $staff->role_id = $this->staffRoleId();
+        $staff->role_id = null;
         $staff->status = 1;
         $staff->created_by = null;
         $this->applyPayload($staff, $data);
@@ -121,9 +114,7 @@ class MasterStaffController extends Controller
     /**
      * PUT /api/external/v1/master/staff/{staff_id}
      *
-     * {staff_id} adalah external_ref_id, sama seperti /master/sales. Tidak
-     * mengubah role — role hanya ditentukan saat POST/connect, sama seperti
-     * /master/sales tidak membiarkan PUT mengubah role sales.
+     * {staff_id} adalah external_ref_id, sama seperti /master/sales.
      */
     public function update(Request $request, string $staff_id): JsonResponse
     {
@@ -161,8 +152,9 @@ class MasterStaffController extends Controller
      *
      * Sama semantik dengan /master/sales/connect: staff_id di body adalah id
      * internal Pegasus, map_staff_id adalah rujukan eksternal yang mau
-     * dipasang ke staf yang sudah ada (dibuat lewat halaman admin, sudah
-     * berperan salah satu dari staff_sync_roles).
+     * dipasang ke staf yang sudah ada (dibuat lewat halaman admin dengan
+     * role_id NULL — staf yang punya role tetap TIDAK terjangkau di sini,
+     * lihat isManagedStaff()).
      */
     public function connect(Request $request): JsonResponse
     {
@@ -290,60 +282,13 @@ class MasterStaffController extends Controller
     }
 
     /**
-     * @return array<int, string>
-     */
-    private function syncRoles(): array
-    {
-        return (array) config('externalapi.staff_sync_roles', []);
-    }
-
-    /**
-     * id peran yang dipakai saat membuat staf baru lewat POST — sama pola
-     * dengan MasterSalesController::salesRoleId(): pemanggil tidak pernah
-     * memilih peran, jadi config('externalapi.staff_sync_roles') WAJIB
-     * cocok dengan persis satu baris di tabel roles. Sengaja gagal keras
-     * (500 lewat ExceptionRenderer) kalau tidak — itu berarti config atau
-     * data master peran tidak lagi sesuai asumsi endpoint ini, bukan
-     * kesalahan pemanggil yang perlu divalidasi.
-     *
-     * Begitu staff_sync_roles perlu memuat lebih dari satu peran yang bisa
-     * DIBUAT (bukan cuma dibaca/dihubungkan) lewat endpoint ini, POST harus
-     * dipecah per peran (endpoint/rute terpisah), bukan menerima role dari
-     * body lagi — lihat diskusi di PR #178.
-     */
-    private function staffRoleId(): int
-    {
-        $names = array_map('strtolower', $this->syncRoles());
-
-        $roleIds = Role::query()
-            ->whereRaw('LOWER(role_name) IN ('.implode(',', array_fill(0, count($names), '?')).')', $names)
-            ->pluck('role_id');
-
-        if ($roleIds->count() !== 1) {
-            throw new \RuntimeException(
-                'Peran staff_sync_roles tidak dapat ditentukan secara unik ('.$roleIds->count().' kecocokan).',
-            );
-        }
-
-        return (int) $roleIds->first();
-    }
-
-    /**
-     * Staf dikelola endpoint ini kalau statusnya aktif DAN perannya persis
-     * salah satu dari config('externalapi.staff_sync_roles').
+     * Staf dikelola endpoint ini kalau statusnya aktif DAN role_id-nya
+     * NULL — lihat catatan kelas. Staf yang punya role apa pun (termasuk
+     * Sales) tidak pernah terjangkau lewat endpoint ini.
      */
     private function isManagedStaff(Staff $staff): bool
     {
-        if ((int) $staff->status !== 1 || $staff->role_id === null) {
-            return false;
-        }
-
-        $allowed = array_map('strtolower', $this->syncRoles());
-
-        return Role::query()
-            ->where('role_id', $staff->role_id)
-            ->whereRaw('LOWER(role_name) IN ('.implode(',', array_fill(0, count($allowed), '?')).')', $allowed)
-            ->exists();
+        return (int) $staff->status === 1 && $staff->role_id === null;
     }
 
     private function findManagedByRef(string $refId): ?Staff

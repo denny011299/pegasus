@@ -124,23 +124,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Peran Non-Sales yang Boleh Disinkron (GitHub #177)
-    |--------------------------------------------------------------------------
-    |
-    | Daftar role_name (persis, tanpa peduli besar/kecil huruf) yang boleh
-    | disentuh MasterStaffController — endpoint terpisah dari /master/sales
-    | untuk staf PMO yang perannya BUKAN Sales (mis. Owner).
-    |
-    | BELUM DIKONFIRMASI PM: baru "Owner" yang disepakati di issue #177,
-    | daftar peran lain (Admin, Direksi, dst.) masih menunggu keputusan PM.
-    | Menambah peran baru cukup menambah namanya di sini — tidak ada
-    | perubahan kode lain yang diperlukan.
-    |
-    */
-    'staff_sync_roles' => ['Owner'],
-
-    /*
-    |--------------------------------------------------------------------------
     | Daftar Dokumentasi Endpoint
     |--------------------------------------------------------------------------
     |

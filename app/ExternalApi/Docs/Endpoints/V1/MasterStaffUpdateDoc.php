@@ -84,7 +84,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan staf yang dikelola endpoint ini (peran lain, atau sudah dihapus).'],
+            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan staf yang dikelola endpoint ini (staf itu punya role, atau sudah dihapus).'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
         ];
     }
@@ -95,7 +95,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
             'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus.',
             'Hanya nama_depan yang wajib diisi, meski hanya satu field yang berubah; email, nama_belakang, dan alamat boleh dikosongkan.',
             'Body selalu dianggap representasi penuh staf ini: email/nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama. Kirim ulang email lama kalau tidak ingin menghapusnya.',
-            'Endpoint ini HANYA boleh menyentuh staf dengan peran yang didukung (dan aktif) — staff_id yang menunjuk staf lain dijawab NOT_FOUND.',
+            'Endpoint ini HANYA boleh menyentuh staf yang role_id-nya NULL (dan aktif) — staff_id yang menunjuk staf berperan apa pun dijawab NOT_FOUND.',
             'role tidak bisa diubah lewat endpoint ini.',
         ];
     }

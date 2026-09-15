@@ -11,50 +11,23 @@ use Tests\TestCase;
  * External API v1 non-Sales staff CRUD/connect (GitHub #177) —
  * App\Http\Controllers\ExternalApi\V1\MasterStaffController.
  *
- * Mirrors ExternalApiMasterSalesFlowTest's coverage, but the managed role
- * comes from config('externalapi.staff_sync_roles') (exact match, not
- * "%like%") instead of a hard-coded "sales" keyword. The exact role list is
- * still awaiting PM confirmation (see GitHub #177) — this test only relies
- * on "Owner" being in that list, which is already agreed.
- *
- * Unlike sales, `role` is never a request field here — rows created via
- * this endpoint never get login credentials, so letting the caller pick a
- * role/permission set would be meaningless (and needless risk). role_id is
- * resolved server-side from staff_sync_roles, same as
- * MasterSalesController::salesRoleId().
+ * PM simplified the scope (issue #177 comment, 2026-09-16): this endpoint
+ * does not accept, resolve, or expose a role at all. Staff created/managed
+ * through it always have role_id = NULL — "managed by this endpoint" means
+ * exactly that: active AND role_id IS NULL. Staff with any role assigned
+ * (Sales, Owner, whatever) are invisible to it, same as sales staff are
+ * invisible to /master/sales-shaped assumptions in reverse.
  */
 class ExternalApiMasterStaffFlowTest extends TestCase
 {
     use ActingAsExternalApiClient;
-
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->ownerRoleId();
-    }
-
-    private function ownerRoleId(): int
-    {
-        $role = Role::whereRaw('LOWER(role_name) = ?', ['owner'])->first();
-
-        if ($role === null) {
-            $role = new Role();
-            $role->role_name = 'Owner';
-            $role->role_access = '{}';
-            $role->status = 1;
-            $role->save();
-        }
-
-        return (int) $role->role_id;
-    }
 
     private function createManagedStaff(?string $externalRefId = null): Staff
     {
         $staff = new Staff();
         $staff->staff_name = 'External API Staff Fixture';
         $staff->staff_email = 'staff-fixture-'.uniqid().'@example.test';
-        $staff->role_id = $this->ownerRoleId();
+        $staff->role_id = null;
         $staff->external_ref_id = $externalRefId;
         $staff->status = 1;
         $staff->save();
@@ -68,7 +41,7 @@ class ExternalApiMasterStaffFlowTest extends TestCase
             ->assertStatus(401);
     }
 
-    public function test_store_creates_a_new_staff_row_scoped_to_the_configured_role_without_login_credentials(): void
+    public function test_store_creates_a_new_staff_row_with_a_null_role_and_no_login_credentials(): void
     {
         $headers = $this->externalApiHeaders();
         $refId = 'ext-'.uniqid();
@@ -83,7 +56,7 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['staff_id' => $refId]]);
 
         $staff = Staff::where('external_ref_id', $refId)->firstOrFail();
-        $this->assertSame($this->ownerRoleId(), (int) $staff->role_id);
+        $this->assertNull($staff->role_id);
         $this->assertSame('Budi Santoso', $staff->staff_name);
         $this->assertNull($staff->staff_username, 'a POST-created row must not get login credentials');
         $this->assertNull($staff->staff_password);
@@ -96,17 +69,17 @@ class ExternalApiMasterStaffFlowTest extends TestCase
 
         $response = $this->postJson('/api/external/v1/master/staff', [
             'staff_id' => $refId,
-            'role' => 'Sales',
+            'role' => 'Owner',
             'nama_depan' => 'Ignored Role',
         ], $headers);
 
         $response->assertStatus(201);
 
         $staff = Staff::where('external_ref_id', $refId)->firstOrFail();
-        $this->assertSame($this->ownerRoleId(), (int) $staff->role_id, 'role must always resolve server-side, never from the request body');
+        $this->assertNull($staff->role_id, 'role_id must always be null, a role field in the body must never be honored');
     }
 
-    public function test_index_does_not_expose_the_staff_role(): void
+    public function test_index_does_not_expose_a_role_and_only_returns_role_less_staff(): void
     {
         $headers = $this->externalApiHeaders();
         $refId = 'ext-'.uniqid();
@@ -155,16 +128,16 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $this->assertSame(0, (int) $staff->fresh()->status, 'delete must soft-delete via Staff::deletestaff()');
     }
 
-    public function test_a_staff_outside_the_configured_roles_is_invisible_to_this_endpoint(): void
+    public function test_a_staff_with_any_role_assigned_is_invisible_to_this_endpoint(): void
     {
         $headers = $this->externalApiHeaders();
-        $otherRoleId = (int) Role::whereRaw('LOWER(role_name) != ?', ['owner'])->value('role_id');
+        $someRoleId = (int) Role::query()->value('role_id');
         $refId = 'ext-'.uniqid();
 
         $staff = new Staff();
-        $staff->staff_name = 'Non Owner Staff';
-        $staff->staff_email = 'nonowner-'.uniqid().'@example.test';
-        $staff->role_id = $otherRoleId;
+        $staff->staff_name = 'Staff With A Role';
+        $staff->staff_email = 'has-role-'.uniqid().'@example.test';
+        $staff->role_id = $someRoleId;
         $staff->external_ref_id = $refId;
         $staff->status = 1;
         $staff->save();

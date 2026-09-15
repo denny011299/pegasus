@@ -75,32 +75,29 @@ class Staff extends Model
     }
 
     /**
-     * Sama pola dengan getSalesForExternalApi(), tapi penyaringnya cocok
-     * PERSIS (bukan LIKE) dengan salah satu nama peran di $roleNames —
-     * dipakai MasterStaffController (GitHub #177) untuk staf non-Sales
-     * (mis. Owner) yang perannya dikonfigurasi lewat
-     * config('externalapi.staff_sync_roles'), bukan ditebak dari kata
-     * kunci dalam nama peran seperti "sales".
-     *
-     * @param  array<int, string>  $roleNames
+     * Dipakai MasterStaffController (GitHub #177) untuk staf non-Sales yang
+     * disinkron lewat External API. PMO memutuskan (komentar issue #177,
+     * 2026-09-16) endpoint ini TIDAK menerima/menentukan role sama sekali —
+     * staf yang dibuat/dikelola lewat endpoint ini selalu role_id NULL,
+     * jadi "dikelola endpoint ini" di sini berarti persis itu: aktif DAN
+     * role_id NULL. Tidak ada JOIN ke roles sama sekali, beda dengan
+     * getSalesForExternalApi()/getStaffByRolesForExternalApi() versi lama.
      */
-    function getStaffByRolesForExternalApi(array $roleNames)
+    function getRoleLessStaffForExternalApi()
     {
         return self::query()
-            ->join('roles', 'roles.role_id', '=', 'staffs.role_id')
-            ->whereIn(\DB::raw('LOWER(roles.role_name)'), array_map('strtolower', $roleNames))
-            ->where('staffs.status', '=', 1)
-            ->orderBy('staffs.created_at', 'asc')
-            ->orderBy('staffs.staff_id', 'asc')
+            ->where('status', '=', 1)
+            ->whereNull('role_id')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('staff_id', 'asc')
             ->select([
-                'staffs.staff_id',
-                'staffs.staff_name',
-                'staffs.staff_code',
-                'staffs.external_ref_id',
-                'staffs.staff_email',
-                'staffs.staff_phone',
-                'staffs.staff_address',
-                'roles.role_name',
+                'staff_id',
+                'staff_name',
+                'staff_code',
+                'external_ref_id',
+                'staff_email',
+                'staff_phone',
+                'staff_address',
             ]);
     }
 

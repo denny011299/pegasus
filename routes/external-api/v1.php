@@ -80,10 +80,11 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
     Route::patch('/sales/connect', [MasterSalesController::class, 'connect'])->name('sales.connect');
 
-    // GitHub #177: staf non-Sales (mis. Owner) — daftar peran yang didukung
-    // ada di config('externalapi.staff_sync_roles'), BELUM final, menunggu
-    // konfirmasi PM. {staff_id} pada PUT/DELETE adalah external_ref_id, sama
-    // pola dengan /sales. Lihat catatan kelas MasterStaffController.
+    // GitHub #177: staf non-Sales tanpa role (PM menyederhanakan lingkupnya
+    // 2026-09-16 — endpoint ini tidak menangani role sama sekali, role_id
+    // staf yang dikelola di sini selalu NULL). {staff_id} pada PUT/DELETE
+    // adalah external_ref_id, sama pola dengan /sales. Lihat catatan kelas
+    // MasterStaffController.
     Route::get('/staff', [MasterStaffController::class, 'index'])->name('staff');
     Route::post('/staff', [MasterStaffController::class, 'store'])->name('staff.store');
     Route::put('/staff/{staff_id}', [MasterStaffController::class, 'update'])->name('staff.update');
