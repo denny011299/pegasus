@@ -138,6 +138,29 @@ var fixRecipeProductMeta = { relasi: [], pr_unit: [] };
 var pendingProductionAdd = null;
 
 /**
+ * GitHub #175: cegah user menutup modal ATAU tab/browser selagi request insertProduction
+ * masih berjalan -- kalau ditutup begitu saja, request lama tetap jalan di server dan
+ * user bisa buka modal lagi lalu submit ulang, jadi 2 record Produksi berbeda meski
+ * bukan hasil double-click. Selama flag ini true: modal tidak bisa ditutup (X/Batal/Esc/
+ * backdrop) dan menutup tab akan memicu konfirmasi browser (mirip "leave site?" YouTube
+ * Music saat masih ada lagu diputar).
+ */
+var productionSaveInFlight = false;
+
+$(window).on("beforeunload", function (e) {
+    if (!productionSaveInFlight) return undefined;
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+});
+
+$("#addProduction").on("hide.bs.modal", function (e) {
+    if (productionSaveInFlight) {
+        e.preventDefault();
+    }
+});
+
+/**
  * GitHub #134: "+Tambah" (checkProductionStock, async) dan "Tambah Produksi"
  * (insertProduction) bisa saling balapan — user klik "Tambah Produksi" cepat-cepat
  * sebelum checkProductionStock selesai mendorong baris produk yang baru diisi ke
@@ -147,6 +170,19 @@ var pendingProductionAdd = null;
  */
 function setProductionOtherButtonBusy(otherSelector, busy) {
     $(otherSelector).prop("disabled", busy);
+}
+
+/**
+ * Kunci/buka tombol penutup modal (X, Batal) secara visual selagi insertProduction
+ * berjalan. `hide.bs.modal` di atas sudah memblokir penutupan dari jalur manapun
+ * (termasuk Esc); ini cuma bikin tombolnya kelihatan nonaktif juga biar user tidak
+ * bingung kenapa klik X/Batal tidak merespon.
+ */
+function setProductionModalClosable(closable) {
+    $("#addProduction .btn-close, #addProduction .btn-cancel").prop(
+        "disabled",
+        !closable,
+    );
 }
 
 function productionMainWarehouseName() {
@@ -1427,6 +1463,8 @@ $(document).on("click", ".btnAdd", function () {
     // save) sehingga kuncian silang setProductionOtherButtonBusy() sempat nyantol disabled.
     setProductionOtherButtonBusy(".btn-save", false);
     setProductionOtherButtonBusy(".btn-add-product", false);
+    productionSaveInFlight = false;
+    setProductionModalClosable(true);
     setProductionModalMode("form");
     mode = 1;
     modeBahan = 1;
@@ -1804,7 +1842,7 @@ function refreshProduction() {
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
                 e[i].date =
-                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><span class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</span></div>`;
+                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><div><div class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</div><div style="font-size:11px;color:#94a3b8;">${e[i].created_at ? moment(e[i].created_at).format("HH:mm:ss") : ""}</div></div></div>`;
                 if (e[i].production_code) {
                     var cleanCode = $('<div>').html(e[i].production_code).text();
                     e[i].production_code =
@@ -2068,6 +2106,8 @@ $(document).on("click", ".btn-save", function () {
     }
     LoadingButton($(this));
     setProductionOtherButtonBusy(".btn-add-product", true);
+    productionSaveInFlight = true;
+    setProductionModalClosable(false);
     $.ajax({
         url: url,
         data: param,
@@ -2081,6 +2121,8 @@ $(document).on("click", ".btn-save", function () {
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
             setProductionOtherButtonBusy(".btn-add-product", false);
+            productionSaveInFlight = false;
+            setProductionModalClosable(true);
             if (!e || e.status != 1) {
                 handleProductionValidationError(
                     e,
@@ -2096,6 +2138,8 @@ $(document).on("click", ".btn-save", function () {
                 mode == 1 ? "Tambah Produksi" : "Update Produksi",
             );
             setProductionOtherButtonBusy(".btn-add-product", false);
+            productionSaveInFlight = false;
+            setProductionModalClosable(true);
             if (handlePermissionError(a)) return;
             console.log(a);
         },
