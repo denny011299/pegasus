@@ -74,6 +74,33 @@ class Staff extends Model
             ]);
     }
 
+    /**
+     * Dipakai MasterStaffController (GitHub #177) untuk staf non-Sales yang
+     * disinkron lewat External API. PMO memutuskan (komentar issue #177,
+     * 2026-09-16) endpoint ini TIDAK menerima/menentukan role sama sekali —
+     * staf yang dibuat/dikelola lewat endpoint ini selalu role_id NULL,
+     * jadi "dikelola endpoint ini" di sini berarti persis itu: aktif DAN
+     * role_id NULL. Tidak ada JOIN ke roles sama sekali, beda dengan
+     * getSalesForExternalApi()/getStaffByRolesForExternalApi() versi lama.
+     */
+    function getRoleLessStaffForExternalApi()
+    {
+        return self::query()
+            ->where('status', '=', 1)
+            ->whereNull('role_id')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('staff_id', 'asc')
+            ->select([
+                'staff_id',
+                'staff_name',
+                'staff_code',
+                'external_ref_id',
+                'staff_email',
+                'staff_phone',
+                'staff_address',
+            ]);
+    }
+
     function getStaff($data = [])
     {
         $data = array_merge([
