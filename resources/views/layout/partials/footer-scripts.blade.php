@@ -2148,9 +2148,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   });
 </script>
+@if (Session::has('user') && ! Route::is(['login', 'register', 'forgot-password', 'lock-screen', 'saas-login', 'saas-register']))
 <script>
   // Badge opname: source of truth = session server + DB (GET /getOpenOpnameStatus).
   // Antar browser/device = poll saja (BroadcastChannel hanya same-browser).
+  // Skip di halaman auth — FAB tidak di-render, poll tidak perlu.
   (function () {
     var POLL_MS = 5000;
     var POLL_MS_HIDDEN = 15000;
@@ -2339,3 +2341,4 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     $(window).on("focus", function () { poll(); });
   })();
 </script>
+@endif

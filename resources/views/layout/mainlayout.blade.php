@@ -156,6 +156,15 @@
 <!-- /Main Wrapper -->
 
 @php
+  // Jangan tampilkan FAB di halaman auth (login/register) — resolveWarehouseId tanpa session
+  // bisa tetap deteksi opname open gudang default.
+  $fabOnAuthPage = Route::is([
+      'login', 'register', 'forgot-password', 'lock-screen', 'saas-login', 'saas-register',
+  ]);
+  $fabShow = Session::has('user') && ! $fabOnAuthPage;
+@endphp
+@if ($fabShow)
+@php
   $fabWhId = (int) \App\Models\ProductStock::resolveWarehouseId(null);
   $fabSnap = $fabWhId > 0
       ? app(\App\Support\StockOpname\OpenOpnameGuard::class)->statusForWarehouse($fabWhId)
@@ -185,6 +194,7 @@
   <span class="opname-open-fab-dot" aria-hidden="true"></span>
   <span class="opname-open-fab-text">{{ $fabText }}</span>
 </a>
+@endif
 <style>
   /* Badge status opname — samakan dengan dash-toolbar / card premium */
   .opname-status-badges {
