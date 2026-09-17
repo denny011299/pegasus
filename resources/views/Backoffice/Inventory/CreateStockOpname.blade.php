@@ -472,8 +472,16 @@
     var data = @json($data);
     var mode = @json($mode);
     var sessionUser = @json(Session::get('user'));
+    window.opnameLockToken = @json($opname_lock_token ?? null);
+    window.opnameLockDomain = @json($opname_lock_domain ?? 'product');
   </script>
   {{-- Wajib sebelum CreateStockOpname.js (guardOpnameNotBusy / buildOpnameUnitInputHtml) --}}
   <script src="{{ asset('Custom_js/Shared/stock-opname-unit-input.js') }}?v={{ filemtime(public_path('Custom_js/Shared/stock-opname-unit-input.js')) }}"></script>
+  <script src="{{ asset('Custom_js/Shared/opname-page-lock.js') }}?v={{ filemtime(public_path('Custom_js/Shared/opname-page-lock.js')) }}"></script>
   <script src="{{ asset('Custom_js/Backoffice/Inventory/CreateStockOpname.js') }}?v={{ time() }}"></script>
+  <script>
+    if (window.OpnamePageLockUi) {
+      window.OpnamePageLockUi.bindInputPageLifecycle();
+    }
+  </script>
 @endsection

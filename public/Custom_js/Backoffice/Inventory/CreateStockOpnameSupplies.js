@@ -764,7 +764,10 @@ function insertData(options) {
     });
 }
 
-$(document).on("click", ".btnBack", function () {
+$(document).on("click", ".btnBack", function (e) {
+    if (window.opnameLockToken && window.OpnamePageLockUi) {
+        return;
+    }
     window.open("/stockOpnameBahan", "_self");
 });
 

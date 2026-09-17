@@ -36,6 +36,7 @@ use App\Support\UnitRollUp;
 use App\Support\UnitStockSorter;
 use App\Support\StockOpname\OpnameLifecycle;
 use App\Support\StockOpname\OpnameLineReader;
+use App\Support\StockOpname\OpnamePageLock;
 use App\Support\StockOpname\OpenOpnameGuard;
 use App\Support\StockOpname\BahanOpnameLifecycle;
 use App\Support\StockOpname\BahanOpnameLineReader;
@@ -125,6 +126,113 @@ class StockController extends Controller
         \App\Support\StockOpname\OpenOpnameStatusSignal::bump($warehouseId);
     }
 
+    private function currentStaffId(): int
+    {
+        $user = Session::get('user');
+
+        return (int) ($user->staff_id ?? 0);
+    }
+
+    private function currentStaffName(): string
+    {
+        $user = Session::get('user');
+
+        return trim((string) ($user->staff_name ?? 'User'));
+    }
+
+    /** Pesan error JSON jika page lock Input dipegang orang lain. */
+    private function denyIfOpnamePageLocked(int $warehouseId, string $domain)
+    {
+        $msg = OpnamePageLock::messageIfNotWritable(
+            $warehouseId,
+            $domain,
+            $this->currentStaffId()
+        );
+        if ($msg === null) {
+            return null;
+        }
+
+        return response()->json([
+            'status' => -1,
+            'header' => 'Stock Opname',
+            'message' => $msg,
+        ]);
+    }
+
+    private function resolveActiveWarehouseId(): int
+    {
+        $wh = (int) (Session::get('active_warehouse_id') ?? 0);
+        if ($wh <= 0) {
+            $wh = (int) ProductStock::resolveWarehouseId(null);
+        }
+
+        return $wh;
+    }
+
+    /**
+     * Acquire exclusive lock untuk halaman Input (-1). (helper disimpan untuk tes/reuse)
+     *
+     * @return array{token: string, warehouse_id: int}|\Illuminate\Http\RedirectResponse
+     */
+    private function acquireOpnameInputLockOrRedirect(string $domain, string $listRoute)
+    {
+        $wh = $this->resolveActiveWarehouseId();
+        if ($wh <= 0) {
+            return redirect()->route($listRoute)
+                ->with('error', 'Pilih gudang aktif terlebih dahulu.');
+        }
+
+        $result = OpnamePageLock::acquire(
+            $wh,
+            $domain,
+            $this->currentStaffId(),
+            $this->currentStaffName()
+        );
+
+        if (empty($result['ok'])) {
+            $name = (string) ($result['held_by'] ?? 'User lain');
+
+            return redirect()->route($listRoute)
+                ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+        }
+
+        return ['token' => (string) $result['token'], 'warehouse_id' => $wh];
+    }
+
+    /** Status / heartbeat / release lock Input Stok Opname. */
+    public function opnamePageLockStatus(Request $req)
+    {
+        $domain = (string) $req->input('domain', OpnamePageLock::DOMAIN_PRODUCT);
+        $wh = $this->resolveActiveWarehouseId();
+        $st = OpnamePageLock::status($wh, $domain);
+
+        return response()->json(array_merge(['ok' => 1, 'warehouse_id' => $wh, 'domain' => $domain], $st));
+    }
+
+    public function opnamePageLockHeartbeat(Request $req)
+    {
+        $token = (string) $req->input('token', '');
+        $result = OpnamePageLock::heartbeat($token);
+        if (empty($result['ok'])) {
+            return response()->json([
+                'ok' => 0,
+                'status' => -1,
+                'reason' => $result['reason'] ?? 'not_holder',
+                'message' => 'Sesi Input Stock Opname tidak lagi aktif.',
+            ], 409);
+        }
+
+        return response()->json(['ok' => 1, 'status' => 1]);
+    }
+
+    public function opnamePageLockRelease(Request $req)
+    {
+        $token = (string) $req->input('token', '');
+        OpnamePageLock::release($token);
+
+        return response()->json(['ok' => 1, 'status' => 1]);
+    }
+
     /**
      * Rancang ulang 2026-08-27 (merged from main's efef95e): dokumen baru ditulis ke
      * stock_opname_lines (satu baris per satuan, angka betulan), BUKAN lagi ke
@@ -171,6 +279,10 @@ class StockController extends Controller
         $data = $req->all();
         if (empty($data['sto_date'])) {
             $data['sto_date'] = now()->toDateString();
+        }
+        $wh = $this->resolveActiveWarehouseId();
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_PRODUCT)) {
+            return $deny;
         }
         $rawItems = json_decode($req->item, true) ?: [];
         if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'units')) {
@@ -293,6 +405,11 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
+        $wh = (int) ($sto->warehouse_id ?? $this->resolveActiveWarehouseId());
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_PRODUCT)) {
+            return $deny;
+        }
+
         return DB::transaction(function () use ($sto) {
             // Centang di draft belum punya angka — isi dari stok live, baru hangus/roll-up.
             \App\Support\StockOpname\UseSystemStock::materializeProductFlagsFromLive($sto);
@@ -335,10 +452,30 @@ class StockController extends Controller
     public function DetailStockOpname($id)
     {
         if ($id == -1) {
+            $wh = $this->resolveActiveWarehouseId();
+            if ($wh <= 0) {
+                return redirect()->route('stockOpname')
+                    ->with('error', 'Pilih gudang aktif terlebih dahulu.');
+            }
+            $lock = OpnamePageLock::acquire(
+                $wh,
+                OpnamePageLock::DOMAIN_PRODUCT,
+                $this->currentStaffId(),
+                $this->currentStaffName()
+            );
+            if (empty($lock['ok'])) {
+                $name = (string) ($lock['held_by'] ?? 'User lain');
+
+                return redirect()->route('stockOpname')
+                    ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+            }
+
             return view('Backoffice.Inventory.CreateStockOpname', [
                 'data' => [],
                 'mode' => 1,
                 'warehouse_name' => $this->activeWarehouseLabel(),
+                'opname_lock_token' => (string) $lock['token'],
+                'opname_lock_domain' => OpnamePageLock::DOMAIN_PRODUCT,
             ]);
         }
 
@@ -657,6 +794,10 @@ class StockController extends Controller
             $warehouseId = (int) \App\Models\ProductStock::resolveWarehouseId();
         }
 
+        if ($deny = $this->denyIfOpnamePageLocked($warehouseId, OpnamePageLock::DOMAIN_PRODUCT)) {
+            return $deny;
+        }
+
         // Ditambahkan (2026-08-05): gerbang draft — kolom is_draft sudah ada di DB tapi baru
         // sekarang benar-benar ditulis (lihat StockOpname::insertStockOpname()/updateStockOpname())
         // dan baru sekarang ditegakkan di sini juga. Status berbeda dari guard status!=1 di bawah
@@ -957,6 +1098,11 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
         }
 
+        $wh = (int) ($sto->warehouse_id ?? $this->resolveActiveWarehouseId());
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_PRODUCT)) {
+            return $deny;
+        }
+
         $sto->status = 3; // Tolak
         $sto->acc_by = session()->get('user') ? session()->get('user')->staff_id : null;
         $sto->save();
@@ -1101,6 +1247,10 @@ class StockController extends Controller
         if (empty($data['stob_date'])) {
             $data['stob_date'] = now()->toDateString();
         }
+        $wh = $this->resolveActiveWarehouseId();
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_SUPPLIES)) {
+            return $deny;
+        }
         $rawItems = json_decode($req->item, true) ?: [];
         if ($msg = \App\Support\StockOpname\UseSystemStock::rejectIfAllUnitsUseSystem($rawItems, 'sp_units')) {
             return response()->json(['status' => -1, 'message' => $msg]);
@@ -1205,6 +1355,11 @@ class StockController extends Controller
             return ["status" => -1, "message" => "Tidak diizinkan mengajukan draft milik staff lain"];
         }
 
+        $wh = (int) ($stob->warehouse_id ?? $this->resolveActiveWarehouseId());
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_SUPPLIES)) {
+            return $deny;
+        }
+
         return DB::transaction(function () use ($stob) {
             \App\Support\StockOpname\UseSystemStock::materializeBahanFlagsFromLive($stob);
 
@@ -1278,9 +1433,28 @@ class StockController extends Controller
             $param['warehouse_name'] = trim((string) ($param['data']->warehouse_name ?? ''))
                 ?: $this->activeWarehouseLabel();
         } else {
-            $param["data"] = [];
-            $param["mode"] = 1;
+            $wh = $this->resolveActiveWarehouseId();
+            if ($wh <= 0) {
+                return redirect()->route('stockOpnameBahan')
+                    ->with('error', 'Pilih gudang aktif terlebih dahulu.');
+            }
+            $lock = OpnamePageLock::acquire(
+                $wh,
+                OpnamePageLock::DOMAIN_SUPPLIES,
+                $this->currentStaffId(),
+                $this->currentStaffName()
+            );
+            if (empty($lock['ok'])) {
+                $name = (string) ($lock['held_by'] ?? 'User lain');
+
+                return redirect()->route('stockOpnameBahan')
+                    ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+            }
+            $param['data'] = [];
+            $param['mode'] = 1;
             $param['warehouse_name'] = $this->activeWarehouseLabel();
+            $param['opname_lock_token'] = (string) $lock['token'];
+            $param['opname_lock_domain'] = OpnamePageLock::DOMAIN_SUPPLIES;
         }
         return view('Backoffice.Inventory.CreateStockOpnameSupplies')->with($param);
     }
@@ -1320,6 +1494,10 @@ class StockController extends Controller
         );
         if ($warehouseId <= 0) {
             $warehouseId = (int) \App\Models\SuppliesStock::resolveWarehouseId();
+        }
+
+        if ($deny = $this->denyIfOpnamePageLocked($warehouseId, OpnamePageLock::DOMAIN_SUPPLIES)) {
+            return $deny;
         }
 
         // Mirrors accStockOpname()'s draft gate above.
@@ -1581,6 +1759,11 @@ class StockController extends Controller
         $stob = StockOpnameBahan::find($data["stob_id"]);
         if (!$stob || $stob->is_draft) {
             return ["status" => -1, "message" => "Dokumen draft belum bisa diproses"];
+        }
+
+        $wh = (int) ($stob->warehouse_id ?? $this->resolveActiveWarehouseId());
+        if ($deny = $this->denyIfOpnamePageLocked($wh, OpnamePageLock::DOMAIN_SUPPLIES)) {
+            return $deny;
         }
 
         $stob->status = 3; // Tolak
