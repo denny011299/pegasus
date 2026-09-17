@@ -116,6 +116,9 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::get('/getLog', [GeneralController::class, 'getLog'])->name('getLog');
     // Indikator lamp opname (semua staf login — soft-block relevan di semua modul)
     Route::get('/getOpenOpnameStatus', [StockController::class, 'getOpenOpnameStatus'])->name('getOpenOpnameStatus');
+    Route::get('/opnamePageLock/status', [StockController::class, 'opnamePageLockStatus'])->name('opnamePageLock.status');
+    Route::post('/opnamePageLock/heartbeat', [StockController::class, 'opnamePageLockHeartbeat'])->name('opnamePageLock.heartbeat');
+    Route::post('/opnamePageLock/release', [StockController::class, 'opnamePageLockRelease'])->name('opnamePageLock.release');
 
     Route::middleware('check.access:Kategori|view')->group(function () {
         Route::get('/category', [ProductController::class, 'Category'])->name('category');

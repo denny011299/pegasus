@@ -722,7 +722,11 @@ function insertData(options) {
     });
 }
 
-$(document).on("click", ".btnBack", function () {
+$(document).on("click", ".btnBack", function (e) {
+    if (window.opnameLockToken && window.OpnamePageLockUi) {
+        // Release lock ditangani OpnamePageLockUi.bindInputPageLifecycle
+        return;
+    }
     window.open("/stockOpname", "_self");
 });
 

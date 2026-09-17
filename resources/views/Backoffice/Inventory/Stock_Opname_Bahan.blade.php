@@ -150,6 +150,15 @@
 @section('custom_js')
     <script>
         var public = "{{ asset('') }}";
+        var sessionUser = @json(Session::get('user'));
+        window.opnameLockFlashError = @json(session('error'));
     </script>
-    <script src="{{ asset('Custom_js/Backoffice/Inventory/Stock_Opname_Bahan.js') }}?v=2"></script>
+    <script src="{{ asset('Custom_js/Shared/opname-page-lock.js') }}?v={{ filemtime(public_path('Custom_js/Shared/opname-page-lock.js')) }}"></script>
+    <script src="{{ asset('Custom_js/Backoffice/Inventory/Stock_Opname_Bahan.js') }}?v=3"></script>
+    <script>
+        if (window.OpnamePageLockUi) {
+            window.OpnamePageLockUi.showFlashErrorIfAny();
+            window.OpnamePageLockUi.bindListTambahPrecheck("supplies", ".btn-opname-tambah-bahan");
+        }
+    </script>
 @endsection
