@@ -4,6 +4,9 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
+use App\ExternalApi\Support\CategoryAutoSync;
+use App\ExternalApi\Support\Exceptions\AmbiguousNameMatchException;
+use App\ExternalApi\Support\UnitAutoSync;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Product;
@@ -12,7 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Data master produk untuk sistem eksternal (Data Produk).
@@ -45,12 +48,31 @@ use Illuminate\Validation\Rule;
  * syarat "dikelola" endpoint ini adalah status aktif, sama seperti
  * getProduct()/getProductForExternalApi().
  *
- * Field body (product_name, category_id, unit_id, product_unit) mengikuti
- * persis field yang sudah dikelola Product::insertProduct()/updateProduct()
- * milik halaman admin. Beda dengan Product::insertProduct(), endpoint ini
- * MEMVALIDASI category_id/unit_id/product_unit benar-benar menunjuk
- * kategori/satuan aktif sebelum menyimpan — pemanggil eksternal tidak
- * boleh membuat produk dengan rujukan yang menggantung.
+ * unit_id/product_unit/category_id — SINKRONISASI OTOMATIS satuan & kategori:
+ * PMO tidak selalu tahu id Pegasus untuk satuan/kategori yang dipakai sebuah
+ * produk (mis. satuan/kategori itu baru, belum pernah disinkronkan lewat
+ * jalur manapun). Karena itu unit_id dan setiap unsur product_unit menerima
+ * DUA bentuk:
+ *   - angka polos -> id satuan Pegasus yang SUDAH ADA & aktif (perilaku
+ *     lama, lihat GET /master/units).
+ *   - objek {ref_unit_id, unit_name, unit_short_name?} -> diresolusi lewat
+ *     App\ExternalApi\Support\UnitAutoSync, LOGIKA SAMA PERSIS dengan
+ *     PUT /master/units/{ref_unit_id} (dua lapis: ref_unit_id cocok -> pakai
+ *     baris itu; tidak cocok -> coba adopsi lewat nama; tidak ada yang
+ *     cocok -> satuan baru dibuat) — pada gilirannya sama dengan
+ *     App\Synchronization\Steps\ProductFlow\SyncUnitStep (Pusat
+ *     Sinkronisasi > Sinkronisasi Produk > langkah Satuan).
+ *
+ * category_id boleh dikosongkan kalau category_name dikirim (salah satu
+ * wajib ada): category_id yang sudah ada & aktif dipakai apa adanya;
+ * category_name diresolusi lewat App\ExternalApi\Support\CategoryAutoSync,
+ * LOGIKA SAMA PERSIS dengan SyncCategoryStep — PMO tidak pernah menerbitkan
+ * id kategori, jadi pencocokan MURNI lewat nama (tanpa kolom rujukan sama
+ * sekali, beda dengan satuan/produk).
+ *
+ * Ambiguitas nama (baik satuan maupun kategori) dijawab AMBIGUOUS_NAME_MATCH
+ * (422), sama seperti PUT /master/units/{ref_unit_id} dan SyncUnitStep/
+ * SyncCategoryStep sendiri melaporkan gagal untuk kasus yang sama.
  */
 class MasterProductController extends Controller
 {
@@ -139,11 +161,17 @@ class MasterProductController extends Controller
             return $this->duplicateRefError($refProductId);
         }
 
+        try {
+            $resolved = $this->resolvePayload($data);
+        } catch (AmbiguousNameMatchException $e) {
+            return $this->ambiguousNameError($e->entityLabel, $e->name, $e->candidateIds);
+        }
+
         $product = new Product();
         $product->ref_product_id = $refProductId;
         $product->status = 1;
         $product->created_by = null;
-        $this->applyPayload($product, $data);
+        $this->applyPayload($product, $resolved);
 
         try {
             $product->save();
@@ -176,29 +204,37 @@ class MasterProductController extends Controller
     public function update(Request $request, int $ref_product_id): JsonResponse
     {
         $data = $this->validateProfilePayload($request);
+
+        try {
+            $resolved = $this->resolvePayload($data);
+        } catch (AmbiguousNameMatchException $e) {
+            return $this->ambiguousNameError($e->entityLabel, $e->name, $e->candidateIds);
+        }
+
         $product = Product::where('ref_product_id', $ref_product_id)->first();
 
         if ($product === null) {
-            return $this->createFromUpsert($ref_product_id, $data);
+            return $this->createFromUpsert($ref_product_id, $resolved);
         }
 
         $product->status = 1;
-        $this->applyPayload($product, $data);
+        $this->applyPayload($product, $resolved);
         $product->save();
 
         return ApiResponse::success($this->present($product));
     }
 
     /**
-     * @param  array<string, mixed>  $data
+     * @param  array<string, mixed>  $resolved  hasil resolvePayload() — id kategori/satuan sudah
+     *                                          nyata ada di Pegasus, tidak perlu diresolusi lagi.
      */
-    private function createFromUpsert(int $refProductId, array $data): JsonResponse
+    private function createFromUpsert(int $refProductId, array $resolved): JsonResponse
     {
         $product = new Product();
         $product->ref_product_id = $refProductId;
         $product->status = 1;
         $product->created_by = null;
-        $this->applyPayload($product, $data);
+        $this->applyPayload($product, $resolved);
 
         try {
             $product->save();
@@ -214,7 +250,7 @@ class MasterProductController extends Controller
             }
 
             $existing->status = 1;
-            $this->applyPayload($existing, $data);
+            $this->applyPayload($existing, $resolved);
             $existing->save();
 
             return ApiResponse::success($this->present($existing));
@@ -357,11 +393,13 @@ class MasterProductController extends Controller
     }
 
     /**
-     * category_id, unit_id, dan setiap unsur product_unit divalidasi harus
-     * benar-benar menunjuk kategori/satuan yang AKTIF — beda dengan
-     * Product::insertProduct()/updateProduct() milik halaman admin yang
-     * tidak memeriksa ini sama sekali. Pemanggil eksternal tidak boleh
-     * membuat produk dengan rujukan yang menggantung.
+     * Validasi BENTUK saja (tipe data, field wajib). Apakah category_id/
+     * unit_id/product_unit benar-benar menunjuk baris yang ada & aktif di
+     * Pegasus — atau perlu disinkronkan otomatis lebih dulu — diperiksa
+     * belakangan oleh resolvePayload(), bukan di sini, karena unit_id dan
+     * unsur product_unit boleh berupa objek {ref_unit_id, unit_name, ...}
+     * yang sama sekali belum ada baris Pegasus-nya saat validasi ini
+     * berjalan (lihat catatan kelas).
      *
      * @return array<string, array<int, mixed>>
      */
@@ -369,24 +407,159 @@ class MasterProductController extends Controller
     {
         return [
             'product_name' => ['required', 'string', 'max:250'],
-            'category_id' => ['required', 'integer', Rule::exists('categories', 'category_id')->where('status', 1)],
-            'unit_id' => ['required', 'integer', Rule::exists('units', 'unit_id')->where('status', 1)],
+
+            // Salah satu wajib ada — lihat resolveCategoryId().
+            'category_id' => ['required_without:category_name', 'nullable', 'integer', 'min:1'],
+            'category_name' => ['required_without:category_id', 'nullable', 'string', 'max:250'],
+
+            'unit_id' => ['required', $this->unitFieldRule()],
             'product_unit' => ['required', 'array', 'min:1'],
-            'product_unit.*' => ['integer', Rule::exists('units', 'unit_id')->where('status', 1)],
+            'product_unit.*' => [$this->unitFieldRule()],
         ];
+    }
+
+    /**
+     * Aturan satu field unit_id/product_unit.*: boleh angka polos (id
+     * Pegasus yang sudah ada) ATAU objek {ref_unit_id, unit_name,
+     * unit_short_name?} untuk satuan yang belum pernah disinkronkan — lihat
+     * catatan kelas dan resolveUnit().
+     */
+    private function unitFieldRule(): \Closure
+    {
+        return function (string $attribute, $value, \Closure $fail) {
+            if ($this->isPlainId($value)) {
+                return;
+            }
+
+            if (! is_array($value)) {
+                $fail($attribute.' wajib berupa id satuan Pegasus (angka), atau objek '
+                    .'{ref_unit_id, unit_name, unit_short_name?} untuk satuan yang belum disinkronkan.');
+
+                return;
+            }
+
+            if (! isset($value['ref_unit_id']) || ! $this->isPlainId($value['ref_unit_id'])) {
+                $fail($attribute.'.ref_unit_id wajib berupa angka.');
+
+                return;
+            }
+
+            if (! isset($value['unit_name']) || ! is_string($value['unit_name']) || trim($value['unit_name']) === '') {
+                $fail($attribute.'.unit_name wajib diisi kalau mengirim objek satuan.');
+
+                return;
+            }
+
+            if (array_key_exists('unit_short_name', $value)
+                && $value['unit_short_name'] !== null
+                && ! is_string($value['unit_short_name'])) {
+                $fail($attribute.'.unit_short_name wajib berupa teks.');
+            }
+        };
+    }
+
+    private function isPlainId(mixed $value): bool
+    {
+        return (is_int($value) && $value > 0)
+            || (is_string($value) && ctype_digit($value) && (int) $value > 0);
+    }
+
+    /**
+     * Menerjemahkan body tervalidasi-bentuk (profileRules()) menjadi id
+     * Pegasus nyata — mengaktifkan sinkronisasi otomatis satuan & kategori
+     * yang dikirim sebagai objek/nama, bukan id (lihat catatan kelas).
+     * Dipanggil SEBELUM applyPayload(), sekali per request (store/update),
+     * bukan berulang di createFromUpsert()'s retry path.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{product_name: string, category_id: int, unit_id: int, product_unit: array<int, int>}
+     */
+    private function resolvePayload(array $data): array
+    {
+        $categoryId = $this->resolveCategoryId($data);
+        $unitId = $this->resolveUnit($data['unit_id'])->unit_id;
+        $productUnitIds = array_map(
+            fn ($item) => (int) $this->resolveUnit($item)->unit_id,
+            $data['product_unit'],
+        );
+
+        return [
+            'product_name' => trim($data['product_name']),
+            'category_id' => $categoryId,
+            'unit_id' => (int) $unitId,
+            'product_unit' => array_values($productUnitIds),
+        ];
+    }
+
+    /**
+     * category_id yang dikirim & aktif dipakai apa adanya. Kalau tidak
+     * dikirim (category_name dikirim sebagai gantinya — profileRules()
+     * mewajibkan salah satu), diresolusi lewat CategoryAutoSync — LOGIKA
+     * SAMA PERSIS dengan SyncCategoryStep (murni lewat nama, PMO tidak
+     * pernah menerbitkan id kategori).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveCategoryId(array $data): int
+    {
+        if (! empty($data['category_id'])) {
+            $categoryId = (int) $data['category_id'];
+
+            if (! DB::table('categories')->where('category_id', $categoryId)->where('status', 1)->exists()) {
+                $this->failValidation('category_id', 'category_id '.$categoryId.' tidak menunjuk kategori Pegasus yang aktif.');
+            }
+
+            return $categoryId;
+        }
+
+        return (new CategoryAutoSync())->resolve((string) $data['category_name']);
+    }
+
+    /**
+     * Satu unsur unit_id/product_unit -> baris Unit Pegasus nyata. Angka
+     * polos wajib sudah ada & aktif (perilaku lama). Objek
+     * {ref_unit_id, unit_name, unit_short_name?} diresolusi lewat
+     * UnitAutoSync — bisa melempar AmbiguousNameMatchException, ditangkap
+     * pemanggil resolvePayload() lewat store()/update().
+     */
+    private function resolveUnit(mixed $value): Unit
+    {
+        if ($this->isPlainId($value)) {
+            $unitId = (int) $value;
+            $unit = Unit::where('unit_id', $unitId)->where('status', 1)->first();
+
+            if ($unit === null) {
+                $this->failValidation('unit_id', 'id satuan '.$unitId.' tidak menunjuk satuan Pegasus yang aktif.');
+            }
+
+            return $unit;
+        }
+
+        $refUnitId = (int) $value['ref_unit_id'];
+        $unitName = (string) $value['unit_name'];
+        $unitShortName = (string) ($value['unit_short_name'] ?? '');
+
+        return (new UnitAutoSync())->resolve($refUnitId, $unitName, $unitShortName)->unit;
+    }
+
+    private function failValidation(string $field, string $message): never
+    {
+        throw ValidationException::withMessages([$field => [$message]]);
     }
 
     /**
      * product_unit disimpan sebagai JSON array of string ("[\"7\",\"9\"]"),
      * mengikuti konvensi yang sudah dipakai Product::insertProduct() dan
      * SyncProductStep — bukan keputusan baru di sini.
+     *
+     * @param  array{product_name: string, category_id: int, unit_id: int, product_unit: array<int, int>}  $resolved
      */
-    private function applyPayload(Product $product, array $data): void
+    private function applyPayload(Product $product, array $resolved): void
     {
-        $product->product_name = trim($data['product_name']);
-        $product->category_id = (int) $data['category_id'];
-        $product->unit_id = (int) $data['unit_id'];
-        $product->product_unit = json_encode(array_map('strval', $data['product_unit']));
+        $product->product_name = $resolved['product_name'];
+        $product->category_id = $resolved['category_id'];
+        $product->unit_id = $resolved['unit_id'];
+        $product->product_unit = json_encode(array_map('strval', $resolved['product_unit']));
     }
 
     /**
@@ -497,6 +670,21 @@ class MasterProductController extends Controller
             ErrorCatalog::DUPLICATE_REF_ID,
             'ref_product_id '.$refProductId.' sudah dipakai produk lain.',
             422,
+        );
+    }
+
+    /**
+     * @param  array<int, int>  $candidateIds
+     */
+    private function ambiguousNameError(string $entityLabel, string $name, array $candidateIds): JsonResponse
+    {
+        return ApiResponse::error(
+            ErrorCatalog::AMBIGUOUS_NAME_MATCH,
+            $entityLabel.' "'.$name.'" cocok dengan '.count($candidateIds).' baris Pegasus sekaligus yang belum '
+                .'tersambung, jadi tidak bisa disinkronkan otomatis. Gabungkan/hubungkan duplikatnya lebih dulu '
+                .'(mis. lewat PATCH /master/units/connect untuk satuan), lalu ulangi permintaan ini.',
+            422,
+            ['candidate_ids' => $candidateIds],
         );
     }
 }
