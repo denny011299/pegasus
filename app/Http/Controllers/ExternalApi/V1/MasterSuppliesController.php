@@ -120,22 +120,60 @@ class MasterSuppliesController extends Controller
     /**
      * PUT /api/external/v1/bahan/{ref_supplies_id}
      *
-     * Tidak pernah membuat bahan baru; ref_supplies_id yang tidak ditemukan (atau ditemukan tapi
-     * statusnya nonaktif) selalu dijawab not_found.
+     * Upsert: ref_supplies_id yang belum pernah ada membuat bahan baru (respons 201), sama
+     * seperti POST tapi dengan ref_supplies_id dari path, bukan body — dipakai PMO untuk langsung
+     * mengirim data bahan yang belum pernah disinkronkan tanpa harus tahu lebih dulu apakah bahan
+     * itu sudah ada di Pegasus. ref_supplies_id yang sudah ada tapi statusnya nonaktif DIAKTIFKAN
+     * KEMBALI sekaligus diperbarui (bukan dijawab not_found) — upsert selalu berujung pada satu
+     * baris aktif dengan data terbaru.
      */
     public function update(Request $request, int $ref_supplies_id): JsonResponse
     {
-        $supplies = $this->findManagedByRef($ref_supplies_id);
+        $data = $this->validateProfilePayload($request);
+        $supplies = Supplies::where('ref_supplies_id', $ref_supplies_id)->first();
 
         if ($supplies === null) {
-            return $this->notFoundByRefError($ref_supplies_id);
+            return $this->createFromUpsert($ref_supplies_id, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        $supplies->status = 1;
         $this->applyPayload($supplies, $data);
         $supplies->save();
 
         return ApiResponse::success($this->present($supplies));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(int $refSuppliesId, array $data): JsonResponse
+    {
+        $supplies = new Supplies();
+        $supplies->ref_supplies_id = $refSuppliesId;
+        $supplies->status = 1;
+        $supplies->created_by = null;
+        $this->applyPayload($supplies, $data);
+
+        try {
+            $supplies->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan ref_supplies_id baru yang sama, nyaris bersamaan: keduanya
+            // sama-sama tidak menemukan baris di atas, lalu unique index menolak yang kalah cepat.
+            // Perlakukan sebagai upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Supplies::where('ref_supplies_id', $refSuppliesId)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($supplies), [], 201);
     }
 
     /**

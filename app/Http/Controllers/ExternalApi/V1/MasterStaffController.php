@@ -115,20 +115,74 @@ class MasterStaffController extends Controller
      * PUT /api/external/v1/master/staff/{staff_id}
      *
      * {staff_id} adalah external_ref_id, sama seperti /master/sales.
+     *
+     * Upsert: external_ref_id yang belum pernah ada membuat staf baru
+     * (respons 201, role_id NULL — sama seperti POST), dipakai PMO untuk
+     * langsung mengirim data staf yang belum pernah disinkronkan tanpa
+     * harus tahu lebih dulu apakah staf itu sudah ada di Pegasus.
+     * external_ref_id yang sudah ada tapi statusnya nonaktif DIAKTIFKAN
+     * KEMBALI sekaligus diperbarui. external_ref_id yang sudah dipakai
+     * staf BERPERAN (di luar jangkauan endpoint ini, mis. Sales) tetap
+     * ditolak sebagai duplicate_ref_id — upsert tidak pernah mengambil
+     * alih baris di luar cakupannya sendiri.
      */
     public function update(Request $request, string $staff_id): JsonResponse
     {
-        $staff = $this->findManagedByRef($staff_id);
+        $data = $this->validateProfilePayload($request);
+        $staff = Staff::where('external_ref_id', $staff_id)->first();
 
         if ($staff === null) {
-            return $this->notFoundByRefError($staff_id);
+            return $this->createFromUpsert($staff_id, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        if ($staff->role_id !== null) {
+            return $this->duplicateRefError($staff_id);
+        }
+
+        $staff->status = 1;
         $this->applyPayload($staff, $data);
         $staff->save();
 
         return ApiResponse::success($this->present($staff));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(string $refId, array $data): JsonResponse
+    {
+        $staff = new Staff();
+        $staff->external_ref_id = $refId;
+        $staff->role_id = null;
+        $staff->status = 1;
+        $staff->created_by = null;
+        $this->applyPayload($staff, $data);
+
+        try {
+            $staff->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan external_ref_id baru yang sama,
+            // nyaris bersamaan: keduanya sama-sama tidak menemukan baris di
+            // atas, lalu unique index menolak yang kalah cepat. Perlakukan
+            // sebagai upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Staff::where('external_ref_id', $refId)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            if ($existing->role_id !== null) {
+                return $this->duplicateRefError($refId);
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($staff), [], 201);
     }
 
     /**

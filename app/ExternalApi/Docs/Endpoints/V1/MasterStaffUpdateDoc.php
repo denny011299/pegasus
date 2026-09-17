@@ -16,7 +16,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
 
     public function title(): string
     {
-        return 'Ubah Staf (Non-Sales)';
+        return 'Ubah/Buat Staf (Non-Sales, Upsert)';
     }
 
     public function method(): string
@@ -36,7 +36,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengubah data staf yang sudah ada, dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Tidak pernah membuat staf baru, dan tidak mengubah role.';
+        return 'Upsert: mengubah data staf yang sudah ada, dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus), atau membuat staf baru dengan staff_id itu kalau belum pernah ada (role_id selalu NULL, sama seperti POST). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Tidak pernah mengubah role. Staf yang sudah ada tapi nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui.';
     }
 
     public function pathParameters(): array
@@ -84,7 +84,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan staf yang dikelola endpoint ini (staf itu punya role, atau sudah dihapus).'],
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'staff_id (rujukan Anda) sudah dipakai staf BERPERAN (mis. Sales) — di luar jangkauan endpoint ini, tidak diambil alih.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
         ];
     }
@@ -95,7 +95,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
             'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus.',
             'Hanya nama_depan yang wajib diisi, meski hanya satu field yang berubah; email, nama_belakang, dan alamat boleh dikosongkan.',
             'Body selalu dianggap representasi penuh staf ini: email/nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama. Kirim ulang email lama kalau tidak ingin menghapusnya.',
-            'Endpoint ini HANYA boleh menyentuh staf yang role_id-nya NULL (dan aktif) — staff_id yang menunjuk staf berperan apa pun dijawab NOT_FOUND.',
+            'Upsert: staff_id yang belum pernah ada membuat staf baru (respons 201). staff_id yang sudah ada dan sedang nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui. staff_id yang sudah dipakai staf berperan (di luar jangkauan endpoint ini) tetap ditolak sebagai DUPLICATE_REF_ID, tidak diambil alih.',
             'role tidak bisa diubah lewat endpoint ini.',
         ];
     }

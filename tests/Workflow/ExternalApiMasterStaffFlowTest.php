@@ -111,9 +111,13 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $refId = 'ext-'.uniqid();
         $staff = $this->createManagedStaff($refId);
 
+        // The internal staff_id must NOT work as the path segment: it does not match any
+        // external_ref_id, so upsert creates a brand new staff instead of touching $staff.
         $this->putJson('/api/external/v1/master/staff/'.$staff->staff_id, [
             'nama_depan' => 'Should Not Match',
-        ], $headers)->assertStatus(404);
+        ], $headers)->assertStatus(201);
+
+        $this->assertNotSame('Should Not Match', $staff->fresh()->staff_name);
 
         $this->putJson('/api/external/v1/master/staff/'.$refId, [
             'nama_depan' => 'Updated',
@@ -142,9 +146,12 @@ class ExternalApiMasterStaffFlowTest extends TestCase
         $staff->status = 1;
         $staff->save();
 
+        // Upsert must not take over a ref_id already used by a staff outside this endpoint's scope.
         $this->putJson('/api/external/v1/master/staff/'.$refId, [
             'nama_depan' => 'x',
-        ], $headers)->assertStatus(404);
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
+
+        $this->assertSame('Staff With A Role', $staff->fresh()->staff_name);
     }
 
     public function test_connect_uses_the_internal_staff_id_and_moves_a_ref_id_held_by_another_staff(): void

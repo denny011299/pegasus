@@ -6,6 +6,8 @@ use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
+use App\ExternalApi\Support\Exceptions\AmbiguousNameMatchException;
+use App\ExternalApi\Support\UnitAutoSync;
 use App\Models\Unit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -117,23 +119,37 @@ class MasterUnitController extends Controller
     /**
      * PUT /api/external/v1/master/units/{ref_unit_id}
      *
-     * {ref_unit_id} tidak pernah membuat satuan baru; ref_unit_id yang
-     * tidak ditemukan (atau ditemukan tapi statusnya nonaktif) selalu
-     * dijawab not_found.
+     * Upsert dua lapis, delegasi PENUH ke App\ExternalApi\Support\UnitAutoSync
+     * (dipakai bersama MasterProductController untuk unit_id/product_unit yang
+     * belum pernah disinkronkan): ref_unit_id yang belum pernah ada TIDAK
+     * langsung membuat satuan baru — lebih dulu dicoba dicocokkan lewat nama,
+     * persis logika fase adopsi App\Synchronization\Support\ReferenceMatcher
+     * yang dipakai SyncUnitStep (Pusat Sinkronisasi > Sinkronisasi Produk >
+     * langkah Satuan). Baru kalau tidak ada satuan lokal yang cocok namanya,
+     * satuan baru dibuat (respons 201) — sama seperti POST tapi dengan
+     * ref_unit_id dari path, bukan body. ref_unit_id yang sudah ada tapi
+     * statusnya nonaktif DIAKTIFKAN KEMBALI sekaligus diperbarui (bukan
+     * dijawab not_found) — upsert selalu berujung pada satu baris aktif
+     * dengan data terbaru.
+     *
+     * - Cocok lewat ref_unit_id, atau cocok tepat satu lewat nama (ADOPTED)
+     *   -> respons 200, tidak ada baris baru.
+     * - Tidak cocok sama sekali -> satuan baru dibuat, respons 201.
+     * - Cocok lebih dari satu lewat nama -> AMBIGUOUS_NAME_MATCH (422).
+     *   Operator harus merapikan duplikat nama itu dulu, sama seperti
+     *   SyncUnitStep melaporkan gagal untuk kasus yang sama.
      */
     public function update(Request $request, int $ref_unit_id): JsonResponse
     {
-        $unit = $this->findManagedByRef($ref_unit_id);
+        $data = $this->validateProfilePayload($request);
 
-        if ($unit === null) {
-            return $this->notFoundByRefError($ref_unit_id);
+        try {
+            $result = (new UnitAutoSync())->resolve($ref_unit_id, $data['unit_name'], $data['unit_short_name']);
+        } catch (AmbiguousNameMatchException $e) {
+            return $this->ambiguousNameError($e->name, $e->candidateIds);
         }
 
-        $data = $this->validateProfilePayload($request);
-        $this->applyPayload($unit, $data);
-        $unit->save();
-
-        return ApiResponse::success($this->present($unit));
+        return ApiResponse::success($this->present($result->unit), [], $result->isNew() ? 201 : 200);
     }
 
     /**
@@ -340,6 +356,22 @@ class MasterUnitController extends Controller
             ErrorCatalog::DUPLICATE_REF_ID,
             'ref_unit_id '.$refUnitId.' sudah dipakai satuan lain.',
             422,
+        );
+    }
+
+    /**
+     * @param  array<int, int>  $candidateUnitIds
+     */
+    private function ambiguousNameError(string $unitName, array $candidateUnitIds): JsonResponse
+    {
+        return ApiResponse::error(
+            ErrorCatalog::AMBIGUOUS_NAME_MATCH,
+            'Ada '.count($candidateUnitIds).' satuan Pegasus dengan nama sama ("'.$unitName.'") '
+                .'yang belum tersambung ke PMO, jadi ref_unit_id tidak bisa dipasang otomatis. '
+                .'Gabungkan/hubungkan duplikatnya lebih dulu (mis. lewat PATCH /master/units/connect), '
+                .'lalu ulangi PUT ini.',
+            422,
+            ['candidate_ids' => $candidateUnitIds],
         );
     }
 }

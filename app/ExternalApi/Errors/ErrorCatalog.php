@@ -54,6 +54,13 @@ final class ErrorCatalog
     /** POST create dengan kolom rujukan eksternal yang sudah dipakai baris lain. */
     public const DUPLICATE_REF_ID = 'DUPLICATE_REF_ID';
 
+    /**
+     * Upsert lapis-adopsi-nama (lihat App\Synchronization\Support\ReferenceMatcher) menemukan
+     * lebih dari satu baris lokal yang belum tersambung referensi eksternal dengan nama yang
+     * sama persis — sama seperti ambiguitas yang sudah ditangani SyncUnitStep dkk.
+     */
+    public const AMBIGUOUS_NAME_MATCH = 'AMBIGUOUS_NAME_MATCH';
+
     /* ---------------------------------------------------------------- */
     /* Data Master — gudang                                              */
     /* ---------------------------------------------------------------- */
