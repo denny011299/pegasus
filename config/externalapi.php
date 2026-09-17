@@ -158,6 +158,11 @@ return [
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesUpdateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesDeleteDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\MasterSalesLinkDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffListDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffCreateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffUpdateDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffDeleteDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\MasterStaffLinkDoc::class,
 
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
