@@ -336,25 +336,32 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   /**
    * Kolom "Dibuat Oleh" untuk tabel yang barisnya BISA berasal dari Pusat
-   * Sinkronisasi (Produk, Satuan, Armada). Dipakai menggantikan
-   * renderCreatedByName pada tabel-tabel itu saja — tabel lain tetap
-   * memakai renderCreatedByName apa adanya.
+   * Sinkronisasi ATAU dari Platform API Eksternal (Produk, Satuan, Armada,
+   * Staf, Sales). Dipakai menggantikan renderCreatedByName pada tabel-tabel
+   * itu saja — tabel lain tetap memakai renderCreatedByName apa adanya.
    *
-   * Penandanya adalah kolom id rujukan PMO pada barisnya
-   * (ref_product_id/ref_unit_id/ref_armada_id), BUKAN created_by: created_by
-   * kosong juga terjadi pada data lama/data dari Platform API Eksternal,
-   * jadi tidak bisa dipakai sebagai bukti. Tiga keadaan:
+   * Penandanya adalah kolom id rujukan eksternal pada barisnya
+   * (ref_product_id/ref_unit_id/ref_armada_id/external_ref_id), BUKAN
+   * created_by: created_by kosong juga terjadi pada data lama, jadi tidak
+   * bisa dipakai sebagai bukti. Tiga keadaan:
    *
-   * - Ada id PMO, tanpa pembuat -> memang dibuat oleh sinkronisasi.
-   * - Ada id PMO, ADA pembuat   -> dibuat manusia lalu diadopsi/disambungkan
-   *                               ke PMO (lihat ReferenceMatcher fase adopsi).
-   *                               Keduanya ditampilkan, jangan disembunyikan.
-   * - Tanpa id PMO              -> perilaku lama, murni data lokal.
+   * - Ada id rujukan, tanpa pembuat -> memang dibuat oleh sinkronisasi/API.
+   * - Ada id rujukan, ADA pembuat   -> dibuat manusia lalu diadopsi/
+   *                               disambungkan ke sistem luar (lihat
+   *                               ReferenceMatcher fase adopsi untuk
+   *                               Produk/Satuan/Armada; PATCH .../connect
+   *                               untuk Staf/Sales). Keduanya ditampilkan,
+   *                               jangan disembunyikan.
+   * - Tanpa id rujukan              -> perilaku lama, murni data lokal.
    *
-   * Intinya untuk operator: baris bertanda PMO akan DITIMPA data PMO pada
-   * sinkronisasi berikutnya, jadi menyuntingnya manual di sini percuma.
+   * Intinya untuk operator: baris bertanda begini akan DITIMPA data dari
+   * sistem luar pada sinkronisasi/panggilan API berikutnya, jadi
+   * menyuntingnya manual di sini percuma. Staf/Sales TIDAK ditarik Pusat
+   * Sinkronisasi sama sekali — external_ref_id-nya SELALU berasal dari
+   * Platform API Eksternal (POST/PUT/PATCH .../master/staff atau
+   * .../master/sales), tidak pernah dari sinkronisasi periodik.
    */
-  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id'];
+  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id', 'external_ref_id'];
 
   function pmoRefIdOf(row) {
     if (!row || typeof row !== 'object') {
@@ -376,13 +383,14 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         return renderCreatedByName(data);
       }
 
-      // Id PMO SENGAJA tidak ditampilkan di sini: nilainya 16 digit dan
-      // sebagian melewati Number.MAX_SAFE_INTEGER JavaScript (mis.
-      // 9506012026014615 terbaca 9506012026014616), jadi yang tampil bisa
-      // meleset satu digit. Untuk mendeteksi "ada/tidak" saja nilainya tetap
-      // aman. Kalau id aslinya perlu dilihat, ambil dari database.
-      var tip = 'Dikelola Sinkronisasi PMO. '
-        + 'Perubahan manual akan ditimpa pada sinkronisasi berikutnya.';
+      // Id rujukan SENGAJA tidak ditampilkan di sini: nilainya (untuk
+      // Produk/Satuan/Armada) bisa 16 digit dan sebagian melewati
+      // Number.MAX_SAFE_INTEGER JavaScript (mis. 9506012026014615 terbaca
+      // 9506012026014616), jadi yang tampil bisa meleset satu digit. Untuk
+      // mendeteksi "ada/tidak" saja nilainya tetap aman. Kalau id aslinya
+      // perlu dilihat, ambil dari database.
+      var tip = 'Terhubung dengan sistem luar (PMO/API Eksternal). '
+        + 'Perubahan manual bisa ditimpa saat data disinkronkan/diperbarui lagi.';
 
       var creator = data;
       if (typeof creator === 'object' && creator !== null) {
