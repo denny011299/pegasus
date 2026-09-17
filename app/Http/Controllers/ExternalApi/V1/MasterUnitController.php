@@ -7,6 +7,7 @@ use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\Unit;
+use App\Synchronization\Support\ReferenceMatcher;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -117,13 +118,17 @@ class MasterUnitController extends Controller
     /**
      * PUT /api/external/v1/master/units/{ref_unit_id}
      *
-     * Upsert: ref_unit_id yang belum pernah ada membuat satuan baru (respons
-     * 201), sama seperti POST tapi dengan ref_unit_id dari path, bukan body
-     * — dipakai PMO untuk langsung mengirim data satuan yang belum pernah
-     * disinkronkan tanpa harus tahu lebih dulu apakah satuan itu sudah ada
-     * di Pegasus. ref_unit_id yang sudah ada tapi statusnya nonaktif
-     * DIAKTIFKAN KEMBALI sekaligus diperbarui (bukan dijawab not_found) —
-     * upsert selalu berujung pada satu baris aktif dengan data terbaru.
+     * Upsert dua lapis: ref_unit_id yang belum pernah ada TIDAK langsung
+     * membuat satuan baru — lebih dulu dicoba dicocokkan lewat nama
+     * (lapis kedua, lihat upsertByNameOrCreate()), persis logika fase
+     * adopsi App\Synchronization\Support\ReferenceMatcher yang dipakai
+     * SyncUnitStep (Pusat Sinkronisasi > Sinkronisasi Produk > langkah
+     * Satuan). Baru kalau tidak ada satuan lokal yang cocok namanya, satuan
+     * baru dibuat (respons 201) — sama seperti POST tapi dengan ref_unit_id
+     * dari path, bukan body. ref_unit_id yang sudah ada tapi statusnya
+     * nonaktif DIAKTIFKAN KEMBALI sekaligus diperbarui (bukan dijawab
+     * not_found) — upsert selalu berujung pada satu baris aktif dengan data
+     * terbaru.
      */
     public function update(Request $request, int $ref_unit_id): JsonResponse
     {
@@ -131,7 +136,7 @@ class MasterUnitController extends Controller
         $unit = Unit::where('ref_unit_id', $ref_unit_id)->first();
 
         if ($unit === null) {
-            return $this->createFromUpsert($ref_unit_id, $data);
+            return $this->upsertByNameOrCreate($ref_unit_id, $data);
         }
 
         $unit->status = 1;
@@ -139,6 +144,50 @@ class MasterUnitController extends Controller
         $unit->save();
 
         return ApiResponse::success($this->present($unit));
+    }
+
+    /**
+     * Lapis kedua upsert: dipanggil hanya kalau ref_unit_id dari path belum
+     * pernah ada di Pegasus. Sebelum membuat baris baru, dicoba lebih dulu
+     * mencocokkan unit_name yang dikirim ke satuan lokal yang BELUM
+     * tersambung PMO (ref_unit_id NULL) — LOGIKA SAMA PERSIS dengan fase
+     * adopsi ReferenceMatcher pada SyncUnitStep, supaya PUT upsert lewat
+     * Platform API Eksternal tidak membuat satuan duplikat untuk nama yang
+     * sebenarnya sudah ada di Pegasus (mis. dibuat manual lewat halaman
+     * admin sebelum satuan itu pernah disinkronkan/di-push PMO).
+     *
+     * - Cocok tepat satu satuan lokal -> DIADOPSI: ref_unit_id dipasang ke
+     *   satuan itu, profil diperbarui, statusnya diaktifkan — respons 200,
+     *   BUKAN 201, karena tidak ada baris baru yang dibuat.
+     * - Cocok lebih dari satu (nama sama, beberapa satuan lokal belum
+     *   tersambung PMO) -> ditolak AMBIGUOUS_NAME_MATCH (422). Operator
+     *   harus merapikan duplikat nama itu dulu, sama seperti SyncUnitStep
+     *   melaporkan gagal untuk kasus yang sama.
+     * - Tidak ada yang cocok -> satuan baru dibuat (lapis pertama upsert,
+     *   respons 201).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function upsertByNameOrCreate(int $refUnitId, array $data): JsonResponse
+    {
+        $matcher = (new ReferenceMatcher('units', 'unit_id', 'ref_unit_id', 'unit_name'))->load();
+        $match = $matcher->match($refUnitId, $data['unit_name']);
+
+        if ($match->isAmbiguous()) {
+            return $this->ambiguousNameError($data['unit_name'], $match->candidates);
+        }
+
+        if ($match->found()) {
+            $unit = Unit::findOrFail($match->localId);
+            $unit->ref_unit_id = $refUnitId;
+            $unit->status = 1;
+            $this->applyPayload($unit, $data);
+            $unit->save();
+
+            return ApiResponse::success($this->present($unit));
+        }
+
+        return $this->createFromUpsert($refUnitId, $data);
     }
 
     /**
@@ -379,6 +428,22 @@ class MasterUnitController extends Controller
             ErrorCatalog::DUPLICATE_REF_ID,
             'ref_unit_id '.$refUnitId.' sudah dipakai satuan lain.',
             422,
+        );
+    }
+
+    /**
+     * @param  array<int, int>  $candidateUnitIds
+     */
+    private function ambiguousNameError(string $unitName, array $candidateUnitIds): JsonResponse
+    {
+        return ApiResponse::error(
+            ErrorCatalog::AMBIGUOUS_NAME_MATCH,
+            'Ada '.count($candidateUnitIds).' satuan Pegasus dengan nama sama ("'.$unitName.'") '
+                .'yang belum tersambung ke PMO, jadi ref_unit_id tidak bisa dipasang otomatis. '
+                .'Gabungkan/hubungkan duplikatnya lebih dulu (mis. lewat PATCH /master/units/connect), '
+                .'lalu ulangi PUT ini.',
+            422,
+            ['candidate_ids' => $candidateUnitIds],
         );
     }
 }
