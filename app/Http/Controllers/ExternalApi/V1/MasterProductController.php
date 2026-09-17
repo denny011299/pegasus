@@ -55,20 +55,24 @@ use Illuminate\Validation\ValidationException;
  * DUA bentuk:
  *   - angka polos -> id satuan Pegasus yang SUDAH ADA & aktif (perilaku
  *     lama, lihat GET /master/units).
- *   - objek {ref_unit_id, unit_name, unit_short_name?} -> diresolusi lewat
+ *   - objek {ref_unit_id?, unit_name?, unit_short_name?} -> diresolusi lewat
  *     App\ExternalApi\Support\UnitAutoSync, LOGIKA SAMA PERSIS dengan
- *     PUT /master/units/{ref_unit_id} (dua lapis: ref_unit_id cocok -> pakai
- *     baris itu; tidak cocok -> coba adopsi lewat nama; tidak ada yang
- *     cocok -> satuan baru dibuat) — pada gilirannya sama dengan
+ *     PUT /master/units/{ref_unit_id} — ref_unit_id DAN unit_name BOLEH
+ *     dikirim bersamaan (salah satunya wajib ada): ref_unit_id cocok ->
+ *     pakai baris itu (unit_name, kalau ikut dikirim, memperbarui namanya
+ *     saja); tidak cocok (atau tidak dikirim) -> coba adopsi lewat
+ *     unit_name; tidak ada yang cocok -> satuan baru dibuat. Pada
+ *     gilirannya sama dengan
  *     App\Synchronization\Steps\ProductFlow\SyncUnitStep (Pusat
  *     Sinkronisasi > Sinkronisasi Produk > langkah Satuan).
  *
- * category_id boleh dikosongkan kalau category_name dikirim (salah satu
- * wajib ada): category_id yang sudah ada & aktif dipakai apa adanya;
- * category_name diresolusi lewat App\ExternalApi\Support\CategoryAutoSync,
- * LOGIKA SAMA PERSIS dengan SyncCategoryStep — PMO tidak pernah menerbitkan
- * id kategori, jadi pencocokan MURNI lewat nama (tanpa kolom rujukan sama
- * sekali, beda dengan satuan/produk).
+ * category_id dan category_name BOLEH dikirim bersamaan juga (salah satunya
+ * wajib ada): category_id yang sudah ada & aktif dipakai apa adanya; kalau
+ * tidak dikirim atau tidak aktif, category_name diresolusi lewat
+ * App\ExternalApi\Support\CategoryAutoSync, LOGIKA SAMA PERSIS dengan
+ * SyncCategoryStep — PMO tidak pernah menerbitkan id kategori, jadi
+ * pencocokan MURNI lewat nama (tanpa kolom rujukan sama sekali, beda dengan
+ * satuan/produk).
  *
  * Ambiguitas nama (baik satuan maupun kategori) dijawab AMBIGUOUS_NAME_MATCH
  * (422), sama seperti PUT /master/units/{ref_unit_id} dan SyncUnitStep/
@@ -420,9 +424,11 @@ class MasterProductController extends Controller
 
     /**
      * Aturan satu field unit_id/product_unit.*: boleh angka polos (id
-     * Pegasus yang sudah ada) ATAU objek {ref_unit_id, unit_name,
-     * unit_short_name?} untuk satuan yang belum pernah disinkronkan — lihat
-     * catatan kelas dan resolveUnit().
+     * Pegasus yang sudah ada) ATAU objek {ref_unit_id?, unit_name?,
+     * unit_short_name?} untuk satuan yang mungkin belum pernah
+     * disinkronkan — ref_unit_id dan unit_name BOLEH dikirim bersamaan
+     * (dicoba lewat ref_unit_id lebih dulu, lihat resolveUnit()/
+     * UnitAutoSync), tapi salah satunya wajib ada — lihat catatan kelas.
      */
     private function unitFieldRule(): \Closure
     {
@@ -433,19 +439,22 @@ class MasterProductController extends Controller
 
             if (! is_array($value)) {
                 $fail($attribute.' wajib berupa id satuan Pegasus (angka), atau objek '
-                    .'{ref_unit_id, unit_name, unit_short_name?} untuk satuan yang belum disinkronkan.');
+                    .'{ref_unit_id?, unit_name?, unit_short_name?} — salah satu dari ref_unit_id/unit_name wajib ada.');
 
                 return;
             }
 
-            if (! isset($value['ref_unit_id']) || ! $this->isPlainId($value['ref_unit_id'])) {
+            $hasRef = array_key_exists('ref_unit_id', $value) && $value['ref_unit_id'] !== null;
+            $hasName = isset($value['unit_name']) && is_string($value['unit_name']) && trim($value['unit_name']) !== '';
+
+            if ($hasRef && ! $this->isPlainId($value['ref_unit_id'])) {
                 $fail($attribute.'.ref_unit_id wajib berupa angka.');
 
                 return;
             }
 
-            if (! isset($value['unit_name']) || ! is_string($value['unit_name']) || trim($value['unit_name']) === '') {
-                $fail($attribute.'.unit_name wajib diisi kalau mengirim objek satuan.');
+            if (! $hasRef && ! $hasName) {
+                $fail($attribute.' sebagai objek wajib mengisi ref_unit_id dan/atau unit_name.');
 
                 return;
             }
@@ -492,35 +501,54 @@ class MasterProductController extends Controller
     }
 
     /**
-     * category_id yang dikirim & aktif dipakai apa adanya. Kalau tidak
-     * dikirim (category_name dikirim sebagai gantinya — profileRules()
-     * mewajibkan salah satu), diresolusi lewat CategoryAutoSync — LOGIKA
-     * SAMA PERSIS dengan SyncCategoryStep (murni lewat nama, PMO tidak
-     * pernah menerbitkan id kategori).
+     * category_id DAN category_name boleh dikirim bersamaan — profileRules()
+     * cuma mewajibkan salah satunya ADA, keduanya bukan saling meniadakan:
+     *
+     *  1. category_id dikirim & menunjuk kategori aktif -> dipakai apa
+     *     adanya, category_name (kalau ikut dikirim) diabaikan.
+     *  2. category_id tidak dikirim, atau dikirim tapi tidak menunjuk
+     *     kategori aktif -> category_name (kalau dikirim) diresolusi lewat
+     *     CategoryAutoSync — LOGIKA SAMA PERSIS dengan SyncCategoryStep
+     *     (murni lewat nama, PMO tidak pernah menerbitkan id kategori).
+     *  3. Tidak ada satu pun yang berhasil (category_id salah & category_name
+     *     tidak dikirim) -> VALIDATION_FAILED.
      *
      * @param  array<string, mixed>  $data
      */
     private function resolveCategoryId(array $data): int
     {
-        if (! empty($data['category_id'])) {
-            $categoryId = (int) $data['category_id'];
+        $categoryId = ! empty($data['category_id']) ? (int) $data['category_id'] : null;
 
-            if (! DB::table('categories')->where('category_id', $categoryId)->where('status', 1)->exists()) {
-                $this->failValidation('category_id', 'category_id '.$categoryId.' tidak menunjuk kategori Pegasus yang aktif.');
-            }
-
+        if ($categoryId !== null
+            && DB::table('categories')->where('category_id', $categoryId)->where('status', 1)->exists()) {
             return $categoryId;
         }
 
-        return (new CategoryAutoSync())->resolve((string) $data['category_name']);
+        $categoryName = isset($data['category_name']) ? trim((string) $data['category_name']) : '';
+
+        if ($categoryName !== '') {
+            return (new CategoryAutoSync())->resolve($categoryName);
+        }
+
+        $this->failValidation(
+            'category_id',
+            $categoryId !== null
+                ? 'category_id '.$categoryId.' tidak menunjuk kategori Pegasus yang aktif, dan category_name '
+                    .'tidak dikirim untuk mencocokkan/membuat kategori baru.'
+                : 'category_id tidak dikirim, dan category_name juga tidak dikirim.',
+        );
     }
 
     /**
-     * Satu unsur unit_id/product_unit -> baris Unit Pegasus nyata. Angka
-     * polos wajib sudah ada & aktif (perilaku lama). Objek
-     * {ref_unit_id, unit_name, unit_short_name?} diresolusi lewat
-     * UnitAutoSync — bisa melempar AmbiguousNameMatchException, ditangkap
-     * pemanggil resolvePayload() lewat store()/update().
+     * Satu unsur unit_id/product_unit -> baris Unit Pegasus nyata.
+     *
+     * Angka polos wajib sudah ada & aktif (perilaku lama, id Pegasus
+     * langsung). Objek {ref_unit_id?, unit_name?, unit_short_name?}
+     * diresolusi lewat UnitAutoSync — ref_unit_id DAN unit_name boleh
+     * dikirim bersamaan (dicoba lewat ref_unit_id lebih dulu, baru nama —
+     * lihat catatan kelas UnitAutoSync), bisa melempar
+     * AmbiguousNameMatchException, ditangkap pemanggil resolvePayload()
+     * lewat store()/update().
      */
     private function resolveUnit(mixed $value): Unit
     {
@@ -535,11 +563,23 @@ class MasterProductController extends Controller
             return $unit;
         }
 
-        $refUnitId = (int) $value['ref_unit_id'];
-        $unitName = (string) $value['unit_name'];
+        $refUnitId = array_key_exists('ref_unit_id', $value) && $value['ref_unit_id'] !== null
+            ? (int) $value['ref_unit_id']
+            : null;
+        $unitName = isset($value['unit_name']) && trim((string) $value['unit_name']) !== ''
+            ? (string) $value['unit_name']
+            : null;
         $unitShortName = (string) ($value['unit_short_name'] ?? '');
 
-        return (new UnitAutoSync())->resolve($refUnitId, $unitName, $unitShortName)->unit;
+        try {
+            return (new UnitAutoSync())->resolve($refUnitId, $unitName, $unitShortName)->unit;
+        } catch (\InvalidArgumentException) {
+            $this->failValidation(
+                'unit_id',
+                'ref_unit_id yang dikirim belum ada di Pegasus, dan unit_name tidak dikirim untuk '
+                    .'mencocokkan/membuat satuan baru.',
+            );
+        }
     }
 
     private function failValidation(string $field, string $message): never

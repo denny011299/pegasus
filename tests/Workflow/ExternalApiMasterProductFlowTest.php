@@ -288,4 +288,156 @@ class ExternalApiMasterProductFlowTest extends TestCase
         $newUnit = Unit::where('ref_unit_id', $refUnitId)->firstOrFail();
         $this->assertSame($newUnit->unit_id, Product::where('ref_product_id', $refProductId)->firstOrFail()->unit_id);
     }
+
+    public function test_store_prefers_ref_unit_id_over_unit_name_when_both_are_sent_and_the_ref_already_exists(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+        $refUnitId = random_int(900000, 999999);
+        $existing = $this->createUnit($refUnitId, 'Original Name');
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Id Dan Nama',
+            'category_id' => $category->category_id,
+            // ref_unit_id resolves immediately; unit_name here should just update the existing row,
+            // not trigger a name-adoption search (the ref match already short-circuits it).
+            'unit_id' => ['ref_unit_id' => $refUnitId, 'unit_name' => 'Renamed Via Ref Match'],
+            'product_unit' => [['ref_unit_id' => $refUnitId, 'unit_name' => 'Renamed Via Ref Match']],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['unit_id' => $existing->unit_id]]);
+        $this->assertSame('Renamed Via Ref Match', $existing->fresh()->unit_name);
+        $this->assertSame(1, Unit::where('ref_unit_id', $refUnitId)->count());
+    }
+
+    public function test_store_falls_back_to_unit_name_when_ref_unit_id_is_sent_but_unknown(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+        $name = 'Fallback Adopt Unit '.uniqid();
+        $local = $this->createUnit(null, $name);
+        $unknownRefUnitId = random_int(900000, 999999);
+
+        // ref_unit_id doesn't resolve to anything -> falls back to matching unit_name against an
+        // unlinked local unit, exactly the id-first-then-name flow.
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Fallback Nama',
+            'category_id' => $category->category_id,
+            'unit_id' => ['ref_unit_id' => $unknownRefUnitId, 'unit_name' => $name],
+            'product_unit' => [['ref_unit_id' => $unknownRefUnitId, 'unit_name' => $name]],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['unit_id' => $local->unit_id]]);
+        $this->assertSame($unknownRefUnitId, $local->fresh()->ref_unit_id);
+    }
+
+    public function test_store_accepts_a_unit_object_with_only_ref_unit_id_when_it_already_exists(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+        $refUnitId = random_int(900000, 999999);
+        $existing = $this->createUnit($refUnitId);
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Objek Ref Saja',
+            'category_id' => $category->category_id,
+            'unit_id' => ['ref_unit_id' => $refUnitId],
+            'product_unit' => [['ref_unit_id' => $refUnitId]],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['unit_id' => $existing->unit_id]]);
+    }
+
+    public function test_store_accepts_a_unit_object_with_only_unit_name(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+        $name = 'Only Name Unit '.uniqid();
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Objek Nama Saja',
+            'category_id' => $category->category_id,
+            'unit_id' => ['unit_name' => $name],
+            'product_unit' => [['unit_name' => $name]],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true]);
+        $unit = Unit::where('unit_name', $name)->firstOrFail();
+        $this->assertNull($unit->ref_unit_id);
+    }
+
+    public function test_store_rejects_a_unit_object_missing_both_ref_unit_id_and_unit_name(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Objek Kosong',
+            'category_id' => $category->category_id,
+            'unit_id' => ['unit_short_name' => 'x'],
+            'product_unit' => [['unit_short_name' => 'x']],
+        ], $headers);
+
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
+    public function test_store_rejects_a_ref_unit_id_that_cannot_resolve_and_has_no_name_to_fall_back_to(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $category = $this->createCategory();
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Ref Tanpa Nama',
+            'category_id' => $category->category_id,
+            'unit_id' => ['ref_unit_id' => random_int(900000, 999999)],
+            'product_unit' => [['ref_unit_id' => random_int(900000, 999999)]],
+        ], $headers);
+
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
+    public function test_store_prefers_category_id_over_category_name_when_both_are_sent_and_the_id_resolves(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $unit = $this->createUnit();
+        $category = $this->createCategory();
+        $otherCategory = $this->createCategory();
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Kategori Id Dan Nama',
+            'category_id' => $category->category_id,
+            'category_name' => $otherCategory->category_name,
+            'unit_id' => $unit->unit_id,
+            'product_unit' => [$unit->unit_id],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true, 'data' => ['category_id' => $category->category_id]]);
+    }
+
+    public function test_store_falls_back_to_category_name_when_category_id_is_sent_but_unknown(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $unit = $this->createUnit();
+        $categoryName = 'Fallback Category '.uniqid();
+
+        $response = $this->postJson('/api/external/v1/produk', [
+            'ref_product_id' => random_int(900000, 999999),
+            'product_name' => 'Produk Kategori Fallback',
+            'category_id' => 999999999,
+            'category_name' => $categoryName,
+            'unit_id' => $unit->unit_id,
+            'product_unit' => [$unit->unit_id],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['success' => true]);
+        $category = Category::where('category_name', $categoryName)->firstOrFail();
+        $response->assertJson(['data' => ['category_id' => $category->category_id]]);
+    }
 }

@@ -18,55 +18,94 @@ use Illuminate\Support\Carbon;
  *    manapun. Lihat catatan kelas MasterProductController.
  *
  * Logikanya SENGAJA disalin dari App\Synchronization\Steps\ProductFlow\SyncUnitStep,
- * BUKAN dari kontrak penggantian-penuh MasterUnitController — dua lapis sama
- * persis dengan Pusat Sinkronisasi:
+ * BUKAN dari kontrak penggantian-penuh MasterUnitController — tiga lapis sama
+ * persis dengan Pusat Sinkronisasi, ref_unit_id DAN unit_name sama-sama
+ * opsional (salah satunya wajib ada, lihat resolve()):
  *
- *  1. ref_unit_id sudah ada di Pegasus -> baris itu diperbarui langsung.
- *  2. ref_unit_id belum ada -> dicoba diadopsi lewat nama (ReferenceMatcher,
- *     hanya satuan yang ref_unit_id-nya masih kosong) — cocok tepat satu,
- *     satuan itu disambungkan; cocok lebih dari satu, dilempar
- *     AmbiguousNameMatchException (pemanggil yang menerjemahkan ke respons
- *     API); tidak ada yang cocok, satuan baru dibuat.
+ *  1. ref_unit_id dikirim & sudah ada di Pegasus -> baris itu diperbarui
+ *     langsung, tidak perlu unit_name sama sekali.
+ *  2. ref_unit_id tidak dikirim, atau dikirim tapi belum ada -> kalau
+ *     unit_name dikirim, dicoba diadopsi lewat nama (ReferenceMatcher, hanya
+ *     satuan yang ref_unit_id-nya masih kosong) — cocok tepat satu, satuan
+ *     itu disambungkan (ref_unit_id dipasang kalau dikirim); cocok lebih
+ *     dari satu, dilempar AmbiguousNameMatchException (pemanggil yang
+ *     menerjemahkan ke respons API); tidak ada yang cocok, satuan baru
+ *     dibuat.
+ *  3. ref_unit_id tidak ada/tidak dikirim DAN unit_name tidak dikirim ->
+ *     tidak ada apa pun untuk dicocokkan atau dibuat, dilempar
+ *     InvalidArgumentException (pemanggil yang menerjemahkan ke
+ *     VALIDATION_FAILED — lihat MasterProductController::resolveUnit()).
  *
- * unit_short_name kosong TIDAK PERNAH menghapus singkatan yang sudah ada —
- * sama seperti SyncUnitStep, karena PMO tidak selalu mengirimkannya. Status
- * selalu dipaksa aktif pada baris yang disentuh, sama seperti SyncUnitStep
- * (PMO tidak mengirim status per satuan pada alur ini).
+ * unit_short_name kosong TIDAK PERNAH menghapus singkatan yang sudah ada, dan
+ * unit_name kosong TIDAK PERNAH menghapus nama yang sudah ada (baris yang
+ * ditemukan lewat ref_unit_id semata, tanpa unit_name, dipertahankan nama
+ * lamanya) — sama seperti SyncUnitStep, karena PMO tidak selalu
+ * mengirimkan keduanya. Status selalu dipaksa aktif pada baris yang
+ * disentuh, sama seperti SyncUnitStep (PMO tidak mengirim status per satuan
+ * pada alur ini).
  */
 class UnitAutoSync
 {
-    public function resolve(int $refUnitId, string $unitName, string $unitShortName = ''): UnitAutoSyncResult
+    public function resolve(?int $refUnitId, ?string $unitName, string $unitShortName = ''): UnitAutoSyncResult
     {
         $now = Carbon::now();
-        $unit = Unit::where('ref_unit_id', $refUnitId)->first();
+        $name = $this->nullIfBlank($unitName);
 
-        if ($unit !== null) {
-            $this->applyAndSave($unit, $refUnitId, $unitName, $unitShortName, $now);
+        if ($refUnitId !== null) {
+            $unit = Unit::where('ref_unit_id', $refUnitId)->first();
 
-            return UnitAutoSyncResult::linked($unit);
+            if ($unit !== null) {
+                $this->applyAndSave($unit, $refUnitId, $name, $unitShortName, $now);
+
+                return UnitAutoSyncResult::linked($unit);
+            }
+        }
+
+        if ($name === null) {
+            throw new \InvalidArgumentException(
+                'UnitAutoSync::resolve() butuh ref_unit_id yang sudah ada di Pegasus, atau unit_name '
+                    .'untuk membuat/mengadopsi satuan baru.'
+            );
         }
 
         $matcher = (new ReferenceMatcher('units', 'unit_id', 'ref_unit_id', 'unit_name'))->load();
-        $match = $matcher->match($refUnitId, $unitName);
+        $match = $matcher->match($refUnitId, $name);
 
         if ($match->isAmbiguous()) {
-            throw new AmbiguousNameMatchException('Satuan', trim($unitName), $match->candidates);
+            throw new AmbiguousNameMatchException('Satuan', $name, $match->candidates);
         }
 
         if ($match->found()) {
             $unit = Unit::findOrFail($match->localId);
-            $this->applyAndSave($unit, $refUnitId, $unitName, $unitShortName, $now);
+            $this->applyAndSave($unit, $refUnitId, $name, $unitShortName, $now);
 
             return UnitAutoSyncResult::adopted($unit);
         }
 
-        return $this->create($refUnitId, $unitName, $unitShortName, $now);
+        return $this->create($refUnitId, $name, $unitShortName, $now);
     }
 
-    private function applyAndSave(Unit $unit, int $refUnitId, string $unitName, string $unitShortName, Carbon $now): void
+    private function nullIfBlank(?string $value): ?string
     {
-        $unit->ref_unit_id = $refUnitId;
-        $unit->unit_name = mb_substr(trim($unitName), 0, 250);
+        if ($value === null) {
+            return null;
+        }
+
+        $trimmed = trim($value);
+
+        return $trimmed !== '' ? $trimmed : null;
+    }
+
+    private function applyAndSave(Unit $unit, ?int $refUnitId, ?string $unitName, string $unitShortName, Carbon $now): void
+    {
+        if ($refUnitId !== null) {
+            $unit->ref_unit_id = $refUnitId;
+        }
+
+        if ($unitName !== null) {
+            $unit->unit_name = mb_substr($unitName, 0, 250);
+        }
+
         $unit->status = 1;
 
         $trimmedShortName = trim($unitShortName);
@@ -78,19 +117,24 @@ class UnitAutoSync
         $unit->save();
     }
 
-    private function create(int $refUnitId, string $unitName, string $unitShortName, Carbon $now): UnitAutoSyncResult
+    private function create(?int $refUnitId, string $unitName, string $unitShortName, Carbon $now): UnitAutoSyncResult
     {
-        $name = trim($unitName);
         $shortName = trim($unitShortName);
 
         $unit = new Unit();
         $unit->ref_unit_id = $refUnitId;
-        $unit->unit_name = mb_substr($name, 0, 250);
-        $unit->unit_short_name = mb_substr($shortName !== '' ? $shortName : $name, 0, 250);
+        $unit->unit_name = mb_substr($unitName, 0, 250);
+        $unit->unit_short_name = mb_substr($shortName !== '' ? $shortName : $unitName, 0, 250);
         $unit->status = 1;
         $unit->created_by = null;
         $unit->created_at = $now;
         $unit->updated_at = $now;
+
+        if ($refUnitId === null) {
+            $unit->save();
+
+            return UnitAutoSyncResult::created($unit);
+        }
 
         try {
             $unit->save();

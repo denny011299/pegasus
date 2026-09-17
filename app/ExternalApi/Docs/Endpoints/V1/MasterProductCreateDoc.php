@@ -44,10 +44,10 @@ class MasterProductCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'ref_product_id', 'type' => 'integer', 'required' => true, 'description' => 'id produk yang sama pada sistem PMO. Wajib belum pernah dipakai produk lain di Pegasus.'],
             ['name' => 'product_name', 'type' => 'string', 'required' => true, 'description' => 'Nama produk.'],
-            ['name' => 'category_id', 'type' => 'integer', 'required' => false, 'description' => 'id kategori produk yang SUDAH ADA & aktif di Pegasus — daftarnya bisa diambil dari GET /master/categories. Wajib diisi kalau category_name tidak dikirim.'],
-            ['name' => 'category_name', 'type' => 'string', 'required' => false, 'description' => 'Nama kategori, alternatif dari category_id untuk kategori yang belum pernah disinkronkan ke Pegasus — dicocokkan lewat nama (tidak membedakan huruf besar/kecil); tidak ada yang cocok, kategori baru dibuat otomatis. Wajib diisi kalau category_id tidak dikirim.'],
-            ['name' => 'unit_id', 'type' => 'integer ATAU objek', 'required' => true, 'description' => 'Satuan default produk ini. Angka polos = id satuan Pegasus yang SUDAH ADA & aktif (lihat GET /master/units). Objek {ref_unit_id, unit_name, unit_short_name?} = satuan yang belum pernah disinkronkan — disambungkan/dibuat otomatis, sama seperti PUT /master/units/{ref_unit_id}.'],
-            ['name' => 'product_unit', 'type' => 'array of (integer ATAU objek)', 'required' => true, 'description' => 'Daftar satuan yang boleh dipakai untuk produk ini, minimal satu. Tiap unsurnya menerima bentuk yang sama dengan unit_id (angka polos ATAU objek {ref_unit_id, unit_name, unit_short_name?}), boleh dicampur dalam satu array.'],
+            ['name' => 'category_id', 'type' => 'integer', 'required' => false, 'description' => 'id kategori produk di Pegasus, kalau sudah diketahui. Wajib diisi kalau category_name tidak dikirim — boleh dikirim BERSAMA category_name (lihat catatan kelas untuk urutan resolusinya).'],
+            ['name' => 'category_name', 'type' => 'string', 'required' => false, 'description' => 'Nama kategori — dipakai kalau category_id tidak dikirim, atau dikirim tapi tidak menunjuk kategori aktif. Dicocokkan lewat nama (tidak membedakan huruf besar/kecil) ke kategori Pegasus yang ada; tidak ada yang cocok, kategori baru dibuat otomatis. Wajib diisi kalau category_id tidak dikirim.'],
+            ['name' => 'unit_id', 'type' => 'integer ATAU objek', 'required' => true, 'description' => 'Satuan default produk ini. Angka polos = id satuan Pegasus yang SUDAH ADA & aktif (lihat GET /master/units). Objek {ref_unit_id?, unit_name?, unit_short_name?} = satuan yang mungkin belum pernah disinkronkan — ref_unit_id dan unit_name BOLEH dikirim bersamaan (salah satunya wajib ada), lihat catatan kelas untuk urutan resolusinya.'],
+            ['name' => 'product_unit', 'type' => 'array of (integer ATAU objek)', 'required' => true, 'description' => 'Daftar satuan yang boleh dipakai untuk produk ini, minimal satu. Tiap unsurnya menerima bentuk yang sama dengan unit_id, boleh dicampur dalam satu array.'],
         ];
     }
 
@@ -57,6 +57,7 @@ class MasterProductCreateDoc extends ApiEndpointDoc
             'ref_product_id' => 12,
             'product_name' => 'AIR AKI HIKARI',
             'category_id' => 4,
+            'category_name' => 'Aki & Baterai',
             'unit_id' => ['ref_unit_id' => 1042, 'unit_name' => 'Dus', 'unit_short_name' => 'dus'],
             'product_unit' => [1, ['ref_unit_id' => 1042, 'unit_name' => 'Dus', 'unit_short_name' => 'dus']],
         ];
@@ -89,13 +90,12 @@ class MasterProductCreateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'product_name wajib diisi. Dari category_id/category_name, salah satu wajib diisi (boleh dua-duanya, category_id yang dipakai). unit_id dan product_unit selalu wajib.',
+            'product_name wajib diisi. Dari category_id/category_name, salah satu wajib diisi — boleh dua-duanya sekaligus. unit_id dan product_unit selalu wajib; unsur objeknya boleh mengirim ref_unit_id dan unit_name sekaligus juga.',
             'id pada respons adalah id produk yang dibuat Pegasus sendiri (auto-increment) — SIMPAN nilai ini kalau nanti perlu memanggil PATCH /produk/connect (yang butir connections-nya memakai id Pegasus, bukan ref_product_id).',
             'Bukan upsert: mengirim ref_product_id yang sudah dipakai (aktif maupun yang produknya sudah dihapus) selalu ditolak dengan DUPLICATE_REF_ID, tidak pernah menimpa data yang sudah ada. Pakai PUT /produk/{ref_product_id} untuk memperbarui produk yang rujukannya sudah ada.',
             'Untuk menghubungkan ref_product_id ke produk Pegasus yang SUDAH ADA (dibuat lewat halaman admin atau Pusat Sinkronisasi, misalnya), pakai PATCH /produk/connect — bukan POST ini, yang selalu membuat produk baru.',
-            'SINKRONISASI OTOMATIS satuan: unit_id/unsur product_unit boleh dikirim sebagai objek {ref_unit_id, unit_name, unit_short_name?} untuk satuan yang belum pernah disinkronkan ke Pegasus — ref_unit_id yang sudah dikenal langsung dipakai; kalau belum, dicoba diadopsi lewat nama ke satuan Pegasus yang belum tersambung; kalau tidak ada yang cocok, satuan baru dibuat. Persis logika PUT /master/units/{ref_unit_id} dan SyncUnitStep (Pusat Sinkronisasi).',
-            'SINKRONISASI OTOMATIS kategori: category_name (dipakai kalau category_id tidak dikirim) dicocokkan murni lewat nama — PMO tidak pernah menerbitkan id kategori. Tidak ada yang cocok, kategori baru dibuat. Persis logika SyncCategoryStep (Pusat Sinkronisasi).',
-            'category_id yang sudah dikirim & dikenal, atau angka polos pada unit_id/product_unit yang sudah dikenal, DIVALIDASI benar-benar menunjuk baris aktif di Pegasus — kirim id yang salah ditolak VALIDATION_FAILED, bukan tersimpan dengan rujukan yang menggantung.',
+            'SINKRONISASI OTOMATIS satuan — urutan resolusi tiap unsur unit_id/product_unit kalau dikirim sebagai objek {ref_unit_id?, unit_name?, unit_short_name?}: (1) ref_unit_id dikirim & sudah ada di Pegasus -> baris itu dipakai/diperbarui langsung, unit_name (kalau ikut dikirim) hanya memperbarui namanya; (2) ref_unit_id tidak dikirim, atau dikirim tapi belum ada -> unit_name (kalau dikirim) dicoba diadopsi ke satuan Pegasus yang belum tersambung PMO, atau satuan baru dibuat kalau tidak ada yang cocok; (3) tidak ada satu pun yang berhasil (ref_unit_id salah & unit_name tidak dikirim) -> VALIDATION_FAILED. Persis logika PUT /master/units/{ref_unit_id} dan SyncUnitStep (Pusat Sinkronisasi).',
+            'SINKRONISASI OTOMATIS kategori — urutan resolusi sama: (1) category_id dikirim & menunjuk kategori aktif -> dipakai langsung, category_name (kalau ikut dikirim) diabaikan; (2) category_id tidak dikirim, atau dikirim tapi tidak aktif -> category_name (kalau dikirim) dicocokkan MURNI lewat nama (PMO tidak pernah menerbitkan id kategori) — cocok, dipakai; tidak cocok, kategori baru dibuat; (3) tidak ada satu pun yang berhasil -> VALIDATION_FAILED. Persis logika SyncCategoryStep (Pusat Sinkronisasi).',
             'ref_product_id juga ditulis Pusat Sinkronisasi (menarik data produk dari PMO) — endpoint ini adalah jalur tulis kedua ke kolom yang sama, disengaja karena keduanya melayani sistem yang sama (PMO).',
         ];
     }

@@ -50,9 +50,9 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['name' => 'product_name', 'type' => 'string', 'required' => true, 'description' => 'Nama produk.'],
-            ['name' => 'category_id', 'type' => 'integer', 'required' => false, 'description' => 'id kategori produk yang SUDAH ADA & aktif di Pegasus — daftarnya bisa diambil dari GET /master/categories. Wajib diisi kalau category_name tidak dikirim.'],
-            ['name' => 'category_name', 'type' => 'string', 'required' => false, 'description' => 'Nama kategori, alternatif dari category_id untuk kategori yang belum pernah disinkronkan ke Pegasus — dicocokkan lewat nama; tidak ada yang cocok, kategori baru dibuat otomatis. Wajib diisi kalau category_id tidak dikirim.'],
-            ['name' => 'unit_id', 'type' => 'integer ATAU objek', 'required' => true, 'description' => 'Satuan default produk ini. Angka polos = id satuan Pegasus yang SUDAH ADA & aktif. Objek {ref_unit_id, unit_name, unit_short_name?} = satuan yang belum pernah disinkronkan — disambungkan/dibuat otomatis, sama seperti PUT /master/units/{ref_unit_id}.'],
+            ['name' => 'category_id', 'type' => 'integer', 'required' => false, 'description' => 'id kategori produk di Pegasus, kalau sudah diketahui. Wajib diisi kalau category_name tidak dikirim — boleh dikirim BERSAMA category_name.'],
+            ['name' => 'category_name', 'type' => 'string', 'required' => false, 'description' => 'Nama kategori — dipakai kalau category_id tidak dikirim, atau dikirim tapi tidak menunjuk kategori aktif. Tidak ada yang cocok, kategori baru dibuat otomatis. Wajib diisi kalau category_id tidak dikirim.'],
+            ['name' => 'unit_id', 'type' => 'integer ATAU objek', 'required' => true, 'description' => 'Satuan default produk ini. Angka polos = id satuan Pegasus yang SUDAH ADA & aktif. Objek {ref_unit_id?, unit_name?, unit_short_name?} = satuan yang mungkin belum pernah disinkronkan — ref_unit_id dan unit_name BOLEH dikirim bersamaan (salah satunya wajib ada).'],
             ['name' => 'product_unit', 'type' => 'array of (integer ATAU objek)', 'required' => true, 'description' => 'Daftar satuan yang boleh dipakai untuk produk ini, minimal satu. Tiap unsurnya menerima bentuk yang sama dengan unit_id, boleh dicampur dalam satu array.'],
         ];
     }
@@ -62,6 +62,7 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
         return [
             'product_name' => 'AIR AKI HIKARI',
             'category_id' => 4,
+            'category_name' => 'Aki & Baterai',
             'unit_id' => ['ref_unit_id' => 1042, 'unit_name' => 'Dus', 'unit_short_name' => 'dus'],
             'product_unit' => [1, ['ref_unit_id' => 1042, 'unit_name' => 'Dus', 'unit_short_name' => 'dus']],
         ];
@@ -93,10 +94,9 @@ class MasterProductUpdateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'product_name, unit_id, dan product_unit wajib diisi meski hanya satu yang berubah — tidak ada partial update. Dari category_id/category_name, salah satu wajib diisi.',
+            'product_name, unit_id, dan product_unit wajib diisi meski hanya satu yang berubah — tidak ada partial update. Dari category_id/category_name, salah satu wajib diisi — boleh dua-duanya sekaligus.',
             'ref_product_id tidak bisa diubah lewat endpoint ini — kirim ref_product_id baru dengan DELETE + POST kalau memang perlu mengganti rujukan PMO produk ini.',
-            'SINKRONISASI OTOMATIS satuan & kategori: sama persis dengan POST /produk — lihat catatan di dokumentasi endpoint itu. Berlaku juga untuk produk yang sudah ada, bukan cuma saat upsert membuat produk baru.',
-            'category_id (kalau dikirim) dan angka polos pada unit_id/product_unit (kalau dikenal) DIVALIDASI benar-benar menunjuk baris aktif di Pegasus, sama seperti POST.',
+            'SINKRONISASI OTOMATIS satuan & kategori, TERMASUK urutan resolusi saat id DAN nama dikirim bersamaan: sama persis dengan POST /produk — lihat catatan di dokumentasi endpoint itu. Berlaku juga untuk produk yang sudah ada, bukan cuma saat upsert membuat produk baru.',
             'Upsert: ref_product_id yang belum pernah ada membuat produk baru (respons 201) dengan data yang sama seperti dikirim ke POST /produk. ref_product_id yang sudah ada dan sedang nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui, bukan dijawab NOT_FOUND.',
         ];
     }
