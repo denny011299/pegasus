@@ -2,6 +2,7 @@
 
 namespace Tests\Workflow;
 
+use App\Models\Customer;
 use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
@@ -45,5 +46,41 @@ class ExternalApiMasterArmadaFlowTest extends TestCase
         ], $this->externalApiHeaders());
 
         $response->assertStatus(422)->assertJson(['success' => false]);
+    }
+
+    public function test_store_marks_the_row_as_synced_via_external_api(): void
+    {
+        $code = 'ARM-'.strtoupper(substr(uniqid(), -20));
+
+        $this->postJson('/api/external/v1/armada', [
+            'code' => $code,
+        ], $this->externalApiHeaders())->assertStatus(201);
+
+        $customer = Customer::where('customer_code', $code)->firstOrFail();
+        $this->assertNotNull($customer->external_api_synced_at, 'external_api_synced_at must be set so the admin UI can flag this row as PMO/API-managed');
+    }
+
+    public function test_put_upsert_marks_the_row_as_synced_via_external_api(): void
+    {
+        $code = 'ARM-'.strtoupper(substr(uniqid(), -20));
+        $headers = $this->externalApiHeaders();
+
+        // Unknown code -> upsert creates it.
+        $this->putJson('/api/external/v1/armada/'.$code, [
+            'pic' => 'Agus',
+        ], $headers)->assertStatus(201);
+
+        $customer = Customer::where('customer_code', $code)->firstOrFail();
+        $this->assertNotNull($customer->external_api_synced_at);
+
+        // Re-touch the timestamp: bump it back, then confirm PUT refreshes it.
+        $customer->external_api_synced_at = now()->subDays(3);
+        $customer->save();
+
+        $this->putJson('/api/external/v1/armada/'.$code, [
+            'pic' => 'Budi',
+        ], $headers)->assertStatus(200);
+
+        $this->assertTrue($customer->fresh()->external_api_synced_at->gt(now()->subMinute()));
     }
 }

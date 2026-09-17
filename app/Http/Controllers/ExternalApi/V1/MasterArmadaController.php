@@ -46,6 +46,17 @@ use Illuminate\Http\Request;
  * Tidak ada konsep "peran" untuk armada (beda dengan sales) — satu-satunya
  * syarat "dikelola" endpoint ini adalah status aktif, sama seperti
  * getCustomer() yang sudah ada.
+ *
+ * customers.external_api_synced_at ditulis (timestamp sekarang) tiap kali
+ * store()/update()/createFromUpsert() menyentuh sebuah baris — BUKAN bagian
+ * dari kontrak API (tidak pernah dibaca dari body, tidak muncul di
+ * present()), murni penanda internal untuk halaman admin (kolom "Dibuat
+ * Oleh" pada Data Armada). Armada tidak punya kolom rujukan PMO yang
+ * ditulis endpoint ini seperti ref_product_id/ref_unit_id/external_ref_id —
+ * customers.ref_armada_id memang ada, tapi HANYA ditulis Pusat Sinkronisasi
+ * (SyncArmadaStep); endpoint ini tidak pernah menerima armada_id numerik
+ * PMO, hanya `code`. Tanpa kolom terpisah ini, baris yang dibuat/diubah
+ * lewat endpoint ini tidak bisa dibedakan dari baris buatan admin.
  */
 class MasterArmadaController extends Controller
 {
@@ -115,6 +126,7 @@ class MasterArmadaController extends Controller
         $customer->customer_code = $code;
         $customer->status = 1;
         $customer->created_by = null;
+        $customer->external_api_synced_at = now();
         $this->applyPayload($customer, $data);
 
         try {
@@ -154,6 +166,7 @@ class MasterArmadaController extends Controller
         }
 
         $customer->status = 1;
+        $customer->external_api_synced_at = now();
         $this->applyPayload($customer, $data);
         $customer->save();
 
@@ -169,6 +182,7 @@ class MasterArmadaController extends Controller
         $customer->customer_code = $code;
         $customer->status = 1;
         $customer->created_by = null;
+        $customer->external_api_synced_at = now();
         $this->applyPayload($customer, $data);
 
         try {
@@ -185,6 +199,7 @@ class MasterArmadaController extends Controller
             }
 
             $existing->status = 1;
+            $existing->external_api_synced_at = now();
             $this->applyPayload($existing, $data);
             $existing->save();
 

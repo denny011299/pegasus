@@ -360,8 +360,18 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
    * Sinkronisasi sama sekali — external_ref_id-nya SELALU berasal dari
    * Platform API Eksternal (POST/PUT/PATCH .../master/staff atau
    * .../master/sales), tidak pernah dari sinkronisasi periodik.
+   *
+   * external_api_synced_at (customers/armada saja) adalah PENGECUALIAN pada
+   * daftar ini: bukan id rujukan, melainkan timestamp yang ditulis
+   * MasterArmadaController tiap kali baris dibuat/diubah lewat Platform API
+   * Eksternal. Armada TIDAK punya kolom rujukan seperti tabel lain —
+   * customers.ref_armada_id memang ada, tapi HANYA ditulis Pusat
+   * Sinkronisasi (SyncArmadaStep), tidak pernah endpoint eksternal ini
+   * (endpoint ini hanya menerima `code`, bukan armada_id numerik PMO).
+   * Tanpa kolom terpisah ini, baris armada buatan Platform API Eksternal
+   * tidak bisa dibedakan dari baris buatan admin.
    */
-  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id', 'external_ref_id'];
+  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id', 'external_ref_id', 'external_api_synced_at'];
 
   function pmoRefIdOf(row) {
     if (!row || typeof row !== 'object') {
