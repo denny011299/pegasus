@@ -136,22 +136,62 @@ class MasterArmadaController extends Controller
     /**
      * PUT /api/external/v1/armada/{code}
      *
-     * Tidak pernah membuat armada baru; code yang tidak ditemukan (atau
-     * ditemukan tapi statusnya nonaktif) selalu dijawab not_found.
+     * Upsert: code yang belum pernah ada membuat armada baru (respons 201),
+     * sama seperti POST tapi dengan code dari path, bukan body — dipakai
+     * PMO untuk langsung mengirim data armada yang belum pernah
+     * disinkronkan tanpa harus tahu lebih dulu apakah armada itu sudah ada
+     * di Pegasus. code yang sudah ada tapi statusnya nonaktif DIAKTIFKAN
+     * KEMBALI sekaligus diperbarui (bukan dijawab not_found) — upsert
+     * selalu berujung pada satu baris aktif dengan data terbaru.
      */
     public function update(Request $request, string $code): JsonResponse
     {
-        $customer = $this->findManagedByCode($code);
+        $data = $this->validateProfilePayload($request);
+        $customer = Customer::where('customer_code', $code)->first();
 
         if ($customer === null) {
-            return $this->notFoundError($code);
+            return $this->createFromUpsert($code, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        $customer->status = 1;
         $this->applyPayload($customer, $data);
         $customer->save();
 
         return ApiResponse::success($this->present($customer));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(string $code, array $data): JsonResponse
+    {
+        $customer = new Customer();
+        $customer->customer_code = $code;
+        $customer->status = 1;
+        $customer->created_by = null;
+        $this->applyPayload($customer, $data);
+
+        try {
+            $customer->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan code baru yang sama, nyaris
+            // bersamaan: keduanya sama-sama tidak menemukan baris di atas,
+            // lalu unique index menolak yang kalah cepat. Perlakukan sebagai
+            // upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Customer::where('customer_code', $code)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($customer), [], 201);
     }
 
     /**

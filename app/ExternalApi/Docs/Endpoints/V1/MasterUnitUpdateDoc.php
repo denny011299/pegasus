@@ -16,7 +16,7 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
 
     public function title(): string
     {
-        return 'Ubah Satuan';
+        return 'Ubah/Buat Satuan (Upsert)';
     }
 
     public function method(): string
@@ -36,7 +36,7 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengubah data satuan yang sudah ada, dicari lewat ref_unit_id (id satuan pada sistem PMO). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Tidak pernah membuat satuan baru.';
+        return 'Upsert: mengubah data satuan yang sudah ada, dicari lewat ref_unit_id (id satuan pada sistem PMO), atau membuat satuan baru dengan ref_unit_id itu kalau belum pernah ada. Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Satuan yang sudah ada tapi nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui.';
     }
 
     public function pathParameters(): array
@@ -78,7 +78,6 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_unit_id tidak ditemukan, atau ditemukan tapi satuannya nonaktif/sudah dihapus.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'unit_name atau unit_short_name kosong/tidak valid.'],
         ];
     }
@@ -87,7 +86,7 @@ class MasterUnitUpdateDoc extends ApiEndpointDoc
     {
         return [
             'Kedua field wajib diisi meski hanya satu yang berubah — tidak ada partial update.',
-            'Endpoint ini HANYA menyentuh satuan berstatus aktif — ref_unit_id yang menunjuk satuan nonaktif/sudah dihapus dijawab NOT_FOUND, bukan diizinkan mengubah data satuan itu.',
+            'Upsert: ref_unit_id yang belum pernah ada membuat satuan baru (respons 201) dengan data yang sama seperti dikirim ke POST /master/units. ref_unit_id yang sudah ada dan sedang nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui, bukan dijawab NOT_FOUND.',
         ];
     }
 }

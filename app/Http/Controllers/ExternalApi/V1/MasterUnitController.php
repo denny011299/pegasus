@@ -117,23 +117,62 @@ class MasterUnitController extends Controller
     /**
      * PUT /api/external/v1/master/units/{ref_unit_id}
      *
-     * {ref_unit_id} tidak pernah membuat satuan baru; ref_unit_id yang
-     * tidak ditemukan (atau ditemukan tapi statusnya nonaktif) selalu
-     * dijawab not_found.
+     * Upsert: ref_unit_id yang belum pernah ada membuat satuan baru (respons
+     * 201), sama seperti POST tapi dengan ref_unit_id dari path, bukan body
+     * — dipakai PMO untuk langsung mengirim data satuan yang belum pernah
+     * disinkronkan tanpa harus tahu lebih dulu apakah satuan itu sudah ada
+     * di Pegasus. ref_unit_id yang sudah ada tapi statusnya nonaktif
+     * DIAKTIFKAN KEMBALI sekaligus diperbarui (bukan dijawab not_found) —
+     * upsert selalu berujung pada satu baris aktif dengan data terbaru.
      */
     public function update(Request $request, int $ref_unit_id): JsonResponse
     {
-        $unit = $this->findManagedByRef($ref_unit_id);
+        $data = $this->validateProfilePayload($request);
+        $unit = Unit::where('ref_unit_id', $ref_unit_id)->first();
 
         if ($unit === null) {
-            return $this->notFoundByRefError($ref_unit_id);
+            return $this->createFromUpsert($ref_unit_id, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        $unit->status = 1;
         $this->applyPayload($unit, $data);
         $unit->save();
 
         return ApiResponse::success($this->present($unit));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(int $refUnitId, array $data): JsonResponse
+    {
+        $unit = new Unit();
+        $unit->ref_unit_id = $refUnitId;
+        $unit->status = 1;
+        $unit->created_by = null;
+        $this->applyPayload($unit, $data);
+
+        try {
+            $unit->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan ref_unit_id baru yang sama, nyaris
+            // bersamaan: keduanya sama-sama tidak menemukan baris di atas,
+            // lalu unique index menolak yang kalah cepat. Perlakukan sebagai
+            // upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Unit::where('ref_unit_id', $refUnitId)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($unit), [], 201);
     }
 
     /**

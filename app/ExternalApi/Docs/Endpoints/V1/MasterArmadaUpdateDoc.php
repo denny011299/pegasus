@@ -16,7 +16,7 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
 
     public function title(): string
     {
-        return 'Ubah Armada';
+        return 'Ubah/Buat Armada (Upsert)';
     }
 
     public function method(): string
@@ -36,7 +36,7 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengubah data armada yang sudah ada, dicari lewat code. Bersifat penggantian penuh — field yang tidak dikirim disimpan kosong, bukan mempertahankan nilai lama. Tidak pernah membuat armada baru.';
+        return 'Upsert: mengubah data armada yang sudah ada, dicari lewat code, atau membuat armada baru dengan code itu kalau belum pernah ada (sama seperti POST). Bersifat penggantian penuh — field yang tidak dikirim disimpan kosong, bukan mempertahankan nilai lama. Armada yang sudah ada tapi nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui.';
     }
 
     public function pathParameters(): array
@@ -93,7 +93,6 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'code tidak ditemukan, atau ditemukan tapi armadanya nonaktif/sudah dihapus.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'Salah satu field tidak valid.'],
         ];
     }
@@ -103,7 +102,7 @@ class MasterArmadaUpdateDoc extends ApiEndpointDoc
         return [
             'Seluruh field body bersifat opsional (nullable) — tapi karena bersifat penggantian penuh, field yang tidak ikut dikirim akan DISIMPAN KOSONG, bukan mempertahankan nilai yang sudah ada. Kirim ulang nilai lama untuk field yang tidak ingin diubah.',
             'code tidak bisa diubah lewat endpoint ini — pakai DELETE + POST kalau memang perlu mengganti id universal armada ini.',
-            'Endpoint ini HANYA menyentuh armada berstatus aktif — code yang menunjuk armada nonaktif/sudah dihapus dijawab NOT_FOUND, bukan diizinkan mengubah data armada itu.',
+            'Upsert: code yang belum pernah ada membuat armada baru (respons 201). code yang sudah ada dan sedang nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui, bukan dijawab NOT_FOUND.',
         ];
     }
 }

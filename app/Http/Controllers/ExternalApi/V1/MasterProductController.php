@@ -164,23 +164,63 @@ class MasterProductController extends Controller
     /**
      * PUT /api/external/v1/produk/{ref_product_id}
      *
-     * Tidak pernah membuat produk baru; ref_product_id yang tidak
-     * ditemukan (atau ditemukan tapi statusnya nonaktif) selalu dijawab
-     * not_found.
+     * Upsert: ref_product_id yang belum pernah ada membuat produk baru
+     * (respons 201), sama seperti POST tapi dengan ref_product_id dari
+     * path, bukan body — dipakai PMO untuk langsung mengirim data produk
+     * yang belum pernah disinkronkan tanpa harus tahu lebih dulu apakah
+     * produk itu sudah ada di Pegasus. ref_product_id yang sudah ada tapi
+     * statusnya nonaktif DIAKTIFKAN KEMBALI sekaligus diperbarui (bukan
+     * dijawab not_found) — upsert selalu berujung pada satu baris aktif
+     * dengan data terbaru.
      */
     public function update(Request $request, int $ref_product_id): JsonResponse
     {
-        $product = $this->findManagedByRef($ref_product_id);
+        $data = $this->validateProfilePayload($request);
+        $product = Product::where('ref_product_id', $ref_product_id)->first();
 
         if ($product === null) {
-            return $this->notFoundByRefError($ref_product_id);
+            return $this->createFromUpsert($ref_product_id, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        $product->status = 1;
         $this->applyPayload($product, $data);
         $product->save();
 
         return ApiResponse::success($this->present($product));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(int $refProductId, array $data): JsonResponse
+    {
+        $product = new Product();
+        $product->ref_product_id = $refProductId;
+        $product->status = 1;
+        $product->created_by = null;
+        $this->applyPayload($product, $data);
+
+        try {
+            $product->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan ref_product_id baru yang sama,
+            // nyaris bersamaan: keduanya sama-sama tidak menemukan baris di
+            // atas, lalu unique index menolak yang kalah cepat. Perlakukan
+            // sebagai upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Product::where('ref_product_id', $refProductId)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($product), [], 201);
     }
 
     /**

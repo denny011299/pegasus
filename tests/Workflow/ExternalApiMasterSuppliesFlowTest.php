@@ -107,16 +107,38 @@ class ExternalApiMasterSuppliesFlowTest extends TestCase
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
-    public function test_update_never_creates_a_new_supplies_for_an_unknown_ref_supplies_id(): void
+    public function test_update_creates_a_new_supplies_for_an_unknown_ref_supplies_id(): void
     {
         $headers = $this->externalApiHeaders();
         $unit = $this->createUnit();
+        $refSuppliesId = random_int(900000, 999999);
 
-        $this->putJson('/api/external/v1/bahan/999999999', [
+        $this->putJson('/api/external/v1/bahan/'.$refSuppliesId, [
             'supplies_name' => 'x',
             'supplies_default_unit' => $unit->unit_id,
             'supplies_unit' => [$unit->unit_id],
-        ], $headers)->assertStatus(404)->assertJson(['success' => false, 'error' => ['code' => 'NOT_FOUND']]);
+        ], $headers)->assertStatus(201)->assertJson(['success' => true, 'data' => ['ref_supplies_id' => $refSuppliesId]]);
+
+        $this->assertDatabaseHas('supplies', ['ref_supplies_id' => $refSuppliesId, 'supplies_name' => 'x', 'status' => 1]);
+    }
+
+    public function test_update_reactivates_a_soft_deleted_supplies(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $unit = $this->createUnit();
+        $refSuppliesId = random_int(900000, 999999);
+        $supplies = $this->createManagedSupplies($refSuppliesId, $unit);
+        (new Supplies())->deleteSupplies(['supplies_id' => $supplies->supplies_id]);
+
+        $this->putJson('/api/external/v1/bahan/'.$refSuppliesId, [
+            'supplies_name' => 'Revived',
+            'supplies_default_unit' => $unit->unit_id,
+            'supplies_unit' => [$unit->unit_id],
+        ], $headers)->assertStatus(200)->assertJson(['success' => true]);
+
+        $supplies->refresh();
+        $this->assertSame(1, (int) $supplies->status);
+        $this->assertSame('Revived', $supplies->supplies_name);
     }
 
     public function test_update_and_delete_use_ref_supplies_id_not_the_internal_id(): void
@@ -126,12 +148,15 @@ class ExternalApiMasterSuppliesFlowTest extends TestCase
         $refSuppliesId = random_int(900000, 999999);
         $supplies = $this->createManagedSupplies($refSuppliesId, $unit);
 
-        // Internal supplies_id must not work as the path segment.
+        // Internal supplies_id must not work as the path segment: it does not match any
+        // ref_supplies_id, so upsert creates a brand new supplies instead of touching $supplies.
         $this->putJson('/api/external/v1/bahan/'.$supplies->supplies_id, [
             'supplies_name' => 'wrong path',
             'supplies_default_unit' => $unit->unit_id,
             'supplies_unit' => [$unit->unit_id],
-        ], $headers)->assertStatus(404);
+        ], $headers)->assertStatus(201);
+
+        $this->assertNotSame('wrong path', $supplies->fresh()->supplies_name);
 
         $this->putJson('/api/external/v1/bahan/'.$refSuppliesId, [
             'supplies_name' => 'Renamed',
