@@ -131,6 +131,11 @@ class ArmadaSyncFlow extends SyncFlow
                         .'armada Pegasus akan diadopsi ke baris itu, bukan dibuat ganda.',
                     'Armada yang cocok ke lebih dari satu pelanggan/armada sekaligus TIDAK ditebak — lihat '
                         .'langkah berikutnya.',
+                    'Kalau PMO mengirim kode kendaraan (code/kode — belum tersedia saat ini, sudah diminta '
+                        .'lewat PMO#16), kode itu diutamakan di atas No Pol+PIC dan disamakan sebagai '
+                        .'customer_code — kalau ternyata sudah ada baris lain dengan kode yang sama (mis. '
+                        .'dibuat lebih dulu lewat POST /shipments/scheduled sebelum armada ini tersambung '
+                        .'ke sinkronisasi), kedua baris digabung otomatis.',
                 ],
             ),
             new SyncStep(
