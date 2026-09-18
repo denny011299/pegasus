@@ -22,11 +22,16 @@ namespace App\Synchronization\Pmo;
  *   membawa "pagination" sama sekali), mengembalikan baris itu langsung
  *   sebagai array, atau null kalau tidak ditemukan.
  *
- * Kelas ini TIDAK dipakai oleh alur sinkronisasi (ProductSyncFlow dkk.) —
- * langkah-langkah di sana lewat PmoSnapshotStore supaya satu endpoint hanya
- * ditarik sekali per sesi lalu dipakai bersama seluruh langkah (§6.1 pada
- * dokumen desain di atas). Kelas ini untuk pemanggilan langsung/ad-hoc:
- * tinker, controller lain, atau alur baru yang belum butuh potret bersama.
+ * Kelas ini TIDAK dipakai oleh alur sinkronisasi (ProductSyncFlow dkk.) untuk
+ * endpoint yang dibagi ke banyak langkah (products) — langkah-langkah di sana
+ * lewat PmoSnapshotStore supaya satu endpoint hanya ditarik sekali per sesi
+ * lalu dipakai bersama seluruh langkah (§6.1 pada dokumen desain di atas).
+ * Kelas ini untuk pemanggilan langsung/ad-hoc: tinker, controller lain, atau
+ * alur baru yang belum butuh potret bersama.
+ *
+ * Pengecualian: getUnits() DIPAKAI LANGSUNG oleh SyncUnitStep (GitHub #184) —
+ * tidak lewat PmoSnapshotStore karena cuma satu langkah yang membutuhkannya,
+ * beda dari /getProducts yang dibaca 5 langkah berbeda.
  *
  * Menambah endpoint baru: daftarkan path-nya di config/synchronization.php
  * ("endpoints"), lalu tambah satu method di sini mengikuti pola yang sama
@@ -88,6 +93,27 @@ class PmoApi
             'date_start' => $dateStart,
             'date_end' => $dateEnd,
         ]);
+    }
+
+    /**
+     * Ambil SELURUH satuan dari PMO (many-get, /getUnits — GitHub #184, ditambahkan PMO
+     * 2026-09-18). Baris berupa {unit_id, unit_name, unit_short_name, is_active}, hanya satuan
+     * aktif (PMO tidak punya cara mengembalikan satuan yang sudah dinonaktifkan lewat endpoint
+     * ini — dikonfirmasi lewat pembacaan langsung sumber PMO).
+     *
+     * Dipakai SyncUnitStep sebagai sumber utama; ProductFlowStep::units() (agregasi dari
+     * items[].units[] pada /getProducts) tetap ada sebagai jalur cadangan kalau endpoint ini
+     * gagal — lihat docblock SyncUnitStep.
+     *
+     * @throws PmoException
+     */
+    public static function getUnits(array $query = []): PmoResponse
+    {
+        return static::client()->fetchCollection(
+            PmoEndpoints::resolve('units'),
+            $query,
+            PmoEndpoints::itemsKey('units'),
+        );
     }
 
     /**

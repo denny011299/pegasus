@@ -131,13 +131,18 @@ class ProductSyncFlow extends SyncFlow
                 prerequisites: ['fetch'],
                 handler: SyncUnitStep::class,
                 notes: [
-                    'PMO tidak menyediakan endpoint satuan terpisah — daftarnya diturunkan dari satuan '
-                        .'yang dipakai tiap produk pada langkah "Ambil & Periksa Data PMO".',
+                    'Menarik langsung dari endpoint satuan PMO sendiri (/getUnits). Kalau endpoint '
+                        .'itu gagal, langkah ini otomatis memakai sumber cadangan (satuan yang dipakai '
+                        .'tiap produk pada langkah "Ambil & Periksa Data PMO") — muncul sebagai catatan '
+                        .'di hasil eksekusi bila itu terjadi.',
                     'Pada sinkronisasi pertama, satuan Pegasus yang namanya sama akan dipakai ulang, '
                         .'bukan dibuat ganda.',
                     'Satuan dengan nama ganda di Pegasus dilaporkan gagal — rapikan dulu, lalu jalankan ulang.',
-                    'PMO tidak mengirim singkatan maupun status aktif per satuan, jadi keduanya tidak '
-                        .'pernah dinonaktifkan otomatis oleh sinkronisasi ini.',
+                    'Saat memakai sumber cadangan, PMO tidak mengirim singkatan maupun status aktif '
+                        .'per satuan lewat jalur itu, jadi keduanya tidak pernah dinonaktifkan otomatis '
+                        .'oleh sinkronisasi ini.',
+                    'Kegagalan sebagian (GitHub #184) tidak lagi memblokir langkah berikutnya — lihat '
+                        .'catatan "Sebagian Berhasil" di ringkasan hasil.',
                 ],
             ),
             new SyncStep(
@@ -170,6 +175,10 @@ class ProductSyncFlow extends SyncFlow
                     'Produk yang menunjuk ke kategori atau satuan yang belum ada dilaporkan gagal, '
                         .'bukan dipaksa masuk.',
                     'Produk Pegasus yang namanya ganda dilaporkan gagal — gabungkan dulu, lalu jalankan ulang.',
+                    'Kegagalan sebagian (GitHub #184) tidak lagi memblokir langkah berikutnya — produk '
+                        .'yang berhasil tetap tersinkronkan dan langkah Varian Produk dkk. boleh lanjut '
+                        .'memakainya. Perbaiki masalah pada produk yang gagal (mis. satuan yang belum '
+                        .'ada), lalu jalankan ulang langkah ini kapan saja.',
                 ],
             ),
             new SyncStep(
