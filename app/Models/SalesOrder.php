@@ -184,6 +184,10 @@ class SalesOrder extends Model
         $dateFrom = trim((string) ($data['date_from'] ?? ''));
         $dateTo = trim((string) ($data['date_to'] ?? ''));
         $statusFilter = trim((string) ($data['status'] ?? ''));
+        // "pmo" / "internal" — lihat renderCreatedBySync() di footer-scripts.blade.php untuk kenapa
+        // ref_shipment_id adalah penanda baris yang dibuat lewat External API (bukan created_by,
+        // yang juga kosong pada data lama). "all"/kosong/nilai lain = tidak difilter sama sekali.
+        $sourceFilter = trim((string) ($data['source'] ?? ''));
         if ($dateFrom !== '') {
             $base->whereDate('sales_orders.so_date', '>=', $dateFrom);
         }
@@ -192,6 +196,11 @@ class SalesOrder extends Model
         }
         if ($statusFilter !== '' && ctype_digit($statusFilter)) {
             $base->where('sales_orders.status', (int) $statusFilter);
+        }
+        if ($sourceFilter === 'pmo') {
+            $base->whereNotNull('sales_orders.ref_shipment_id');
+        } elseif ($sourceFilter === 'internal') {
+            $base->whereNull('sales_orders.ref_shipment_id');
         }
 
         if ($search !== '') {
@@ -210,7 +219,7 @@ class SalesOrder extends Model
             });
         }
 
-        $hasListFilter = $search !== '' || $dateFrom !== '' || $dateTo !== '' || $statusFilter !== '';
+        $hasListFilter = $search !== '' || $dateFrom !== '' || $dateTo !== '' || $statusFilter !== '' || $sourceFilter !== '';
         $recordsFiltered = $hasListFilter
             ? (clone $base)->distinct()->count('sales_orders.so_id')
             : $recordsTotal;
