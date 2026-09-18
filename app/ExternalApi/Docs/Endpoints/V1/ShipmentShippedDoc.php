@@ -50,7 +50,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             ['name' => 'shipment_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal pengiriman, format YYYY-MM-DD. Disimpan sebagai sales_orders.so_date.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => true,
-                'description' => 'customers.customer_code — id universal Armada. Harus armada aktif.'],
+                'description' => 'customers.customer_code — id universal Armada. Kalau belum ada di Pegasus, dibuat otomatis (upsert minimal, tanpa profil) — tidak wajib disinkronkan/dibuat lewat endpoint Armada lebih dulu.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas, disimpan sebagai sales_orders.notes.'],
             ['name' => 'detail_handler', 'type' => 'string', 'required' => false,
@@ -113,8 +113,6 @@ class ShipmentShippedDoc extends ApiEndpointDoc
         return [
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.variant_sku tidak ditemukan sebagai varian produk aktif.'],
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
-                'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
             ['code' => 'SHIPMENT_DETAIL_MISMATCH', 'http_status' => 409,
                 'message' => 'Data shipment untuk ref_shipment_id ini sudah tersimpan dan berbeda dari permintaan ini (items). Kirim detail_handler: "force" untuk menimpa, atau samakan data permintaan dengan yang sudah tersimpan.'],
             ['code' => 'INSUFFICIENT_STOCK', 'http_status' => 409,
@@ -134,6 +132,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'notes disimpan di sales_orders.notes (kolom baru, terpisah dari so_ref_number yang sudah ada — so_ref_number adalah field "Ref Number" bebas yang bisa diedit staf lewat halaman admin, tidak dipakai kontrak Shipment ini).',
             'Gudang yang dipakai tiap item, maupun perhitungan stoknya, selalu gudang utama — endpoint ini tidak menerima parameter gudang, sama seperti /shipments/scheduled.',
             'items[].ref_nota_id disimpan apa adanya per baris dan ikut dibandingkan saat detail_handler menentukan ada tidaknya SHIPMENT_DETAIL_MISMATCH — dua baris boleh berbagi variant_sku+unit_id yang sama selama ref_nota_id-nya beda (tidak digabung).',
+            'armada_code yang belum ada di Pegasus dibuat otomatis (upsert minimal, hanya customer_code) alih-alih ditolak — tidak wajib memanggil endpoint Armada atau Pusat Sinkronisasi lebih dulu. Baris yang dibuat begini tidak punya PIC/No Pol/telepon/saldo sampai armada itu benar-benar disinkronkan/diisi lewat jalur lain.',
         ];
     }
 }

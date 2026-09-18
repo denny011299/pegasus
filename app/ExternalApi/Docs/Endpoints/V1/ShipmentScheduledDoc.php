@@ -51,7 +51,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             ['name' => 'scheduled_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal shipment dijadwalkan, format YYYY-MM-DD. Disimpan sebagai sales_orders.so_date.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => true,
-                'description' => 'customers.customer_code — id universal Armada (lihat modul Data Armada). Harus armada aktif.'],
+                'description' => 'customers.customer_code — id universal Armada (lihat modul Data Armada). Kalau belum ada di Pegasus, dibuat otomatis (upsert minimal, tanpa profil) — tidak wajib disinkronkan/dibuat lewat endpoint Armada lebih dulu.'],
             ['name' => 'auto_create_shortage_doc', 'type' => 'boolean', 'required' => false,
                 'description' => 'true = buat dokumen kekurangan stok otomatis BILA ada item yang shortage-nya > 0. Tidak dikirim/false = tidak pernah membuat dokumen, shipment tetap dijadwalkan seperti biasa.'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
@@ -104,8 +104,6 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
                 'message' => 'items.0.sku tidak ditemukan sebagai varian produk aktif.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.unit_id tidak merujuk satuan aktif manapun.'],
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
-                'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
             ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422,
                 'message' => 'ref_shipment_id SHP-7788 sudah dipakai shipment lain.'],
         ];
@@ -122,6 +120,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'Satu baris detail dibuat per item yang dikirim di items[], disimpan dengan cara yang sama persis dengan yang dipakai halaman admin Pengiriman.',
             'Dokumen kekurangan stok murni catatan untuk staf gudang/pembelian saat ini — belum ada endpoint atau halaman admin untuk membacanya balik.',
             'items[].ref_nota_id disimpan apa adanya per baris (tidak digabung meski beberapa baris berbagi sku+unit_id yang sama) — kirim satu baris item per nota asal kalau satu shipment membundel beberapa nota.',
+            'armada_code yang belum ada di Pegasus dibuat otomatis (upsert minimal, hanya customer_code) alih-alih ditolak — tidak wajib memanggil endpoint Armada atau Pusat Sinkronisasi lebih dulu. Baris yang dibuat begini tidak punya PIC/No Pol/telepon/saldo sampai armada itu benar-benar disinkronkan/diisi lewat jalur lain.',
         ];
     }
 }

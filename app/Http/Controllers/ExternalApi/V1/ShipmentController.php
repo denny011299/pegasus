@@ -15,6 +15,7 @@ use App\Models\SalesOrder;
 use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
 use App\Models\Unit;
+use App\Support\ArmadaUpsert;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderCancellation;
 use Illuminate\Database\QueryException;
@@ -88,6 +89,13 @@ class ShipmentController extends Controller
      * sales_orders.so_customer (disimpan sebagai string customer_id, sama seperti alur admin
      * insertSalesOrder()).
      *
+     * armada_code yang belum ada di Pegasus DI-UPSERT OTOMATIS (GitHub #187) lewat
+     * App\Support\ArmadaUpsert — bukan ditolak VALIDATION_FAILED seperti sebelumnya. Baris yang
+     * dibuat SENGAJA minim (cuma customer_code, tanpa PIC/No Pol/telepon/saldo — payload
+     * shipment tidak membawa data itu); kalau armada itu nanti disinkronkan sungguhan lewat
+     * Pusat Sinkronisasi atau PUT /armada/{code}, baris yang sama diperbarui seperti biasa.
+     *
+
      * ref_shipment_id UNIK di sales_orders — permintaan kedua dengan ref_shipment_id yang sama
      * ditolak duplicate_ref_id (dikonfirmasi pemilik produk: BUKAN idempotent replay seperti
      * /payments/cash — pemanggil wajib pakai ref_shipment_id baru per percobaan).
@@ -109,10 +117,7 @@ class ShipmentController extends Controller
         $data = $request->validate(array_merge([
             'ref_shipment_id' => ['required', 'string', 'max:100'],
             'scheduled_date' => ['required', 'date'],
-            'armada_code' => [
-                'required', 'string',
-                Rule::exists('customers', 'customer_code')->where('status', 1),
-            ],
+            'armada_code' => ['required', 'string', 'max:64'],
             'auto_create_shortage_doc' => ['nullable', 'boolean'],
         ], $this->stockItemValidationRules()));
 
@@ -136,7 +141,7 @@ class ShipmentController extends Controller
             );
         }
 
-        $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
+        $customer = ArmadaUpsert::resolveOrCreate($data['armada_code']);
         $autoCreateShortageDoc = (bool) ($data['auto_create_shortage_doc'] ?? false);
 
         $productNames = Product::whereIn('product_id', array_values(array_unique(array_filter(
@@ -292,7 +297,7 @@ class ShipmentController extends Controller
             ];
         }
 
-        $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
+        $customer = ArmadaUpsert::resolveOrCreate($data['armada_code']);
         $photos = new ShipmentPhotoStore();
         $httpStatus = 200;
 
@@ -607,10 +612,7 @@ class ShipmentController extends Controller
         return $request->validate([
             'ref_shipment_id' => ['required', 'string', 'max:100'],
             'shipment_date' => ['required', 'date'],
-            'armada_code' => [
-                'required', 'string',
-                Rule::exists('customers', 'customer_code')->where('status', 1),
-            ],
+            'armada_code' => ['required', 'string', 'max:64'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'detail_handler' => ['nullable', 'string', Rule::in(['force', 'validate'])],
             'items' => ['required', 'array', 'min:1'],
