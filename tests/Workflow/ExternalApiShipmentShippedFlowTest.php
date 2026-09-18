@@ -107,15 +107,21 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         ]);
     }
 
-    private function itemPayload(string $sku, int $refUnitId, int $qty = 24): array
+    private function itemPayload(string $sku, int $refUnitId, int $qty = 24, ?int $refNotaId = null): array
     {
-        return [
+        $item = [
             'variant_sku' => $sku,
             'qty' => $qty,
             'unit_id' => $refUnitId,
             'product_name' => 'AIR AKI HIKARI',
             'variant_name' => '20 x 400ml',
         ];
+
+        if ($refNotaId !== null) {
+            $item['ref_nota_id'] = $refNotaId;
+        }
+
+        return $item;
     }
 
     public function test_a_request_without_an_api_key_is_rejected(): void
@@ -172,6 +178,33 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
 
         $stock->refresh();
         $this->assertSame(76, (int) $stock->ps_stock, 'stock must actually be deducted on shipped()');
+    }
+
+    public function test_shipped_stores_the_optional_ref_nota_id_per_item(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        // 16-digit PMO id (oms_order.id), see GitHub #180.
+        $refNotaId = 4328012026102327;
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId, refNotaId: $refNotaId)],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($refNotaId, (int) $detail->ref_nota_id);
     }
 
     public function test_shipped_confirms_an_existing_scheduled_shipment_with_matching_data(): void

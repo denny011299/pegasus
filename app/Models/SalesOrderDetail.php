@@ -105,6 +105,9 @@ class SalesOrderDetail extends Model
             $warehouseId = (int) ($data['warehouse_id'] ?? 0);
             $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
         }
+        if (Schema::hasColumn($t->getTable(), 'ref_nota_id')) {
+            $t->ref_nota_id = $data['ref_nota_id'] ?? null;
+        }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];
         $t->sod_subtotal = $data["so_subtotal"];
@@ -126,6 +129,9 @@ class SalesOrderDetail extends Model
         if (Schema::hasColumn($t->getTable(), 'warehouse_id')) {
             $warehouseId = (int) ($data['warehouse_id'] ?? 0);
             $t->warehouse_id = $warehouseId > 0 ? $warehouseId : null;
+        }
+        if (Schema::hasColumn($t->getTable(), 'ref_nota_id')) {
+            $t->ref_nota_id = $data['ref_nota_id'] ?? null;
         }
         $t->sod_harga = $data["product_variant_price"];
         $t->sod_qty = $data["so_qty"];

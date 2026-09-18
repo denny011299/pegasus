@@ -62,6 +62,8 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
                 'description' => 'Jumlah yang akan dikirim, dalam satuan items[].unit_id.'],
             ['name' => 'items[].unit_id', 'type' => 'integer', 'required' => true,
                 'description' => 'Rujukan units.ref_unit_id (id satuan pada sistem PMO), BUKAN id internal Pegasus. Harus merujuk satuan aktif.'],
+            ['name' => 'items[].ref_nota_id', 'type' => 'integer', 'required' => false,
+                'description' => 'Id nota (oms_order.id) pada sistem PMO asal baris item ini. Murni untuk penelusuran/relasi di sisi IPM — tidak divalidasi dan tidak mempengaruhi pengecekan stok maupun penjadwalan.'],
         ];
     }
 
@@ -73,7 +75,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'armada_code' => 'L8533N',
             'auto_create_shortage_doc' => true,
             'items' => [
-                ['sku' => 'AAHK400ML', 'qty' => 24, 'unit_id' => 5],
+                ['sku' => 'AAHK400ML', 'qty' => 24, 'unit_id' => 5, 'ref_nota_id' => 4328012026102327],
             ],
         ];
     }
@@ -119,6 +121,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'Endpoint ini murni penjadwalan logistik, tidak membawa informasi harga — harga/subtotal item maupun total shipment seluruhnya tersimpan 0.',
             'Satu baris detail dibuat per item yang dikirim di items[], disimpan dengan cara yang sama persis dengan yang dipakai halaman admin Pengiriman.',
             'Dokumen kekurangan stok murni catatan untuk staf gudang/pembelian saat ini — belum ada endpoint atau halaman admin untuk membacanya balik.',
+            'items[].ref_nota_id disimpan apa adanya per baris (tidak digabung meski beberapa baris berbagi sku+unit_id yang sama) — kirim satu baris item per nota asal kalau satu shipment membundel beberapa nota.',
         ];
     }
 }

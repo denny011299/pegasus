@@ -298,6 +298,61 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->assertSame(0, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
     }
 
+    public function test_scheduled_stores_the_optional_ref_nota_id_per_item(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        // 16-digit PMO id (oms_order.id), see GitHub #180 — must round-trip past PHP int range
+        // issues the same way ref_unit_id/ref_product_id do.
+        $refNotaId = 4328012026102327;
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId, 'ref_nota_id' => $refNotaId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($refNotaId, (int) $detail->ref_nota_id);
+    }
+
+    public function test_scheduled_leaves_ref_nota_id_null_when_not_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => 'SHP-'.uniqid(),
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertNull($detail->ref_nota_id);
+    }
+
     public function test_scheduled_handles_multiple_items(): void
     {
         $headers = $this->externalApiHeaders();
