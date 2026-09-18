@@ -14,6 +14,7 @@
         not_executed: '',
         running: 'is-running',
         success: 'is-success',
+        partial: 'is-partial',
         failed: 'is-failed'
     };
 
@@ -272,7 +273,11 @@
     /** Dipakai bersama oleh execute() dan finalize() (jalur biasa maupun berbasis halaman). */
     function handleExecutionSuccess(res) {
         renderState(res.state);
-        if (res.ok) {
+        var status = res.execution && res.execution.status;
+
+        if (status === 'partial') {
+            notifikasi('warning', 'Sebagian Berhasil', res.message || 'Sebagian baris berhasil, sebagian gagal — lihat rincian di bawah.');
+        } else if (res.ok) {
             notifikasi('success', 'Sinkronisasi Berhasil', res.message || 'Langkah berhasil dijalankan.');
         } else {
             notifikasi('error', 'Sinkronisasi Gagal', res.message || 'Langkah gagal dijalankan.');
@@ -464,7 +469,7 @@
             var pane = $('.sync-step-pane[data-step="' + key + '"]');
             var item = $('#syncStepper li[data-step="' + key + '"]');
 
-            item.removeClass('is-running is-success is-failed is-blocked');
+            item.removeClass('is-running is-success is-partial is-failed is-blocked');
             if (STATUS_CLASS[step.status]) {
                 item.addClass(STATUS_CLASS[step.status]);
             }
@@ -523,10 +528,15 @@
 
         box.removeClass('d-none');
 
-        var alertClass = execution.status === 'success' ? 'alert-success' : 'alert-danger';
+        var alertClass = execution.status === 'success'
+            ? 'alert-success'
+            : (execution.status === 'partial' ? 'alert-warning' : 'alert-danger');
+        var defaultMessage = execution.status === 'success'
+            ? 'Sinkronisasi berhasil.'
+            : (execution.status === 'partial' ? 'Sebagian baris berhasil, sebagian gagal.' : 'Sinkronisasi gagal.');
         pane.find('.sync-result-message')
             .attr('class', 'sync-result-message mb-3 alert ' + alertClass)
-            .text(execution.message || (execution.status === 'success' ? 'Sinkronisasi berhasil.' : 'Sinkronisasi gagal.'));
+            .text(execution.message || defaultMessage);
 
         pane.find('.sync-started-at').text(execution.started_at || '-');
         pane.find('.sync-finished-at').text(execution.finished_at || '-');

@@ -149,6 +149,12 @@
     color: #fff;
 }
 
+.sync-stepper li.is-partial .sync-stepper-marker {
+    border-color: #b7791f;
+    background: #b7791f;
+    color: #fff;
+}
+
 .sync-stepper li.is-running .sync-stepper-marker {
     border-color: #3ba2d6;
     color: #3ba2d6;

@@ -35,10 +35,13 @@ return [
     | PmoClient langsung — satu method per endpoint di sana, jauh lebih
     | mudah dibaca (mis. PmoApi::getProducts(), PmoApi::getProduct($id)).
     |
-    | Hanya 3 endpoint yang benar-benar disediakan PMO (dikonfirmasi
-    | 2026-08-20): products, shipments, armada. PMO TIDAK menyediakan
-    | /getUnits — master satuan Pegasus diturunkan dari items[].units[] pada
-    | /getProducts, bukan dipanggil terpisah. Lihat
+    | 4 endpoint disediakan PMO saat ini: products, shipments, armada
+    | (dikonfirmasi 2026-08-20), dan units (GitHub #184, ditambahkan PMO
+    | 2026-09-18 — sebelumnya tidak ada). "units" dipakai SyncUnitStep
+    | sebagai SUMBER UTAMA, tapi tetap punya jalur cadangan yang menurunkan
+    | satuan dari items[].units[] pada /getProducts kalau /getUnits gagal
+    | (4xx/5xx/timeout/dsb.) — lihat
+    | App\Synchronization\Steps\ProductFlow\SyncUnitStep dan
     | App\Synchronization\Steps\ProductFlow\ProductFlowStep::units() dan
     | cdocs/integrations/202607260130-product-sync-flow.design.md (§8.1).
     |
@@ -47,6 +50,7 @@ return [
         'products' => '/getProducts',
         'shipments' => '/getShipments',
         'armada' => '/getArmada',
+        'units' => '/getUnits',
     ],
 
     /*
@@ -56,11 +60,13 @@ return [
     |
     | Default "items" untuk endpoint yang tidak disebut di sini. Dikonfirmasi
     | 2026-08-22: /getArmada membalas "data", bukan "items", beda dari
-    | /getProducts dan /getShipments. Lihat App\Synchronization\Pmo\PmoEndpoints::itemsKey().
+    | /getProducts dan /getShipments. /getUnits (GitHub #184) juga memakai
+    | "data". Lihat App\Synchronization\Pmo\PmoEndpoints::itemsKey().
     |
     */
     'endpoint_items_keys' => [
         'armada' => 'data',
+        'units' => 'data',
     ],
 
     /*

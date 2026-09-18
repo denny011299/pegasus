@@ -25,7 +25,11 @@ class PrerequisiteChecker
         foreach ($step->prerequisites as $key) {
             $required = $steps[$key] ?? null;
             $execution = $latest[$key] ?? null;
-            $satisfied = $execution !== null && $execution->status === SyncStatus::SUCCESS;
+            // PARTIAL memenuhi prasyarat juga (GitHub #184): baris yang berhasil pada langkah
+            // prasyarat sudah tertulis ke database, jadi langkah berikutnya boleh jalan memakainya
+            // — operator tidak perlu menunggu SELURUH baris pada langkah prasyarat berhasil dulu.
+            $satisfied = $execution !== null
+                && in_array($execution->status, [SyncStatus::SUCCESS, SyncStatus::PARTIAL], true);
 
             $out[] = [
                 'key' => $key,
@@ -59,6 +63,7 @@ class PrerequisiteChecker
 
         return match ($execution->status) {
             SyncStatus::SUCCESS => $title.' sudah tersinkronisasi.',
+            SyncStatus::PARTIAL => $title.' sebagian berhasil — baris yang gagal tidak akan tersedia di langkah ini, ulangi langkah tersebut kalau perlu.',
             SyncStatus::FAILED => $title.' gagal pada eksekusi terakhir, ulangi langkah tersebut.',
             SyncStatus::RUNNING => $title.' masih berjalan.',
             default => $title.' belum selesai dijalankan.',
