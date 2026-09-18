@@ -36,8 +36,9 @@
   <meta property="og:image:height" content="600">
   <title>Internal Pegasus Management</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-  <!-- Favicon -->
-  <link rel="shortcut icon" href="{{ URL::asset('/assets/pegasus_logo.jpg') }}">
+  <!-- Favicon (Company Setting) -->
+  <link rel="icon" href="{{ \App\Models\Setting::assetUrl('favicon') }}">
+  <link rel="shortcut icon" href="{{ \App\Models\Setting::assetUrl('favicon') }}">
 
   {{-- Token --}}
   <meta name="csrf-token" content="{{ csrf_token() }}">
