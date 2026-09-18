@@ -67,6 +67,8 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                 'description' => 'Nama produk, dipakai APA ADANYA (tidak di-lookup dari database) untuk sales_order_details.sod_nama.'],
             ['name' => 'items[].variant_name', 'type' => 'string', 'required' => false,
                 'description' => 'Nama varian, dipakai apa adanya untuk sales_order_details.sod_variant.'],
+            ['name' => 'items[].ref_nota_id', 'type' => 'integer', 'required' => false,
+                'description' => 'Id nota (oms_order.id) pada sistem PMO asal baris item ini. Murni untuk penelusuran/relasi di sisi IPM — tidak divalidasi dan tidak mempengaruhi konfirmasi maupun pemotongan stok.'],
             ['name' => 'photos', 'type' => 'array', 'required' => false,
                 'description' => 'Bukti pengiriman. Kirim sebagai berkas sungguhan lewat multipart/form-data (photos[] sebagai file upload, field lain tetap sebagai field form biasa — array items[] memakai notasi kurung standar HTML form: items[0][variant_sku], items[0][qty], dst.), ATAU sebagai data URI base64 lewat JSON murni. Hanya PNG/JPEG, maksimal 5MB per berkas.'],
         ];
@@ -87,6 +89,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                     'unit_id' => 2,
                     'product_name' => 'AIR AKI HIKARI',
                     'variant_name' => '20 x 400ml',
+                    'ref_nota_id' => 4328012026102327,
                 ],
             ],
         ];
@@ -130,6 +133,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'items[].product_name/variant_name dipakai APA ADANYA dari permintaan (tidak di-lookup ke tabel products/product_variants) untuk mengisi sales_order_details.sod_nama/sod_variant — sama seperti field yang diterima form admin Pengiriman.',
             'notes disimpan di sales_orders.notes (kolom baru, terpisah dari so_ref_number yang sudah ada — so_ref_number adalah field "Ref Number" bebas yang bisa diedit staf lewat halaman admin, tidak dipakai kontrak Shipment ini).',
             'Gudang yang dipakai tiap item, maupun perhitungan stoknya, selalu gudang utama — endpoint ini tidak menerima parameter gudang, sama seperti /shipments/scheduled.',
+            'items[].ref_nota_id disimpan apa adanya per baris dan ikut dibandingkan saat detail_handler menentukan ada tidaknya SHIPMENT_DETAIL_MISMATCH — dua baris boleh berbagi variant_sku+unit_id yang sama selama ref_nota_id-nya beda (tidak digabung).',
         ];
     }
 }

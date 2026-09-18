@@ -98,6 +98,11 @@ class ShipmentController extends Controller
      *
      * Tidak ada informasi harga pada kontrak permintaan ini (murni penjadwalan logistik) —
      * sod_harga/sod_subtotal/so_total seluruhnya disimpan 0, bukan mengarang harga.
+     *
+     * items[].ref_nota_id (opsional, GitHub #180) disimpan apa adanya ke
+     * sales_order_details.ref_nota_id — id nota (oms_order.id) PMO asal baris item ini, murni
+     * untuk penelusuran/relasi di sisi IPM, tidak divalidasi maupun mempengaruhi logika apa pun
+     * di sini.
      */
     public function scheduled(Request $request): JsonResponse
     {
@@ -146,6 +151,7 @@ class ShipmentController extends Controller
                         'product_variant_sku' => $item['sku'],
                         'unit_id' => $item['internal_unit_id'],
                         'warehouse_id' => $warehouseId,
+                        'ref_nota_id' => $item['ref_nota_id'],
                         'product_variant_price' => 0,
                         'so_qty' => $item['requested'],
                         'so_subtotal' => 0,
@@ -269,6 +275,7 @@ class ShipmentController extends Controller
                 'product_variant_id' => (int) $variant->product_variant_id,
                 'product_name' => (string) $item['product_name'],
                 'variant_name' => (string) ($item['variant_name'] ?? ''),
+                'ref_nota_id' => isset($item['ref_nota_id']) ? (int) $item['ref_nota_id'] : null,
             ];
         }
 
@@ -395,6 +402,7 @@ class ShipmentController extends Controller
                     'unit_id' => $unit?->ref_unit_id !== null ? (int) $unit->ref_unit_id : null,
                     'product_name' => (string) $detail->sod_nama,
                     'variant_name' => (string) ($detail->sod_variant ?? ''),
+                    'ref_nota_id' => $detail->ref_nota_id !== null ? (int) $detail->ref_nota_id : null,
                 ];
 
                 if ($showUnit) {
@@ -604,6 +612,7 @@ class ShipmentController extends Controller
             ],
             'items.*.product_name' => ['required', 'string', 'max:250'],
             'items.*.variant_name' => ['nullable', 'string', 'max:250'],
+            'items.*.ref_nota_id' => ['nullable', 'integer'],
             'photos' => ['nullable', 'array'],
             'photos.*' => $photoRules,
         ]);
@@ -667,6 +676,7 @@ class ShipmentController extends Controller
                 'product_variant_sku' => $item['variant_sku'],
                 'unit_id' => $item['internal_unit_id'],
                 'warehouse_id' => $warehouseId,
+                'ref_nota_id' => $item['ref_nota_id'],
                 'product_variant_price' => 0,
                 'so_qty' => $item['qty'],
                 'so_subtotal' => 0,
@@ -679,7 +689,7 @@ class ShipmentController extends Controller
     /**
      * Bandingkan data tersimpan vs permintaan ini — dipanggil hanya saat SO sudah ada dan BELUM
      * Confirmed (lihat shipped()). Hanya field substantif yang dibandingkan (armada_code/
-     * shipment_date/notes/items — identitas + qty + unit_id); product_name/variant_name (label
+     * shipment_date/notes/items — identitas + qty + unit_id + ref_nota_id); product_name/variant_name (label
      * dekoratif) TIDAK dibandingkan, supaya perbedaan penulisan nama produk saja tidak memicu
      * shipment_detail_mismatch. photos juga tidak dibandingkan (tidak ada cara membandingkan
      * berkas baru vs nama berkas tersimpan secara berarti) — force selalu menimpanya kalau
@@ -703,12 +713,12 @@ class ShipmentController extends Controller
         }
 
         $existingItems = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)
-            ->get(['product_variant_id', 'unit_id', 'sod_qty'])
-            ->map(static fn ($row) => ((int) $row->product_variant_id).':'.((int) $row->unit_id).':'.((int) $row->sod_qty))
+            ->get(['product_variant_id', 'unit_id', 'sod_qty', 'ref_nota_id'])
+            ->map(static fn ($row) => ((int) $row->product_variant_id).':'.((int) $row->unit_id).':'.((int) $row->sod_qty).':'.((string) ($row->ref_nota_id ?? '')))
             ->sort()->values()->all();
 
         $incomingItems = collect($resolvedItems)
-            ->map(static fn (array $item) => $item['product_variant_id'].':'.$item['internal_unit_id'].':'.$item['qty'])
+            ->map(static fn (array $item) => $item['product_variant_id'].':'.$item['internal_unit_id'].':'.$item['qty'].':'.((string) ($item['ref_nota_id'] ?? '')))
             ->sort()->values()->all();
 
         if ($existingItems !== $incomingItems) {

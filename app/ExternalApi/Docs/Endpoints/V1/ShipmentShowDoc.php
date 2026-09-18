@@ -78,6 +78,7 @@ class ShipmentShowDoc extends ApiEndpointDoc
                         'unit_id' => 2,
                         'product_name' => 'AIR AKI HIKARI',
                         'variant_name' => '20 x 400ml',
+                        'ref_nota_id' => 4328012026102327,
                         'unit' => ['id' => 9, 'unit_name' => 'Piece', 'unit_short_name' => 'pcs'],
                     ],
                 ],
@@ -98,6 +99,7 @@ class ShipmentShowDoc extends ApiEndpointDoc
         return [
             'ref_shipment_id yang sama sekali belum pernah dipakai (baik lewat /shipments/scheduled maupun /shipments/shipped) dijawab SHIPMENT_NOT_FOUND. Baris yang SUDAH ada tetap ditemukan berapa pun ipm_status-nya — existensi baris dan status "aktif" adalah dua hal berbeda di sini.',
             'armada_code, items[].variant_sku, items[].product_name, items[].variant_name dikembalikan apa adanya dari yang tersimpan (bentuk field sama dengan yang diterima POST /shipments/shipped, bukan format /shipments/scheduled).',
+            'items[].ref_nota_id dikembalikan apa adanya dari yang tersimpan saat penjadwalan/konfirmasi — null kalau tidak dikirim.',
             'items[].unit_id adalah units.ref_unit_id (rujukan sistem PMO), diresolusi dari unit_id internal yang tersimpan — konsisten dengan konvensi unit_id di seluruh modul Shipment/Stok.',
             'photos berisi URL publik berkas yang tersimpan di sales_orders.so_img (folder public/issue/), bukan data mentah/base64.',
             'ipm_status/ipm_status_label dipetakan secara terpisah — sama seperti POST /shipments/scheduled dan /shipments/shipped, BUKAN status internal sistem apa adanya.',

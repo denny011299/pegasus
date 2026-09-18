@@ -40,6 +40,7 @@ trait ChecksStockAvailability
                 'required', 'integer',
                 Rule::exists('units', 'ref_unit_id')->where('status', 1),
             ],
+            'items.*.ref_nota_id' => ['nullable', 'integer'],
         ];
     }
 
@@ -53,7 +54,7 @@ trait ChecksStockAvailability
      *     items: array<int, array{
      *         sku: string, unit_id: int, requested: int, available: int, shortage: int,
      *         product_id: ?int, product_variant_id: ?int, product_variant_name: ?string,
-     *         internal_unit_id: ?int,
+     *         internal_unit_id: ?int, ref_nota_id: ?int,
      *     }>,
      * }
      */
@@ -93,6 +94,7 @@ trait ChecksStockAvailability
                 'product_variant_id' => $variant?->product_variant_id !== null ? (int) $variant->product_variant_id : null,
                 'product_variant_name' => $variant?->product_variant_name,
                 'internal_unit_id' => $unit?->unit_id !== null ? (int) $unit->unit_id : null,
+                'ref_nota_id' => isset($item['ref_nota_id']) ? (int) $item['ref_nota_id'] : null,
             ];
         }, $items);
 

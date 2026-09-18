@@ -175,6 +175,38 @@ class ExternalApiShipmentShowFlowTest extends TestCase
         $this->assertArrayNotHasKey('unit', $response->json('data.items.0'));
     }
 
+    public function test_show_returns_the_ref_nota_id_stored_at_scheduling(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+        $refNotaId = 4328012026102327;
+
+        $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-23',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId, 'ref_nota_id' => $refNotaId],
+            ],
+        ], $headers)->assertStatus(201);
+
+        $response = $this->getJson('/api/external/v1/shipments/'.$refShipmentId, $headers);
+
+        $response->assertStatus(200)->assertJson([
+            'success' => true,
+            'data' => [
+                'items' => [
+                    ['ref_nota_id' => $refNotaId],
+                ],
+            ],
+        ]);
+    }
+
     public function test_show_returns_a_shipped_shipments_details_with_notes_and_photos(): void
     {
         $headers = $this->externalApiHeaders();
