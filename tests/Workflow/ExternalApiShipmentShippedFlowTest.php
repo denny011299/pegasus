@@ -207,6 +207,37 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->assertSame($refNotaId, (int) $detail->ref_nota_id);
     }
 
+    public function test_shipped_resolves_a_variant_sku_that_differs_only_in_case(): void
+    {
+        // GitHub #181 — see the equivalent test on /shipments/scheduled for the full explanation.
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $mixedCaseSku = strtolower($fx['sku']);
+        $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [$this->itemPayload($mixedCaseSku, $refUnitId, qty: 7)],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($fx['variant']->product_variant_id, $detail->product_variant_id);
+        $this->assertSame(7, (int) $detail->sod_qty);
+
+        $stock->refresh();
+        $this->assertSame(93, (int) $stock->ps_stock);
+    }
+
     public function test_shipped_confirms_an_existing_scheduled_shipment_with_matching_data(): void
     {
         $headers = $this->externalApiHeaders();

@@ -353,6 +353,39 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->assertNull($detail->ref_nota_id);
     }
 
+    public function test_scheduled_resolves_a_sku_that_differs_only_in_case(): void
+    {
+        // GitHub #181: PMO's sku casing ("HGT160kg") often differs from what's stored in
+        // product_variants ("HGT160KG") — Rule::exists() matches case-insensitively (MySQL's
+        // default collation) so validation passes, but resolution must ALSO be case-insensitive
+        // or this used to crash 500 inserting a null product_variant_id.
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $mixedCaseSku = strtolower($fx['sku']);
+        $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $mixedCaseSku, 'qty' => 7, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($fx['variant']->product_variant_id, $detail->product_variant_id);
+        $this->assertSame(7, (int) $detail->sod_qty);
+    }
+
     public function test_scheduled_handles_multiple_items(): void
     {
         $headers = $this->externalApiHeaders();
