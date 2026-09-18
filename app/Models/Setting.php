@@ -45,4 +45,35 @@ class Setting extends Model
             }
         }
     }
+
+    /**
+     * URL publik file dari Company Setting (favicon/logo), dengan cache-bust.
+     */
+    public static function assetUrl(string $key, string $fallback = 'assets/pegasus_logo.jpg'): string
+    {
+        $settings = (new static())->getSetting(['select' => [$key, 'favicon', 'logo']]);
+        $candidates = [];
+        foreach ([$key, 'favicon', 'logo'] as $k) {
+            $raw = trim(str_replace('\\', '/', (string) ($settings[$k] ?? '')));
+            if ($raw !== '') {
+                $candidates[] = ltrim($raw, '/');
+            }
+        }
+        $candidates[] = ltrim($fallback, '/');
+
+        foreach (array_unique($candidates) as $rel) {
+            if (str_starts_with($rel, 'public/')) {
+                $rel = substr($rel, 7);
+            }
+            $full = public_path($rel);
+            if (! is_file($full)) {
+                continue;
+            }
+            $v = @filemtime($full) ?: time();
+
+            return asset($rel).'?v='.$v;
+        }
+
+        return asset($fallback);
+    }
 }
