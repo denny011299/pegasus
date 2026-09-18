@@ -23,9 +23,18 @@ use Symfony\Component\HttpFoundation\Response;
  * Kegagalan menulis log tidak pernah dibiarkan menjatuhkan permintaan — log
  * lalu lintas bukan bagian dari kontrak API, jadi masalah di sini ditelan dan
  * diteruskan ke log aplikasi biasa.
+ *
+ * request_body/response_body HANYA diisi saat app()->environment('local') —
+ * alat bantu debug integrasi PMO (mis. melihat pesan validasi lengkap di
+ * balik satu 422 tanpa buka storage/logs), bukan sesuatu yang aman disimpan
+ * apa adanya di lingkungan lain (bisa memuat data sensitif pemanggil, dan
+ * baris log ini tidak dienkripsi/redaksi apa pun).
  */
 class RequestLogger
 {
+    /** Dipotong supaya satu permintaan raksasa (mis. foto base64) tidak membengkakkan tabel log. */
+    private const MAX_BODY_LENGTH = 20000;
+
     /** Cache per-request agar pembacaan setting tidak berulang. */
     private ?bool $enabled = null;
 
@@ -56,6 +65,10 @@ class RequestLogger
             $log->duration_ms = (int) round((microtime(true) - $startedAt) * 1000);
             $log->ip_address = $request->ip();
             $log->user_agent = $this->userAgent($request);
+            if (app()->environment('local')) {
+                $log->request_body = $this->requestBody($request);
+                $log->response_body = $this->truncate($response->getContent() ?: null);
+            }
             $log->requested_at = now();
             $log->save();
         } catch (\Throwable $e) {
@@ -101,6 +114,47 @@ class RequestLogger
         }
 
         return mb_substr($path, 0, 255);
+    }
+
+    /**
+     * getContent() bekerja untuk permintaan JSON biasa, tapi SELALU kosong untuk
+     * multipart/form-data (mis. photos[] pada POST /shipments/shipped) — PHP sudah
+     * menguraikan isinya duluan ke $_POST/$_FILES sebelum sampai ke sini. Untuk kasus itu,
+     * rekonstruksi ringkasannya dari input yang sudah di-parse Laravel, dengan berkas upload
+     * diganti nama aslinya saja (bukan isi bytenya, supaya tidak raksasa/berulang di log).
+     */
+    private function requestBody(Request $request): ?string
+    {
+        $raw = $request->getContent();
+        if ($raw !== '') {
+            return $this->truncate($raw);
+        }
+
+        if (! $request->files->count()) {
+            return null;
+        }
+
+        $data = $request->except(array_keys($request->files->all()));
+        foreach ($request->files->all() as $key => $files) {
+            $data[$key] = collect(is_array($files) ? $files : [$files])
+                ->map(fn ($file) => $file?->getClientOriginalName())
+                ->all();
+        }
+
+        return $this->truncate(json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: null);
+    }
+
+    private function truncate(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (mb_strlen($value) <= self::MAX_BODY_LENGTH) {
+            return $value;
+        }
+
+        return mb_substr($value, 0, self::MAX_BODY_LENGTH).' … (dipotong, lebih dari '.self::MAX_BODY_LENGTH.' karakter)';
     }
 
     private function userAgent(Request $request): ?string

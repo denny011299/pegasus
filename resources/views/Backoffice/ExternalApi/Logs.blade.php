@@ -98,12 +98,52 @@
 
                                     </tbody>
                                 </table>
+                                @if (app()->environment('local'))
+                                    <p class="text-muted mb-0 mt-2" style="font-size: 12px;">
+                                        <i class="fe fe-info"></i>
+                                        Klik satu baris untuk melihat detail permintaan &amp; respons lengkap
+                                        (hanya tersedia di lingkungan local).
+                                    </p>
+                                @endif
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- /Table -->
+
+            @if (app()->environment('local'))
+                <!-- Detail satu baris log (request/response body) — hanya ada di lingkungan local,
+                     lihat App\ExternalApi\Logging\RequestLogger::write() -->
+                <div class="modal fade" id="modalLogDetail" tabindex="-1">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Detail Permintaan API Eksternal</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <dl class="row mb-3" style="font-size: 13px;">
+                                    <dt class="col-sm-3">Waktu</dt>
+                                    <dd class="col-sm-9" id="logDetailWaktu">-</dd>
+                                    <dt class="col-sm-3">Endpoint</dt>
+                                    <dd class="col-sm-9"><code id="logDetailEndpoint">-</code></dd>
+                                    <dt class="col-sm-3">Status</dt>
+                                    <dd class="col-sm-9" id="logDetailStatus">-</dd>
+                                    <dt class="col-sm-3">Aplikasi / API Key</dt>
+                                    <dd class="col-sm-9" id="logDetailAplikasi">-</dd>
+                                </dl>
+
+                                <h6 class="mb-2">Request Body</h6>
+                                <pre class="extapi-code" id="logDetailRequestBody">-</pre>
+
+                                <h6 class="mb-2">Response Body</h6>
+                                <pre class="extapi-code mb-0" id="logDetailResponseBody">-</pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
         </div>
     </div>
@@ -128,6 +168,7 @@
     <script>
         var public = "{{ asset('') }}";
         var logCleanupStrategies = {!! json_encode($strategiJs) !!};
+        var externalApiLogIsLocal = {{ app()->environment('local') ? 'true' : 'false' }};
     </script>
     <script src="{{ asset('Custom_js/Backoffice/ExternalApi/Logs.js') }}"></script>
 @endsection
