@@ -39,6 +39,34 @@ use Illuminate\Support\Facades\DB;
  * konfirmasi), setiap sinkronisasi berikutnya MENIMPA customer_pic/
  * customer_notes/customer_pic_phone/customer_saldo dari data PMO — sama
  * seperti Produk/Satuan, PMO adalah sumber kebenaran begitu tersambung.
+ *
+ * Rekonsiliasi lewat kode kendaraan (GitHub #187 lanjutan, PMO#16): PMO
+ * confirmed /getArmada TIDAK mengirim kode kendaraan (oms_vehicle.kode) sama
+ * sekali — hanya armada_id numerik. Kode itu (mis. "PMOT-003") justru SAMA
+ * PERSIS dengan armada_code yang dikirim POST /shipments/scheduled/shipped,
+ * dan itulah customers.customer_code yang dimaksud kontrak Shipment API.
+ * Tanpa kode itu di /getArmada, Sinkronisasi Armada tidak pernah tahu satu
+ * armada_id numerik = satu armada_code tertentu, jadi kalau shipment sampai
+ * duluan (lewat App\Support\ArmadaUpsert, yang membuat baris minim ber-
+ * customer_code = armada_code) SEBELUM armada itu tersinkron, akan ada DUA
+ * baris customers untuk satu armada yang sama: satu dari sini (customer_code
+ * auto-generate), satu dari shipment (customer_code = kode asli).
+ *
+ * PMO sudah diminta menambahkan kode itu ke /getArmada (PMO#16, field
+ * "code"/"kode"). Begitu tersedia, langkah ini membacanya (lihat blok kode
+ * di awal syncArmada()) dan MENGUTAMAKANNYA di atas pencocokan No Pol+PIC:
+ * - Kode cocok dengan baris yang SUDAH tersambung lewat ref_armada_id
+ *   armada ini -> lanjut Fase 1 apa adanya (customer_code ikut disamakan).
+ * - Kode cocok dengan baris LAIN yang belum tersambung -> digabung
+ *   (mergeDuplicateByCode()): sales_orders milik baris duplikat itu
+ *   dipindah ke baris yang tersambung, baris duplikatnya dinonaktifkan.
+ *   Cakupan gabung SENGAJA hanya sales_orders — baris duplikat di sini
+ *   HANYA pernah dibuat ArmadaUpsert (upsert bare dari shipment), yang
+ *   satu-satunya jejaknya di Pegasus adalah baris sales_orders yang
+ *   dibuatnya sendiri; tidak ada tabel lain yang mungkin sudah menyentuhnya.
+ * - Kode belum dipakai siapa pun -> jadi kandidat adopsi (setara No Pol+PIC
+ *   tunggal) atau customer_code untuk baris baru, menggantikan
+ *   Customer::generateCustomerID().
  */
 class SyncArmadaStep extends ArmadaFlowStep
 {
@@ -87,6 +115,7 @@ class SyncArmadaStep extends ArmadaFlowStep
     ): void {
         $refArmadaId = $this->pickInt($row, ['armada_id']);
         $picName = $this->pickString($row, ['pic_name']);
+        $code = $this->pickString($row, ['code', 'kode', 'armada_code']);
         $label = $this->armadaLabel($row);
 
         if ($refArmadaId === 0 || $picName === '') {
@@ -105,11 +134,49 @@ class SyncArmadaStep extends ArmadaFlowStep
             'updated_at' => $now,
         ];
 
-        // Fase 1 — sudah tersambung: perbarui langsung, tidak ada logika
-        // No Pol/PIC yang disentuh sama sekali.
+        if ($code !== '') {
+            $byCode = DB::table('customers')->where('customer_code', $code)->first();
+            $byCodeRefArmadaId = $byCode !== null && $byCode->ref_armada_id !== null ? (int) $byCode->ref_armada_id : null;
+
+            if ($byCode !== null && $byCodeRefArmadaId !== null && $byCodeRefArmadaId !== $refArmadaId) {
+                // customer_code ini sudah terpakai armada LAIN (ref_armada_id-nya beda) — kode
+                // seharusnya unik per kendaraan di PMO, jadi ini kejanggalan data, bukan sesuatu
+                // yang aman ditebak/ditimpa begitu saja. Lanjut tanpa menyentuh customer_code sama
+                // sekali (perilaku sebelum GitHub #187 lanjutan), dilaporkan supaya operator sadar.
+                $result->addNotice(
+                    $label.': kode "'.$code.'" sudah dipakai armada lain (customer_id '.$byCode->customer_id
+                    .', ref_armada_id '.$byCodeRefArmadaId.') — customer_code TIDAK disamakan, periksa data PMO.'
+                );
+            } elseif ($byCode !== null && isset($byRef[$refArmadaId]) && (int) $byCode->customer_id !== $byRef[$refArmadaId]) {
+                // Dua baris untuk satu armada: satu sudah tersambung lewat ref_armada_id (biasanya
+                // dari sinkronisasi sebelum PMO mengirim kode), satu lagi punya customer_code =
+                // kode asli (biasanya dari ArmadaUpsert lewat shipment). Gabung ke baris yang
+                // tersambung, bukan biarkan dua-duanya hidup.
+                $this->mergeDuplicateByCode((int) $byCode->customer_id, $byRef[$refArmadaId], $code, $label, $result);
+                $attributes['customer_code'] = $code;
+            } else {
+                if ($byCode !== null && ! isset($byRef[$refArmadaId])) {
+                    // Belum tersambung lewat ref_armada_id sama sekali, tapi kodenya sudah dikenal
+                    // (dan tidak dipakai armada lain) — baris itu yang diadopsi, No Pol+PIC tidak
+                    // perlu dicocokkan lagi.
+                    $byRef[$refArmadaId] = (int) $byCode->customer_id;
+                    $this->forgetCandidate(
+                        $adoptableByKey,
+                        $this->compositeKey((string) $byCode->customer_notes, (string) $byCode->customer_pic),
+                        (int) $byCode->customer_id
+                    );
+                }
+
+                $attributes['customer_code'] = $code;
+            }
+        }
+
+        // Fase 1 — sudah tersambung (langsung atau baru saja lewat kecocokan kode di atas):
+        // perbarui langsung, tidak ada logika No Pol/PIC yang disentuh sama sekali.
         if (isset($byRef[$refArmadaId])) {
             DB::table('customers')->where('customer_id', $byRef[$refArmadaId])->update($attributes);
             $result->updated++;
+            $this->clearStaleReview($reviewsByRef->get($refArmadaId));
 
             return;
         }
@@ -144,7 +211,10 @@ class SyncArmadaStep extends ArmadaFlowStep
 
         if (count($candidates) === 0) {
             $localId = (int) DB::table('customers')->insertGetId($attributes + [
-                'customer_code' => (new Customer())->generateCustomerID(),
+                // $attributes['customer_code'] hanya terisi kalau kodenya bebas dipakai (lihat blok
+                // kode di awal method) — kalau konflik dengan armada lain, ini SENGAJA jatuh ke
+                // generateCustomerID() alih-alih memaksakan kode yang sudah dipegang baris lain.
+                'customer_code' => $attributes['customer_code'] ?? (new Customer())->generateCustomerID(),
                 'status' => 1,
                 'created_at' => $now,
                 'created_by' => null,
@@ -252,6 +322,40 @@ class SyncArmadaStep extends ArmadaFlowStep
         if ($review && $review->status === ArmadaMatchReview::STATUS_PENDING) {
             $review->delete();
         }
+    }
+
+    /**
+     * Gabungkan baris duplikat (customer_code cocok, tapi ref_armada_id belum diisi — dibuat
+     * App\Support\ArmadaUpsert lewat shipment SEBELUM armada ini tersambung ke sinkronisasi) ke
+     * baris yang sudah tersambung. Cakupannya SENGAJA sempit: pindahkan sales_orders.so_customer,
+     * lalu nonaktifkan baris duplikatnya — baris begini tidak pernah disentuh proses lain
+     * (ArmadaUpsert cuma menulis customers + sales_orders, tidak pernah lebih), jadi dua tabel itu
+     * sudah cukup. Tidak menghapus baris duplikat (soft, status=0) — jejaknya tetap ada untuk
+     * audit, dan customer_code-nya sengaja TIDAK dilepas (dibiarkan seperti apa adanya) supaya
+     * tidak bisa dipakai ulang secara tidak sengaja.
+     */
+    private function mergeDuplicateByCode(int $duplicateId, int $survivingId, string $code, string $label, SyncStepResult $result): void
+    {
+        DB::transaction(function () use ($duplicateId, $survivingId, $code) {
+            DB::table('sales_orders')
+                ->where('so_customer', (string) $duplicateId)
+                ->update(['so_customer' => (string) $survivingId]);
+
+            // customer_code UNIK — baris duplikat harus melepas kodenya di sini (bukan cuma
+            // dinonaktifkan) supaya baris yang tersambung bisa mengklaimnya di update yang
+            // menyusul. Diganti nama, bukan null polos, supaya masih terlihat kode aslinya kalau
+            // baris ini pernah diperiksa manual belakangan.
+            DB::table('customers')->where('customer_id', $duplicateId)->update([
+                'status' => 0,
+                'customer_code' => mb_substr($code.'-merged-into-'.$survivingId, 0, 64),
+            ]);
+        });
+
+        $result->addNotice(
+            $label.': baris duplikat (customer_id '.$duplicateId.', dibuat sebelumnya lewat shipment '
+            .'karena belum tersambung ke sinkronisasi) digabungkan ke customer_id '.$survivingId
+            .' — sales_orders miliknya dipindahkan, baris duplikatnya dinonaktifkan.'
+        );
     }
 
     private function compositeKey(string $nomerPol, string $picName): ?string
