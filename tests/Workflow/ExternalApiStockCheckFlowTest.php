@@ -118,6 +118,39 @@ class ExternalApiStockCheckFlowTest extends TestCase
         ]);
     }
 
+    public function test_check_resolves_a_sku_that_differs_only_in_case(): void
+    {
+        // GitHub #181 — Rule::exists() matches sku case-insensitively (MySQL's default
+        // collation), so resolveVariantsAndUnits() must key/look up the same way, or a
+        // case-differing sku passes validation but resolves to an available/shortage as if the
+        // product didn't exist.
+        $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], self::MAIN_WAREHOUSE_ID, $unit->unit_id, 10);
+
+        $mixedCaseSku = strtolower($fx['sku']);
+        $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
+
+        $response = $this->postJson('/api/external/v1/stock/check', [
+            'ref_shipment_id' => 'SHP-CASE-MISMATCH',
+            'items' => [
+                ['sku' => $mixedCaseSku, 'qty' => 5, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(200)->assertJson([
+            'success' => true,
+            'data' => [
+                'has_shortage' => false,
+                'items' => [
+                    ['sku' => $mixedCaseSku, 'unit_id' => $refUnitId, 'requested' => 5, 'available' => 10, 'shortage' => 0],
+                ],
+            ],
+        ]);
+    }
+
     public function test_check_reports_shortage_when_stock_is_insufficient(): void
     {
         $headers = $this->externalApiHeaders();

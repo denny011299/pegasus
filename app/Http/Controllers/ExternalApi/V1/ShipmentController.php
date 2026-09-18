@@ -123,6 +123,19 @@ class ShipmentController extends Controller
         $warehouseId = ProductStock::resolveWarehouseId(null);
         $check = $this->checkStockAvailability($warehouseId, $data['items']);
 
+        // Jaring pengaman GitHub #181: seharusnya sudah tidak pernah kena sejak
+        // resolveVariantsAndUnits() dinormalisasi ke uppercase, tapi race condition (baris
+        // dinonaktifkan tepat setelah validate()) tetap bisa menghasilkan product_variant_id/
+        // internal_unit_id null di sini — dijawab galat bersih, bukan lanjut insert dan crash di
+        // NOT NULL constraint sales_order_details.
+        if (array_any($check['items'], static fn (array $item) => $item['product_variant_id'] === null || $item['internal_unit_id'] === null)) {
+            return ApiResponse::error(
+                ErrorCatalog::VALIDATION_FAILED,
+                'Satu atau lebih items.sku/items.unit_id tidak lagi valid, coba ulang.',
+                422,
+            );
+        }
+
         $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
         $autoCreateShortageDoc = (bool) ($data['auto_create_shortage_doc'] ?? false);
 
@@ -254,7 +267,7 @@ class ShipmentController extends Controller
 
         $resolvedItems = [];
         foreach ($data['items'] as $item) {
-            $variant = $variantsBySku->get($item['variant_sku']);
+            $variant = $variantsBySku->get(mb_strtoupper($item['variant_sku']));
             $unit = $unitsByRef->get((int) $item['unit_id']);
 
             // Sudah divalidasi ada di validateShippedPayload() — null di sini cuma kemungkinan
