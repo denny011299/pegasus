@@ -261,21 +261,34 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->assertSame(1, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
     }
 
-    public function test_scheduled_rejects_an_unknown_armada_code(): void
+    public function test_scheduled_auto_creates_an_unknown_armada_code(): void
     {
+        // GitHub #187: armada_code that doesn't exist yet is upserted (bare — just the code),
+        // not rejected — PMO shouldn't have to call the Armada endpoints before scheduling.
         $headers = $this->externalApiHeaders();
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createUnit($refUnitId);
         $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $newArmadaCode = 'NEW-ARMADA-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->assertSame(0, Customer::where('customer_code', $newArmadaCode)->count());
+
+        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => 'SHP-'.uniqid(),
             'scheduled_date' => '2026-07-25',
-            'armada_code' => 'DOES-NOT-EXIST',
+            'armada_code' => $newArmadaCode,
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+        ], $headers);
+
+        $response->assertStatus(201);
+
+        $customer = Customer::where('customer_code', $newArmadaCode)->first();
+        $this->assertNotNull($customer, 'armada_code must be auto-created when it does not exist yet');
+        $this->assertSame(1, (int) $customer->status);
+        $this->assertNull($customer->customer_pic, 'auto-created armada must be bare — no profile data to invent');
     }
 
     public function test_scheduled_rejects_an_unknown_sku(): void
