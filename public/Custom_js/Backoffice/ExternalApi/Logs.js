@@ -42,6 +42,40 @@ function inisialisasi() {
             $('.dataTables_filter label').prepend('<i class="fa fa-search"></i> ');
         },
     });
+
+    // Detail popup (request/response body) — hanya ada di lingkungan local, lihat
+    // App\ExternalApi\Logging\RequestLogger::write() dan Logs.blade.php.
+    if (externalApiLogIsLocal) {
+        $('#tableExternalApiLog tbody').css('cursor', 'pointer');
+        $('#tableExternalApiLog tbody').on('click', 'tr', function () {
+            var row = table.row(this).data();
+            if (row) {
+                bukaDetailLog(row);
+            }
+        });
+    }
+}
+
+function formatBody(raw) {
+    if (!raw) {
+        return '(kosong)';
+    }
+    try {
+        return JSON.stringify(JSON.parse(raw), null, 2);
+    } catch (e) {
+        return raw;
+    }
+}
+
+function bukaDetailLog(row) {
+    $('#logDetailWaktu').text(row.requested_at ? moment(row.requested_at).format('D MMM YYYY, HH:mm:ss') : '-');
+    $('#logDetailEndpoint').text((row.method || '-') + ' ' + (row.endpoint_raw || row.endpoint || '-'));
+    $('#logDetailStatus').html('<span class="badge ' + statusBadgeClass(row.status_code) + '">' + row.status_code + '</span>');
+    $('#logDetailAplikasi').text((row.application_name || '-') + ' / ' + (row.key_name || '-'));
+    $('#logDetailRequestBody').text(formatBody(row.request_body));
+    $('#logDetailResponseBody').text(formatBody(row.response_body));
+
+    $('#modalLogDetail').modal('show');
 }
 
 function refreshExternalApiLog() {
@@ -68,6 +102,7 @@ function refreshExternalApiLog() {
                 e[i].method_badge = '<span class="badge ' + methodBadgeClass(e[i].method) + '">' + e[i].method + '</span>';
                 e[i].status_badge = '<span class="badge ' + statusBadgeClass(e[i].status_code) + '">' + e[i].status_code + '</span>';
                 e[i].duration_text = e[i].duration_ms + ' ms';
+                e[i].endpoint_raw = e[i].endpoint;
                 e[i].endpoint = '<code>' + e[i].endpoint + '</code>';
                 e[i].user_agent_short = e[i].user_agent
                     ? '<span title="' + e[i].user_agent + '">' + potong(e[i].user_agent, 40) + '</span>'
