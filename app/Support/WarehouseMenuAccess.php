@@ -24,6 +24,9 @@ class WarehouseMenuAccess
      */
     public const NON_SIDEBAR_MODULES = [
         'Safety Stock',
+        // Global company/user settings — tidak tergantung whitelist menu gudang
+        'Pengaturan',
+        'Profil',
     ];
 
     public static function isMainOnlyMenu(string $module): bool
