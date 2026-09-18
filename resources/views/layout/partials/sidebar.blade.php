@@ -1312,11 +1312,11 @@
                     @endphp
 
                     @if ($showSetting)
-                        {{-- <li class="menu-title"><span>Pengaturan</span></li>
+                        <li class="menu-title"><span>Pengaturan</span></li>
                         <li class="submenu">
                             <a href="#"><i class="fe fe-settings"></i> <span> Pengaturan</span> <span
                                 class="menu-arrow"></span></a>
-                            <ul style="display: none;">
+                            <ul>
                                 @if ($canShow('Profil'))
                                     <li><a href="{{ url('profiles') }}"
                                         class="{{ Request::is('profiles') ? 'active' : '' }}">
@@ -1326,10 +1326,10 @@
                                 @if ($canShow('Pengaturan'))
                                     <li><a href="{{ url('settings') }}"
                                         class="{{ Request::is('settings') ? 'active' : '' }}">
-                                        Pengaturan</a></li>
+                                        Pengaturan Perusahaan</a></li>
                                 @endif
                             </ul>
-                        </li> --}}
+                        </li>
                     @endif
                 </ul>
             </div>
