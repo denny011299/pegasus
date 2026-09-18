@@ -337,13 +337,14 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
   /**
    * Kolom "Dibuat Oleh" untuk tabel yang barisnya BISA berasal dari Pusat
    * Sinkronisasi ATAU dari Platform API Eksternal (Produk, Satuan, Armada,
-   * Staf, Sales). Dipakai menggantikan renderCreatedByName pada tabel-tabel
-   * itu saja — tabel lain tetap memakai renderCreatedByName apa adanya.
+   * Staf, Sales, Pengiriman). Dipakai menggantikan renderCreatedByName pada
+   * tabel-tabel itu saja — tabel lain tetap memakai renderCreatedByName apa
+   * adanya.
    *
    * Penandanya adalah kolom id rujukan eksternal pada barisnya
-   * (ref_product_id/ref_unit_id/ref_armada_id/external_ref_id), BUKAN
-   * created_by: created_by kosong juga terjadi pada data lama, jadi tidak
-   * bisa dipakai sebagai bukti. Tiga keadaan:
+   * (ref_product_id/ref_unit_id/ref_armada_id/external_ref_id/
+   * ref_shipment_id), BUKAN created_by: created_by kosong juga terjadi pada
+   * data lama, jadi tidak bisa dipakai sebagai bukti. Tiga keadaan:
    *
    * - Ada id rujukan, tanpa pembuat -> memang dibuat oleh sinkronisasi/API.
    * - Ada id rujukan, ADA pembuat   -> dibuat manusia lalu diadopsi/
@@ -359,7 +360,11 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
    * menyuntingnya manual di sini percuma. Staf/Sales TIDAK ditarik Pusat
    * Sinkronisasi sama sekali — external_ref_id-nya SELALU berasal dari
    * Platform API Eksternal (POST/PUT/PATCH .../master/staff atau
-   * .../master/sales), tidak pernah dari sinkronisasi periodik.
+   * .../master/sales), tidak pernah dari sinkronisasi periodik. Pengiriman
+   * sama: ref_shipment_id SELALU diisi lewat POST /shipments/scheduled atau
+   * /shipments/shipped (arah PUSH dari PMO) — Sinkronisasi Pengiriman
+   * (SyncShipmentsStep) cuma memperbarui STATUS baris yang ref_shipment_id-
+   * nya sudah ada, tidak pernah membuat baris sales_orders baru.
    *
    * external_api_synced_at (customers/armada saja) adalah PENGECUALIAN pada
    * daftar ini: bukan id rujukan, melainkan timestamp yang ditulis
@@ -371,7 +376,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
    * Tanpa kolom terpisah ini, baris armada buatan Platform API Eksternal
    * tidak bisa dibedakan dari baris buatan admin.
    */
-  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id', 'external_ref_id', 'external_api_synced_at'];
+  var PMO_REF_KEYS = ['ref_product_id', 'ref_unit_id', 'ref_armada_id', 'external_ref_id', 'external_api_synced_at', 'ref_shipment_id'];
 
   function pmoRefIdOf(row) {
     if (!row || typeof row !== 'object') {

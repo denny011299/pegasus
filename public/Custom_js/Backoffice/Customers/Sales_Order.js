@@ -1472,9 +1472,9 @@ function inisialisasi() {
                 data: "created_by_name",
                 defaultContent: "-",
                 width: "14%",
-                render: function (data) {
-                    return typeof renderCreatedByName === "function"
-                        ? renderCreatedByName(data)
+                render: function (data, type, row) {
+                    return typeof renderCreatedBySync === "function"
+                        ? renderCreatedBySync(data, row)
                         : data;
                 },
             },

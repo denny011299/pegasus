@@ -225,6 +225,7 @@ class SalesOrder extends Model
             'sales_orders.so_cashier',
             'sales_orders.status',
             'sales_orders.created_at',
+            'sales_orders.ref_shipment_id',
             'c.customer_notes as customer_name',
         ];
         if ($hasCreatedBy) {
@@ -269,6 +270,11 @@ class SalesOrder extends Model
                 'status' => (int) $row->status,
                 'created_by_name' => $hasCreatedBy ? ($row->created_by_name ?: '-') : '-',
                 'acc_by_name' => $hasAccBy ? ($row->acc_by_name ?: '-') : '-',
+                // Penanda "dibuat lewat External API" untuk renderCreatedBySync() —
+                // shipment yang dijadwalkan/dikonfirmasi lewat POST /shipments/scheduled
+                // atau /shipments/shipped SELALU punya ref_shipment_id (lihat
+                // ShipmentController), baris buatan admin biasa selalu null.
+                'ref_shipment_id' => $row->ref_shipment_id,
             ];
             if ($hasRetailWh) {
                 $rid = (int) ($row->retail_warehouse_id ?? 0);
