@@ -10,6 +10,14 @@ final class SyncStatus
     public const NOT_EXECUTED = 'not_executed';
     public const RUNNING = 'running';
     public const SUCCESS = 'success';
+    /**
+     * Sebagian baris berhasil, sebagian gagal (GitHub #184) — beda dari FAILED:
+     * PARTIAL tetap dianggap memenuhi prasyarat langkah berikutnya (lihat
+     * PrerequisiteChecker), supaya operator bisa memilih lanjut memakai baris
+     * yang berhasil tanpa menunggu seluruh baris yang gagal diperbaiki dulu.
+     * FAILED tetap dipakai saat TIDAK ADA satu pun baris yang berhasil.
+     */
+    public const PARTIAL = 'partial';
     public const FAILED = 'failed';
 
     /** @var array<string, string> */
@@ -17,6 +25,7 @@ final class SyncStatus
         self::NOT_EXECUTED => 'Belum Dijalankan',
         self::RUNNING => 'Sedang Berjalan',
         self::SUCCESS => 'Berhasil',
+        self::PARTIAL => 'Sebagian Berhasil',
         self::FAILED => 'Gagal',
     ];
 
@@ -25,6 +34,7 @@ final class SyncStatus
         self::NOT_EXECUTED => 'badge-soft-secondary',
         self::RUNNING => 'badge-soft-info',
         self::SUCCESS => 'badge-soft-success',
+        self::PARTIAL => 'badge-soft-warning',
         self::FAILED => 'badge-soft-danger',
     ];
 

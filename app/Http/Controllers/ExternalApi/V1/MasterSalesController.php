@@ -134,23 +134,75 @@ class MasterSalesController extends Controller
      * PUT /api/external/v1/master/sales/{staff_id}
      *
      * {staff_id} di sini adalah external_ref_id (rujukan sistem pemanggil),
-     * BUKAN id internal Pegasus — lihat catatan kelas. Tidak pernah membuat
-     * sales baru; external_ref_id yang tidak ditemukan (atau ditemukan tapi
-     * bukan sales aktif) selalu dijawab not_found.
+     * BUKAN id internal Pegasus — lihat catatan kelas.
+     *
+     * Upsert: external_ref_id yang belum pernah ada membuat sales baru
+     * (respons 201, role_id = peran Sales — sama seperti POST), dipakai
+     * PMO untuk langsung mengirim data sales yang belum pernah
+     * disinkronkan tanpa harus tahu lebih dulu apakah sales itu sudah ada
+     * di Pegasus. external_ref_id yang sudah ada tapi statusnya nonaktif
+     * DIAKTIFKAN KEMBALI sekaligus diperbarui. external_ref_id yang sudah
+     * dipakai staf yang BUKAN sales (di luar jangkauan endpoint ini) tetap
+     * ditolak sebagai duplicate_ref_id — upsert tidak pernah mengambil
+     * alih baris di luar cakupannya sendiri.
      */
     public function update(Request $request, string $staff_id): JsonResponse
     {
-        $staff = $this->findManagedByRef($staff_id);
+        $data = $this->validateProfilePayload($request);
+        $staff = Staff::where('external_ref_id', $staff_id)->first();
 
         if ($staff === null) {
-            return $this->notFoundByRefError($staff_id);
+            return $this->createFromUpsert($staff_id, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        if (! $this->hasSalesRole($staff)) {
+            return $this->duplicateRefError($staff_id);
+        }
+
+        $staff->status = 1;
         $this->applyPayload($staff, $data);
         $staff->save();
 
         return ApiResponse::success($this->present($staff));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(string $refId, array $data): JsonResponse
+    {
+        $staff = new Staff();
+        $staff->external_ref_id = $refId;
+        $staff->role_id = $this->salesRoleId();
+        $staff->status = 1;
+        $staff->created_by = null;
+        $this->applyPayload($staff, $data);
+
+        try {
+            $staff->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan external_ref_id baru yang sama,
+            // nyaris bersamaan: keduanya sama-sama tidak menemukan baris di
+            // atas, lalu unique index menolak yang kalah cepat. Perlakukan
+            // sebagai upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Staff::where('external_ref_id', $refId)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            if (! $this->hasSalesRole($existing)) {
+                return $this->duplicateRefError($refId);
+            }
+
+            $existing->status = 1;
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($staff), [], 201);
     }
 
     /**
@@ -313,9 +365,11 @@ class MasterSalesController extends Controller
      * sales ini, sama seperti endpoint gudang. Satu-satunya field profil
      * yang wajib adalah nama_depan.
      *
-     * email tetap divalidasi bentuknya kalau memang dikirim, tapi boleh
-     * dikosongkan karena staffs.staff_email nullable dan tidak semua sales
-     * punya alamat surel.
+     * email boleh dikosongkan karena staffs.staff_email nullable dan tidak
+     * semua sales punya alamat surel. Isinya TIDAK divalidasi harus berformat
+     * email: PMO memakai satu field untuk username/email, dan sisi internal
+     * (Staff model) juga tidak memvalidasinya sebagai email — jadi diperlakukan
+     * sebagai varchar bebas di sini juga.
      *
      * @return array<string, array<int, mixed>>
      */
@@ -324,7 +378,7 @@ class MasterSalesController extends Controller
         return [
             'nama_depan' => ['required', 'string', 'max:120'],
             'nama_belakang' => ['nullable', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => ['nullable', 'string', 'max:255'],
             'alamat' => ['nullable', 'string'],
         ];
     }
@@ -355,7 +409,19 @@ class MasterSalesController extends Controller
      */
     private function isManagedSales(Staff $staff): bool
     {
-        if ((int) $staff->status !== 1 || $staff->role_id === null) {
+        return (int) $staff->status === 1 && $this->hasSalesRole($staff);
+    }
+
+    /**
+     * Staf dianggap masuk cakupan endpoint ini kalau perannya cocok dengan
+     * definisi "sales" (nama peran mengandung kata "sales") — terlepas dari
+     * status aktif/nonaktifnya. Dipakai upsert lewat PUT untuk membedakan
+     * "sudah ada tapi nonaktif" (boleh diaktifkan kembali) dari "sudah ada
+     * tapi bukan sales" (di luar jangkauan, ditolak sebagai duplicate_ref_id).
+     */
+    private function hasSalesRole(Staff $staff): bool
+    {
+        if ($staff->role_id === null) {
             return false;
         }
 

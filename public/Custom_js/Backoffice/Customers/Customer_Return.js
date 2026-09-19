@@ -90,12 +90,8 @@
     }
 
     function renderStaff(data, approved) {
-        if (!data || data === "-") return '<span class="text-muted">-</span>';
-        return '<div class="d-flex align-items-center gap-2 csr-staff">' +
-            '<span class="csr-staff-icon' + (approved ? " csr-staff-icon-success" : "") + '">' +
-            '<i class="fe ' + (approved ? "fe-user-check" : "fe-user") + '"></i></span>' +
-            '<span class="fw-semibold text-dark csr-staff-name" title="' + esc(data) + '">' +
-            esc(data) + "</span></div>";
+        if (!data || data === "-") return '<span class="text-muted">—</span>';
+        return '<span class="text-dark" title="' + esc(data) + '">' + esc(data) + "</span>";
     }
 
     function adjustTable() {
@@ -318,7 +314,7 @@
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value;
-                        if (!value || value === "-") return "-";
+                        if (!value || value === "-") return '<span class="text-muted">—</span>';
                         return '<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">' + esc(value) + "</span>";
                     },
                 },
@@ -328,11 +324,9 @@
                     className: "text-start align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value;
-                        if (!value || value === "-") return '<span style="color:#64748b;">-</span>';
+                        if (!value || value === "-") return '<span class="text-muted">—</span>';
                         var dateFmt = moment(value).format("D MMM YYYY");
-                        return '<div style="display:flex;align-items:center;gap:10px;">' +
-                            '<div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;"><i class="fe fe-calendar"></i></div>' +
-                            '<span class="fw-semibold text-dark">' + dateFmt + "</span></div>";
+                        return '<span class="text-nowrap">' + dateFmt + "</span>";
                     },
                 },
                 {
@@ -350,8 +344,8 @@
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value || "";
-                        if (!value) return "-";
-                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;">' + esc(value) + "</span>";
+                        if (!value || value === "-") return '<span class="text-muted">—</span>';
+                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;" title="' + esc(value) + '">' + esc(value) + "</span>";
                     },
                 },
                 {
@@ -360,10 +354,8 @@
                     className: "text-start align-middle",
                     render: function (data, type) {
                         if (type !== "display") return data;
-                        if (!data || data === "-") return '<span style="color:#64748b;">-</span>';
-                        return '<div style="display:flex;align-items:center;gap:10px;">' +
-                            '<div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;"><i class="fe fe-truck"></i></div>' +
-                            '<span class="fw-semibold text-dark">' + esc(data) + "</span></div>";
+                        if (!data || data === "-") return '<span class="text-muted">—</span>';
+                        return '<span class="fw-semibold text-dark">' + esc(data) + "</span>";
                     },
                 },
                 { data: "status", className: "text-center align-middle", width: "120px", render: statusBadge },
@@ -398,7 +390,11 @@
             },
             initComplete: function () {
                 var $filter = $("#tableCustomerReturn_wrapper .dataTables_filter");
-                $filter.addClass("cr-table-filter").appendTo($(".search-input").first());
+                if (!$filter.length) {
+                    $filter = $(".dataTables_filter").last();
+                }
+                $filter.appendTo("#tableSearchReturn");
+                $filter.appendTo(".search-input");
                 if (!$filter.find("label .fa-search").length) {
                     $filter.find("label").prepend('<i class="fa fa-search"></i> ');
                 }

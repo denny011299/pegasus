@@ -2,6 +2,10 @@
 
 namespace App\Synchronization\Steps\ProductFlow;
 
+use App\Synchronization\Pmo\PmoApi;
+use App\Synchronization\Pmo\PmoException;
+use App\Synchronization\Pmo\PmoResponse;
+use App\Synchronization\Pmo\PmoSnapshot;
 use App\Synchronization\Support\MatchResult;
 use App\Synchronization\Support\ReferenceMatcher;
 use App\Synchronization\SyncStepResult;
@@ -11,11 +15,22 @@ use Illuminate\Support\Facades\DB;
 /**
  * Langkah 1 — Sinkronisasi Satuan (tabel `units`).
  *
- * PMO tidak menyediakan endpoint satuan terpisah (`/getUnits` tidak pernah
- * ada — dikonfirmasi 2026-08-20); sumbernya adalah `items[].units[]` pada
- * `/getProducts`, diagregasi lewat ProductFlowStep::units(). Konsekuensinya:
- * unit_short_name dan status aktif per satuan tidak pernah dikirim PMO —
- * lihat penanganannya masing-masing di bawah.
+ * Sumber utama sejak GitHub #184 (2026-09-18): PMO's own `/getUnits`
+ * (App\Synchronization\Pmo\PmoApi::getUnits()) — endpoint satuan
+ * berdiri sendiri yang sebelumnya tidak ada (dikonfirmasi 2026-08-20).
+ * Baris dari sana membawa unit_short_name dan is_active SUNGGUHAN, bukan
+ * kosong seperti sumber cadangan di bawah.
+ *
+ * Kalau /getUnits gagal (status 4xx/5xx, koneksi putus, JSON rusak — apa
+ * pun yang melempar PmoException, bukan cuma kode status HTTP tertentu),
+ * langkah ini JATUH KE SUMBER CADANGAN: `items[].units[]` pada
+ * `/getProducts`, diagregasi lewat ProductFlowStep::units() (satu-satunya
+ * sumber yang ada sebelum GitHub #184). Konsekuensinya kalau memakai
+ * cadangan: unit_short_name dan status aktif per satuan tidak pernah
+ * terkirim (PMO tidak menaruhnya di situ) — lihat penanganannya masing-
+ * masing di bawah. Kegagalan ini dicatat lewat SyncStepResult::addNotice()
+ * ("Catatan" pada wizard) supaya operator tahu sumber mana yang benar-benar
+ * dipakai, bukan diam-diam berpindah tanpa jejak.
  *
  * Akar seluruh alur: products.unit_id, products.product_unit,
  * product_variants.unit_id, product_relations.pr_unit_id_1/2, dan
@@ -29,8 +44,18 @@ class SyncUnitStep extends ProductFlowStep
     public function handle(): SyncStepResult
     {
         return $this->run(function (SyncStepResult $result) {
-            $snapshot = $this->units();
+            [$snapshot, $usedFallback, $fallbackReason] = $this->loadUnits();
             $result->withDetails($snapshot->details());
+
+            if ($usedFallback) {
+                $result->addNotice(
+                    'PMO /getUnits gagal ('.$fallbackReason.'), memakai sumber cadangan: '
+                    .'satuan diturunkan dari daftar satuan tiap produk pada /getProducts. '
+                    .'unit_short_name dan status aktif tidak ikut diperbarui pada eksekusi ini '
+                    .'karena sumber cadangan tidak membawa keduanya.'
+                );
+                $result->withSourceError($fallbackReason);
+            }
 
             $matcher = (new ReferenceMatcher('units', 'unit_id', 'ref_unit_id', 'unit_name'))->load();
             $now = Carbon::now();
@@ -130,5 +155,35 @@ class SyncUnitStep extends ProductFlowStep
 
             $result->finish('Sinkronisasi satuan selesai.');
         });
+    }
+
+    /**
+     * Coba /getUnits lebih dulu; PmoException apa pun dari sana (status 4xx/5xx, koneksi putus,
+     * payload rusak) jatuh ke sumber cadangan (agregasi items[].units[] dari /getProducts) alih-
+     * alih menggagalkan seluruh langkah — endpoint satuan PMO masih baru (GitHub #184), jadi
+     * langkah ini sengaja tidak bergantung penuh padanya dulu.
+     *
+     * @return array{0: PmoSnapshot, 1: bool, 2: ?string}
+     */
+    private function loadUnits(): array
+    {
+        try {
+            $response = PmoApi::getUnits();
+
+            return [$this->snapshotFromResponse($response), false, null];
+        } catch (PmoException $e) {
+            return [$this->units(), true, $e->getMessage()];
+        }
+    }
+
+    private function snapshotFromResponse(PmoResponse $response): PmoSnapshot
+    {
+        return new PmoSnapshot(
+            rows: $response->rows,
+            meta: $response->meta,
+            fetchedAt: Carbon::now(),
+            url: $response->url,
+            justFetched: true,
+        );
     }
 }

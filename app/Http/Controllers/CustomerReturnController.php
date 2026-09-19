@@ -330,28 +330,38 @@ class CustomerReturnController extends Controller
 
         $bundle = $this->resolveBundle($docKey, false);
         if ($bundle) {
-            $whIds = collect();
+            // Domain-aware: supply cek opname Bahan; product cek opname Produk.
             if ($bundle['supply']) {
-                $whIds = $whIds->merge(
-                    CustomerSupplyReturnDetail::where('return_id', $bundle['supply']->return_id)
-                        ->where('status', 1)
-                        ->pluck('warehouse_id')
+                $supplyWh = CustomerSupplyReturnDetail::where('return_id', $bundle['supply']->return_id)
+                    ->where('status', 1)
+                    ->pluck('warehouse_id');
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+                    $supplyWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
                 );
+                if ($softBlock !== null) {
+                    return response()->json([
+                        'success' => false,
+                        'header' => 'Stock Opname',
+                        'message' => $softBlock,
+                    ], 422);
+                }
             }
             if ($bundle['product']) {
-                $whIds = $whIds->merge(
-                    CustomerProductReturnDetail::where('return_id', $bundle['product']->return_id)
-                        ->where('status', 1)
-                        ->pluck('warehouse_id')
+                $productWh = CustomerProductReturnDetail::where('return_id', $bundle['product']->return_id)
+                    ->where('status', 1)
+                    ->pluck('warehouse_id');
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+                    $productWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
                 );
-            }
-            $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseAnyDomainBlocked($whIds);
-            if ($softBlock !== null) {
-                return response()->json([
-                    'success' => false,
-                    'header' => 'Stock Opname',
-                    'message' => $softBlock,
-                ], 422);
+                if ($softBlock !== null) {
+                    return response()->json([
+                        'success' => false,
+                        'header' => 'Stock Opname',
+                        'message' => $softBlock,
+                    ], 422);
+                }
             }
         }
 

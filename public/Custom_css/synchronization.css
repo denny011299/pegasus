@@ -1,5 +1,16 @@
 /* Pusat Sinkronisasi & Wizard Sinkronisasi */
 
+/*
+ * Tema (style.css) punya aturan global `.accordion .collapsed i { transform: rotate(-90deg) }`
+ * yang dimaksudkan untuk ikon chevron pada accordion lain, tapi ikut menimpa ikon apa pun di
+ * dalam accordion-button — termasuk ikon peringatan pada accordion error sumber PMO ini.
+ * Override supaya ikon peringatan tidak ikut berputar saat accordion tertutup/terbuka; chevron
+ * bawaan Bootstrap (::after) tidak terpengaruh, itu tetap berputar seperti biasa.
+ */
+.sync-source-error-accordion .accordion-button i {
+    transform: none;
+}
+
 .sync-intro {
     background: #f7f8fa;
     border: 1px solid #e8ebee;
@@ -146,6 +157,12 @@
 .sync-stepper li.is-failed .sync-stepper-marker {
     border-color: #e8453c;
     background: #e8453c;
+    color: #fff;
+}
+
+.sync-stepper li.is-partial .sync-stepper-marker {
+    border-color: #b7791f;
+    background: #b7791f;
     color: #fff;
 }
 

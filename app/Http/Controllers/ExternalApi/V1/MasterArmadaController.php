@@ -46,6 +46,17 @@ use Illuminate\Http\Request;
  * Tidak ada konsep "peran" untuk armada (beda dengan sales) — satu-satunya
  * syarat "dikelola" endpoint ini adalah status aktif, sama seperti
  * getCustomer() yang sudah ada.
+ *
+ * customers.external_api_synced_at ditulis (timestamp sekarang) tiap kali
+ * store()/update()/createFromUpsert() menyentuh sebuah baris — BUKAN bagian
+ * dari kontrak API (tidak pernah dibaca dari body, tidak muncul di
+ * present()), murni penanda internal untuk halaman admin (kolom "Dibuat
+ * Oleh" pada Data Armada). Armada tidak punya kolom rujukan PMO yang
+ * ditulis endpoint ini seperti ref_product_id/ref_unit_id/external_ref_id —
+ * customers.ref_armada_id memang ada, tapi HANYA ditulis Pusat Sinkronisasi
+ * (SyncArmadaStep); endpoint ini tidak pernah menerima armada_id numerik
+ * PMO, hanya `code`. Tanpa kolom terpisah ini, baris yang dibuat/diubah
+ * lewat endpoint ini tidak bisa dibedakan dari baris buatan admin.
  */
 class MasterArmadaController extends Controller
 {
@@ -115,6 +126,7 @@ class MasterArmadaController extends Controller
         $customer->customer_code = $code;
         $customer->status = 1;
         $customer->created_by = null;
+        $customer->external_api_synced_at = now();
         $this->applyPayload($customer, $data);
 
         try {
@@ -136,22 +148,65 @@ class MasterArmadaController extends Controller
     /**
      * PUT /api/external/v1/armada/{code}
      *
-     * Tidak pernah membuat armada baru; code yang tidak ditemukan (atau
-     * ditemukan tapi statusnya nonaktif) selalu dijawab not_found.
+     * Upsert: code yang belum pernah ada membuat armada baru (respons 201),
+     * sama seperti POST tapi dengan code dari path, bukan body — dipakai
+     * PMO untuk langsung mengirim data armada yang belum pernah
+     * disinkronkan tanpa harus tahu lebih dulu apakah armada itu sudah ada
+     * di Pegasus. code yang sudah ada tapi statusnya nonaktif DIAKTIFKAN
+     * KEMBALI sekaligus diperbarui (bukan dijawab not_found) — upsert
+     * selalu berujung pada satu baris aktif dengan data terbaru.
      */
     public function update(Request $request, string $code): JsonResponse
     {
-        $customer = $this->findManagedByCode($code);
+        $data = $this->validateProfilePayload($request);
+        $customer = Customer::where('customer_code', $code)->first();
 
         if ($customer === null) {
-            return $this->notFoundError($code);
+            return $this->createFromUpsert($code, $data);
         }
 
-        $data = $this->validateProfilePayload($request);
+        $customer->status = 1;
+        $customer->external_api_synced_at = now();
         $this->applyPayload($customer, $data);
         $customer->save();
 
         return ApiResponse::success($this->present($customer));
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function createFromUpsert(string $code, array $data): JsonResponse
+    {
+        $customer = new Customer();
+        $customer->customer_code = $code;
+        $customer->status = 1;
+        $customer->created_by = null;
+        $customer->external_api_synced_at = now();
+        $this->applyPayload($customer, $data);
+
+        try {
+            $customer->save();
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Dua permintaan PUT dengan code baru yang sama, nyaris
+            // bersamaan: keduanya sama-sama tidak menemukan baris di atas,
+            // lalu unique index menolak yang kalah cepat. Perlakukan sebagai
+            // upsert terhadap baris yang barusan dibuat request lain.
+            $existing = Customer::where('customer_code', $code)->first();
+
+            if ($existing === null) {
+                throw $e;
+            }
+
+            $existing->status = 1;
+            $existing->external_api_synced_at = now();
+            $this->applyPayload($existing, $data);
+            $existing->save();
+
+            return ApiResponse::success($this->present($existing));
+        }
+
+        return ApiResponse::success($this->present($customer), [], 201);
     }
 
     /**
@@ -186,7 +241,7 @@ class MasterArmadaController extends Controller
     private function validateCreatePayload(Request $request): array
     {
         return $request->validate([
-            'code' => ['required', 'string', 'max:10'],
+            'code' => ['required', 'string', 'max:64'],
         ] + $this->profileRules());
     }
 

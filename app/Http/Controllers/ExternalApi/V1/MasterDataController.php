@@ -6,6 +6,7 @@ use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ExternalApi\V1\Concerns\HandlesListQueryParams;
 use App\Models\CashCategory;
+use App\Models\Category;
 use App\Models\WarehouseType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,6 +67,44 @@ class MasterDataController extends Controller
             ],
             searchable: ['cc_name'],
             tieBreaker: 'cc_id',
+        );
+    }
+
+    /**
+     * GET /api/external/v1/master/categories
+     *
+     * GitHub #171: PMO tidak punya konsep category_id internal Pegasus sama
+     * sekali (beda dengan unit_id, yang bisa diresolusi lewat
+     * /master/units begitu satuan tersinkron) — endpoint ini memberi PMO
+     * jalan yang sama untuk meresolusi/menyimpan cache category_id sebelum
+     * memanggil POST/PUT /api/external/v1/produk, yang mewajibkan
+     * category_id menunjuk kategori aktif.
+     *
+     * Hanya baca, sama seperti cash_categories/warehouse_types di
+     * controller ini — tidak ada create/update/delete kategori lewat
+     * External API, kategori tetap dikelola lewat halaman admin.
+     *
+     * Paginasi, urutan (?sort=), dan pencarian (?search=) semuanya opsional
+     * — lihat HandlesListQueryParams. Kunci ?sort= yang sah: id, nama,
+     * created_at, updated_at. ?search= mencari di nama.
+     */
+    public function categories(Request $request): JsonResponse
+    {
+        return $this->respondList(
+            (new Category())->getCategoryForExternalApi(),
+            $request,
+            static fn ($category) => [
+                'id' => (int) $category->category_id,
+                'nama' => (string) $category->category_name,
+            ],
+            sortable: [
+                'id' => 'category_id',
+                'nama' => 'category_name',
+                'created_at' => 'created_at',
+                'updated_at' => 'updated_at',
+            ],
+            searchable: ['category_name'],
+            tieBreaker: 'category_id',
         );
     }
 

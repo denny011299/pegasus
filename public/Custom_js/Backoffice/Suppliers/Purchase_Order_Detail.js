@@ -662,8 +662,13 @@
             },
             method:"post",
             success:function(e){
-                $('.modal').modal("hide");
                 ResetLoadingButton("#btn-delete-retur", "Delete");
+                if (e && typeof e === "object" && e.status == -1) {
+                    $('.modal').modal("hide");
+                    notifikasi('error', e.header || 'Stock Opname', e.message || 'Gagal hapus retur');
+                    return;
+                }
+                $('.modal').modal("hide");
                 refreshRetur();
                 notifikasi('success', "Berhasil Delete", "Berhasil delete retur pembelian");
 

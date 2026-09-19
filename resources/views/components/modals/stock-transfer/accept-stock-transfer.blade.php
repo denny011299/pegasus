@@ -1,8 +1,47 @@
+<style>
+  #accept_stock_transfer.modal {
+    overflow: hidden !important;
+  }
+  #accept_stock_transfer .modal-dialog {
+    height: auto !important;
+    max-height: calc(100dvh - 1rem) !important;
+    margin: 0.5rem auto !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  #accept_stock_transfer .modal-content {
+    height: auto !important;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #accept_stock_transfer form {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #accept_stock_transfer .modal-header,
+  #accept_stock_transfer .modal-footer {
+    flex: 0 0 auto !important;
+  }
+  #accept_stock_transfer .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+  }
+</style>
+
 <div class="modal modal-lg custom-modal fade pg-modal--confirm" id="accept_stock_transfer" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl" style="max-width: min(95vw, 1140px); margin: 0.5rem auto;">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: min(95vw, 1140px); margin: 0.5rem auto;">
       <form action="#" id="formAcceptStockTransfer" class="modal-content d-flex flex-column"
-        style="border-radius: 16px; overflow: hidden; border: none; max-height: 90vh;">
+        style="border-radius: 16px; overflow: hidden; border: none; max-height: calc(100dvh - 1rem);">
 
         {{-- ── HEADER ── --}}
         <div class="modal-header">
@@ -21,7 +60,7 @@
         </div>
 
         {{-- ── ROUTE INFO PANEL ── --}}
-        <div class="border-bottom p-3 p-md-4" style="background:#ffffff;">
+        <div class="border-bottom p-2.5 p-md-4" style="background:#ffffff;">
           <div class="row g-3 align-items-stretch">
 
             {{-- Info Asal --}}
@@ -128,7 +167,7 @@
 
         {{-- ── PRODUCT TABLE ── --}}
         <div class="modal-body p-0 d-flex flex-column" style="flex:1 1 auto;overflow:hidden;">
-          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2.5 border-bottom p-3 px-md-4 py-md-3"
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2.5 border-bottom p-2.5 px-md-4 py-md-3"
             style="background:#f8fafc;">
             <div class="d-flex align-items-center">
               <i class="fe fe-layers text-success me-2" style="font-size:15px;"></i>
@@ -142,7 +181,7 @@
                 style="border-radius:20px; font-size:13px; padding-left:38px; padding-right:16px; height: 38px; border-color:#cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
             </div>
           </div>
-          <div class="table-responsive flex-grow-1" style="min-height:200px;overflow-y:auto;">
+          <div class="table-responsive flex-grow-1" style="min-height:200px;overflow-y:auto;-webkit-overflow-scrolling:touch;overflow-x:auto;">
             <table class="table table-hover mb-0" id="tableAcceptItems" style="font-size:13px; width:100%; min-width: 580px;">
               <thead style="background:#ffffff; border-bottom: 2px solid #e2e8f0; position:sticky; top:0; z-index:2;">
                 <tr>
@@ -172,7 +211,7 @@
         </div>
 
         {{-- ── FOOTER ── --}}
-        <div class="modal-footer pg-modal-footer">
+        <div class="modal-footer pg-modal-footer p-2.5 p-md-3">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
           {{-- Tolak terima: di-hide dulu (jangan hapus) — client belum pakai --}}
           <button type="button" class="btn pg-btn-decline btn-reject-accept-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>

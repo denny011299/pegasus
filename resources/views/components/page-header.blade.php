@@ -40,6 +40,14 @@
                     </li>
                     @endroleCan
                 @endif
+                @if (Route::is(['productionMuat']))
+                    @roleCan('Satuan', 'create')
+                    <li>
+                        <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                            Muat</a>
+                    </li>
+                    @endroleCan
+                @endif
                 @if (Route::is(['variant']))
                     @roleCan('Variasi', 'create')
                     <li>
@@ -201,7 +209,7 @@
                 @if (Route::is(['stockOpname']))
                     @roleCan('Stok Opname Produk', 'create')
                     <li>
-                        <a class="btn btn-primary" href="/detailStockOpname/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                        <a class="btn btn-primary btn-opname-tambah-produk" href="/detailStockOpname/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Stok Opname</a>
                     </li>
                     @endroleCan
@@ -209,7 +217,7 @@
                 @if (Route::is(['stockOpnameBahan']))
                     @roleCan('Stok Opname Bahan Mentah', 'create')
                     <li>
-                        <a class="btn btn-primary" href="/detailStockOpnameBahan/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
+                        <a class="btn btn-primary btn-opname-tambah-bahan" href="/detailStockOpnameBahan/-1" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Stok Opname</a>
                     </li>
                     @endroleCan
@@ -289,6 +297,34 @@
                     <li>
                         <a class="btn btn-primary btnAdd" ><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>
                             Tambah Produksi</a>
+                    </li>
+                    @endroleCan
+                @endif
+                @if (Route::is(['productionPlanning']))
+                    <li>
+                        <a class="btn btn-outline-secondary" id="btn-pp-fullscreen-view"
+                            href="{{ route('productionPlanning.view') }}"
+                            target="_blank"
+                            rel="noopener"
+                            title="Tampilan penuh di tab baru">
+                            <i class="fe fe-maximize-2 me-2" aria-hidden="true"></i>View
+                        </a>
+                    </li>
+                    @roleCan('Produksi', 'create')
+                    <li>
+                        <a class="btn btn-primary btn-pp-create" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Buat Production Planning</a>
+                    </li>
+                    @endroleCan
+                @endif
+                @if (Route::is(['productionPlanning.view']))
+                    <li>
+                        <a class="btn btn-outline-secondary" href="{{ route('productionPlanning') }}">
+                            <i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali
+                        </a>
+                    </li>
+                    @roleCan('Produksi', 'create')
+                    <li>
+                        <a class="btn btn-primary btn-pp-create" href="javascript:void(0);"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Buat Production Planning</a>
                     </li>
                     @endroleCan
                 @endif

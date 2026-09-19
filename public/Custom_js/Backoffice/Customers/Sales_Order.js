@@ -11,11 +11,12 @@ var soFilterState = { date_from: "", date_to: "" };
 var soFilterClearing = false;
 // GitHub #136: select yang HARUS luput dari `$(".form-select").not(...).empty()` tiap kali
 // modal Tambah/Update/Detail Pengiriman dibuka/direset - selain #so_payment/#retail_warehouse_id
-// (bagian form modal itu sendiri), turut ditambahkan select filter status/tipe di kartu filter
-// halaman (#so_filter_status utk tab Pengiriman, #cr_filter_status/#cr_filter_type utk tab
-// Pengembalian) karena sama-sama pakai class .form-select tapi BUKAN bagian modal.
+// (bagian form modal itu sendiri), turut ditambahkan select filter status/tipe/sumber di kartu
+// filter halaman (#so_filter_status/#so_filter_source utk tab Pengiriman, #cr_filter_status/
+// #cr_filter_type utk tab Pengembalian) karena sama-sama pakai class .form-select tapi BUKAN
+// bagian modal.
 var SO_MODAL_FORM_SELECT_KEEP =
-    "#so_payment, #retail_warehouse_id, #so_filter_status, #cr_filter_status, #cr_filter_type";
+    "#so_payment, #retail_warehouse_id, #so_filter_status, #so_filter_source, #cr_filter_status, #cr_filter_type";
 
 function soHasAccess(moduleName, action) {
     return (
@@ -1256,6 +1257,7 @@ function salesOrderAjax(data, callback) {
             date_from: soFilterState.date_from || "",
             date_to: soFilterState.date_to || "",
             status: $("#so_filter_status").val() || "",
+            source: $("#so_filter_source").val() || "",
         }),
         beforeSend: function () {
             setSalesOrderTableLoading(true);
@@ -1472,9 +1474,9 @@ function inisialisasi() {
                 data: "created_by_name",
                 defaultContent: "-",
                 width: "14%",
-                render: function (data) {
-                    return typeof renderCreatedByName === "function"
-                        ? renderCreatedByName(data)
+                render: function (data, type, row) {
+                    return typeof renderCreatedBySync === "function"
+                        ? renderCreatedBySync(data, row)
                         : data;
                 },
             },
@@ -1530,6 +1532,18 @@ function inisialisasi() {
 function refreshSalesOrder() {
     if (!table) return;
     table.ajax.reload(null, false);
+}
+
+/**
+ * Sama seperti refreshSalesOrder(), tapi mengembalikan paginasi ke halaman pertama — dipakai
+ * setiap kali FILTER berubah (tanggal/status/sumber/reset), supaya operator tidak nyasar di
+ * halaman lama yang isinya sudah beda dengan filter baru. refreshSalesOrder() polos (tanpa reset
+ * halaman) tetap dipakai di tempat lain (mis. sesudah aksi ACC/Tolak/simpan satu baris) supaya
+ * baris yang baru disentuh tidak hilang dari pandangan operator.
+ */
+function refreshSalesOrderResetPage() {
+    if (!table) return;
+    table.ajax.reload(null, true);
 }
 
 function initSalesOrderFilters() {
@@ -1592,20 +1606,24 @@ function initSalesOrderFilters() {
                     " — " +
                     picker.endDate.format("DD-MM-YYYY")
             );
-            refreshSalesOrder();
+            refreshSalesOrderResetPage();
         });
         $date.on("cancel.daterangepicker", function () {
             soFilterState.date_from = "";
             soFilterState.date_to = "";
             $(this).val("");
-            refreshSalesOrder();
+            refreshSalesOrderResetPage();
         });
         $date.val("");
     }
 
     $(document).on("change", "#so_filter_status", function () {
         if (soFilterClearing) return;
-        refreshSalesOrder();
+        refreshSalesOrderResetPage();
+    });
+    $(document).on("change", "#so_filter_source", function () {
+        if (soFilterClearing) return;
+        refreshSalesOrderResetPage();
     });
     $(document).on("click", ".btn-clear-so-filter", function (e) {
         e.preventDefault();
@@ -1613,9 +1631,10 @@ function initSalesOrderFilters() {
         soFilterState.date_from = "";
         soFilterState.date_to = "";
         $("#so_filter_status").val("");
+        $("#so_filter_source").val("");
         $("#so_filter_date").val("");
         soFilterClearing = false;
-        refreshSalesOrder();
+        refreshSalesOrderResetPage();
     });
 }
 

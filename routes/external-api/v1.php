@@ -5,6 +5,7 @@ use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
 use App\Http\Controllers\ExternalApi\V1\MasterProductController;
 use App\Http\Controllers\ExternalApi\V1\MasterSalesController;
+use App\Http\Controllers\ExternalApi\V1\MasterStaffController;
 use App\Http\Controllers\ExternalApi\V1\MasterSuppliesController;
 use App\Http\Controllers\ExternalApi\V1\MasterUnitController;
 use App\Http\Controllers\ExternalApi\V1\MasterWarehouseController;
@@ -55,6 +56,12 @@ Route::prefix('master')->name('master.')->group(function () {
 
     Route::get('/cash_categories', [MasterDataController::class, 'cashCategories'])->name('cashCategories');
 
+    // GitHub #171: daftar kategori produk aktif, supaya PMO bisa meresolusi
+    // category_id yang dikirim ke POST/PUT /produk — tidak punya konsep
+    // ref id PMO seperti units, jadi hanya baca (tidak ada create/update/
+    // delete di sini, lihat catatan method MasterDataController::categories()).
+    Route::get('/categories', [MasterDataController::class, 'categories'])->name('categories');
+
     // API-002
     Route::get('/warehouses', [MasterWarehouseController::class, 'index'])->name('warehouses');
     Route::post('/warehouses', [MasterWarehouseController::class, 'store'])->name('warehouses.store');
@@ -72,6 +79,17 @@ Route::prefix('master')->name('master.')->group(function () {
     Route::put('/sales/{staff_id}', [MasterSalesController::class, 'update'])->name('sales.update');
     Route::delete('/sales/{staff_id}', [MasterSalesController::class, 'destroy'])->name('sales.destroy');
     Route::patch('/sales/connect', [MasterSalesController::class, 'connect'])->name('sales.connect');
+
+    // GitHub #177: staf non-Sales tanpa role (PM menyederhanakan lingkupnya
+    // 2026-09-16 — endpoint ini tidak menangani role sama sekali, role_id
+    // staf yang dikelola di sini selalu NULL). {staff_id} pada PUT/DELETE
+    // adalah external_ref_id, sama pola dengan /sales. Lihat catatan kelas
+    // MasterStaffController.
+    Route::get('/staff', [MasterStaffController::class, 'index'])->name('staff');
+    Route::post('/staff', [MasterStaffController::class, 'store'])->name('staff.store');
+    Route::put('/staff/{staff_id}', [MasterStaffController::class, 'update'])->name('staff.update');
+    Route::delete('/staff/{staff_id}', [MasterStaffController::class, 'destroy'])->name('staff.destroy');
+    Route::patch('/staff/connect', [MasterStaffController::class, 'connect'])->name('staff.connect');
 });
 
 /*
@@ -164,7 +182,7 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * Shipment.
  *
  * Modul mengikuti "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md"
- * (API Contract v1): /shipments/scheduled, /shipments/shipped, GET /shipments/{ref_shipment_id},
+ * (API Contract v1): PUT /shipments/scheduled, /shipments/shipped, GET /shipments/{ref_shipment_id},
  * PATCH /shipments/{ref_shipment_id}/change-status, PUT /shipments/{ref_shipment_id}/cancel —
  * modul Shipment lengkap, semua dibangun di sini. Prefix rute PLURAL ("shipments") sesuai
  * dokumen itu, beda dengan nama modul/branch yang singular ("Shipment") — dikonfirmasi pemilik
@@ -172,8 +190,11 @@ Route::prefix('stock')->name('stock.')->group(function () {
  *
  * Tabelnya TETAP sales_orders/sales_order_details (menu admin "Pengiriman"), bukan tabel baru —
  * lihat catatan kelas ShipmentController. scheduled() memakai ulang cek stok yang SAMA PERSIS
- * dengan POST /stock/check lewat Concerns\ChecksStockAvailability. shipped() idempoten lewat
- * ref_shipment_id (beda dengan scheduled() yang menolak duplikat) dan memakai ulang
+ * dengan POST /stock/check lewat Concerns\ChecksStockAvailability. Upsert lewat ref_shipment_id
+ * SELAMA statusnya masih "Dijadwalkan" — sekali statusnya maju (mis. lewat /shipments/shipped
+ * atau change-status), ref_shipment_id yang sama ditolak SHIPMENT_NOT_UPDATABLE, bukan menimpa
+ * baris yang sudah berjalan. shipped() idempoten lewat ref_shipment_id juga, tapi aturannya beda
+ * (lihat docblock shipped()), dan memakai ulang
  * App\Support\SalesOrderApproval::confirm() — logika accSO() yang sama dipakai halaman admin
  * Pengiriman, diekstrak supaya bisa dipakai di sini juga. show() (GET) menemukan baris apa pun
  * dengan ref_shipment_id itu tanpa syarat status. changeStatus() (PATCH) mengubah status
@@ -197,7 +218,7 @@ Route::prefix('stock')->name('stock.')->group(function () {
  * halaman admin sebelum ACC. Lihat catatan kelas ShipmentReturnController.
  */
 Route::prefix('shipments')->name('shipments.')->group(function () {
-    Route::post('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
+    Route::put('/scheduled', [ShipmentController::class, 'scheduled'])->name('scheduled');
     Route::post('/shipped', [ShipmentController::class, 'shipped'])->name('shipped');
     Route::post('/returns', [ShipmentReturnController::class, 'store'])->name('returns');
     Route::get('/{ref_shipment_id}', [ShipmentController::class, 'show'])->name('show');

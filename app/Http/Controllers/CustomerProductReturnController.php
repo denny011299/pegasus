@@ -252,8 +252,10 @@ class CustomerProductReturnController extends Controller
         $warehouseIds = CustomerProductReturnDetail::where('return_id', $returnId)
             ->where('status', 1)
             ->pluck('warehouse_id');
-        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseAnyDomainBlocked(
-            $warehouseIds
+        // Produk jadi: hanya block saat opname Produk open (bukan Opname Bahan).
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
+            $warehouseIds,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
         );
         if ($softBlock !== null) {
             return response()->json([

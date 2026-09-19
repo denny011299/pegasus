@@ -414,6 +414,8 @@ class StockController extends Controller
             // Centang di draft belum punya angka — isi dari stok live, baru hangus/roll-up.
             \App\Support\StockOpname\UseSystemStock::materializeProductFlagsFromLive($sto);
 
+            // QC4: tanggal dokumen = saat diajukan, bukan tanggal saat draft disimpan.
+            $sto->sto_date = now()->toDateString();
             $sto->is_draft = false;
             $sto->save();
 
@@ -1363,6 +1365,8 @@ class StockController extends Controller
         return DB::transaction(function () use ($stob) {
             \App\Support\StockOpname\UseSystemStock::materializeBahanFlagsFromLive($stob);
 
+            // QC4: tanggal dokumen = saat diajukan, bukan tanggal saat draft disimpan.
+            $stob->stob_date = now()->toDateString();
             $stob->is_draft = false;
             $stob->save();
 
@@ -2455,9 +2459,12 @@ class StockController extends Controller
 
         $activeWh = (int) (ProductStock::resolveWarehouseId() ?: Session::get('active_warehouse_id') ?? 0);
 
-        // Soft-block: ACC ditolak kalau opname produk ATAU bahan open di gudang aktif.
+        // Soft-block domain-aware: tipe_return 1 = bahan, selain itu = produk.
         if ($activeWh > 0) {
-            $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyDomainBlocked($activeWh);
+            $domain = ((int) $pi->tipe_return === 1)
+                ? \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+                : \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT;
+            $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked($activeWh, $domain);
             if ($softBlock !== null) {
                 return response()->json([
                     'status' => -1,

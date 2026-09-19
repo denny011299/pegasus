@@ -16,7 +16,7 @@ class MasterSuppliesUpdateDoc extends ApiEndpointDoc
 
     public function title(): string
     {
-        return 'Ubah Bahan';
+        return 'Ubah/Buat Bahan (Upsert)';
     }
 
     public function method(): string
@@ -36,7 +36,7 @@ class MasterSuppliesUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Memperbarui bahan yang ref_supplies_id-nya sudah terhubung. Tidak pernah membuat bahan baru — ref_supplies_id yang tidak ditemukan (atau ditemukan tapi nonaktif) dijawab not_found.';
+        return 'Upsert: mengubah data bahan yang sudah ada, dicari lewat ref_supplies_id (id bahan pada sistem PMO), atau membuat bahan baru dengan ref_supplies_id itu kalau belum pernah ada. Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Bahan yang sudah ada tapi nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui.';
     }
 
     public function pathParameters(): array
@@ -85,7 +85,6 @@ class MasterSuppliesUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'supplies_name kosong, atau supplies_default_unit/salah satu unsur supplies_unit tidak menunjuk satuan yang aktif.'],
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'ref_supplies_id tidak ditemukan, atau bahannya sudah dihapus (DELETE /bahan).'],
         ];
     }
 
@@ -93,7 +92,7 @@ class MasterSuppliesUpdateDoc extends ApiEndpointDoc
     {
         return [
             'ref_supplies_id pada path TIDAK BISA diubah lewat endpoint ini — kirim seluruh field body meski hanya satu yang berubah (bukan partial update).',
-            'Bahan yang sudah dihapus (status nonaktif lewat DELETE /bahan) tidak bisa diubah lewat endpoint ini — dijawab NOT_FOUND, bukan dihidupkan kembali.',
+            'Upsert: ref_supplies_id yang belum pernah ada membuat bahan baru (respons 201) dengan data yang sama seperti dikirim ke POST /bahan. Bahan yang sudah ada tapi nonaktif/sudah dihapus (lewat DELETE /bahan) DIAKTIFKAN KEMBALI sekaligus diperbarui, bukan dijawab NOT_FOUND.',
         ];
     }
 }

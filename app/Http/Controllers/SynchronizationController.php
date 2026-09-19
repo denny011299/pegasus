@@ -87,7 +87,7 @@ class SynchronizationController extends Controller
         }
 
         return response()->json([
-            'ok' => $execution->status === SyncStatus::SUCCESS,
+            'ok' => $this->isOk($execution->status),
             'message' => $execution->message,
             'step' => $syncStep->key,
             'execution' => $execution->toWizardArray(),
@@ -152,7 +152,7 @@ class SynchronizationController extends Controller
         }
 
         return response()->json([
-            'ok' => $execution->status === SyncStatus::SUCCESS,
+            'ok' => $this->isOk($execution->status),
             'message' => $execution->message,
             'step' => $syncStep->key,
             'execution' => $execution->toWizardArray(),
@@ -251,7 +251,9 @@ class SynchronizationController extends Controller
             $unmet = collect($prerequisites)->reject(fn ($row) => $row['satisfied'])->pluck('title')->all();
             $status = $execution?->status ?? SyncStatus::NOT_EXECUTED;
 
-            if ($status === SyncStatus::SUCCESS) {
+            // PARTIAL dihitung "selesai" juga (GitHub #184) — sudah tidak lagi memblokir langkah
+            // berikutnya (lihat PrerequisiteChecker), jadi progres bar seharusnya mencerminkan itu.
+            if ($status === SyncStatus::SUCCESS || $status === SyncStatus::PARTIAL) {
                 $completed++;
             }
 
@@ -278,6 +280,16 @@ class SynchronizationController extends Controller
             'progress' => $total > 0 ? (int) round($completed / $total * 100) : 0,
             'pmo_configured' => $this->pmo->isConfigured(),
         ];
+    }
+
+    /**
+     * PARTIAL dianggap "ok" juga (GitHub #184) — bukan kegagalan yang perlu ditampilkan sebagai
+     * galat merah, cuma sebagian baris yang gagal. Lihat renderExecution() di Wizard.js untuk
+     * gaya tampilan "partial" yang terpisah dari "success"/"failed".
+     */
+    private function isOk(string $status): bool
+    {
+        return in_array($status, [SyncStatus::SUCCESS, SyncStatus::PARTIAL], true);
     }
 
     /**

@@ -68,14 +68,105 @@ class ExternalApiMasterUnitFlowTest extends TestCase
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
     }
 
-    public function test_update_never_creates_a_new_unit_for_an_unknown_ref_unit_id(): void
+    public function test_update_creates_a_new_unit_for_an_unknown_ref_unit_id(): void
     {
         $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 999999);
 
-        $this->putJson('/api/external/v1/master/units/999999999', [
+        $this->putJson('/api/external/v1/master/units/'.$refUnitId, [
             'unit_name' => 'x',
             'unit_short_name' => 'x',
-        ], $headers)->assertStatus(404)->assertJson(['success' => false, 'error' => ['code' => 'NOT_FOUND']]);
+        ], $headers)->assertStatus(201)->assertJson(['success' => true, 'data' => ['ref_unit_id' => $refUnitId]]);
+
+        $this->assertDatabaseHas('units', ['ref_unit_id' => $refUnitId, 'unit_name' => 'x', 'status' => 1]);
+    }
+
+    public function test_update_reactivates_a_soft_deleted_unit(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createManagedUnit($refUnitId);
+        (new Unit())->deleteUnit(['unit_id' => $unit->unit_id]);
+
+        $this->putJson('/api/external/v1/master/units/'.$refUnitId, [
+            'unit_name' => 'Revived',
+            'unit_short_name' => 'RV',
+        ], $headers)->assertStatus(200)->assertJson(['success' => true]);
+
+        $unit->refresh();
+        $this->assertSame(1, (int) $unit->status);
+        $this->assertSame('Revived', $unit->unit_name);
+    }
+
+    public function test_update_adopts_an_unlinked_unit_by_name_when_ref_unit_id_is_unknown(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $name = 'Adoptable Unit '.uniqid();
+        $local = $this->createManagedUnit(null);
+        $local->unit_name = $name;
+        $local->save();
+        $refUnitId = random_int(900000, 999999);
+
+        // Same layered lookup as SyncUnitStep: unknown ref_unit_id first tries a name
+        // match against units that have no ref_unit_id yet, before creating a new row.
+        $this->putJson('/api/external/v1/master/units/'.$refUnitId, [
+            'unit_name' => $name,
+            'unit_short_name' => 'ADP',
+        ], $headers)->assertStatus(200)->assertJson([
+            'success' => true,
+            'data' => ['id' => $local->unit_id, 'ref_unit_id' => $refUnitId, 'unit_short_name' => 'ADP'],
+        ]);
+
+        $local->refresh();
+        $this->assertSame($refUnitId, $local->ref_unit_id);
+        $this->assertSame('ADP', $local->unit_short_name);
+        $this->assertSame(1, (int) $local->status);
+
+        // No second unit row was created for this ref_unit_id.
+        $this->assertSame(1, Unit::where('ref_unit_id', $refUnitId)->count());
+    }
+
+    public function test_update_rejects_an_ambiguous_name_match_when_ref_unit_id_is_unknown(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $name = 'Ambiguous Unit '.uniqid();
+        $first = $this->createManagedUnit(null);
+        $first->unit_name = $name;
+        $first->save();
+        $second = $this->createManagedUnit(null);
+        $second->unit_name = $name;
+        $second->save();
+        $refUnitId = random_int(900000, 999999);
+
+        $response = $this->putJson('/api/external/v1/master/units/'.$refUnitId, [
+            'unit_name' => $name,
+            'unit_short_name' => 'AMB',
+        ], $headers);
+
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'AMBIGUOUS_NAME_MATCH']]);
+        $this->assertNull($first->fresh()->ref_unit_id);
+        $this->assertNull($second->fresh()->ref_unit_id);
+        $this->assertDatabaseMissing('units', ['ref_unit_id' => $refUnitId]);
+    }
+
+    public function test_update_does_not_adopt_a_unit_whose_ref_unit_id_is_already_taken(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $name = 'Already Linked Unit '.uniqid();
+        $alreadyLinked = $this->createManagedUnit(random_int(100000, 199999));
+        $alreadyLinked->unit_name = $name;
+        $alreadyLinked->save();
+        $newRefUnitId = random_int(900000, 999999);
+
+        // $alreadyLinked already has a different ref_unit_id, so it is not adoptable —
+        // a brand new unit must be created instead of touching $alreadyLinked's ref.
+        $this->putJson('/api/external/v1/master/units/'.$newRefUnitId, [
+            'unit_name' => $name,
+            'unit_short_name' => 'NEW',
+        ], $headers)->assertStatus(201);
+
+        $this->assertNotSame($newRefUnitId, $alreadyLinked->fresh()->ref_unit_id);
+        $this->assertDatabaseHas('units', ['ref_unit_id' => $newRefUnitId, 'unit_name' => $name]);
     }
 
     public function test_update_and_delete_use_ref_unit_id_not_the_internal_id(): void
@@ -84,11 +175,14 @@ class ExternalApiMasterUnitFlowTest extends TestCase
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createManagedUnit($refUnitId);
 
-        // Internal unit_id must not work as the path segment.
+        // Internal unit_id must not work as the path segment: it does not match any
+        // ref_unit_id, so upsert creates a brand new unit instead of touching $unit.
         $this->putJson('/api/external/v1/master/units/'.$unit->unit_id, [
             'unit_name' => 'wrong path',
             'unit_short_name' => 'x',
-        ], $headers)->assertStatus(404);
+        ], $headers)->assertStatus(201);
+
+        $this->assertNotSame('wrong path', $unit->fresh()->unit_name);
 
         $this->putJson('/api/external/v1/master/units/'.$refUnitId, [
             'unit_name' => 'Renamed',

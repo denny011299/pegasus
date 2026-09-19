@@ -9,8 +9,11 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Production;
+use App\Models\StockOpname;
+use App\Models\StockOpnameBahan;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
+use Illuminate\Support\Facades\Schema;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -219,5 +222,191 @@ class ProductionCancelRequestFlowTest extends TestCase
         $fx['suppliesStock']->refresh();
         $this->assertSame(4, $fx['productStock']->ps_stock, 'a rejected cancel-approval must not touch stock at all');
         $this->assertSame(self::STARTING_SUPPLIES_STOCK - ($pdQty * self::BOM_DETAIL_QTY), $fx['suppliesStock']->ss_stock);
+    }
+
+    /** QC18: ACC batal produksi harus soft-block saat opname bahan open (mengembalikan stok bahan). */
+    public function test_acc_delete_soft_blocks_when_supplies_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
+
+        $fx = $this->createFixture();
+        $pdQty = 10;
+        $consumed = $pdQty * self::BOM_DETAIL_QTY;
+        $productionId = $this->insertAndApprove($fx, $pdQty);
+
+        $this->post('/deleteProduction', [
+            'production_id' => $productionId,
+            'delete_reason' => 'QC18 cancel while bahan opname open',
+        ])->assertStatus(200);
+
+        $this->openSuppliesOpname();
+
+        $this->post('/accDeleteProduction', ['production_id' => $productionId])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $production = Production::findOrFail($productionId);
+        $this->assertSame(4, (int) $production->status, 'soft-block harus biarkan status tetap menunggu batal');
+
+        $fx['productStock']->refresh();
+        $fx['suppliesStock']->refresh();
+        $this->assertSame((float) $pdQty, (float) $fx['productStock']->ps_stock);
+        $this->assertSame((float) (self::STARTING_SUPPLIES_STOCK - $consumed), (float) $fx['suppliesStock']->ss_stock);
+    }
+
+    private function openSuppliesOpname(): StockOpnameBahan
+    {
+        $stob = new StockOpnameBahan();
+        $stob->stob_code = 'SB' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        $stob->stob_date = now()->toDateString();
+        $stob->warehouse_id = self::WAREHOUSE_ID;
+        $stob->staff_id = (int) (session('user')->staff_id ?? 0);
+        $stob->status = 1;
+        $stob->is_draft = false;
+        if (Schema::hasColumn('stock_opname_bahans', 'is_old_version')) {
+            $stob->is_old_version = false;
+        }
+        $stob->save();
+
+        return $stob;
+    }
+
+    private function openProductOpname(): StockOpname
+    {
+        $sto = new StockOpname();
+        $staffId = (int) (session('user')->staff_id ?? 0);
+        $sto->sto_code = 'SP' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        $sto->sto_date = now()->toDateString();
+        $sto->warehouse_id = self::WAREHOUSE_ID;
+        $sto->staff_id = $staffId;
+        $sto->category_id = 0;
+        $sto->status = 1;
+        $sto->is_draft = false;
+        if (Schema::hasColumn('stock_opnames', 'is_old_version')) {
+            $sto->is_old_version = false;
+        }
+        $sto->created_by = $staffId;
+        $sto->save();
+
+        return $sto;
+    }
+
+    private function insertPending(array $fx, int $pdQty): int
+    {
+        $this->post('/insertProduction', [
+            'production_date' => now()->toDateString(),
+            'production_desc' => 'Soft-block ACC test production',
+            'detail' => json_encode([[
+                'bom_id' => $fx['bom']->bom_id,
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'pd_qty' => $pdQty,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+            'list_bahan' => json_encode([[
+                'supplies_id' => $fx['supplies']->supplies_id,
+                'bom_detail_qty' => self::BOM_DETAIL_QTY,
+                'unit_id' => self::UNIT_ID,
+            ]]),
+        ])->assertStatus(200);
+
+        return (int) Production::orderByDesc('production_id')->firstOrFail()->production_id;
+    }
+
+    /** ACC produksi soft-block saat opname bahan open. */
+    public function test_acc_production_soft_blocks_when_supplies_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
+
+        $fx = $this->createFixture();
+        $productionId = $this->insertPending($fx, 10);
+        $this->openSuppliesOpname();
+
+        $this->post('/accProduction', ['production_id' => $productionId])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $production = Production::findOrFail($productionId);
+        $this->assertSame(1, (int) $production->status, 'soft-block harus biarkan status tetap menunggu ACC');
+
+        $fx['productStock']->refresh();
+        $fx['suppliesStock']->refresh();
+        $this->assertSame(0.0, (float) $fx['productStock']->ps_stock);
+        $this->assertSame((float) self::STARTING_SUPPLIES_STOCK, (float) $fx['suppliesStock']->ss_stock);
+    }
+
+    /** ACC produksi soft-block saat opname produk open. */
+    public function test_acc_production_soft_blocks_when_product_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
+
+        $fx = $this->createFixture();
+        $productionId = $this->insertPending($fx, 10);
+        $this->openProductOpname();
+
+        $this->post('/accProduction', ['production_id' => $productionId])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $production = Production::findOrFail($productionId);
+        $this->assertSame(1, (int) $production->status, 'soft-block harus biarkan status tetap menunggu ACC');
+    }
+
+    /** Ajukan batal soft-block saat opname open. */
+    public function test_delete_production_soft_blocks_when_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
+
+        $fx = $this->createFixture();
+        $productionId = $this->insertAndApprove($fx, 10);
+        $this->openSuppliesOpname();
+
+        $this->post('/deleteProduction', [
+            'production_id' => $productionId,
+            'delete_reason' => 'ajukan batal saat opname open',
+        ])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $production = Production::findOrFail($productionId);
+        $this->assertSame(2, (int) $production->status, 'soft-block harus biarkan status tetap Berhasil');
+    }
+
+    /** Tolak produksi tetap boleh saat opname open (tidak mutasi stok). */
+    public function test_decline_production_still_works_when_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::WAREHOUSE_ID);
+
+        $fx = $this->createFixture();
+        $productionId = $this->insertPending($fx, 10);
+        $this->openSuppliesOpname();
+        $this->openProductOpname();
+
+        $this->post('/declineProduction', ['production_id' => $productionId])
+            ->assertStatus(200);
+
+        $production = Production::findOrFail($productionId);
+        $this->assertSame(3, (int) $production->status, 'tolak harus tetap jalan tanpa soft-block');
+
+        $fx['productStock']->refresh();
+        $fx['suppliesStock']->refresh();
+        $this->assertSame(0.0, (float) $fx['productStock']->ps_stock);
+        $this->assertSame((float) self::STARTING_SUPPLIES_STOCK, (float) $fx['suppliesStock']->ss_stock);
     }
 }

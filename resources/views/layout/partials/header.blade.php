@@ -28,6 +28,8 @@
        ============================================= */
     .custom-premium-header {
         background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 60%, #1e40af 100%) !important;
+        /* Tetap fixed (theme .header) — jangan relative, nanti navbar ikut scroll */
+        position: fixed !important;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255,255,255,0.04) !important;
         height: 60px !important;
@@ -560,17 +562,22 @@
             display: inline-flex !important;
             align-items: center !important;
             justify-content: center !important;
-            width: 32px !important;
-            height: 32px !important;
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            max-width: 34px !important;
+            padding: 0 !important;
             background: #ffffff !important;
             border: 1px solid #e2e8f0 !important;
             border-radius: 8px !important;
-            font-size: 13px !important;
+            font-size: 14px !important;
+            line-height: 1 !important;
             color: #64748b !important;
             transition: all 0.18s ease !important;
             box-shadow: 0 1px 2px rgba(0,0,0,0.04) !important;
             margin: 0 2px;
             cursor: pointer;
+            box-sizing: border-box !important;
         }
         .btn-action-icon:hover {
             color: #2563eb !important;
@@ -730,60 +737,43 @@
             @endforelse
         </ul>
     </div>
-    <style>
-        .warehouse-custom-dropdown .dropdown-menu {
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            padding: 8px;
-            min-width: 240px;
-            margin-top: 6px !important;
+    {{-- Indikator Opname — tengah navbar (hanya saat ada opname open) --}}
+    @php
+        $fabShow = Session::has('user');
+        $fabAny = false;
+        $fabText = 'Opname aktif';
+        $fabHref = url('/stockOpname');
+        if ($fabShow) {
+            $fabWhId = (int) \App\Models\ProductStock::resolveWarehouseId(null);
+            $fabSnap = $fabWhId > 0
+                ? app(\App\Support\StockOpname\OpenOpnameGuard::class)->statusForWarehouse($fabWhId)
+                : ['product' => ['open' => false], 'supplies' => ['open' => false], 'any_open' => false];
+            $fabAny = !empty($fabSnap['any_open']);
+            $fabProduct = !empty($fabSnap['product']['open']);
+            $fabSupplies = !empty($fabSnap['supplies']['open']);
+            if ($fabProduct && !$fabSupplies) {
+                $fabText = 'Opname Produk aktif';
+                $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
+            } elseif ($fabSupplies && !$fabProduct) {
+                $fabText = 'Opname Bahan aktif';
+                $fabHref = $fabSnap['supplies']['url'] ?? url('/stockOpnameBahan');
+            } elseif ($fabAny) {
+                $fabText = 'Opname Produk & Bahan aktif';
+                $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
+            }
         }
-        .warehouse-custom-dropdown .dropdown-menu:not(.show) {
-            display: none !important;
-        }
-        .warehouse-custom-dropdown .dropdown-header {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #94a3b8;
-            padding: 8px 12px 4px;
-        }
-        .warehouse-dropdown-item {
-            padding: 8px 12px;
-            margin-bottom: 2px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 500;
-            color: #475569;
-            border-radius: 8px;
-            transition: all 0.2s ease;
-        }
-        .warehouse-dropdown-item i {
-            font-size: 14px;
-            color: #94a3b8;
-            width: 20px;
-            text-align: center;
-            transition: color 0.2s ease;
-        }
-        .warehouse-dropdown-item:hover {
-            background-color: #f8fafc;
-            color: #0f172a;
-        }
-        .warehouse-dropdown-item:hover i {
-            color: #64748b;
-        }
-        .warehouse-dropdown-item.active {
-            background-color: #eff6ff !important;
-            color: #1d4ed8 !important;
-            font-weight: 600;
-        }
-        .warehouse-dropdown-item.active i {
-            color: #2563eb !important;
-        }
-    </style>
+    @endphp
+    @if ($fabShow)
+    <a href="{{ $fabHref }}" id="opname-open-fab" class="opname-open-fab"
+       title="{{ $fabText }}"
+       aria-hidden="{{ $fabAny ? 'false' : 'true' }}"
+       style="{{ $fabAny ? 'display:inline-flex' : 'display:none' }}">
+      <span class="opname-open-fab-dot" aria-hidden="true"></span>
+      <span class="opname-open-fab-text">{{ $fabText }}</span>
+      <span class="opname-open-fab-short">Opname</span>
+      <span class="opname-open-fab-cta">Lihat <i class="fe fe-arrow-right opname-open-fab-arrow" aria-hidden="true"></i></span>
+    </a>
+    @endif
     <style>
         @media (min-width: 992px) {
             .warehouse-select-container {

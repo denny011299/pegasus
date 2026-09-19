@@ -106,12 +106,12 @@ function restoreTransferOverlayIfNeeded() {
 }
 
 /** Konfirmasi di atas detail ST / accept: hide parent → show konfirmasi; cancel → buka lagi parent. */
-function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, danger, requirePhoto, viewPhotoUrl) {
+function showTransferModalKonfirmasi(text, buttonId, dataId, parentSelector, danger, requirePhoto, viewPhotoUrl, confirmLabel) {
     transferOverlayState.done = false;
     var wasOpen = beginTransferOverlay(parentSelector || "#add_stock_transfer");
     function openConfirm() {
         if (typeof showModalKonfirmasi === "function") {
-            showModalKonfirmasi(text, buttonId, danger);
+            showModalKonfirmasi(text, buttonId, danger, confirmLabel);
         }
         // Harus SETELAH showModalKonfirmasi (button id baru di-assign di situ)
         if (dataId != null && dataId !== "") {
@@ -328,6 +328,7 @@ function transferUnitsFromRaw(raw, opts) {
 
 function renderTransferDraftDefault(raw) {
     // Asal eceran (bukan ke utama): seed retail. Eceran→utama: multi satuan dari pr_unit.
+    // Request/create: satuan dari data produk saja — tanpa query stok.
     var preferRetail = transferSourcePreferRetailOnly();
     var sourceIsMain = selectedTransferWarehouseIsMain("#transfer_from_warehouse_id");
     var packed = transferUnitsFromRaw(raw, { preferRetail: preferRetail });
@@ -336,9 +337,6 @@ function renderTransferDraftDefault(raw) {
 
     if (!packed.units.length) {
         $unit.prop("disabled", true).append('<option value="">Unit produk belum diatur</option>');
-        $("#transfer_stock_available")
-            .text("Unit produk belum diatur")
-            .addClass("text-danger");
         transferDraft.defaultUnitInvalid = true;
         return false;
     }
@@ -355,15 +353,11 @@ function renderTransferDraftDefault(raw) {
 
     var selected = packed.defaultUnit || packed.units[0];
     $unit.prop("disabled", false).val(String(selected.unit_id));
-    // Seed sementara supaya +Tambah bisa dipakai sebelum stok selesai load
     transferDraft.stock = {
         units: packed.units,
         warehouse_is_main: sourceIsMain,
         retail_unit_id: preferRetail ? parseInt(raw.retail_unit, 10) || null : null,
     };
-    $("#transfer_stock_available")
-        .text("Memuat stok...")
-        .removeClass("text-danger");
     return true;
 }
 
@@ -380,11 +374,12 @@ function hasInsufficientStockRows() {
 }
 
 /**
- * Cek stok asal hanya untuk create/edit/kirim (dan approve retail → auto-Kirim).
- * main_request setelah Kirim: approve/terima di penerima — stok asal sudah dipotong, jangan block.
+ * Cek stok asal hanya saat Kirim / approve yang akan potong stok.
+ * Create & edit request: jangan query / gate stok.
  */
+var transferStockGate = false;
 function transferNeedsSourceStockGate() {
-    return !(transferIsMainRequest && !transferCanShip);
+    return transferStockGate === true;
 }
 
 function hasPendingTransferRows() {
@@ -445,7 +440,7 @@ function syncTransferSaveButton() {
             retailUnitValidationPending > 0 ||
             stockValidationPending > 0 ||
             hasMissingRetailUnitRows() ||
-            hasInsufficientStockRows()
+            (transferNeedsSourceStockGate() && hasInsufficientStockRows())
     );
 }
 
@@ -1170,7 +1165,6 @@ function resetTransferDraft(clearProduct) {
         .prop("disabled", true)
         .removeClass("is-invalid")
         .html('<option value="">Pilih produk dahulu</option>');
-    $("#transfer_stock_available").text("Stok tersedia: -").removeClass("text-danger");
     $("#btn_add_transfer_product").prop("disabled", false);
     if (clearProduct !== false && $("#transfer_sku").hasClass("select2-hidden-accessible")) {
         transferDraftSelectGuard = true;
@@ -1187,20 +1181,7 @@ function draftUnitById(unitId) {
 }
 
 function updateTransferDraftAvailable() {
-    var unit = draftUnitById($("#transfer_unit_input").val());
-    if (!unit) {
-        $("#transfer_stock_available").text("Stok tersedia: -");
-        return;
-    }
-    // available_qty = ekuivalen (utama termasuk unpack ancestor); ps_stock = fisik satuan.
-    var available =
-        unit.available_qty != null ? unit.available_qty : unit.ps_stock != null ? unit.ps_stock : 0;
-    $("#transfer_stock_available").text(
-        "Stok tersedia: " +
-            formatTransferQty(available) +
-            " " +
-            transferUnitLabel(unit)
-    );
+    // Create/request: stok tidak ditampilkan / tidak di-query.
 }
 
 function renderTransferDraftStock(stock) {
@@ -1209,7 +1190,6 @@ function renderTransferDraftStock(stock) {
     var defaultUnitId =
         (stock && stock.default_unit_id) || (defaultUnit && defaultUnit.unit_id) || null;
     var sourceIsMain = stock && stock.warehouse_is_main === true;
-    // Lock retail hanya eceran→eceran; eceran→utama pakai units dari API (multi).
     if (
         !sourceIsMain &&
         stock &&
@@ -1238,9 +1218,6 @@ function renderTransferDraftStock(stock) {
     transferDraft.defaultUnitInvalid = false;
     if (!units.length) {
         $unit.prop("disabled", true);
-        $("#transfer_stock_available")
-            .text((stock && stock.message) || "Stok/satuan valid tidak tersedia")
-            .addClass("text-danger");
         transferDraft.defaultUnitInvalid = true;
         return;
     }
@@ -1251,68 +1228,23 @@ function renderTransferDraftStock(stock) {
         }) || units[0];
 
     $unit.prop("disabled", false).val(String(selectedUnit.unit_id));
-    $("#transfer_stock_available").removeClass("text-danger");
-    updateTransferDraftAvailable();
 }
 
 function loadTransferDraftStock(raw, done) {
-    var variantId = parseInt(raw && (raw.product_variant_id || raw.id), 10);
-    var fromId = $("#transfer_from_warehouse_id").val();
-    var toId = $("#transfer_to_warehouse_id").val();
-    var runId = ++transferDraftRun;
+    // Request/create: isi satuan dari data produk saja — tanpa getTransferSourceStock.
     transferDraft.raw = raw;
-    transferDraft.loading = true;
+    transferDraft.loading = false;
     transferDraft.requireDefaultUnit = false;
     var hasUnits = renderTransferDraftDefault(raw);
-    // Jangan disable satuan/+Tambah — satuan sudah dari data produk
     $("#btn_add_transfer_product").prop("disabled", !hasUnits || transferDraft.defaultUnitInvalid);
-
-    if (!variantId || !fromId || !toId || !validateWarehousesDifferent()) {
-        transferDraft.loading = false;
-        $("#transfer_stock_available")
-            .text(!toId ? "Pilih gudang tujuan untuk memeriksa stok" : "Rute gudang tidak valid")
-            .addClass("text-danger");
-        if (typeof done === "function") done(false);
-        return;
+    if (
+        selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") === false &&
+        raw &&
+        !parseInt(raw.retail_unit, 10)
+    ) {
+        prepareRetailUnitForTransfer(raw, true);
     }
-
-    fetchSourceStock(variantId, function (stock) {
-        if (runId !== transferDraftRun) return;
-        transferDraft.loading = false;
-        transferDraft.stock = stock || { units: [] };
-        var prevUnitId = $("#transfer_unit_input").val();
-        renderTransferDraftStock(transferDraft.stock);
-        // Pertahankan satuan yang sudah dipilih user jika masih valid
-        if (
-            prevUnitId &&
-            $("#transfer_unit_input option[value='" + prevUnitId + "']").length
-        ) {
-            $("#transfer_unit_input").val(String(prevUnitId));
-            updateTransferDraftAvailable();
-        }
-        $("#btn_add_transfer_product").prop("disabled", transferDraft.defaultUnitInvalid);
-        if (transferDraft.defaultUnitInvalid) {
-            if (isRetailUnitSetupRequired(stock, raw)) {
-                prepareRetailUnitForTransfer(raw, true, function (ok) {
-                    if (
-                        !ok &&
-                        runId === transferDraftRun &&
-                        typeof toastr !== "undefined"
-                    ) {
-                        toastr.error("", $("#transfer_stock_available").text());
-                    }
-                });
-            } else if (typeof toastr !== "undefined") {
-                toastr.error("", $("#transfer_stock_available").text());
-            }
-        }
-        if (typeof done === "function") {
-            done(
-                !!(stock && stock.units && stock.units.length) &&
-                    !transferDraft.defaultUnitInvalid
-            );
-        }
-    });
+    if (typeof done === "function") done(hasUnits && !transferDraft.defaultUnitInvalid);
 }
 
 function clearTransferWarehouseFieldInvalid($select) {
@@ -1806,8 +1738,12 @@ function transferStockCheckSpinnerHtml() {
 }
 
 function renderTransferStockAsalHtml(item) {
-    if (item && item.stock_loading) {
+    // Create/request: stok tidak di-query. Cek stok baru saat Kirim.
+    if (transferNeedsSourceStockGate() && item && item.stock_loading) {
         return transferStockCheckSpinnerHtml();
+    }
+    if (!transferNeedsSourceStockGate()) {
+        return '<span class="text-muted">—</span>';
     }
     var html = escapeHtml((item && item.stock_text) || "…");
     if (item && item.stock_invalid) {
@@ -1973,9 +1909,14 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
     var rowRun = (item._validation_run || 0) + 1;
     var finished = false;
     item._validation_run = rowRun;
-    item.stock_loading = true;
+    // Request/create: skip query stok + checkTransferStock (cek baru saat Kirim).
+    var needStock = transferNeedsSourceStockGate();
+    item.stock_loading = needStock;
     item.stock_invalid = false;
     item.stock_error = null;
+    if (!needStock) {
+        item.stock_text = "—";
+    }
     if (
         selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") !== false ||
         parseInt(item.retail_unit, 10) > 0
@@ -2021,6 +1962,15 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
 
     function validateMatrix() {
         if (!isCurrent()) {
+            finish();
+            return;
+        }
+        if (!needStock) {
+            item.stock_invalid = false;
+            item.stock_error = null;
+            item.stock_text = "—";
+            rememberTransferRowOkSnapshot(item);
+            clearTransferRowShortageMode(item);
             finish();
             return;
         }
@@ -2160,6 +2110,11 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
         !parseInt(item.retail_unit, 10)
     ) {
         prepareRetailUnitForTransfer(item, true);
+    }
+
+    if (!needStock) {
+        validateRetailUnit();
+        return;
     }
 
     fetchSourceStock(
@@ -2366,6 +2321,19 @@ function validateCurrentTransferMatrix(done, showToast) {
         return;
     }
 
+    // Create/edit request: jangan hit checkTransferStock — cek stok baru saat Kirim.
+    if (!transferNeedsSourceStockGate()) {
+        transferItems.forEach(function (item) {
+            item.stock_invalid = false;
+            item.stock_error = null;
+            item.stock_text = "—";
+            item.stock_loading = false;
+        });
+        refreshTransferItemsTable();
+        if (typeof done === "function") done(true);
+        return;
+    }
+
     var runId = ++stockValidationRun;
     var requestItems = transferItems.map(function (item) {
         return {
@@ -2545,7 +2513,7 @@ function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
             product_variant_name: raw.product_variant_name || "-",
             product_variant_sku: raw.product_variant_sku || "-",
             qty: qty,
-            stock_text: "…",
+            stock_text: "—",
             units: [selectedUnit],
             pr_unit: [selectedUnit],
             unit_id: selectedUnitId,
@@ -2554,8 +2522,8 @@ function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
             retail_unit: raw.retail_unit || null,
             stock_invalid: false,
             stock_error: null,
-            stock_loading: true,
-            _on_shortage: "drop",
+            stock_loading: false,
+            _on_shortage: null,
         });
         existing = transferItems.length - 1;
     } else {
@@ -2563,12 +2531,13 @@ function commitOptimisticTransferProduct(raw, qty, selectedUnit) {
             transferItems[existing].qty,
             10
         ) || 0;
-        transferItems[existing]._on_shortage = "drop";
+        transferItems[existing]._on_shortage = null;
         transferItems[existing].qty =
             (parseInt(transferItems[existing].qty, 10) || 0) + qty;
-        transferItems[existing].stock_loading = true;
+        transferItems[existing].stock_loading = false;
         transferItems[existing].stock_invalid = false;
         transferItems[existing].stock_error = null;
+        transferItems[existing].stock_text = "—";
     }
 
     refreshTransferItemsTable();
@@ -2597,7 +2566,7 @@ function addTransferDraft() {
         return;
     }
     if (transferDraft.loading && !draftUnitById($("#transfer_unit_input").val()) && !transferDefaultUnit(raw)) {
-        if (typeof toastr !== "undefined") toastr.info("", "Sedang memuat satuan/stok produk...");
+        if (typeof toastr !== "undefined") toastr.info("", "Sedang memuat satuan produk...");
         return;
     }
     if (
@@ -2626,7 +2595,7 @@ function addTransferDraft() {
             toastr.error(
                 "",
                 transferDraft.defaultUnitInvalid
-                    ? $("#transfer_stock_available").text() || "Satuan tidak tersedia"
+                    ? "Satuan tidak tersedia"
                     : "Pilih satuan terlebih dahulu"
             );
         }
@@ -3403,14 +3372,26 @@ function fillViewTransferApproval(res) {
     if (qcReq || hasQc) {
         $("#view_qc_wrap").removeClass("d-none");
         $("#lbl_view_qc_by").text(hasQc ? qcName || "-" : "Belum approve");
-        $("#lbl_view_qc_at").text(hasQc ? res.qc_approved_at || "-" : "-");
+        if (hasQc && res.qc_approved_at) {
+            $("#lbl_view_qc_at").text(res.qc_approved_at);
+            $("#view_qc_at_wrap").css("display", "inline-flex");
+        } else {
+            $("#lbl_view_qc_at").text("-");
+            $("#view_qc_at_wrap").css("display", "none");
+        }
     } else {
         $("#view_qc_wrap").addClass("d-none");
     }
     if (opsReq || hasOps) {
         $("#view_ops_wrap").removeClass("d-none");
         $("#lbl_view_ops_by").text(hasOps ? opsName || "-" : "Belum approve");
-        $("#lbl_view_ops_at").text(hasOps ? res.ops_approved_at || "-" : "-");
+        if (hasOps && res.ops_approved_at) {
+            $("#lbl_view_ops_at").text(res.ops_approved_at);
+            $("#view_ops_at_wrap").css("display", "inline-flex");
+        } else {
+            $("#lbl_view_ops_at").text("-");
+            $("#view_ops_at_wrap").css("display", "none");
+        }
     } else {
         $("#view_ops_wrap").addClass("d-none");
     }
@@ -3428,6 +3409,7 @@ $(document).on("click", ".btnViewTransfer", function () {
 
     $("#lbl_view_sender, #lbl_view_from, #lbl_view_date, #lbl_view_receiver, #lbl_view_to, #lbl_view_ship_note, #lbl_view_accept_note").text("-");
     $("#lbl_view_qc_by, #lbl_view_qc_at, #lbl_view_ops_by, #lbl_view_ops_at, #lbl_view_ship_by, #lbl_view_qc_body").text("-");
+    $("#view_qc_at_wrap, #view_ops_at_wrap").css("display", "none");
     $("#lbl_view_person_label").text("Pengirim");
     $("#view_qc_body_wrap").addClass("d-none");
     $("#view_transfer_approval_block").addClass("d-none");
@@ -3610,13 +3592,13 @@ $(document).on("click", ".btn-save-transfer", function () {
         stockValidationPending > 0
     ) {
         if (typeof toastr !== "undefined") {
-            toastr.info("", "Mohon tunggu, stok produk masih divalidasi...");
+            toastr.info("", "Mohon tunggu, data transfer masih divalidasi...");
         }
         return;
     }
-    if (hasInsufficientStockRows()) {
+    if (thenShip && hasInsufficientStockRows()) {
         if (typeof toastr !== "undefined") {
-            toastr.error("", "Perbaiki row merah yang belum valid sebelum menyimpan.");
+            toastr.error("", "Perbaiki row merah yang belum valid sebelum mengirim.");
         }
         return;
     }
@@ -3848,7 +3830,14 @@ $(document).on("click", ".btn-save-transfer", function () {
         });
     }
 
+    // Create/edit request: simpan tanpa cek stok. Simpan+Kirim: cek dulu.
+    if (!thenShip) {
+        setTimeout(doSave, 0);
+        return;
+    }
+    transferStockGate = true;
     validateCurrentTransferMatrix(function (valid) {
+        transferStockGate = false;
         if (!valid) {
             resetSaveBtn();
             return;
@@ -4008,11 +3997,13 @@ function approveStockTransfer(type) {
     }
 
     if (
-        transferNeedsSourceStockGate() &&
+        transferCanShip &&
         typeof validateCurrentTransferMatrix === "function" &&
         transferItems.length
     ) {
+        transferStockGate = true;
         validateCurrentTransferMatrix(function (ok) {
+            transferStockGate = false;
             if (!ok) {
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
                 return;
@@ -4096,7 +4087,10 @@ $(document).on("click", ".btn-reject-transfer", function () {
             "btn-cancel-kirim-stock-transfer",
             id,
             "#add_stock_transfer",
-            true
+            true,
+            false,
+            null,
+            "Cancel Kirim"
         );
         return;
     }
@@ -4248,9 +4242,6 @@ function loadTransferDetailForEdit(id) {
                     opsApproved: res.ops_approved === true || res.ops_approved === 1,
                 }
             );
-            if (transferNeedsSourceStockGate()) {
-                revalidateAllTransferRows(false);
-            }
             snapshotTransferForm();
             setTransferFormLocked(true);
             setTransferModalLoading(false);
@@ -4727,7 +4718,10 @@ $(document).on("click", ".btnCancelKirimTransfer", function () {
         "btn-cancel-kirim-stock-transfer",
         id,
         null,
-        true
+        true,
+        false,
+        null,
+        "Cancel Kirim"
     );
 });
 
@@ -4742,7 +4736,10 @@ $(document).on("click", ".btn-reject-accept-transfer", function () {
         "btn-cancel-kirim-stock-transfer",
         id,
         "#accept_stock_transfer",
-        true
+        true,
+        false,
+        null,
+        "Cancel Kirim"
     );
 });
 
@@ -4765,11 +4762,13 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
             $confirmBtn.data("busy", false);
             ResetLoadingButton(
                 $confirmBtn,
-                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                '<i class="fe fe-check-circle me-1"></i>Cancel Kirim'
             );
             if (!res || res.status != 1) {
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
-                if (typeof toastr !== "undefined") {
+                if (typeof notifikasi === "function" && res && res.header) {
+                    notifikasi("error", res.header, res.message || "Gagal cancel kirim");
+                } else if (typeof toastr !== "undefined") {
                     toastr.error("", (res && res.message) || "Gagal cancel kirim");
                 }
                 return;
@@ -4785,7 +4784,7 @@ $(document).on("click", "#btn-cancel-kirim-stock-transfer", function () {
             $confirmBtn.data("busy", false);
             ResetLoadingButton(
                 $confirmBtn,
-                '<i class="fe fe-check-circle me-1"></i>Konfirmasi'
+                '<i class="fe fe-check-circle me-1"></i>Cancel Kirim'
             );
             if (typeof closeModalConfirm === "function") closeModalConfirm();
             var msg =

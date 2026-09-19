@@ -42,7 +42,7 @@ class MasterArmadaCreateDoc extends ApiEndpointDoc
     public function bodyParameters(): array
     {
         return [
-            ['name' => 'code', 'type' => 'string', 'required' => true, 'description' => 'id universal untuk armada ini, ditentukan sendiri oleh pemanggil (maks. 10 karakter). Wajib belum pernah dipakai pelanggan/armada lain di Pegasus.'],
+            ['name' => 'code', 'type' => 'string', 'required' => true, 'description' => 'id universal untuk armada ini, ditentukan sendiri oleh pemanggil (maks. 64 karakter). Wajib belum pernah dipakai pelanggan/armada lain di Pegasus.'],
             ['name' => 'pic', 'type' => 'string', 'required' => false, 'description' => 'Nama penanggung jawab/pemilik armada (maks. 255 karakter). Boleh dikosongkan.'],
             ['name' => 'pic_phone', 'type' => 'string', 'required' => false, 'description' => 'Nomor telepon penanggung jawab (maks. 50 karakter). Boleh dikosongkan.'],
             ['name' => 'nomor_polisi', 'type' => 'string', 'required' => false, 'description' => 'Nomor polisi kendaraan, mis. "W 9518 PG". Boleh dikosongkan.'],
@@ -88,7 +88,7 @@ class MasterArmadaCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'code kosong/lebih dari 10 karakter, atau salah satu field lain tidak valid.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'code kosong/lebih dari 64 karakter, atau salah satu field lain tidak valid.'],
             ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'code sudah dipakai pelanggan/armada lain (baik yang masih aktif maupun yang sudah dihapus) — pakai PUT untuk memperbarui armada yang sudah ada.'],
         ];
     }

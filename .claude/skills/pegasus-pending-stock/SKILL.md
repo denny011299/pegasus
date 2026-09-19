@@ -28,10 +28,11 @@ description: >-
 
 | Opname | Soft-block |
 |--------|------------|
-| Produk | ST, Produksi, Produk Bermasalah, Pengiriman (ACC+edit setelah ACC), Pengembalian, Safety→stok |
-| Bahan | ST (n/a produk), Produksi, Produk Bermasalah, ACC PO/retur PO, Pengembalian, |
+| Produk | ST (kirim/terima/cancel kirim), Produksi, Produk Bermasalah **produk**, Pengiriman, Pengembalian **produk**, Safety→stok |
+| Bahan | Produksi, Produk Bermasalah **bahan**, ACC PO, tambah/hapus retur PO, Pengembalian **bahan** |
 
-Helper: `messageIfAnyDomainBlocked` / `messageIfAnyWarehouseAnyDomainBlocked` untuk PI + Pengembalian (block di opname produk **atau** bahan).
+Domain-aware: ACC pengembalian / ACC produk bermasalah cek domain sesuai tipe (`DOMAIN_SUPPLIES` vs `DOMAIN_PRODUCT`).  
+`messageIfAnyDomainBlocked` hanya untuk mutasi yang memang menyentuh kedua domain.
 
 ## File inti
 

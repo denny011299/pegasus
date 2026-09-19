@@ -11,11 +11,15 @@
     }
 
     #product-issue-tabs {
+        display: inline-flex !important;
+        flex-direction: row !important;
         flex-wrap: nowrap !important;
         white-space: nowrap !important;
+        max-width: 100%;
     }
     #product-issue-tabs .nav-item {
         flex-shrink: 0;
+        display: inline-flex;
     }
     #product-issue-tabs .nav-link {
         white-space: nowrap !important;

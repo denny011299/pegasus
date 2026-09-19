@@ -14,6 +14,10 @@ class Customer extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    protected $casts = [
+        'external_api_synced_at' => 'datetime',
+    ];
+
     /**
      * Daftar armada untuk External API — lihat catatan kelas
      * MasterArmadaController. Tidak ada konsep "peran" seperti pada sales,

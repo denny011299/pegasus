@@ -203,6 +203,47 @@ class PendingStockQueueWorkflowTest extends TestCase
         $this->assertSame(20.0, (float) $fx['stock']->ps_stock);
     }
 
+    /** QC12: ACC bahan rusak (tipe_return=1) tidak diblok opname produk. */
+    public function test_product_issues_bahan_not_blocked_by_product_opname(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
+
+        $msg = PendingStockSoftBlock::messageIfBlocked(
+            self::MAIN_WAREHOUSE_ID,
+            OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        $this->assertNull($msg, 'opname produk tidak boleh memblok domain bahan');
+    }
+
+    /** QC14: cancel kirim ST diblok saat opname produk open di gudang asal. */
+    public function test_cancel_kirim_soft_blocks_when_product_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $this->openProductOpname(self::MAIN_WAREHOUSE_ID);
+
+        $header = new StockTransfer();
+        $header->transfer_code = 'ST-QC14-' . uniqid();
+        $header->transfer_date = now()->toDateString();
+        $header->from_warehouse_id = self::MAIN_WAREHOUSE_ID;
+        $header->to_warehouse_id = self::OTHER_WAREHOUSE_ID;
+        $header->sender_id = (int) (session('user')->staff_id ?? 0);
+        $header->status = 2;
+        $header->save();
+
+        $this->post('/cancelKirimStockTransfer', ['id' => $header->st_id])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $header->refresh();
+        $this->assertSame(2, (int) $header->status, 'status harus tetap Kirim saat soft-block');
+    }
+
     public function test_soft_block_any_domain_helper(): void
     {
         $this->actingAsSuperAdminStaff();

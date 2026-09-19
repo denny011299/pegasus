@@ -6,11 +6,14 @@
       display: block;
       width: 100%;
       overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
     }
 
+    /* min-width: layar sempit scroll horizontal — jangan table-layout:fixed (kolom hancur di HP) */
     #tb-stock-table {
       width: 100% !important;
-      table-layout: fixed;
+      min-width: 1400px;
+      table-layout: auto !important;
       border-collapse: separate;
       border-spacing: 0;
     }
@@ -71,38 +74,59 @@
 
     #tb-stock-table th:nth-child(1),
     #tb-stock-table td:nth-child(1) {
-      width: 12% !important;
+      width: 140px;
+      min-width: 120px;
       white-space: nowrap;
     }
 
     #tb-stock-table th:nth-child(2),
     #tb-stock-table td:nth-child(2) {
-      width: 16% !important;
-      max-width: 180px;
+      width: 200px;
+      min-width: 160px;
+      max-width: 240px;
       word-break: break-word;
       white-space: normal;
     }
 
+    /* QC3: Stok Real cukup untuk ~3 satuan (checkbox+qty+label) tanpa gepeng */
     #tb-stock-table th:nth-child(3),
     #tb-stock-table td:nth-child(3) {
-      width: 52% !important;
+      min-width: 620px;
+      width: 48%;
     }
 
+    /* QC3: Catatan nyaman, tidak curi ruang Stok Real */
     #tb-stock-table th:nth-child(4),
     #tb-stock-table td:nth-child(4) {
-      width: 20% !important;
+      width: 280px;
+      min-width: 280px;
     }
 
+    #tb-stock-table input.notes {
+      height: 42px !important;
+      border-radius: 8px !important;
+      font-size: 13px !important;
+      border-color: #cbd5e1 !important;
+      min-width: 260px !important;
+      width: 100% !important;
+      max-width: none !important;
+      box-sizing: border-box;
+    }
+
+    /* 1/2/3 satuan: bagi rata full lebar kolom Stok Real */
     #tb-stock-table .rstock {
-      flex-wrap: wrap !important;
+      flex-wrap: nowrap !important;
       display: flex !important;
       width: 100% !important;
-      gap: 8px !important;
+      gap: 10px !important;
+      align-items: stretch;
     }
 
     #tb-stock-table .rstock .unit-qty-group {
-      flex: 1 1 0% !important;
-      min-width: 140px !important;
+      flex: 1 1 0 !important;
+      width: auto !important;
+      min-width: 190px !important;
+      max-width: none !important;
       flex-wrap: nowrap !important;
     }
 
@@ -111,8 +135,9 @@
       font-size: 14px !important;
       font-weight: 500 !important;
       border-color: #cbd5e1 !important;
-      flex: 1 1 0% !important;
-      min-width: 0 !important;
+      flex: 1 1 auto !important;
+      min-width: 72px !important;
+      width: 0 !important;
       border-radius: 0 !important;
     }
 
@@ -125,6 +150,7 @@
       color: #334155 !important;
       padding: 0 10px !important;
       flex: 0 0 auto !important;
+      white-space: nowrap !important;
       border-radius: 0 !important;
     }
 
@@ -157,8 +183,9 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      height: 42px;
-      padding: 0 14px;
+      min-height: 42px;
+      height: auto;
+      padding: 8px 14px;
       font-size: 12.5px;
       font-weight: 600;
       color: #92400e;
@@ -166,7 +193,7 @@
       border: 1px solid #fde68a;
       border-radius: 8px;
       margin: 0;
-      white-space: nowrap;
+      white-space: normal;
       box-shadow: 0 1px 2px rgba(217, 119, 6, 0.05);
     }
 
@@ -189,13 +216,6 @@
       opacity: 0.65;
     }
 
-    #tb-stock-table input.notes {
-      height: 42px !important;
-      border-radius: 8px !important;
-      font-size: 13px !important;
-      border-color: #cbd5e1 !important;
-    }
-
     #tb-stock-table thead,
     #tb-stock-table thead th,
     #tb-stock-table .thead-light th {
@@ -208,6 +228,7 @@
       padding: 16px 18px !important;
       border-bottom: 1px solid #e2e8f0 !important;
       border-top: 0 !important;
+      white-space: nowrap !important;
     }
 
     .invalid {
@@ -355,7 +376,7 @@
               </div>
               <div class="col-12 mt-3">
                 <label class="text-muted mb-2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">Catatan</label>
-                <textarea class="form-control" placeholder="Masukkan catatan stok opname jika ada..." id="catatan" rows="2" style="border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+                <textarea class="form-control" placeholder="Masukkan catatan stok opname jika ada..." id="catatan" rows="4" style="border-radius:8px;font-size:13px;resize:vertical;min-height:96px;"></textarea>
               </div>
             </div>
           </div>
@@ -424,10 +445,10 @@
                 <table class="table table-hover mb-0" id="tb-stock-table">
                   <thead class="thead-light">
                     <tr>
-                      <th class="text-start" style="width:12%;">SKU</th>
-                      <th class="text-start" style="width:16%;">Nama Produk</th>
-                      <th class="text-center" style="width:52%;">Stok Real</th>
-                      <th class="text-start" style="width:20%;">Catatan</th>
+                      <th class="text-start">SKU</th>
+                      <th class="text-start">Nama Produk</th>
+                      <th class="text-center">Stok Real</th>
+                      <th class="text-start">Catatan</th>
                     </tr>
                   </thead>
                   <tbody id="tbStock"></tbody>

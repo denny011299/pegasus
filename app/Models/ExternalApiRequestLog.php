@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Schema;
 
 class ExternalApiRequestLog extends Model
 {
@@ -52,6 +53,17 @@ class ExternalApiRequestLog extends Model
         // Tabel log dimuat penuh ke DataTables sisi klien seperti halaman lain,
         // jadi jumlah baris dibatasi agar halaman tidak berat saat log menumpuk.
         if ($data["limit"]) $result->limit((int) $data["limit"]);
+
+        // request_body/response_body TIDAK PERNAH diisi di luar lingkungan local (lihat
+        // RequestLogger::write()), tapi dijaga tidak ikut terkirim di sini juga — jaring
+        // pengaman kalau suatu saat ada baris lama yang terbawa (mis. APP_ENV berubah setelah
+        // baris tersimpan).
+        if (!app()->environment('local')) {
+            $result->select(array_diff(
+                Schema::getColumnListing((new self())->getTable()),
+                ['request_body', 'response_body']
+            ));
+        }
 
         return $result->get();
     }

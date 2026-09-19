@@ -16,7 +16,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
 
     public function title(): string
     {
-        return 'Ubah Sales';
+        return 'Ubah/Buat Sales (Upsert)';
     }
 
     public function method(): string
@@ -36,7 +36,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mengubah data sales yang sudah ada, dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Tidak pernah membuat sales baru.';
+        return 'Upsert: mengubah data sales yang sudah ada, dicari lewat staff_id (rujukan milik sistem Anda sendiri, bukan id Pegasus), atau membuat sales baru dengan staff_id itu kalau belum pernah ada (peran otomatis Sales, sama seperti POST). Bersifat penggantian penuh — seluruh field body wajib dikirim meski hanya satu yang berubah. Sales yang sudah ada tapi nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui.';
     }
 
     public function pathParameters(): array
@@ -51,7 +51,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
         return [
             ['name' => 'nama_depan', 'type' => 'string', 'required' => true, 'description' => 'Nama depan.'],
             ['name' => 'nama_belakang', 'type' => 'string', 'required' => false, 'description' => 'Nama belakang. Boleh dikosongkan.'],
-            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email. Boleh dikosongkan; kalau dikirim, harus berbentuk alamat email yang sah.'],
+            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email atau username. Boleh dikosongkan; tidak divalidasi harus berformat email (PMO bisa mengirim username di field ini).'],
             ['name' => 'alamat', 'type' => 'string', 'required' => false, 'description' => 'Alamat. Boleh dikosongkan.'],
         ];
     }
@@ -84,8 +84,8 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'NOT_FOUND', 'http_status' => 404, 'message' => 'staff_id (rujukan Anda) tidak ditemukan, atau ditemukan tapi bukan sales aktif (staf berperan lain, atau sales yang sudah dihapus).'],
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
+            ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'staff_id (rujukan Anda) sudah dipakai staf yang BUKAN sales — di luar jangkauan endpoint ini, tidak diambil alih.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. melebihi panjang maksimum).'],
         ];
     }
 
@@ -95,7 +95,7 @@ class MasterSalesUpdateDoc extends ApiEndpointDoc
             'staff_id pada path adalah rujukan milik sistem Anda sendiri (external_ref_id), BUKAN id Pegasus — endpoint yang path parameternya id Pegasus adalah PATCH /master/sales/{id}.',
             'Hanya nama_depan yang wajib diisi, meski hanya satu field yang berubah; email, nama_belakang, dan alamat boleh dikosongkan.',
             'Body selalu dianggap representasi penuh sales ini: email/nama_belakang/alamat yang tidak dikirim disimpan sebagai kosong, bukan mempertahankan nilai lama. Kirim ulang email lama kalau tidak ingin menghapusnya.',
-            'Endpoint ini HANYA boleh menyentuh staf yang berperan Sales (dan aktif) — staff_id yang menunjuk staf lain dijawab NOT_FOUND, bukan diizinkan mengubah data staf itu.',
+            'Upsert: staff_id yang belum pernah ada membuat sales baru (respons 201). staff_id yang sudah ada dan sedang nonaktif/sudah dihapus diaktifkan kembali sekaligus diperbarui. staff_id yang sudah dipakai staf berperan lain (di luar jangkauan endpoint ini) tetap ditolak sebagai DUPLICATE_REF_ID, tidak diambil alih.',
             'kode (staff_code), telepon (staff_phone), dan role tidak dikelola lewat endpoint ini — nilainya tidak berubah walau tidak dikirim.',
         ];
     }

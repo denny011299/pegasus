@@ -255,6 +255,30 @@
                                             </div>
                                         </div>
 
+                                        <div class="sync-source-error d-none mb-3">
+                                            <div class="accordion accordion-flush sync-source-error-accordion"
+                                                id="syncSourceErrorAccordion-{{ $step->key }}">
+                                                <div class="accordion-item">
+                                                    <h2 class="accordion-header"
+                                                        id="syncSourceErrorHeading-{{ $step->key }}">
+                                                        <button class="accordion-button collapsed bg-danger-subtle text-danger"
+                                                            type="button" data-bs-toggle="collapse"
+                                                            data-bs-target="#syncSourceErrorCollapse-{{ $step->key }}"
+                                                            aria-expanded="false"
+                                                            aria-controls="syncSourceErrorCollapse-{{ $step->key }}">
+                                                            <i class="fe fe-alert-triangle me-2"></i>Sumber data utama dari PMO bermasalah — klik untuk lihat detail
+                                                        </button>
+                                                    </h2>
+                                                    <div id="syncSourceErrorCollapse-{{ $step->key }}"
+                                                        class="accordion-collapse collapse"
+                                                        aria-labelledby="syncSourceErrorHeading-{{ $step->key }}">
+                                                        <div class="accordion-body sync-source-error-message text-danger"
+                                                            style="font-size: 13px;"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <div class="sync-notices d-none">
                                             <h6 class="mb-2">Catatan</h6>
                                             <ul class="sync-notice-list"></ul>

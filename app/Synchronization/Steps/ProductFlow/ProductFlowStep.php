@@ -37,13 +37,18 @@ abstract class ProductFlowStep implements SyncStepHandler
 
     /**
      * Daftar satuan unik, diturunkan dari items[].units[] tiap produk pada
-     * potret /getProducts. PMO tidak menyediakan endpoint satuan terpisah
-     * (dikonfirmasi 2026-08-20) — jadi ini bukan pemanggilan PMO lagi,
-     * hanya agregasi atas potret yang sudah ada.
+     * potret /getProducts. SUMBER CADANGAN sejak GitHub #184 (2026-09-18) —
+     * SyncUnitStep memakai PMO's own /getUnits (PmoApi::getUnits()) sebagai
+     * sumber utama sekarang, dan hanya jatuh ke sini kalau endpoint itu
+     * gagal. Sebelum GitHub #184 ini SATU-SATUNYA sumber, karena PMO belum
+     * punya endpoint satuan terpisah (dikonfirmasi 2026-08-20). Tidak
+     * memanggil PMO lagi di sini — murni agregasi atas potret /getProducts
+     * yang sudah ada.
      *
-     * Konsekuensinya: unit_short_name dan status aktif per satuan tidak
-     * pernah dikirim PMO. SyncUnitStep menjaga unit_short_name yang sudah
-     * ada di Pegasus saat pembaruan, dan status baru selalu dianggap aktif.
+     * Konsekuensinya kalau dipakai (jalur cadangan): unit_short_name dan
+     * status aktif per satuan tidak pernah dikirim PMO lewat jalur ini.
+     * SyncUnitStep menjaga unit_short_name yang sudah ada di Pegasus saat
+     * pembaruan, dan status baru selalu dianggap aktif.
      *
      * @throws PmoException
      */

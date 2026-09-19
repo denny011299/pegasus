@@ -107,15 +107,21 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         ]);
     }
 
-    private function itemPayload(string $sku, int $refUnitId, int $qty = 24): array
+    private function itemPayload(string $sku, int $refUnitId, int $qty = 24, ?int $refNotaId = null): array
     {
-        return [
+        $item = [
             'variant_sku' => $sku,
             'qty' => $qty,
             'unit_id' => $refUnitId,
             'product_name' => 'AIR AKI HIKARI',
             'variant_name' => '20 x 400ml',
         ];
+
+        if ($refNotaId !== null) {
+            $item['ref_nota_id'] = $refNotaId;
+        }
+
+        return $item;
     }
 
     public function test_a_request_without_an_api_key_is_rejected(): void
@@ -174,6 +180,64 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->assertSame(76, (int) $stock->ps_stock, 'stock must actually be deducted on shipped()');
     }
 
+    public function test_shipped_stores_the_optional_ref_nota_id_per_item(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        // 16-digit PMO id (oms_order.id), see GitHub #180.
+        $refNotaId = 4328012026102327;
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [$this->itemPayload($fx['sku'], $refUnitId, refNotaId: $refNotaId)],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($refNotaId, (int) $detail->ref_nota_id);
+    }
+
+    public function test_shipped_resolves_a_variant_sku_that_differs_only_in_case(): void
+    {
+        // GitHub #181 — see the equivalent test on /shipments/scheduled for the full explanation.
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $mixedCaseSku = strtolower($fx['sku']);
+        $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armada->customer_code,
+            'items' => [$this->itemPayload($mixedCaseSku, $refUnitId, qty: 7)],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $soId = $response->json('data.shipment_internal_id');
+        $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
+        $this->assertSame($fx['variant']->product_variant_id, $detail->product_variant_id);
+        $this->assertSame(7, (int) $detail->sod_qty);
+
+        $stock->refresh();
+        $this->assertSame(93, (int) $stock->ps_stock);
+    }
+
     public function test_shipped_confirms_an_existing_scheduled_shipment_with_matching_data(): void
     {
         $headers = $this->externalApiHeaders();
@@ -184,7 +248,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $scheduleResponse = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $scheduleResponse = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -226,7 +290,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -266,7 +330,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -309,7 +373,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -438,19 +502,29 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->assertSame(5, (int) $stock->ps_stock, 'nothing must be deducted on a failed confirm');
     }
 
-    public function test_shipped_rejects_an_unknown_armada_code(): void
+    public function test_shipped_auto_creates_an_unknown_armada_code(): void
     {
+        // GitHub #187: armada_code that doesn't exist yet is upserted (bare — just the code),
+        // not rejected — PMO shouldn't have to call the Armada endpoints before shipping.
         $headers = $this->externalApiHeaders();
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createUnit($refUnitId);
         $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $newArmadaCode = 'NEW-ARMADA-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/shipped', [
+        $response = $this->postJson('/api/external/v1/shipments/shipped', [
             'ref_shipment_id' => 'SHP-'.uniqid(),
             'shipment_date' => '2026-07-25',
-            'armada_code' => 'DOES-NOT-EXIST',
+            'armada_code' => $newArmadaCode,
             'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+        ], $headers);
+
+        $response->assertStatus(201);
+
+        $customer = Customer::where('customer_code', $newArmadaCode)->first();
+        $this->assertNotNull($customer, 'armada_code must be auto-created when it does not exist yet');
+        $this->assertSame(1, (int) $customer->status);
     }
 
     public function test_shipped_rejects_an_unknown_variant_sku(): void

@@ -40,6 +40,7 @@ trait ChecksStockAvailability
                 'required', 'integer',
                 Rule::exists('units', 'ref_unit_id')->where('status', 1),
             ],
+            'items.*.ref_nota_id' => ['nullable', 'integer'],
         ];
     }
 
@@ -53,7 +54,7 @@ trait ChecksStockAvailability
      *     items: array<int, array{
      *         sku: string, unit_id: int, requested: int, available: int, shortage: int,
      *         product_id: ?int, product_variant_id: ?int, product_variant_name: ?string,
-     *         internal_unit_id: ?int,
+     *         internal_unit_id: ?int, ref_nota_id: ?int,
      *     }>,
      * }
      */
@@ -66,7 +67,7 @@ trait ChecksStockAvailability
 
         $hasShortage = false;
         $results = array_map(function (array $item) use ($variantsBySku, $unitsByRef, $warehouseId, &$hasShortage) {
-            $variant = $variantsBySku->get($item['sku']);
+            $variant = $variantsBySku->get(mb_strtoupper($item['sku']));
             $unit = $unitsByRef->get((int) $item['unit_id']);
             $requested = (int) $item['qty'];
 
@@ -93,6 +94,7 @@ trait ChecksStockAvailability
                 'product_variant_id' => $variant?->product_variant_id !== null ? (int) $variant->product_variant_id : null,
                 'product_variant_name' => $variant?->product_variant_name,
                 'internal_unit_id' => $unit?->unit_id !== null ? (int) $unit->unit_id : null,
+                'ref_nota_id' => isset($item['ref_nota_id']) ? (int) $item['ref_nota_id'] : null,
             ];
         }, $items);
 
@@ -112,11 +114,20 @@ trait ChecksStockAvailability
      */
     protected function resolveVariantsAndUnits(array $skus, array $refUnitIds): array
     {
+        // product_variant_sku dicocokkan case-INSENSITIVE di sisi database (kolom string bawaan
+        // MySQL collation-nya case-insensitive, dipakai juga oleh Rule::exists() pada
+        // stockItemValidationRules()/validateShippedPayload() di atas) — SKU asli PMO ("HGT160kg")
+        // sering beda huruf besar/kecil dari yang tersimpan di product_variants ("HGT160KG").
+        // keyBy()/get() di bawah adalah pencarian array PHP biasa (CASE-SENSITIVE), jadi kedua sisi
+        // dinormalisasi ke uppercase supaya konsisten dengan hasil Rule::exists() — tanpa ini,
+        // sku yang beda huruf besar/kecil lolos validasi tapi resolve jadi null di sini, lalu
+        // ShipmentController::scheduled()/shipped() lanjut insert dengan product_variant_id null
+        // dan CRASH 500 di NOT NULL constraint (GitHub #181), bukan galat bersih.
         $variantsBySku = ProductVariant::whereIn('product_variant_sku', $skus)
             ->where('status', 1)
             ->orderBy('product_variant_id')
             ->get(['product_variant_id', 'product_id', 'product_variant_sku', 'product_variant_name'])
-            ->keyBy('product_variant_sku');
+            ->keyBy(static fn (ProductVariant $variant) => mb_strtoupper((string) $variant->product_variant_sku));
 
         $unitsByRef = Unit::whereIn('ref_unit_id', $refUnitIds)
             ->where('status', 1)

@@ -179,9 +179,12 @@ class StockOpnameFlowTest extends TestCase
         $this->assertSame($startingStock, $stock->ps_stock, 'a blocked (still-draft) approval must not touch stock');
 
         // Submitting takes it out of draft...
+        $sto->sto_date = now()->subDays(10)->toDateString();
+        $sto->save();
         $this->post('/submitStockOpname', ['sto_id' => $stoId, 'rollup_decision' => 'skip'])->assertStatus(200);
         $sto->refresh();
         $this->assertFalse((bool) $sto->is_draft, 'submitStockOpname must clear is_draft');
+        $this->assertSame(now()->toDateString(), (string) $sto->sto_date, 'QC4: ajukan draft harus set tanggal ke hari ini');
         $this->assertSame(1, (int) $sto->status, 'submitting does not itself change status — it was already pending');
 
         // ...and only now can it actually be approved.

@@ -56,6 +56,7 @@ class SyncExecution extends Model
             'details' => $this->details ?: [],
             'errors' => $this->errors ?: [],
             'notices' => $this->notices ?: [],
+            'source_error' => $this->source_error,
             'executed_by_name' => $this->executed_by
                 ? (Staff::find($this->executed_by)->staff_name ?? '-')
                 : '-',

@@ -22,6 +22,14 @@ class SyncStepResult
     /** @var array<string, mixed> */
     public array $details = [];
 
+    /**
+     * Pesan error PMO mentah di balik sebuah fallback sumber data (mis. /getUnits gagal
+     * jadi langkah ini jatuh ke sumber cadangan) — ditampilkan di wizard sebagai accordion
+     * tertutup terpisah dari `notices`, supaya operator bisa membuka sendiri kalau perlu
+     * tanpa layar dipenuhi teks error di awal.
+     */
+    public ?string $sourceError = null;
+
     public int $processed = 0;
 
     public int $inserted = 0;
@@ -66,10 +74,36 @@ class SyncStepResult
     }
 
     /**
-     * Selesaikan eksekusi: sukses kalau tidak ada baris yang gagal.
+     * Sebagian baris berhasil, sebagian gagal (GitHub #184) — dipakai finish()
+     * di bawah, bukan dipanggil manual dari step manapun.
+     */
+    public function partial(string $message): self
+    {
+        $this->status = SyncStatus::PARTIAL;
+        $this->message = $message;
+
+        return $this->stop();
+    }
+
+    /**
+     * Selesaikan eksekusi:
+     * - tidak ada baris gagal -> SUCCESS.
+     * - ada baris gagal TAPI ada juga yang berhasil (insert/update) -> PARTIAL,
+     *   operator bisa memilih lanjut ke langkah berikutnya memakai baris yang
+     *   berhasil tanpa menunggu baris yang gagal diperbaiki (GitHub #184).
+     * - semua baris gagal, tidak ada satu pun yang berhasil -> FAILED.
      */
     public function finish(?string $successMessage = null): self
     {
+        if ($this->failed > 0 && ($this->inserted + $this->updated) > 0) {
+            return $this->partial(
+                $this->failed.' dari '.$this->processed.' baris gagal disinkronkan, '
+                .($this->inserted + $this->updated).' baris lainnya berhasil dan bisa dilanjutkan '
+                .'ke langkah berikutnya. Perbaiki masalah di atas lalu jalankan ulang langkah ini '
+                .'kapan saja untuk menyinkronkan baris yang gagal.'
+            );
+        }
+
         if ($this->failed > 0) {
             return $this->fail(
                 $this->failed.' dari '.$this->processed.' baris gagal disinkronkan.'
@@ -86,6 +120,13 @@ class SyncStepResult
         } elseif (count($this->errors) === $limit) {
             $this->errors[] = '… daftar dipotong pada '.$limit.' baris. Sisanya ada di storage/logs.';
         }
+
+        return $this;
+    }
+
+    public function withSourceError(string $message): self
+    {
+        $this->sourceError = $message;
 
         return $this;
     }
