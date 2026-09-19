@@ -22,6 +22,14 @@ class SyncStepResult
     /** @var array<string, mixed> */
     public array $details = [];
 
+    /**
+     * Pesan error PMO mentah di balik sebuah fallback sumber data (mis. /getUnits gagal
+     * jadi langkah ini jatuh ke sumber cadangan) — ditampilkan di wizard sebagai accordion
+     * tertutup terpisah dari `notices`, supaya operator bisa membuka sendiri kalau perlu
+     * tanpa layar dipenuhi teks error di awal.
+     */
+    public ?string $sourceError = null;
+
     public int $processed = 0;
 
     public int $inserted = 0;
@@ -112,6 +120,13 @@ class SyncStepResult
         } elseif (count($this->errors) === $limit) {
             $this->errors[] = '… daftar dipotong pada '.$limit.' baris. Sisanya ada di storage/logs.';
         }
+
+        return $this;
+    }
+
+    public function withSourceError(string $message): self
+    {
+        $this->sourceError = $message;
 
         return $this;
     }

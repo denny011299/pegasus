@@ -45,7 +45,7 @@ class MasterStaffCreateDoc extends ApiEndpointDoc
             ['name' => 'staff_id', 'type' => 'string|integer', 'required' => true, 'description' => 'id milik sistem pemanggil sendiri untuk staf ini (BUKAN id Pegasus). Wajib belum pernah dipakai staf lain di Pegasus.'],
             ['name' => 'nama_depan', 'type' => 'string', 'required' => true, 'description' => 'Nama depan.'],
             ['name' => 'nama_belakang', 'type' => 'string', 'required' => false, 'description' => 'Nama belakang. Boleh dikosongkan.'],
-            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email. Boleh dikosongkan; kalau dikirim, harus berbentuk alamat email yang sah.'],
+            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email atau username. Boleh dikosongkan; tidak divalidasi harus berformat email (PMO bisa mengirim username di field ini).'],
             ['name' => 'alamat', 'type' => 'string', 'required' => false, 'description' => 'Alamat. Boleh dikosongkan.'],
         ];
     }
@@ -79,7 +79,7 @@ class MasterStaffCreateDoc extends ApiEndpointDoc
     public function errors(): array
     {
         return [
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'staff_id atau nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'staff_id atau nama_depan kosong, atau salah satu field lain tidak valid (mis. melebihi panjang maksimum).'],
             ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'staff_id sudah dipakai staf lain (baik yang masih aktif maupun yang sudah dihapus lewat DELETE staf) — pakai PUT untuk memperbarui staf yang sudah ada.'],
         ];
     }

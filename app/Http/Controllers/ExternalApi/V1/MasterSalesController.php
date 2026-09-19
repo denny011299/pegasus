@@ -365,9 +365,11 @@ class MasterSalesController extends Controller
      * sales ini, sama seperti endpoint gudang. Satu-satunya field profil
      * yang wajib adalah nama_depan.
      *
-     * email tetap divalidasi bentuknya kalau memang dikirim, tapi boleh
-     * dikosongkan karena staffs.staff_email nullable dan tidak semua sales
-     * punya alamat surel.
+     * email boleh dikosongkan karena staffs.staff_email nullable dan tidak
+     * semua sales punya alamat surel. Isinya TIDAK divalidasi harus berformat
+     * email: PMO memakai satu field untuk username/email, dan sisi internal
+     * (Staff model) juga tidak memvalidasinya sebagai email — jadi diperlakukan
+     * sebagai varchar bebas di sini juga.
      *
      * @return array<string, array<int, mixed>>
      */
@@ -376,7 +378,7 @@ class MasterSalesController extends Controller
         return [
             'nama_depan' => ['required', 'string', 'max:120'],
             'nama_belakang' => ['nullable', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255'],
+            'email' => ['nullable', 'string', 'max:255'],
             'alamat' => ['nullable', 'string'],
         ];
     }
