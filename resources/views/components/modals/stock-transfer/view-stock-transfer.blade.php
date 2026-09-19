@@ -1,45 +1,51 @@
 <div class="modal modal-lg custom-modal fade pg-modal--form" id="view_stock_transfer" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: 90vw;">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable" style="max-width: min(95vw, 1140px); margin: 0.5rem auto;">
       <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;">
 
         {{-- ── HEADER ── --}}
-        <div class="modal-header d-flex align-items-center justify-content-between">
-          <div class="d-flex align-items-center gap-3">
-            <div class="pg-modal-icon">
-              <i class="fe fe-file-text"></i>
+        <div class="modal-header d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2.5 p-3 p-sm-4">
+          <div class="d-flex align-items-center justify-content-between flex-grow-1">
+            <div class="d-flex align-items-center gap-2 gap-sm-3">
+              <div class="pg-modal-icon flex-shrink-0" style="width:38px;height:38px;">
+                <i class="fe fe-file-text" style="font-size:17px;"></i>
+              </div>
+              <div>
+                <h5 class="mb-0 fw-bold modal-title text-white" style="font-size:15px;letter-spacing:.2px;">Detail Stock Transfer</h5>
+                <small style="color: rgba(255,255,255,0.75);font-size:12px;">Informasi lengkap pengiriman stok</small>
+              </div>
             </div>
-            <div>
-              <h5 class="mb-0 fw-bold modal-title text-white">Detail Stock Transfer</h5>
-              <small style="color: rgba(255,255,255,0.75);">Informasi lengkap pengiriman stok</small>
-            </div>
+            {{-- Tombol Close di Layar Mobile/Tablet (selalu terlihat di kanan atas) --}}
+            <button type="button" class="btn-close btn-close-white d-lg-none ms-2 flex-shrink-0" data-bs-dismiss="modal"
+              aria-label="Close"></button>
           </div>
 
-          {{-- Approval & Acc Kirim di Header Kanan --}}
-          <div class="d-flex align-items-center gap-2 ms-auto me-3 d-none" id="view_transfer_approval_block">
-            <div class="d-flex align-items-center gap-1.5 text-white" id="view_qc_wrap"
-              style="background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; border: 1px solid rgba(255,255,255,0.25);">
-              <i class="fe fe-check" style="color:#86efac; font-size:12px;"></i>
+          {{-- Approval & Acc Kirim di Header: di desktop mengalir ke kanan, di mobile baris baru membungkus rapi tanpa terpotong --}}
+          <div class="d-flex align-items-center flex-wrap gap-2 ms-lg-auto me-lg-3 mt-1 mt-lg-0 d-none" id="view_transfer_approval_block">
+            <div class="d-inline-flex align-items-center gap-1.5 text-white flex-nowrap" id="view_qc_wrap"
+              style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; flex-shrink: 0;">
+              <i class="fe fe-check" style="color:#86efac; font-size:11px;"></i>
               <span style="opacity: 0.85;">QC:</span>
               <span class="fw-bold" id="lbl_view_qc_by">-</span>
-              <span style="opacity: 0.7; font-size: 10.5px;" id="lbl_view_qc_at">-</span>
+              <span style="opacity: 0.75; font-size: 10px;" id="lbl_view_qc_at">-</span>
             </div>
-            <div class="d-flex align-items-center gap-1.5 text-white" id="view_ops_wrap"
-              style="background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; border: 1px solid rgba(255,255,255,0.25);">
-              <i class="fe fe-check-circle" style="color:#86efac; font-size:12px;"></i>
+            <div class="d-inline-flex align-items-center gap-1.5 text-white flex-nowrap" id="view_ops_wrap"
+              style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; flex-shrink: 0;">
+              <i class="fe fe-check-circle" style="color:#86efac; font-size:11px;"></i>
               <span style="opacity: 0.85;">Kepala Ops:</span>
               <span class="fw-bold" id="lbl_view_ops_by">-</span>
-              <span style="opacity: 0.7; font-size: 10.5px;" id="lbl_view_ops_at">-</span>
+              <span style="opacity: 0.75; font-size: 10px;" id="lbl_view_ops_at">-</span>
             </div>
-            <div class="d-flex align-items-center gap-1.5 text-white" id="view_ship_wrap"
-              style="background: rgba(255,255,255,0.15); padding: 5px 12px; border-radius: 20px; font-size: 11.5px; border: 1px solid rgba(255,255,255,0.25);">
-              <i class="fe fe-truck" style="color:#93c5fd; font-size:12px;"></i>
+            <div class="d-inline-flex align-items-center gap-1.5 text-white flex-nowrap" id="view_ship_wrap"
+              style="background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 20px; font-size: 11px; border: 1px solid rgba(255,255,255,0.25); white-space: nowrap; flex-shrink: 0;">
+              <i class="fe fe-truck" style="color:#93c5fd; font-size:11px;"></i>
               <span style="opacity: 0.85;">Acc Kirim:</span>
               <span class="fw-bold" id="lbl_view_ship_by">-</span>
             </div>
           </div>
 
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+          {{-- Tombol Close di Layar Desktop --}}
+          <button type="button" class="btn-close btn-close-white d-none d-lg-block flex-shrink-0" data-bs-dismiss="modal"
             aria-label="Close"></button>
         </div>
         <div class="modal-body p-0 position-relative flex-grow-1"
@@ -50,12 +56,12 @@
               aria-hidden="true"></div>
             <div class="text-muted fw-semibold" style="font-size:13px;">Memuat detail transfer…</div>
           </div>
-          <div class="border-bottom" style="background:#ffffff; padding: 14px 24px 10px 24px;">
-            <div class="row g-3 align-items-start">
+          <div class="border-bottom p-3 p-md-4" style="background:#ffffff;">
+            <div class="row g-3 align-items-stretch">
               {{-- Section Asal --}}
-              <div class="col-md-5">
-                <div class="d-flex flex-column h-100">
-                  <div class="d-flex align-items-center gap-2 mb-1.5">
+              <div class="col-12 col-md-5">
+                <div class="p-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
+                  <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                       style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bfdbfe;">
                       <i class="fe fe-log-out" style="font-size:11px;"></i>
@@ -67,7 +73,7 @@
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-box me-1 text-primary"></i> Gudang Asal</div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_from" style="font-size:12.5px;">-</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_from" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
                     <div class="col-6">
                       <div class="text-muted"
@@ -75,7 +81,7 @@
                         <i class="fe fe-user me-1 text-primary" id="icon_view_person"></i>
                         <span id="lbl_view_person_label">Pengirim</span>
                       </div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_sender" style="font-size:12.5px;">-</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_sender" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
 
                     <div class="col-12" id="view-date-slot">
@@ -105,12 +111,13 @@
                 </div>
               </div>
 
-              {{-- Arrow --}}
-              <div class="col-md-2 d-flex align-items-center justify-content-center" style="padding-top: 40px;">
-                <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
+              {{-- Arrow: di mobile panah ke bawah & ringkas, di desktop panah ke kanan --}}
+              <div class="col-12 col-md-2 d-flex align-items-center justify-content-center my-2 my-md-0 pt-0 pt-md-4">
+                <div class="d-flex flex-row flex-md-column align-items-center gap-2 gap-md-1">
                   <div
-                    style="width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 8px rgba(59,130,246,.25);">
-                    <i class="fe fe-arrow-right text-white" style="font-size:14px;"></i>
+                    style="width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 2px 6px rgba(59,130,246,.25);">
+                    <i class="fe fe-arrow-down d-md-none text-white" style="font-size:13px;"></i>
+                    <i class="fe fe-arrow-right d-none d-md-inline text-white" style="font-size:13px;"></i>
                   </div>
                   <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-2 py-0.5"
                     style="font-size:9.5px;font-weight:700;letter-spacing:.4px;">TRANSFER</span>
@@ -118,9 +125,9 @@
               </div>
 
               {{-- Section Tujuan --}}
-              <div class="col-md-5">
-                <div class="d-flex flex-column h-100">
-                  <div class="d-flex align-items-center gap-2 mb-1.5">
+              <div class="col-12 col-md-5">
+                <div class="p-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
+                  <div class="d-flex align-items-center gap-2 mb-2">
                     <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                       style="background:#f0fdf4; color:#15803d; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bbf7d0;">
                       <i class="fe fe-log-in" style="font-size:11px;"></i>
@@ -132,13 +139,13 @@
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-box me-1 text-success"></i> Gudang Tujuan</div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_to" style="font-size:12.5px;">-</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_to" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
                     <div class="col-6">
                       <div class="text-muted"
                         style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:#475569;"><i
                           class="fe fe-user-check me-1 text-success"></i> Penerima</div>
-                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_receiver" style="font-size:12.5px;">-</div>
+                      <div class="fw-bold text-dark mt-0.5" id="lbl_view_receiver" style="font-size:12.5px;word-break:break-word;">-</div>
                     </div>
                     <div class="col-12">
                       <div class="text-muted"
@@ -153,32 +160,29 @@
           </div>
 
 
-          <div class="d-flex justify-content-between align-items-center border-bottom"
-            style="background:#f8fafc; padding: 14px 28px;">
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2.5 border-bottom p-3 px-md-4 py-md-3"
+            style="background:#f8fafc;">
             <div class="d-flex align-items-center">
               <i class="fe fe-layers text-primary me-2" style="font-size:15px;"></i>
               <span class="fw-bold text-dark" style="font-size:12px; text-transform:uppercase; letter-spacing:.5px;">Produk yang di Transfer</span>
             </div>
-            <div style="width: 420px; max-width: 100%; position:relative;">
+            <div class="w-100" style="max-width: 380px; position:relative;">
               <i class="fe fe-search position-absolute"
                 style="top:50%; transform:translateY(-50%); left:14px; color:#94a3b8; font-size:14px;"></i>
               <input type="text" class="form-control" id="search_view_barcode"
                 placeholder="Ketik nama, SKU, atau scan barcode..."
-                style="border-radius:20px; font-size:13px; padding-left:38px; padding-right:16px; height: 40px; border-color:#cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
+                style="border-radius:20px; font-size:13px; padding-left:38px; padding-right:16px; height: 38px; border-color:#cbd5e1; box-shadow: 0 1px 2px rgba(0,0,0,0.03);">
             </div>
           </div>
-          <div class="table-responsive" style="min-height: 240px; background:#fff;">
-            <table class="table table-center table-hover mb-0" id="tableViewItems" style="font-size:13px; width:100%; table-layout:fixed;">
+          <div class="table-responsive" style="min-height: 200px; background:#fff;">
+            <table class="table table-center table-hover mb-0" id="tableViewItems" style="font-size:13px; width:100%; min-width: 580px;">
               <thead style="background:#ffffff; border-bottom: 2px solid #e2e8f0;">
                 <tr>
-                  <th style="width: 25%;">Produk</th>
-                  <th style="width: 15%;">Varian</th>
-                  <th style="width: 14%;">SKU</th>
-                  <th style="width: 130px;" class="text-center">Kirim (Asli)</th>
-                  {{-- Qty Terima & Selisih: tidak dipakai di view detail (retail = qty kirim) --}}
-                  {{-- <th style="width: 130px;" class="text-center">Qty Terima</th> --}}
-                  <th style="width: 140px;" class="text-center">Hasil Konversi</th>
-                  {{-- <th style="width: 110px;" class="text-center">Selisih</th> --}}
+                  <th style="width: 26%;">Produk</th>
+                  <th style="width: 18%;">Varian</th>
+                  <th style="width: 18%;">SKU</th>
+                  <th style="width: 19%;" class="text-center">Kirim (Asli)</th>
+                  <th style="width: 19%;" class="text-center">Hasil Konversi</th>
                 </tr>
               </thead>
               <tbody>
@@ -191,7 +195,7 @@
           </div>
         </div>
         {{-- ── FOOTER: Tutup ── --}}
-        <div class="modal-footer pg-modal-footer">
+        <div class="modal-footer pg-modal-footer p-3 px-md-4 py-md-3">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Tutup</button>
         </div>
 
