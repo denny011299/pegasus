@@ -92,6 +92,9 @@ final class ErrorCatalog
     /** PATCH /shipments/{ref_shipment_id}/change-status — label valid, tapi transisi dari status shipment saat ini ke label itu belum diizinkan. */
     public const INVALID_STATUS_TRANSITION = 'INVALID_STATUS_TRANSITION';
 
+    /** PUT /shipments/scheduled — ref_shipment_id sudah ada tapi statusnya bukan lagi "Dijadwalkan", sehingga tidak bisa diperbarui lewat endpoint ini. */
+    public const SHIPMENT_NOT_UPDATABLE = 'SHIPMENT_NOT_UPDATABLE';
+
     /**
      * Pesan baku bertemplate, placeholder `<nama>` diganti lewat $params.
      *
@@ -101,6 +104,7 @@ final class ErrorCatalog
         self::SHIPMENT_NOT_FOUND => 'Pengiriman dengan referensi <ref_shipment_id> tidak ditemukan.',
         self::INVALID_STATUS => 'Field status tidak valid. Hanya menerima [<valid_statuses>]',
         self::INVALID_STATUS_TRANSITION => 'Perubahan status dari "<current_status>" ke "<target_status>" belum diizinkan. Transisi yang didukung saat ini: <allowed_transitions>.',
+        self::SHIPMENT_NOT_UPDATABLE => 'Pengiriman dengan referensi <ref_shipment_id> sudah berstatus "<current_status>" dan tidak bisa diperbarui lagi lewat endpoint ini — hanya bisa selama masih berstatus "Dijadwalkan".',
     ];
 
     /**

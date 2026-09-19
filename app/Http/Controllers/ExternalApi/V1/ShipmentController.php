@@ -72,17 +72,34 @@ class ShipmentController extends Controller
     ];
 
     /**
-     * POST /api/external/v1/shipments/scheduled
+     * PUT /api/external/v1/shipments/scheduled
      *
-     * Menjadwalkan satu shipment: menjalankan cek stok yang SAMA PERSIS dengan
-     * POST /stock/check (lewat Concerns\ChecksStockAvailability, dipakai bersama di sini),
-     * lalu membuat satu baris sales_orders berstatus "Dijadwalkan" (4) beserta detailnya —
-     * SELALU dibuat, baik ada shortage atau tidak (dikonfirmasi pemilik produk: penjadwalan
-     * tetap jalan, pemotongan stok sungguhan baru terjadi nanti di /shipments/shipped).
+     * Upsert lewat ref_shipment_id SAJA (bukan lewat path, bodinya sendiri yang menyimpan
+     * ref_shipment_id — sama seperti dulu):
+     *   - ref_shipment_id BELUM ada -> membuat satu baris sales_orders baru berstatus
+     *     "Dijadwalkan" (4) beserta detailnya, respons 201 — perilakunya sama seperti dulu.
+     *   - ref_shipment_id SUDAH ada DAN statusnya MASIH "Dijadwalkan" (4) -> baris yang sama
+     *     diperbarui (armada_code/scheduled_date/items seluruhnya ditimpa dengan yang dikirim
+     *     permintaan ini, sama seperti /shipments/shipped mem-force timpa), respons 200. Baris
+     *     detail lama yang tidak ada lagi di items[] baru dinonaktifkan (status = 0), sama
+     *     pola replaceDetails() pada shipped().
+     *   - ref_shipment_id SUDAH ada TAPI statusnya SUDAH MAJU (Confirmed/Sudah Terkirim/
+     *     Dibatalkan, dsb — bukan "Dijadwalkan" lagi) -> DITOLAK SHIPMENT_NOT_UPDATABLE (409),
+     *     TIDAK menimpa apa pun. Begitu shipment sudah diproses lewat /shipments/shipped atau
+     *     change-status, riwayatnya tidak lagi bisa ditulis ulang lewat endpoint penjadwalan ini.
+     *
+     * Cek stok SAMA PERSIS dengan POST /stock/check (lewat Concerns\ChecksStockAvailability,
+     * dipakai bersama di sini), dijalankan ulang setiap kali endpoint ini dipanggil (baik create
+     * maupun update) — item yang dikirim pada permintaan update BUKAN digabung dengan item lama,
+     * melainkan MENGGANTI seluruhnya, sama seperti replaceDetails() pada shipped(). Shipment
+     * TETAP dijadwalkan/diperbarui, baik ada shortage atau tidak (dikonfirmasi pemilik produk:
+     * penjadwalan tetap jalan, pemotongan stok sungguhan baru terjadi nanti di /shipments/shipped).
      *
      * Kalau ADA item yang shortage-nya > 0 DAN auto_create_shortage_doc: true, satu dokumen
-     * App\Models\ShipmentShortageDocument dibuat sebagai catatan untuk staf gudang/pembelian —
-     * bukan syarat, tidak menghalangi shipment tetap dijadwalkan.
+     * App\Models\ShipmentShortageDocument BARU dibuat sebagai catatan untuk staf gudang/
+     * pembelian (baik pada create maupun update — tidak menimpa/menggabung dokumen sebelumnya
+     * kalau permintaan ini adalah update) — bukan syarat, tidak menghalangi shipment tetap
+     * dijadwalkan.
      *
      * armada_code merujuk customers.customer_code — sama seperti universal id pada modul Data
      * Armada (lihat MasterArmadaController), BUKAN kolom baru. Diterjemahkan ke
@@ -90,15 +107,10 @@ class ShipmentController extends Controller
      * insertSalesOrder()).
      *
      * armada_code yang belum ada di Pegasus DI-UPSERT OTOMATIS (GitHub #187) lewat
-     * App\Support\ArmadaUpsert — bukan ditolak VALIDATION_FAILED seperti sebelumnya. Baris yang
-     * dibuat SENGAJA minim (cuma customer_code, tanpa PIC/No Pol/telepon/saldo — payload
-     * shipment tidak membawa data itu); kalau armada itu nanti disinkronkan sungguhan lewat
-     * Pusat Sinkronisasi atau PUT /armada/{code}, baris yang sama diperbarui seperti biasa.
-     *
-
-     * ref_shipment_id UNIK di sales_orders — permintaan kedua dengan ref_shipment_id yang sama
-     * ditolak duplicate_ref_id (dikonfirmasi pemilik produk: BUKAN idempotent replay seperti
-     * /payments/cash — pemanggil wajib pakai ref_shipment_id baru per percobaan).
+     * App\Support\ArmadaUpsert — bukan ditolak VALIDATION_FAILED. Baris yang dibuat SENGAJA minim
+     * (cuma customer_code, tanpa PIC/No Pol/telepon/saldo — payload shipment tidak membawa data
+     * itu); kalau armada itu nanti disinkronkan sungguhan lewat Pusat Sinkronisasi atau
+     * PUT /armada/{code}, baris yang sama diperbarui seperti biasa.
      *
      * Endpoint ini tidak menerima gudang_id — cek stok maupun sales_order_details.warehouse_id
      * selalu memakai gudang utama lewat ProductStock::resolveWarehouseId(null), sama seperti
@@ -121,8 +133,10 @@ class ShipmentController extends Controller
             'auto_create_shortage_doc' => ['nullable', 'boolean'],
         ], $this->stockItemValidationRules()));
 
-        if (SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->exists()) {
-            return $this->duplicateRefShipmentError($data['ref_shipment_id']);
+        $so = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
+
+        if ($so !== null && (int) $so->status !== self::STATUS_SCHEDULED) {
+            return $this->shipmentNotUpdatableError($data['ref_shipment_id'], (int) $so->status);
         }
 
         $warehouseId = ProductStock::resolveWarehouseId(null);
@@ -149,65 +163,22 @@ class ShipmentController extends Controller
         ))))->pluck('product_name', 'product_id');
 
         try {
-            $result = DB::transaction(function () use ($data, $check, $customer, $warehouseId, $autoCreateShortageDoc, $productNames) {
-                $so = (new SalesOrder())->insertSalesOrder([
-                    'so_customer' => (string) $customer->customer_id,
-                    'so_date' => $data['scheduled_date'],
-                    'so_total' => 0,
-                    'so_img' => json_encode([]),
-                ]);
-                $so->ref_shipment_id = $data['ref_shipment_id'];
-                $so->status = self::STATUS_SCHEDULED;
-                $so->save();
-
-                foreach ($check['items'] as $item) {
-                    (new SalesOrderDetail())->insertSalesOrderDetail([
-                        'so_id' => $so->so_id,
-                        'product_variant_id' => $item['product_variant_id'],
-                        'product_name' => $productNames->get($item['product_id']) ?? '-',
-                        'product_variant_name' => $item['product_variant_name'] ?? '',
-                        'product_variant_sku' => $item['sku'],
-                        'unit_id' => $item['internal_unit_id'],
-                        'warehouse_id' => $warehouseId,
-                        'ref_nota_id' => $item['ref_nota_id'],
-                        'product_variant_price' => 0,
-                        'so_qty' => $item['requested'],
-                        'so_subtotal' => 0,
-                    ]);
-                }
-
-                $shortageDocNumber = null;
-                if ($autoCreateShortageDoc && $check['has_shortage']) {
-                    $shortageItems = array_values(array_map(
-                        static fn (array $item) => [
-                            'sku' => $item['sku'],
-                            'unit_id' => $item['unit_id'],
-                            'requested' => $item['requested'],
-                            'available' => $item['available'],
-                            'shortage' => $item['shortage'],
-                        ],
-                        array_filter($check['items'], static fn (array $item) => $item['shortage'] > 0),
-                    ));
-
-                    $doc = ShipmentShortageDocument::createForShortage(
-                        $so->so_id,
-                        $data['ref_shipment_id'],
-                        $shortageItems,
-                        null,
-                    );
-                    $shortageDocNumber = $doc->doc_number;
-                }
-
-                return ['so' => $so, 'shortage_doc_number' => $shortageDocNumber];
-            });
+            $result = DB::transaction(fn () => $this->saveScheduledSo($so, $data, $check, $customer, $warehouseId, $autoCreateShortageDoc, $productNames));
         } catch (QueryException $e) {
-            // Dua permintaan dengan ref_shipment_id baru yang sama, nyaris bersamaan: keduanya
-            // sama-sama tidak menemukan baris di atas, lalu unique index menolak yang kalah cepat.
-            if (SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->exists()) {
-                return $this->duplicateRefShipmentError($data['ref_shipment_id']);
+            // Dua permintaan PUT dengan ref_shipment_id BARU yang sama, nyaris bersamaan:
+            // keduanya sama-sama tidak menemukan baris di atas, lalu unique index menolak yang
+            // kalah cepat. Perlakukan sebagai upsert terhadap baris yang barusan dibuat request
+            // lain, sama seperti race yang sudah ditangani shipped()/MasterStaffController dkk.
+            $raced = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
+            if ($raced === null) {
+                throw $e;
             }
 
-            throw $e;
+            if ((int) $raced->status !== self::STATUS_SCHEDULED) {
+                return $this->shipmentNotUpdatableError($data['ref_shipment_id'], (int) $raced->status);
+            }
+
+            $result = DB::transaction(fn () => $this->saveScheduledSo($raced, $data, $check, $customer, $warehouseId, $autoCreateShortageDoc, $productNames));
         }
 
         $ipm = $this->ipmStatusFields($result['so']);
@@ -218,7 +189,82 @@ class ShipmentController extends Controller
         ], $ipm, [
             'shortage_doc_created' => $result['shortage_doc_number'] !== null,
             'shortage_doc_number' => $result['shortage_doc_number'],
-        ]), [], 201);
+        ]), [], $result['http_status']);
+    }
+
+    /**
+     * Simpan (buat atau perbarui) baris sales_orders untuk scheduled() — $so null berarti create,
+     * $so terisi berarti update baris yang sudah dipastikan pemanggil masih berstatus
+     * "Dijadwalkan". Detail selalu diganti seluruhnya (bukan digabung) lewat pola yang sama
+     * dengan ShipmentController::replaceDetails() pada shipped().
+     *
+     * @param  \Illuminate\Support\Collection<int, string>  $productNames
+     * @return array{so: SalesOrder, shortage_doc_number: ?string, http_status: int}
+     */
+    private function saveScheduledSo(?SalesOrder $so, array $data, array $check, Customer $customer, int $warehouseId, bool $autoCreateShortageDoc, $productNames): array
+    {
+        $isCreate = $so === null;
+
+        if ($isCreate) {
+            $so = (new SalesOrder())->insertSalesOrder([
+                'so_customer' => (string) $customer->customer_id,
+                'so_date' => $data['scheduled_date'],
+                'so_total' => 0,
+                'so_img' => json_encode([]),
+            ]);
+            $so->ref_shipment_id = $data['ref_shipment_id'];
+            $so->status = self::STATUS_SCHEDULED;
+            $so->save();
+        } else {
+            $so->so_customer = (string) $customer->customer_id;
+            $so->so_date = $data['scheduled_date'];
+            $so->save();
+        }
+
+        $keptIds = [];
+        foreach ($check['items'] as $item) {
+            $keptIds[] = (new SalesOrderDetail())->insertSalesOrderDetail([
+                'so_id' => $so->so_id,
+                'product_variant_id' => $item['product_variant_id'],
+                'product_name' => $productNames->get($item['product_id']) ?? '-',
+                'product_variant_name' => $item['product_variant_name'] ?? '',
+                'product_variant_sku' => $item['sku'],
+                'unit_id' => $item['internal_unit_id'],
+                'warehouse_id' => $warehouseId,
+                'ref_nota_id' => $item['ref_nota_id'],
+                'product_variant_price' => 0,
+                'so_qty' => $item['requested'],
+                'so_subtotal' => 0,
+            ]);
+        }
+
+        if (! $isCreate) {
+            SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $keptIds)->update(['status' => 0]);
+        }
+
+        $shortageDocNumber = null;
+        if ($autoCreateShortageDoc && $check['has_shortage']) {
+            $shortageItems = array_values(array_map(
+                static fn (array $item) => [
+                    'sku' => $item['sku'],
+                    'unit_id' => $item['unit_id'],
+                    'requested' => $item['requested'],
+                    'available' => $item['available'],
+                    'shortage' => $item['shortage'],
+                ],
+                array_filter($check['items'], static fn (array $item) => $item['shortage'] > 0),
+            ));
+
+            $doc = ShipmentShortageDocument::createForShortage(
+                $so->so_id,
+                $data['ref_shipment_id'],
+                $shortageItems,
+                null,
+            );
+            $shortageDocNumber = $doc->doc_number;
+        }
+
+        return ['so' => $so, 'shortage_doc_number' => $shortageDocNumber, 'http_status' => $isCreate ? 201 : 200];
     }
 
     /**
@@ -780,12 +826,18 @@ class ShipmentController extends Controller
         ];
     }
 
-    private function duplicateRefShipmentError(string $refShipmentId): JsonResponse
+    private function shipmentNotUpdatableError(string $refShipmentId, int $currentStatus): JsonResponse
     {
+        $currentIpm = ShipmentStatusMap::fromInternal($currentStatus);
+        $currentLabel = $currentIpm !== null ? ShipmentStatusMap::label($currentIpm) : 'Tidak diketahui';
+
         return ApiResponse::error(
-            ErrorCatalog::DUPLICATE_REF_ID,
-            'ref_shipment_id '.$refShipmentId.' sudah dipakai shipment lain.',
-            422,
+            ErrorCatalog::SHIPMENT_NOT_UPDATABLE,
+            ErrorCatalog::message(ErrorCatalog::SHIPMENT_NOT_UPDATABLE, [
+                'ref_shipment_id' => $refShipmentId,
+                'current_status' => $currentLabel,
+            ]),
+            409,
         );
     }
 }
