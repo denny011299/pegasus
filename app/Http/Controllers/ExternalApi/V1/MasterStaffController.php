@@ -320,7 +320,9 @@ class MasterStaffController extends Controller
         return [
             'nama_depan' => ['required', 'string', 'max:120'],
             'nama_belakang' => ['nullable', 'string', 'max:120'],
-            'email' => ['nullable', 'email', 'max:255'],
+            // PMO memakai satu field untuk username/email, jadi tidak divalidasi harus
+            // berformat email — sisi internal (Staff model) juga tidak memvalidasinya.
+            'email' => ['nullable', 'string', 'max:255'],
             'alamat' => ['nullable', 'string'],
         ];
     }

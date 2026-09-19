@@ -51,7 +51,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
         return [
             ['name' => 'nama_depan', 'type' => 'string', 'required' => true, 'description' => 'Nama depan.'],
             ['name' => 'nama_belakang', 'type' => 'string', 'required' => false, 'description' => 'Nama belakang. Boleh dikosongkan.'],
-            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email. Boleh dikosongkan; kalau dikirim, harus berbentuk alamat email yang sah.'],
+            ['name' => 'email', 'type' => 'string', 'required' => false, 'description' => 'Alamat email atau username. Boleh dikosongkan; tidak divalidasi harus berformat email (PMO bisa mengirim username di field ini).'],
             ['name' => 'alamat', 'type' => 'string', 'required' => false, 'description' => 'Alamat. Boleh dikosongkan.'],
         ];
     }
@@ -85,7 +85,7 @@ class MasterStaffUpdateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'DUPLICATE_REF_ID', 'http_status' => 422, 'message' => 'staff_id (rujukan Anda) sudah dipakai staf BERPERAN (mis. Sales) — di luar jangkauan endpoint ini, tidak diambil alih.'],
-            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. email dikirim tapi bukan alamat email yang sah).'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422, 'message' => 'nama_depan kosong, atau salah satu field lain tidak valid (mis. melebihi panjang maksimum).'],
         ];
     }
 
