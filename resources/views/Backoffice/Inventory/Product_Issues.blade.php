@@ -10,6 +10,17 @@
         margin-top: 10px !important;
     }
 
+    #product-issue-tabs {
+        flex-wrap: nowrap !important;
+        white-space: nowrap !important;
+    }
+    #product-issue-tabs .nav-item {
+        flex-shrink: 0;
+    }
+    #product-issue-tabs .nav-link {
+        white-space: nowrap !important;
+    }
+
     #add-product-issues .form-select {
         width: 100% !important;
         max-width: 100% !important;
@@ -125,16 +136,16 @@
                         @endslot
                 @endcomponent
             <!-- /Page Header -->
-            <div class="d-flex mb-2">
-                <ul class="nav custom-premium-tabs" id="product-issue-tabs" role="tablist">
-                    <li class="nav-item nav-jenis" tipe="1" role="presentation">
-                        <button class="nav-link nav-jenis active d-flex align-items-center gap-2" tipe="1" id="return-tab" data-bs-toggle="tab"
+            <div class="d-flex mb-2 overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+                <ul class="nav custom-premium-tabs flex-nowrap" id="product-issue-tabs" role="tablist">
+                    <li class="nav-item nav-jenis flex-shrink-0" tipe="1" role="presentation">
+                        <button class="nav-link nav-jenis active d-flex align-items-center gap-2 text-nowrap" tipe="1" id="return-tab" data-bs-toggle="tab"
                             data-bs-target="#return" type="button" role="tab">
                             <i class="fe fe-corner-down-left"></i> Dikembalikan
                         </button>
                     </li>
-                    <li class="nav-item nav-jenis" tipe="2" role="presentation">
-                        <button class="nav-link nav-jenis d-flex align-items-center gap-2" tipe="2" id="damage-tab" data-bs-toggle="tab"
+                    <li class="nav-item nav-jenis flex-shrink-0" tipe="2" role="presentation">
+                        <button class="nav-link nav-jenis d-flex align-items-center gap-2 text-nowrap" tipe="2" id="damage-tab" data-bs-toggle="tab"
                             data-bs-target="#damage" type="button" role="tab">
                             <i class="fe fe-alert-triangle"></i> Rusak / Hangus
                         </button>
