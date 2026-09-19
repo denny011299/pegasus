@@ -58,6 +58,7 @@ class SyncExecutionRepository
             'details' => $result->details ?: null,
             'errors' => $result->errors ?: null,
             'notices' => $result->notices ?: null,
+            'source_error' => $result->sourceError,
             'executed_by' => $user->staff_id ?? null,
         ]);
     }

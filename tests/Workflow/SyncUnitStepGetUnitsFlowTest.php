@@ -87,6 +87,8 @@ class SyncUnitStepGetUnitsFlowTest extends TestCase
         $this->assertSame(SyncStatus::SUCCESS, $result->status);
         $this->assertNotEmpty($result->notices, 'a fallback must be reported as a notice, not happen silently');
         $this->assertStringContainsString('/getUnits gagal', $result->notices[0]);
+        $this->assertNotNull($result->sourceError, 'the raw PMO failure reason must be captured for the wizard accordion');
+        $this->assertStringNotContainsString('/getUnits gagal', $result->sourceError, 'sourceError should hold the raw reason only, not the full notice sentence');
 
         $unit = DB::table('units')->where('ref_unit_id', 501)->first();
         $this->assertNotNull($unit);

@@ -54,6 +54,7 @@ class SyncUnitStep extends ProductFlowStep
                     .'unit_short_name dan status aktif tidak ikut diperbarui pada eksekusi ini '
                     .'karena sumber cadangan tidak membawa keduanya.'
                 );
+                $result->withSourceError($fallbackReason);
             }
 
             $matcher = (new ReferenceMatcher('units', 'unit_id', 'ref_unit_id', 'unit_name'))->load();

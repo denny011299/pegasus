@@ -567,6 +567,21 @@
             detailsBox.addClass('d-none');
         }
 
+        var sourceErrorBox = pane.find('.sync-source-error');
+        var sourceErrorToggle = sourceErrorBox.find('.accordion-button');
+        var sourceErrorCollapse = sourceErrorBox.find('.accordion-collapse');
+        sourceErrorBox.find('.sync-source-error-message').text(execution.source_error || '');
+        // Selalu ditutup ulang di sini, tidak peduli apakah operator sempat membukanya pada
+        // eksekusi sebelumnya — setiap kali langkah ini dijalankan ulang, accordion harus
+        // mulai tertutup lagi, bukan mengikuti state buka/tutup terakhir di DOM.
+        sourceErrorCollapse.removeClass('show');
+        sourceErrorToggle.addClass('collapsed').attr('aria-expanded', 'false');
+        if (execution.source_error) {
+            sourceErrorBox.removeClass('d-none');
+        } else {
+            sourceErrorBox.addClass('d-none');
+        }
+
         var noticesBox = pane.find('.sync-notices');
         var noticeList = pane.find('.sync-notice-list').empty();
         if (execution.notices && execution.notices.length) {
