@@ -93,7 +93,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
 
     public function test_a_request_without_an_api_key_is_rejected(): void
     {
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => 'SHP-1',
             'scheduled_date' => '2026-07-25',
             'armada_code' => 'X',
@@ -111,7 +111,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -163,7 +163,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 5);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -209,7 +209,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 5);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -234,7 +234,64 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->assertSame(0, ShipmentShortageDocument::where('so_id', $soId)->count());
     }
 
-    public function test_scheduled_rejects_a_duplicate_ref_shipment_id(): void
+    public function test_scheduled_upserts_the_same_ref_shipment_id_while_still_dijadwalkan(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armadaA = $this->createArmada();
+        $armadaB = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fxA = $this->createProductFixture($unit);
+        $fxB = $this->createProductFixture($unit);
+        $this->createStock($fxA['variant'], $unit->unit_id, 100);
+        $this->createStock($fxB['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $first = $this->putJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-07-25',
+            'armada_code' => $armadaA->customer_code,
+            'items' => [
+                ['sku' => $fxA['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+        $first->assertStatus(201);
+        $soId = $first->json('data.shipment_internal_id');
+
+        $second = $this->putJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-08-01',
+            'armada_code' => $armadaB->customer_code,
+            'items' => [
+                ['sku' => $fxB['sku'], 'qty' => 30, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $second->assertStatus(200)->assertJson([
+            'success' => true,
+            'data' => [
+                'shipment_internal_id' => $soId,
+                'ref_shipment_id' => $refShipmentId,
+                'ipm_status' => 1,
+                'ipm_status_label' => 'Dijadwalkan',
+            ],
+        ]);
+
+        $this->assertSame(1, SalesOrder::where('ref_shipment_id', $refShipmentId)->count(), 'must update the same row, not create a second one');
+
+        $so = SalesOrder::findOrFail($soId);
+        $this->assertSame('2026-08-01', $so->so_date);
+        $this->assertSame((string) $armadaB->customer_id, $so->so_customer);
+
+        $activeDetails = SalesOrderDetail::where('so_id', $soId)->where('status', 1)->get();
+        $this->assertCount(1, $activeDetails, 'old items must be replaced, not appended to');
+        $this->assertSame($fxB['variant']->product_variant_id, $activeDetails->first()->product_variant_id);
+        $this->assertSame(30, (int) $activeDetails->first()->sod_qty);
+
+        $this->assertSame(1, SalesOrderDetail::where('so_id', $soId)->where('status', 0)->count(), 'old item must be soft-deactivated, not left active alongside the new one');
+    }
+
+    public function test_scheduled_rejects_updating_a_shipment_that_is_no_longer_dijadwalkan(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -244,21 +301,34 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $payload = [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
             'items' => [
                 ['sku' => $fx['sku'], 'qty' => 1, 'unit_id' => $refUnitId],
             ],
-        ];
+        ], $headers)->assertStatus(201);
 
-        $this->postJson('/api/external/v1/shipments/scheduled', $payload, $headers)->assertStatus(201);
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $so->status = 6; // "Sudah Terkirim" — no longer "Dijadwalkan".
+        $so->save();
 
-        $second = $this->postJson('/api/external/v1/shipments/scheduled', $payload, $headers);
-        $second->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'DUPLICATE_REF_ID']]);
+        $retry = $this->putJson('/api/external/v1/shipments/scheduled', [
+            'ref_shipment_id' => $refShipmentId,
+            'scheduled_date' => '2026-08-01',
+            'armada_code' => $armada->customer_code,
+            'items' => [
+                ['sku' => $fx['sku'], 'qty' => 99, 'unit_id' => $refUnitId],
+            ],
+        ], $headers);
 
-        $this->assertSame(1, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
+        $retry->assertStatus(409)->assertJson(['success' => false, 'error' => ['code' => 'SHIPMENT_NOT_UPDATABLE']]);
+
+        $so->refresh();
+        $this->assertSame('2026-07-25', $so->so_date, 'nothing about the existing row may change when the update is rejected');
+        $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
+        $this->assertSame(1, (int) $detail->sod_qty);
     }
 
     public function test_scheduled_auto_creates_an_unknown_armada_code(): void
@@ -274,7 +344,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
 
         $this->assertSame(0, Customer::where('customer_code', $newArmadaCode)->count());
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => 'SHP-'.uniqid(),
             'scheduled_date' => '2026-07-25',
             'armada_code' => $newArmadaCode,
@@ -299,7 +369,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createUnit($refUnitId);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -325,7 +395,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         // issues the same way ref_unit_id/ref_product_id do.
         $refNotaId = 4328012026102327;
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -350,7 +420,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $fx = $this->createProductFixture($unit);
         $this->createStock($fx['variant'], $unit->unit_id, 100);
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => 'SHP-'.uniqid(),
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -383,7 +453,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $mixedCaseSku = strtolower($fx['sku']);
         $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
@@ -412,7 +482,7 @@ class ExternalApiShipmentScheduledFlowTest extends TestCase
         $this->createStock($fxA['variant'], $unitA->unit_id, 100);
         $this->createStock($fxB['variant'], $unitB->unit_id, 100);
 
-        $response = $this->postJson('/api/external/v1/shipments/scheduled', [
+        $response = $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => 'SHP-'.uniqid(),
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,

@@ -102,7 +102,7 @@ class ExternalApiShipmentCancelFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->postJson('/api/external/v1/shipments/scheduled', [
+        $this->putJson('/api/external/v1/shipments/scheduled', [
             'ref_shipment_id' => $refShipmentId,
             'scheduled_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
