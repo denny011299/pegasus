@@ -337,6 +337,11 @@
             margin-top: 4px;
             font-size: 11px;
         }
+        #add_stock_transfer .select2-dropdown,
+        #view_stock_transfer .select2-dropdown,
+        #accept_stock_transfer .select2-dropdown {
+            z-index: 1065 !important;
+        }
         @media (max-width: 991.98px) {
             #add_stock_transfer .transfer-product-grid {
                 grid-template-columns: minmax(0, 2fr) minmax(90px, .7fr) minmax(150px, 1fr);
@@ -345,17 +350,130 @@
                 grid-column: 1 / -1;
                 padding-top: 0;
             }
+            /* Modal create/detail/acc tidak mepet di tablet */
+            #add_stock_transfer .modal-dialog,
+            #view_stock_transfer .modal-dialog,
+            #accept_stock_transfer .modal-dialog {
+                max-width: calc(100vw - 16px) !important;
+                margin: 0.5rem auto !important;
+            }
+            #add_stock_transfer .st-route-row > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            #add_stock_transfer .st-card-arrow {
+                padding: 4px 0 8px !important;
+            }
+            #add_stock_transfer .st-card-arrow .st-route-arrow-icon {
+                transform: rotate(90deg) !important;
+            }
+            #view_stock_transfer .modal-header,
+            #accept_stock_transfer .modal-header {
+                padding: 12px 14px !important;
+            }
+            #view_stock_transfer #view_transfer_approval_block,
+            #accept_stock_transfer [id*="approval"] {
+                max-width: 100%;
+            }
+            #view_stock_transfer #view_qc_wrap,
+            #view_stock_transfer #view_ops_wrap,
+            #view_stock_transfer #view_ship_wrap {
+                white-space: normal !important;
+                flex-wrap: wrap !important;
+                max-width: 100%;
+            }
         }
         @media (max-width: 575.98px) {
             #add_stock_transfer .transfer-product-grid {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 85px 1fr !important;
+                gap: 8px !important;
             }
             #add_stock_transfer .transfer-product-select,
             #add_stock_transfer .transfer-product-actions {
                 grid-column: 1 / -1;
             }
-            #add_stock_transfer .transfer-product-actions .btn:first-child {
-                flex: 1;
+            #add_stock_transfer .transfer-product-actions {
+                display: flex !important;
+                gap: 8px !important;
+            }
+            #add_stock_transfer #btn_add_transfer_product {
+                flex: 2 !important;
+                height: 38px !important;
+            }
+            #add_stock_transfer #btn_toggle_scan_transfer {
+                flex: 1 !important;
+                height: 38px !important;
+            }
+            #add_stock_transfer .modal-dialog,
+            #view_stock_transfer .modal-dialog,
+            #accept_stock_transfer .modal-dialog {
+                max-width: calc(100vw - 12px) !important;
+                margin: 6px auto !important;
+                max-height: calc(100dvh - 12px) !important;
+                min-height: 0 !important;
+            }
+            #add_stock_transfer .modal-content,
+            #view_stock_transfer .modal-content,
+            #accept_stock_transfer .modal-content {
+                border-radius: 12px !important;
+                max-height: calc(100dvh - 12px) !important;
+                min-height: 0 !important;
+            }
+            #add_stock_transfer .modal-header,
+            #view_stock_transfer .modal-header,
+            #accept_stock_transfer .modal-header {
+                padding: 10px 14px !important;
+            }
+            #add_stock_transfer .modal-header .pg-modal-icon,
+            #view_stock_transfer .modal-header .pg-modal-icon,
+            #accept_stock_transfer .modal-header .pg-modal-icon {
+                width: 32px !important;
+                height: 32px !important;
+            }
+            #add_stock_transfer .modal-header .modal-title,
+            #view_stock_transfer .modal-header .modal-title,
+            #accept_stock_transfer .modal-header .modal-title {
+                font-size: 14px !important;
+            }
+            #add_stock_transfer .st-route-panel {
+                padding: 8px 10px 4px !important;
+            }
+            #add_stock_transfer .transfer-product-panel {
+                padding: 10px 12px !important;
+            }
+            #add_stock_transfer .pg-modal-footer,
+            #view_stock_transfer .pg-modal-footer,
+            #accept_stock_transfer .pg-modal-footer {
+                padding: 8px 12px !important;
+                gap: 8px !important;
+            }
+            #add_stock_transfer .pg-modal-footer .btn,
+            #view_stock_transfer .pg-modal-footer .btn,
+            #accept_stock_transfer .pg-modal-footer .btn {
+                height: 38px !important;
+                font-size: 12.5px !important;
+                padding: 0 14px !important;
+            }
+            #add_stock_transfer #tableTransferItems {
+                min-width: 680px !important;
+                table-layout: auto !important;
+            }
+            #view_stock_transfer #tableViewItems,
+            #accept_stock_transfer #tableAcceptItems {
+                min-width: 580px !important;
+                table-layout: auto !important;
+            }
+            #add_stock_transfer #tableTransferItems thead th,
+            #view_stock_transfer #tableViewItems thead th,
+            #accept_stock_transfer #tableAcceptItems thead th {
+                padding: 10px 12px !important;
+                font-size: 10.5px !important;
+            }
+            #add_stock_transfer #tableTransferItems tbody td,
+            #view_stock_transfer #tableViewItems tbody td,
+            #accept_stock_transfer #tableAcceptItems tbody td {
+                padding: 10px 12px !important;
+                font-size: 12px !important;
             }
         }
     </style>

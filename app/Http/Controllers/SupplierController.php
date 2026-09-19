@@ -841,10 +841,14 @@ class SupplierController extends Controller
             // Pola sama dengan hapus retur di detail PO → deleteReturnSupplies().
             $activeReturns = ReturnSupplies::where('po_id', $data['po_id'])->where('status', 1)->get();
             foreach ($activeReturns as $rs) {
-                $this->deleteReturnSupplies(new Request([
+                $deleteResult = $this->deleteReturnSupplies(new Request([
                     'rs_id' => $rs->rs_id,
                     'po_id' => $data['po_id'],
                 ]));
+                if (is_array($deleteResult) && (int) ($deleteResult['status'] ?? 0) === -1) {
+                    DB::rollBack();
+                    return response()->json($deleteResult);
+                }
             }
 
             //liat sebelumnya status apa
@@ -1139,6 +1143,20 @@ class SupplierController extends Controller
         $rs = ReturnSupplies::find($data['rs_id']);
         $returs = ReturnSuppliesDetail::where('rs_id', $data['rs_id'])->where('status', 1)->get();
         $pi = ProductIssues::find($rs->pi_id);
+
+        // Soft-block: hapus retur mengembalikan stok bahan — dilarang saat opname bahan open.
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $activeWh,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return [
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ];
+        }
 
         // QC4: po_total di-recalc setelah retur soft-deleted (bukan += mentah).
         // Ditambahkan (2026-08-24): kebalikan dari insertReturnSupplies() di atas -- method ini

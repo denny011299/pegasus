@@ -2927,7 +2927,7 @@ $(document).on("click", "#btn-delete-production", function () {
                 `<p id="text-delete" style="font-size:10pt"></p>`,
             );
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
-            if (e && e.status === 0) {
+            if (e && (e.status === 0 || e.status === -1)) {
                 notifikasi(
                     "error",
                     e.header || "Pembatalan Tidak Diizinkan",
@@ -2986,7 +2986,12 @@ $(document).on("click", "#btn-acc-delete-production", function () {
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
             $(".modal").modal("hide");
             if (e.status == -1) {
-                notifikasi("error", "Stok Tidak Mencukupi", e.message);
+                notifikasi(
+                    "error",
+                    e.header || "Stock Opname",
+                    e.message,
+                );
+                refreshProduction();
                 return false;
             }
             if (e.status == -2) {
@@ -3127,7 +3132,7 @@ function submitAccProduction(productionId, confirmCreateStock) {
                         return false;
                     }
                     notifikasi("error", e.header, e.message);
-                    if (e.status == -2) {
+                    if (e.status == -2 || e.status == -1) {
                         $(".modal").modal("hide");
                         refreshProduction();
                     }

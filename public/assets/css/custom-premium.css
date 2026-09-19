@@ -7,25 +7,40 @@
    ----------------------------------------- */
 .custom-premium-tabs {
     background-color: #f1f5f9;
-    padding: 6px;
+    padding: 5px;
     border-radius: 12px;
     display: inline-flex;
+    flex-wrap: nowrap !important;
     gap: 4px;
     border: none;
     box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+.custom-premium-tabs::-webkit-scrollbar {
+    display: none;
 }
 .custom-premium-tabs .nav-item {
     margin: 0;
+    flex-shrink: 0;
 }
 .custom-premium-tabs .nav-link {
     color: #64748b;
     font-weight: 600;
     border: none !important;
     border-radius: 8px;
-    padding: 10px 24px;
-    transition: all 0.3s ease;
+    padding: 9px 20px;
+    transition: all 0.25s ease;
     background: transparent;
     font-size: 14px;
+    white-space: nowrap !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .custom-premium-tabs .nav-link:hover:not(.active) {
     color: #1e293b;
@@ -35,6 +50,22 @@
     color: #2563eb !important;
     background-color: #ffffff !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+
+@media (max-width: 576px) {
+    .custom-premium-tabs {
+        padding: 4px;
+        gap: 3px;
+        border-radius: 10px;
+    }
+    .custom-premium-tabs .nav-link {
+        padding: 7px 13px !important;
+        font-size: 12.5px !important;
+        gap: 6px !important;
+    }
+    .custom-premium-tabs .nav-link i {
+        font-size: 13px !important;
+    }
 }
 
 /* -----------------------------------------
@@ -146,3 +177,402 @@
     border: 1px solid #e2e8f0;
     box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
+
+/* ==============================================================
+   Premium Date Filter Input & Daterangepicker Modern Styling
+   ============================================================== */
+
+/* Date Input Filter Field */
+.cal-icon input.form-control,
+.sales-order-filter .cal-icon input,
+.customer-return-filter .cal-icon input,
+.date-range-filter-input {
+    height: 42px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    background: #ffffff !important;
+    padding-right: 42px !important;
+    padding-left: 14px !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.cal-icon input.form-control:hover,
+.sales-order-filter .cal-icon input:hover,
+.customer-return-filter .cal-icon input:hover {
+    border-color: #cbd5e1 !important;
+    background: #f8fafc !important;
+}
+
+.cal-icon input.form-control:focus,
+.sales-order-filter .cal-icon input:focus,
+.customer-return-filter .cal-icon input:focus {
+    border-color: #2563eb !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12) !important;
+    outline: none !important;
+}
+
+/* Calendar Icon Positioning and Hover Effect */
+.cal-icon {
+    position: relative;
+    width: 100%;
+}
+
+.cal-icon-info:after,
+.cal-icon:after {
+    color: #64748b !important;
+    font-size: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    right: 14px !important;
+    pointer-events: none !important;
+    transition: color 0.2s ease, transform 0.2s ease !important;
+}
+
+.cal-icon:hover:after,
+.cal-icon input:focus ~ :after {
+    color: #2563eb !important;
+}
+
+/* Matching Form Selects in Filter Boxes */
+.sales-order-filter select.form-select,
+.customer-return-filter select.form-select {
+    height: 42px !important;
+    border-radius: 8px !important;
+    border: 1.5px solid #e2e8f0 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02) !important;
+    transition: all 0.2s ease !important;
+}
+
+.sales-order-filter select.form-select:focus,
+.customer-return-filter select.form-select:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.12) !important;
+    outline: none !important;
+}
+
+/* Filter Labels */
+.sales-order-filter label,
+.customer-return-filter label {
+    font-size: 11.5px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.35px !important;
+    margin-bottom: 6px !important;
+}
+
+/* ==============================================================
+   Daterangepicker Modern Elevated Popup (SaaS Style)
+   ============================================================== */
+.daterangepicker {
+    font-family: inherit !important;
+    border: 1px solid rgba(15, 23, 42, 0.1) !important;
+    border-radius: 14px !important;
+    box-shadow: 0 16px 40px -4px rgba(15, 23, 42, 0.16), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+    background: #ffffff !important;
+    margin-top: 8px !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    z-index: 1065 !important;
+}
+
+.daterangepicker:before,
+.daterangepicker:after {
+    display: none !important;
+}
+
+/* Predefined Ranges Sidebar */
+.daterangepicker .ranges {
+    background: #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
+    padding: 10px 8px !important;
+    margin: 0 !important;
+    float: left !important;
+}
+
+.daterangepicker .ranges ul {
+    width: 155px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    list-style: none !important;
+}
+
+.daterangepicker .ranges li {
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    padding: 8px 14px !important;
+    border-radius: 8px !important;
+    margin-bottom: 3px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    border: none !important;
+}
+
+.daterangepicker .ranges li:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+.daterangepicker .ranges li.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28) !important;
+}
+
+/* Calendar Containers */
+.daterangepicker .drp-calendar {
+    padding: 14px 16px !important;
+    max-width: none !important;
+}
+
+.daterangepicker .drp-calendar.left {
+    border-right: 1px solid #f1f5f9 !important;
+}
+
+.daterangepicker .calendar-table {
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+.daterangepicker .calendar-table table {
+    border-collapse: separate !important;
+    border-spacing: 2px !important;
+}
+
+/* Month & Year Selects */
+.daterangepicker .calendar-table select.monthselect,
+.daterangepicker .calendar-table select.yearselect {
+    border: 1.5px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 3px 6px !important;
+    height: 30px !important;
+    cursor: pointer !important;
+    outline: none !important;
+    margin: 0 2px !important;
+    transition: border-color 0.15s ease !important;
+}
+
+.daterangepicker .calendar-table select.monthselect:focus,
+.daterangepicker .calendar-table select.yearselect:focus,
+.daterangepicker .calendar-table select.monthselect:hover,
+.daterangepicker .calendar-table select.yearselect:hover {
+    border-color: #2563eb !important;
+}
+
+/* Prev & Next Month Navigation */
+.daterangepicker .calendar-table th.prev,
+.daterangepicker .calendar-table th.next {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 6px !important;
+    background: #f1f5f9 !important;
+    transition: all 0.15s ease !important;
+    display: table-cell !important;
+    vertical-align: middle !important;
+    text-align: center !important;
+    cursor: pointer !important;
+}
+
+.daterangepicker .calendar-table th.prev:hover,
+.daterangepicker .calendar-table th.next:hover {
+    background: #e2e8f0 !important;
+}
+
+.daterangepicker .calendar-table th.prev span,
+.daterangepicker .calendar-table th.next span {
+    border-color: #475569 !important;
+    border-width: 0 2px 2px 0 !important;
+    padding: 3px !important;
+}
+
+/* Day of Week Headers */
+.daterangepicker .calendar-table thead tr:last-child th {
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.4px !important;
+    padding: 8px 0 6px !important;
+}
+
+/* Days Cells */
+.daterangepicker td.available {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 6px !important;
+    font-size: 12.5px !important;
+    font-weight: 500 !important;
+    color: #334155 !important;
+    transition: all 0.12s ease !important;
+    border: 1px solid transparent !important;
+}
+
+.daterangepicker td.available:hover {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-color: #bfdbfe !important;
+}
+
+/* In Range Selection */
+.daterangepicker td.in-range:not(.active) {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border-radius: 0 !important;
+    font-weight: 600 !important;
+}
+
+/* Active Start & End Date */
+.daterangepicker td.active,
+.daterangepicker td.active:hover {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    border-radius: 6px !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35) !important;
+}
+
+.daterangepicker td.start-date {
+    border-radius: 6px 0 0 6px !important;
+}
+
+.daterangepicker td.end-date {
+    border-radius: 0 6px 6px 0 !important;
+}
+
+.daterangepicker td.start-date.end-date {
+    border-radius: 6px !important;
+}
+
+.daterangepicker td.off,
+.daterangepicker td.off.in-range {
+    background: transparent !important;
+    color: #cbd5e1 !important;
+}
+
+/* Today Cell Highlight */
+.daterangepicker td.today:not(.active) {
+    border: 1.5px solid #93c5fd !important;
+    font-weight: 700 !important;
+    color: #1d4ed8 !important;
+}
+
+/* Footer Action Bar */
+.daterangepicker .drp-buttons {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+    padding: 10px 16px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    clear: both !important;
+}
+
+.daterangepicker .drp-selected {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #334155 !important;
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    padding: 5px 12px !important;
+    display: inline-block !important;
+    margin-right: auto !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+}
+
+.daterangepicker .drp-buttons .btn {
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    padding: 6px 16px !important;
+    border-radius: 6px !important;
+    margin-left: 8px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+}
+
+.daterangepicker .drp-buttons .cancelBtn {
+    background: #ffffff !important;
+    color: #64748b !important;
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+
+.daterangepicker .drp-buttons .cancelBtn:hover {
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border-color: #94a3b8 !important;
+}
+
+.daterangepicker .drp-buttons .applyBtn {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #2563eb !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.28) !important;
+}
+
+.daterangepicker .drp-buttons .applyBtn:hover {
+    background: #1d4ed8 !important;
+    border-color: #1d4ed8 !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.38) !important;
+}
+
+/* ==============================================================
+   Action icons — override Kanakku pill (28px / radius 50px)
+   ============================================================== */
+.table tbody td a.btn-action-icon,
+a.btn-action-icon {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    padding: 0 !important;
+    margin: 0 2px !important;
+    border-radius: 8px !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    vertical-align: middle !important;
+}
+.table tbody td a.btn-action-icon i,
+a.btn-action-icon i {
+    font-size: 14px !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+}
+
+/* Filter Reset — sejajar tinggi input 42px (bukan padding .btn theme) */
+.sales-order-filter .btn-clear-so-filter,
+.customer-return-filter .btn-clear-cr-filter,
+.sales-order-filter a.btn.btn-outline-secondary,
+.customer-return-filter a.btn.btn-outline-secondary,
+.btn-clear-st-filter {
+    height: 42px !important;
+    min-height: 42px !important;
+    max-height: 42px !important;
+    padding: 0 12px !important;
+    line-height: 1 !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+}
+

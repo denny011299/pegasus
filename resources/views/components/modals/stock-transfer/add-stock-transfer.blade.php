@@ -1,9 +1,49 @@
+<style>
+  #add_stock_transfer.modal {
+    overflow: hidden !important;
+  }
+  #add_stock_transfer .modal-dialog {
+    height: auto !important;
+    max-height: calc(100dvh - 1rem) !important;
+    margin: 0.5rem auto !important;
+    display: flex !important;
+    align-items: center !important;
+  }
+  #add_stock_transfer .modal-content {
+    height: auto !important;
+    max-height: calc(100dvh - 1rem) !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #add_stock_transfer form {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+  #add_stock_transfer .modal-header,
+  #add_stock_transfer .modal-footer {
+    flex: 0 0 auto !important;
+  }
+  #add_stock_transfer .modal-body {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+</style>
+
   <div class="modal modal-lg custom-modal fade pg-modal--form" id="add_stock_transfer" role="dialog" data-bs-backdrop="static"
     data-bs-keyboard="false">
-    <div class="modal-dialog modal-dialog-centered modal-xl"
-      style="max-width: 90vw; max-height: 92vh; margin: 1rem auto;">
+    <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable"
+      style="max-width: min(95vw, 1140px); margin: 0.5rem auto;">
       <form action="#" id="formStockTransfer" class="modal-content d-flex flex-column"
-        style="border-radius: 16px; overflow: hidden; border: none; max-height: 92vh;">
+        style="border-radius: 16px; overflow: hidden; border: none; max-height: calc(100dvh - 1rem);">
 
         {{-- ── HEADER (fixed) ── --}}
         <div class="modal-header">
@@ -28,13 +68,13 @@
           </div>
           <div class="pg-modal-body-content">
           {{-- ROUTE PANEL --}}
-          <div class="position-relative" style="background:#ffffff; padding: 14px 24px 8px 24px;">
+          <div class="position-relative st-route-panel p-2.5 p-md-3 pb-md-2" style="background:#ffffff;">
             <div class="collapse show" id="collapseStockTransferForm">
               <div class="row g-3 align-items-center mb-1 st-route-row">
 
                 {{-- Section Asal / Request (BE: from) — di mode request dipindah ke kanan via CSS order --}}
                 <div class="col-md-5 st-card-asal">
-                  <div class="d-flex flex-column h-100">
+                  <div class="p-2.5 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bfdbfe;">
@@ -42,7 +82,7 @@
                         <span class="st-label-from-card">Dari (Asal)</span>
                       </span>
                     </div>
-                    <div class="row gx-2 gy-3 mt-0 flex-grow-1">
+                    <div class="row gx-2 gy-2 mt-0 flex-grow-1">
                       <div class="col-6" id="st-sender-slot-asal">
                         <div id="st-sender-block">
                           <label class="text-muted d-flex align-items-center st-label-sender-field"
@@ -84,7 +124,7 @@
                 </div>
 
                 {{-- Arrow --}}
-                <div class="col-md-2 d-flex align-items-center justify-content-center st-card-arrow">
+                <div class="col-12 col-md-2 d-flex align-items-center justify-content-center st-card-arrow my-1 my-md-0 pt-0 pt-md-4">
                   <div style="display:flex;flex-direction:column;align-items:center;gap:3px;">
                     <div
                       style="width:34px;height:34px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:0 3px 8px rgba(59,130,246,.25);">
@@ -97,7 +137,7 @@
 
                 {{-- Section Tujuan / Penerima (BE: to) — di mode request dipindah ke kiri via CSS order --}}
                 <div class="col-md-5 st-card-tujuan">
-                  <div class="d-flex flex-column h-100">
+                  <div class="p-2.5 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#f0fdf4; color:#15803d; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bbf7d0;">
@@ -105,7 +145,7 @@
                         <span class="st-label-to-card">Ke (Tujuan)</span>
                       </span>
                     </div>
-                    <div class="row gx-2 gy-3 mt-0 flex-grow-1">
+                    <div class="row gx-2 gy-2 mt-0 flex-grow-1">
                       <div class="col-6 d-none" id="st-sender-slot-tujuan"></div>
                       <div class="col-12" id="st-to-warehouse-col">
                         <label class="text-muted d-flex align-items-center st-label-to-field"
@@ -162,45 +202,45 @@
           </div>
 
           {{-- PRODUCT INPUT TOOLBAR --}}
-          <div class="transfer-product-panel px-4 py-3" style="background:#f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+          <div class="transfer-product-panel p-2.5 p-md-3" style="background:#f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
             <div class="transfer-product-grid">
               <div class="transfer-product-field transfer-product-select">
                 <label class="form-label mb-1.5" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
                   <i class="fe fe-box me-1 text-primary"></i>Pilih Produk <span class="text-danger">*</span>
                 </label>
                 <div id="transfer_mode_select">
-                  <select class="form-select form-control fill" id="transfer_sku" style="height:40px;border-radius:8px;font-size:13px;border-color:#cbd5e1;">
+                  <select class="form-select form-control fill" id="transfer_sku" style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;">
                     <option value="" selected disabled>Pilih gudang asal terlebih dahulu</option>
                   </select>
                 </div>
                 <div id="transfer_mode_scan" style="display:none">
                   <div class="input-group">
                     <input type="text" class="form-control" id="transfer_scan_barcode"
-                      placeholder="Scan / ketik barcode atau SKU" style="height:40px;border-radius:8px 0 0 8px;font-size:13px;">
+                      placeholder="Scan / ketik barcode atau SKU" style="height:38px;border-radius:8px 0 0 8px;font-size:13px;">
                     <input type="number" class="form-control" id="transfer_scan_qty" value="1"
-                      min="1" step="1" title="Qty scan" style="max-width:80px;height:40px;font-size:13px;">
+                      min="1" step="1" title="Qty scan" style="max-width:80px;height:38px;font-size:13px;">
                     <button type="button" class="btn btn-primary px-3" id="btn_scan_add_transfer"
-                      title="Cari produk" style="height:40px;border-radius:0 8px 8px 0;">
+                      title="Cari produk" style="height:38px;border-radius:0 8px 8px 0;">
                       <i class="fe fe-search"></i>
                     </button>
                   </div>
                 </div>
               </div>
-              <div class="transfer-product-field transfer-draft-only" style="min-width: 90px;">
+              <div class="transfer-product-field transfer-draft-only" style="min-width: 80px;">
                 <label class="form-label mb-1.5" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
                   Qty <span class="text-danger">*</span>
                 </label>
                 <input type="number" class="form-control" id="transfer_qty_input" placeholder="Qty"
-                  value="1" min="1" step="1" style="height:40px;border-radius:8px;font-size:13px;border-color:#cbd5e1;font-weight:600;text-align:center;">
+                  value="1" min="1" step="1" style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;font-weight:600;text-align:center;">
               </div>
-              <div class="transfer-product-field transfer-draft-only" style="min-width: 170px;">
+              <div class="transfer-product-field transfer-draft-only" style="min-width: 140px;">
                 <div class="d-flex align-items-center justify-content-between mb-1.5">
                   <label class="form-label mb-0" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
                     Satuan <span class="text-danger">*</span>
                   </label>
                   <small id="transfer_stock_available" class="text-muted" style="font-size:11px;font-weight:500;">Stok: -</small>
                 </div>
-                <select class="form-select" id="transfer_unit_input" disabled style="height:40px;border-radius:8px;font-size:13px;border-color:#cbd5e1;">
+                <select class="form-select" id="transfer_unit_input" disabled style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;">
                   <option value="">Pilih produk dahulu</option>
                 </select>
               </div>
@@ -218,8 +258,8 @@
 
           {{-- PRODUCT TABLE --}}
           <div class="d-flex flex-column" style="background:#fff;">
-            <div class="d-flex align-items-center justify-content-between border-bottom"
-              style="background:#f8fafc; padding: 14px 28px;">
+            <div class="d-flex align-items-center justify-content-between border-bottom p-2.5 px-md-4 py-md-3"
+              style="background:#f8fafc;">
               <div class="d-flex align-items-center">
                 <i class="fe fe-layers text-primary me-2" style="font-size:15px;"></i>
                 <span class="fw-bold text-dark" style="font-size:12px; text-transform:uppercase; letter-spacing:.5px;">Daftar Produk yang Ditransfer</span>
@@ -230,27 +270,27 @@
                 <i class="fe fe-edit-2"></i> Edit Data
               </button>
             </div>
-            <div class="table-responsive" style="min-height:220px; background:#fff;">
-              <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:13px; table-layout:fixed; width:100%;">
+            <div class="table-responsive" style="min-height:200px; background:#fff; -webkit-overflow-scrolling: touch; overflow-x: auto;">
+              <table class="table table-hover mb-0" id="tableTransferItems" style="font-size:13px; width:100%; min-width:680px;">
                 <thead style="background:#ffffff; border-bottom: 2px solid #e2e8f0;">
                   <tr>
                     <th
-                      style="width: 24%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 150px; width: 22%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Produk</th>
                     <th
-                      style="width: 16%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 110px; width: 15%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Varian</th>
                     <th
-                      style="width: 12%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 90px; width: 13%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       SKU</th>
                     <th
-                      style="width: 18%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 110px; width: 16%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Stok Asal</th>
                     <th
-                      style="width: 220px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 180px; width: 220px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Qty / Satuan</th>
                     <th class="no-sort text-center"
-                      style="width: 56px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 16px;">
+                      style="min-width: 50px; width: 56px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Aksi</th>
                   </tr>
                 </thead>
@@ -273,7 +313,7 @@
         </div>
 
         {{-- ── FOOTER: Batal, Tolak, Setujui QC/Ops, Kirim, Simpan ── --}}
-        <div class="modal-footer pg-modal-footer">
+        <div class="modal-footer pg-modal-footer p-2.5 p-md-3">
           <button type="button" class="btn pg-btn-cancel btn-cancel-transfer">Batal</button>
           <button type="button" class="btn pg-btn-decline btn-reject-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>
           <button type="button" class="btn pg-btn-accept btn-approve-qc-transfer d-none"><i class="fe fe-check me-1"></i>Setujui QC</button>

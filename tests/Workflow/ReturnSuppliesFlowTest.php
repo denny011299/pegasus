@@ -4,10 +4,12 @@ namespace Tests\Workflow;
 
 use App\Models\PurchaseOrder;
 use App\Models\ReturnSupplies;
+use App\Models\StockOpnameBahan;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
 use App\Models\Supplier;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
@@ -183,5 +185,62 @@ class ReturnSuppliesFlowTest extends TestCase
             'log_item_id' => $variant->supplies_id,
             'log_jumlah' => $returnQty,
         ]);
+    }
+
+    /** QC17: hapus retur PO harus soft-block saat opname bahan open (mengembalikan stok). */
+    public function test_delete_return_soft_blocks_when_supplies_opname_open(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse(1);
+
+        [$poId, $variant, $stock] = $this->insertAndApprovePo(qty: 10, price: 1000);
+        $stock->refresh();
+        $stockAfterReturn = null;
+
+        $returnQty = 3;
+        $this->post('/insertReturnSupplies', [
+            'po_id' => $poId,
+            'rs_date' => now()->toDateString(),
+            'rs_notes' => 'QC17 return before opname',
+            'rs_total' => $returnQty * 1000,
+            'returs' => json_encode([[
+                'supplies_id' => $variant->supplies_id,
+                'supplies_variant_id' => $variant->supplies_variant_id,
+                'supplies_variant_name' => $variant->supplies_variant_name,
+                'unit_id' => $stock->unit_id,
+                'rsd_qty' => $returnQty,
+                'rsd_price' => 1000,
+            ]]),
+        ])->assertStatus(200);
+
+        $rs = ReturnSupplies::where('po_id', $poId)->where('status', 1)->firstOrFail();
+        $stock->refresh();
+        $stockAfterReturn = (float) $stock->ss_stock;
+        $poTotalAfterReturn = (int) PurchaseOrder::findOrFail($poId)->po_total;
+
+        $stob = new StockOpnameBahan();
+        $stob->stob_code = 'SB' . str_pad((string) random_int(1, 9999), 4, '0', STR_PAD_LEFT);
+        $stob->stob_date = now()->toDateString();
+        $stob->warehouse_id = 1;
+        $stob->staff_id = (int) (session('user')->staff_id ?? 0);
+        $stob->status = 1;
+        $stob->is_draft = false;
+        if (Schema::hasColumn('stock_opname_bahans', 'is_old_version')) {
+            $stob->is_old_version = false;
+        }
+        $stob->save();
+
+        $this->post('/deleteReturnSupplies', ['rs_id' => $rs->rs_id, 'po_id' => $poId])
+            ->assertStatus(200)
+            ->assertJson([
+                'status' => -1,
+                'header' => 'Stock Opname',
+            ]);
+
+        $rs->refresh();
+        $stock->refresh();
+        $this->assertSame(1, (int) $rs->status, 'retur harus tetap aktif saat soft-block');
+        $this->assertSame($stockAfterReturn, (float) $stock->ss_stock, 'stok tidak boleh dikembalikan saat soft-block');
+        $this->assertSame($poTotalAfterReturn, (int) PurchaseOrder::findOrFail($poId)->po_total);
     }
 }

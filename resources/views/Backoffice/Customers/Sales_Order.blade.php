@@ -1,4 +1,4 @@
-﻿<?php $page = 'sales_order'; ?>
+<?php $page = 'sales_order'; ?>
 @extends('layout.mainlayout')
 @section('custom_css')
     <link rel="stylesheet" href="{{ asset('assets/plugins/daterangepicker/daterangepicker.css') }}">
@@ -38,69 +38,122 @@
             background: #dce8f6;
         }
 
-        #tableSalesOrder {
+        /* Filter Card Styling */
+        .sales-order-filter,
+        .customer-return-filter {
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+            margin-bottom: 16px !important;
+        }
+        .sales-order-filter .input-block label,
+        .customer-return-filter .input-block label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 6px;
+        }
+        .sales-order-filter .form-control,
+        .sales-order-filter .form-select,
+        .customer-return-filter .form-control,
+        .customer-return-filter .form-select {
+            height: 40px !important;
+            border-radius: 8px !important;
+            border: 1.5px solid #e2e8f0 !important;
+            font-size: 13px !important;
+            color: #1e293b !important;
+            background-color: #f8fafc !important;
+        }
+        .sales-order-filter .form-control:focus,
+        .sales-order-filter .form-select:focus,
+        .customer-return-filter .form-control:focus,
+        .customer-return-filter .form-select:focus {
+            border-color: #2563eb !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
+        }
+
+        .sales-order-filter .btn-clear-so-filter,
+        .customer-return-filter .btn-clear-cr-filter {
+            height: 42px !important;
+            min-height: 42px !important;
+            max-height: 42px !important;
+            padding: 0 12px !important;
+            line-height: 1 !important;
+            box-sizing: border-box !important;
+        }
+
+        #tableSalesOrder tbody td a.btn-action-icon,
+        #tableCustomerReturn tbody td a.btn-action-icon {
+            width: 34px !important;
+            height: 34px !important;
+            min-width: 34px !important;
+            padding: 0 !important;
+            border-radius: 8px !important;
+        }
+
+        /* DataTable styling — match standard Pegasus / Kanakku theme */
+        #tableSalesOrder,
+        #tableCustomerReturn {
             width: 100% !important;
-            /* Jaga proporsi kolom, tapi jangan sampai diperas di layar sempit (tablet/hp) —
-               min-width memaksa tabel overflow horizontal sehingga .table-responsive bisa
-               di-scroll ke samping, bukan meremukkan tiap kolom jadi tidak terbaca. */
-            min-width: 1000px;
+            min-width: 950px;
             table-layout: fixed;
         }
 
         #tableSalesOrder th,
-        #tableSalesOrder td {
+        #tableSalesOrder td,
+        #tableCustomerReturn th,
+        #tableCustomerReturn td {
             white-space: normal !important;
             word-wrap: break-word;
             vertical-align: middle;
             box-sizing: border-box;
         }
 
-        #tableSalesOrder thead th {
-            color: #64748b;
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .4px;
-            background: #f1f5f9;
-            border-bottom: 1px solid #e2e8f0;
-            /* Header cuma berisi label pendek (mis. "NO. INVOICE") — jangan sampai
-               kata dipenggal di tengah huruf, biarkan seluruh kata pindah baris. */
-            word-break: keep-all;
-            overflow-wrap: normal;
-        }
-
-        #tableSalesOrder tbody td {
+        #tableSalesOrder tbody td,
+        #tableCustomerReturn tbody td {
             color: #475569;
             font-size: 13px;
         }
 
         #tableSalesOrder td:last-child,
-        #tableSalesOrder th:last-child {
+        #tableSalesOrder th:last-child,
+        #tableCustomerReturn td:last-child,
+        #tableCustomerReturn th:last-child {
             white-space: nowrap !important;
-            width: 100px !important;
+            width: 110px !important;
+            text-align: center;
         }
 
-        #tableSalesOrder td:last-child a {
+        #tableSalesOrder td:last-child a,
+        #tableCustomerReturn td:last-child a {
             display: inline-flex !important;
             align-items: center;
         }
 
-        #tableSalesOrder tbody tr {
+        #tableSalesOrder tbody tr,
+        #tableCustomerReturn tbody tr {
             border-bottom: 1px solid #f1f5f9;
-            transition: all 0.2s ease;
         }
 
-        /* Cegah DataTables scrollX clone header yang desync */
-        #tableSalesOrder_wrapper .dataTables_scrollHead,
-        #tableSalesOrder_wrapper .dataTables_scrollBody {
-            width: 100% !important;
-        }
-
-        #tableSalesOrder-wrap {
+        #tableSalesOrder-wrap,
+        #tableCustomerReturn-wrap {
             position: relative;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
 
-        #tableSalesOrder_wrapper .dataTables_processing {
+        #tableSalesOrder-wrap.is-loading tbody,
+        #tableCustomerReturn-wrap.is-loading tbody {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+
+        #tableSalesOrder_wrapper .dataTables_processing,
+        #tableCustomerReturn_wrapper .dataTables_processing {
             position: absolute !important;
             top: 0 !important;
             left: 0 !important;
@@ -115,6 +168,7 @@
             background: rgba(255, 255, 255, 0.72) !important;
             box-shadow: none !important;
             z-index: 20;
+            display: flex !important;
             align-items: center;
             justify-content: center;
             color: #1e293b;
@@ -122,15 +176,18 @@
             font-size: 14px;
         }
 
-        #tableSalesOrder-wrap:not(.is-loading) .dataTables_processing {
+        #tableSalesOrder-wrap:not(.is-loading) .dataTables_processing,
+        #tableCustomerReturn-wrap:not(.is-loading) .dataTables_processing {
             display: none !important;
         }
 
-        #tableSalesOrder-wrap.is-loading .dataTables_processing {
+        #tableSalesOrder-wrap.is-loading .dataTables_processing,
+        #tableCustomerReturn-wrap.is-loading .dataTables_processing {
             display: flex !important;
         }
 
-        #tableSalesOrder_wrapper .dataTables_processing > div {
+        #tableSalesOrder_wrapper .dataTables_processing > div,
+        #tableCustomerReturn_wrapper .dataTables_processing > div {
             display: inline-flex;
             align-items: center;
             gap: 10px;
@@ -139,11 +196,6 @@
             background: #fff;
             border: 1px solid #e2e8f0;
             box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
-        }
-
-        #tableSalesOrder-wrap.is-loading tbody {
-            opacity: 0.45;
-            pointer-events: none;
         }
 
         /* Select2 invalid (Armada / Gudang Eceran) */
@@ -174,80 +226,6 @@
 
 
 
-        #tableCustomerReturn-wrap {
-            position: relative;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-        #tableCustomerReturn-wrap .dt-skeleton-head,
-        #tableCustomerReturn-wrap .dt-skeleton-row {
-            grid-template-columns: 11% 12% 12% 12% 14% 11% 12% 12% 9%;
-        }
-        #tableCustomerReturn {
-            width: 100% !important;
-            min-width: 1280px;
-            table-layout: auto;
-        }
-        #tableCustomerReturn th,
-        #tableCustomerReturn td {
-            vertical-align: middle !important;
-            box-sizing: border-box;
-        }
-        #tableCustomerReturn thead th {
-            padding: 14px 18px;
-            color: #64748b;
-            background: #f1f5f9;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: .4px;
-            text-transform: uppercase;
-            white-space: nowrap;
-        }
-        #tableCustomerReturn tbody td {
-            padding: 14px 18px;
-            color: #475569;
-            border-bottom: 1px solid #f1f5f9;
-            font-size: 13px;
-            white-space: nowrap;
-        }
-        #tableCustomerReturn_wrapper { min-width: 1280px; }
-        #tableCustomerReturn-wrap.is-loading tbody {
-            opacity: .45;
-            pointer-events: none;
-        }
-        #tableCustomerReturn_wrapper .dataTables_processing {
-            position: absolute !important;
-            inset: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            border: 0 !important;
-            border-radius: 8px;
-            background: rgba(255, 255, 255, .72) !important;
-            box-shadow: none !important;
-            z-index: 20;
-            align-items: center;
-            justify-content: center;
-            color: #1e293b;
-            font-size: 14px;
-            font-weight: 600;
-        }
-        #tableCustomerReturn-wrap:not(.is-loading) .dataTables_processing { display: none !important; }
-        #tableCustomerReturn-wrap.is-loading .dataTables_processing { display: flex !important; }
-        #tableCustomerReturn_wrapper .dataTables_processing > div {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 16px;
-            border: 1px solid #e2e8f0;
-            border-radius: 10px;
-            background: #fff;
-            box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
-        }
         .csr-staff-icon {
             display: inline-flex;
             width: 32px;
@@ -308,16 +286,16 @@
             @endcomponent
             <!-- /Page Header -->
 
-            <div class="d-flex mb-2">
-                <ul class="nav custom-premium-tabs" id="customer-return-tabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active d-flex align-items-center gap-2" id="shipping-tab" data-bs-toggle="tab"
+            <div class="d-flex mb-2 overflow-x-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+                <ul class="nav custom-premium-tabs flex-nowrap" id="customer-return-tabs" role="tablist">
+                    <li class="nav-item flex-shrink-0" role="presentation">
+                        <button class="nav-link active d-flex align-items-center gap-2 text-nowrap" id="shipping-tab" data-bs-toggle="tab"
                             data-bs-target="#shipping-pane" type="button" role="tab">
                             <i class="fe fe-truck"></i> Pengiriman
                         </button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link d-flex align-items-center gap-2" id="customer-return-tab" data-bs-toggle="tab"
+                    <li class="nav-item flex-shrink-0" role="presentation">
+                        <button class="nav-link d-flex align-items-center gap-2 text-nowrap" id="customer-return-tab" data-bs-toggle="tab"
                             data-bs-target="#customer-return-pane" type="button" role="tab">
                             <i class="fe fe-rotate-ccw"></i> Pengembalian
                         </button>
@@ -334,48 +312,48 @@
             <!-- Table -->
             <div class="row">
                 <div class="col-sm-12">
-                    <div class=" card-table">
+                    <div class="card-table">
                         <div class="card-body">
-                            <div class="table-responsive dt-pending" id="tableSalesOrder-wrap" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow-x: auto; overflow-y: hidden;">
+                            <div class="table-responsive position-relative dt-pending" id="tableSalesOrder-wrap">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 15% 13% 12% 12% 15% 15% 15% 15%;">
-                                        <span style="width:40%"></span>
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 17% 11% 10% 15% 15% 11% 11% 10%;">
+                                        <span style="width:50%"></span>
                                         <span style="width:60%"></span>
                                         <span style="width:50%"></span>
-                                        <span style="width:40%"></span>
+                                        <span style="width:60%"></span>
                                         <span style="width:50%"></span>
-                                        <span style="width:70%"></span>
-                                        <span style="width:70%"></span>
+                                        <span style="width:60%"></span>
+                                        <span style="width:60%"></span>
                                         <span style="width:50%"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 15% 13% 12% 12% 15% 15% 15% 15%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 17% 11% 10% 15% 15% 11% 11% 10%;">
+                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
-                                                <span class="skel-text" style="width:70%"></span>
-                                                <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-badge" style="width:60%;justify-self:center"></span>
-                                                <span class="skel-text" style="width:70%"></span>
-                                                <span class="skel-text" style="width:70%"></span>
+                                                <span class="skel-text" style="width:60%"></span>
+                                                <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:50%"></span>
                                             </div>
                                         @endfor
                                     </div>
                                 </div>
-                                <table class="table table-center table-hover mb-0" id="tableSalesOrder">
-                                    <thead>
+                                <table class="table table-center table-hover" id="tableSalesOrder">
+                                    <thead class="thead-light">
                                         <tr>
                                             <th>Nama Armada</th>
                                             <th>Tanggal</th>
                                             <th class="text-center">No. Invoice</th>
-                                            <th class="text-center">Ref Number</th>
+                                            <th class="text-center">No. Referensi</th>
                                             <th class="text-center">Status</th>
                                             <th>Dibuat Oleh</th>
-                                            <th>Diapprove/Ditolak Oleh</th>
+                                            <th>Disetujui Oleh</th>
                                             <th class="no-sort text-center">Aksi</th>
                                         </tr>
                                     </thead>
@@ -396,19 +374,19 @@
                         <div class="col-sm-12">
                             <div class="card-table">
                                 <div class="card-body">
-                            <div class="table-responsive position-relative dt-pending" id="tableCustomerReturn-wrap">
+                                    <div class="table-responsive position-relative dt-pending" id="tableCustomerReturn-wrap">
                                 <div class="dt-skeleton" aria-hidden="true">
                                     <div style="padding:16px 25px;">
                                         <span class="skel-text" style="width:250px;height:38px;border-radius:20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 11% 12% 12% 12% 14% 11% 12% 12% 9%;">
                                         @for ($i = 0; $i < 9; $i++)
                                             <span style="width:55%;height:12px;border-radius:6px;"></span>
                                         @endfor
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($row = 0; $row < 5; $row++)
-                                            <div class="dt-skeleton-row">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 11% 12% 12% 12% 14% 11% 12% 12% 9%;">
                                                 @for ($col = 0; $col < 9; $col++)
                                                     <span class="skel-text" style="width:65%;height:14px;border-radius:6px;"></span>
                                                 @endfor
@@ -416,8 +394,8 @@
                                         @endfor
                                     </div>
                                 </div>
-                                <table class="table table-center table-hover mb-0" id="tableCustomerReturn">
-                                    <thead>
+                                <table class="table table-center table-hover" id="tableCustomerReturn">
+                                    <thead class="thead-light">
                                         <tr>
                                             <th>Nomor</th>
                                             <th>Tanggal</th>

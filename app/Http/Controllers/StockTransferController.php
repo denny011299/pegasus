@@ -1363,28 +1363,7 @@ class StockTransferController extends Controller
             return response()->json(['status' => -1, 'message' => $matrix['message']]);
         }
 
-        ProductUnitStock::clearCache();
-        $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
-            $items,
-            $payload['from_warehouse_id'],
-            $payload['to_warehouse_id']
-        );
-        $check = ProductUnitStock::checkItems(
-            $payload['from_warehouse_id'],
-            $this->applySourceAvailabilityMode(
-                $stockItems,
-                $this->warehouseIsMain($payload['from_warehouse_id'])
-            )
-        );
-        if (! $check['ok']) {
-            $names = array_map(fn ($s) => $s['label'], $check['shortages']);
-
-            return response()->json([
-                'status' => -1,
-                'message' => 'Stok tidak mencukupi: ' . implode(', ', $names),
-            ]);
-        }
-
+        // Request/create: jangan cek stok — potong stok baru saat Kirim.
         try {
             $stId = DB::transaction(function () use ($payload, $items) {
                 $stId = (new StockTransfer())->createHeader($payload);
@@ -1529,25 +1508,7 @@ class StockTransferController extends Controller
                     $old->save();
                 }
 
-                ProductUnitStock::clearCache();
-                $isProductionTransfer = $header->source_type === 'production';
-                $stockItems = $this->normalizeEceranOutboundItemsForStockCut(
-                    $items,
-                    $payload['from_warehouse_id'],
-                    $payload['to_warehouse_id']
-                );
-                $check = ProductUnitStock::checkItems(
-                    $payload['from_warehouse_id'],
-                    $this->applySourceAvailabilityMode(
-                        $stockItems,
-                        $this->warehouseIsMain($payload['from_warehouse_id']),
-                        $isProductionTransfer
-                    )
-                );
-                if (! $check['ok']) {
-                    $names = array_map(fn ($s) => $s['label'], $check['shortages']);
-                    throw new \RuntimeException('Stok tidak mencukupi: ' . implode(', ', $names));
-                }
+                // Update request: jangan cek stok — potong stok baru saat Kirim.
 
                 $header->transfer_date = $payload['transfer_date'];
                 $header->sender_id = $payload['sender_id'];
@@ -2455,6 +2416,22 @@ class StockTransferController extends Controller
         $gate = $this->assertCanCancelKirim($header);
         if ($gate !== true) {
             return response()->json(['status' => -1, 'message' => $gate]);
+        }
+
+        // Soft-block: cancel kirim mengembalikan stok ke gudang asal — dilarang saat opname produk open.
+        $fromWh = (int) ($header->from_warehouse_id ?? 0);
+        if ($fromWh > 0) {
+            $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                $fromWh,
+                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+            );
+            if ($softBlock !== null) {
+                return response()->json([
+                    'status' => -1,
+                    'header' => 'Stock Opname',
+                    'message' => $softBlock,
+                ]);
+            }
         }
 
         $before = $this->snapshotTransfer((int) $header->st_id);

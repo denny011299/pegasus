@@ -65,6 +65,10 @@
   @include('components.modals.unit.add-unit')
 @endif
 
+@if (Route::is(['productionMuat']))
+  @include('components.modals.muat.add-muat')
+@endif
+
 @if (Route::is(['variant']))
   <!-- modal -->
   @include('components.modals.variant.add-variant')

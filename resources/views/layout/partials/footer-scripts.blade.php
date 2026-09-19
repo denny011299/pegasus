@@ -239,7 +239,7 @@
 <script src="{{ URL::asset('/assets/plugins/moment/moment.min.js') }}"></script>
 <script src="{{ URL::asset('/assets/js/bootstrap-datetimepicker.min.js') }}"></script>
 
-@if (Route::is(['income-report', 'low-stock-report', 'payment-report', 'tax-purchase', 'tax-sales', 'stockTransfer', 'salesOrder']))
+@if (Route::is(['income-report', 'low-stock-report', 'payment-report', 'tax-purchase', 'tax-sales', 'stockTransfer', 'salesOrder', 'productionPlanning', 'productionPlanning.view']))
   <script src="{{ URL::asset('/assets/plugins/daterangepicker/daterangepicker.js') }}"></script>
 @endif
 
@@ -494,13 +494,15 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         $('#modalDelete').modal("show");
     }
       
-    function showModalKonfirmasi(text, button_id, danger) {
+    function showModalKonfirmasi(text, button_id, danger, confirmLabel) {
         //button id ini, id button ketika dikofrimasi delete
         //danger = true untuk aksi cancel/tolak/hapus → tema modal & tombol jadi merah
+        var label = confirmLabel || "Konfirmasi";
         $("#text-konfirmasi").html(text);
         $("#modalKonfirmasi")
             .toggleClass("pg-modal--danger", !!danger)
             .toggleClass("pg-modal--confirm", !danger);
+        $("#modalKonfirmasi .modal-title").text(label);
         $("#modalKonfirmasi .btn-konfirmasi")
             .attr("id", button_id)
             .removeData("busy")
@@ -508,7 +510,7 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
             .css({ "min-width": "", height: "" })
             .toggleClass("btn-danger pg-btn-confirm--danger", !!danger)
             .toggleClass("btn-success pg-btn-confirm", !danger)
-            .html('<i class="fe fe-check-circle me-1"></i>Konfirmasi');
+            .html('<i class="fe fe-check-circle me-1"></i>' + label);
         $('#modalKonfirmasi').modal("show");
     }
 

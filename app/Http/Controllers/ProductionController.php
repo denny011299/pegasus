@@ -626,6 +626,32 @@ class ProductionController extends Controller
                 'message' => 'Stock Transfer hasil produksi sudah dikirim. Produksi tidak dapat dibatalkan.',
             ]);
         }
+
+        // QC13/QC18: ajukan batal soft-block — ACC nanti mengembalikan stok bahan + potong hasil.
+        $mainWarehouse = $this->activeMainProductionWarehouse();
+        if (! $mainWarehouse) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang Utama Wajib Aktif',
+                'message' => 'Pembatalan produksi hanya dapat diajukan saat gudang aktif adalah gudang utama.',
+            ]);
+        }
+        $mainWhId = (int) $mainWarehouse->id;
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        ) ?? \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         (new Production())->deleteProduction($data);
         return 1;
     }
@@ -1492,6 +1518,31 @@ class ProductionController extends Controller
             ]);
         }
 
+        // Soft-block: ACC batal mengembalikan stok bahan + potong hasil produk — dilarang saat opname open.
+        $mainWarehouse = $this->activeMainProductionWarehouse();
+        if (! $mainWarehouse) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang Utama Wajib Aktif',
+                'message' => 'Pembatalan produksi hanya dapat dilakukan saat gudang aktif adalah gudang utama.',
+            ]);
+        }
+        $mainWhId = (int) $mainWarehouse->id;
+        $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+        ) ?? \App\Support\PendingStockSoftBlock::messageIfBlocked(
+            $mainWhId,
+            \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+        );
+        if ($softBlock !== null) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Opname',
+                'message' => $softBlock,
+            ]);
+        }
+
         if ($p['items']->count() == 0) {
             DB::beginTransaction();
             try {
@@ -1510,14 +1561,7 @@ class ProductionController extends Controller
         // that exact operation instead of the old direct-ProductStock ladder logic, which assumed
         // a split across two unit rows that addQty() no longer creates and could null-deref when
         // the larger-unit row didn't exist.
-        $mainWarehouse = $this->activeMainProductionWarehouse();
-        if (! $mainWarehouse) {
-            return response()->json([
-                'status' => 0,
-                'header' => 'Gudang Utama Wajib Aktif',
-                'message' => 'Pembatalan produksi hanya dapat dilakukan saat gudang aktif adalah gudang utama.',
-            ]);
-        }
+        // $mainWarehouse already resolved above for soft-block.
 
         $outputTotals = [];
         foreach ($p['items'] as $value) {

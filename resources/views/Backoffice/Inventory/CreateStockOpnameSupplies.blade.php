@@ -6,10 +6,14 @@
             display: block;
             width: 100%;
             overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* min-width: layar sempit scroll horizontal (sama pola Stock Transfer / Opname Produk) */
         #tb-stock-table {
             width: 100% !important;
+            min-width: 1280px;
+            table-layout: auto !important;
             border-collapse: separate;
             border-spacing: 0;
         }
@@ -26,6 +30,7 @@
             padding: 16px 18px !important;
             border-bottom: 1px solid #e2e8f0 !important;
             border-top: 0 !important;
+            white-space: nowrap !important;
         }
 
         #tb-stock-table td {
@@ -42,29 +47,41 @@
 
         #tb-stock-table th:nth-child(1),
         #tb-stock-table td:nth-child(1) {
-            width: 24% !important;
+            width: 200px;
+            min-width: 160px;
+            max-width: 240px;
+            word-break: break-word;
+            white-space: normal;
         }
 
+        /* QC3: Stok Real cukup untuk ~3 satuan tanpa gepeng */
         #tb-stock-table th:nth-child(2),
         #tb-stock-table td:nth-child(2) {
-            width: 48% !important;
+            min-width: 620px;
+            width: 52%;
         }
 
+        /* QC3: Catatan nyaman */
         #tb-stock-table th:nth-child(3),
         #tb-stock-table td:nth-child(3) {
-            width: 28% !important;
+            width: 280px;
+            min-width: 280px;
         }
 
+        /* 1/2/3 satuan: bagi rata full lebar kolom Stok Real */
         #tb-stock-table .rstock {
-            flex-wrap: wrap !important;
+            flex-wrap: nowrap !important;
             display: flex !important;
             width: 100% !important;
-            gap: 8px !important;
+            gap: 10px !important;
+            align-items: stretch;
         }
 
         #tb-stock-table .rstock .unit-qty-group {
-            flex: 1 1 0% !important;
-            min-width: 140px !important;
+            flex: 1 1 0 !important;
+            width: auto !important;
+            min-width: 190px !important;
+            max-width: none !important;
             flex-wrap: nowrap !important;
         }
 
@@ -73,8 +90,9 @@
             font-size: 14px !important;
             font-weight: 500 !important;
             border-color: #cbd5e1 !important;
-            flex: 1 1 0% !important;
-            min-width: 0 !important;
+            flex: 1 1 auto !important;
+            min-width: 72px !important;
+            width: 0 !important;
             border-radius: 0 !important;
         }
 
@@ -87,6 +105,7 @@
             color: #334155 !important;
             padding: 0 10px !important;
             flex: 0 0 auto !important;
+            white-space: nowrap !important;
             border-radius: 0 !important;
         }
 
@@ -190,6 +209,10 @@
             border-radius: 8px !important;
             font-size: 13px !important;
             border-color: #cbd5e1 !important;
+            min-width: 260px !important;
+            width: 100% !important;
+            max-width: none !important;
+            box-sizing: border-box;
         }
 
         .invalid {
@@ -334,7 +357,7 @@
                             </div>
                             <div class="col-12 mt-3">
                                 <label class="text-muted mb-2" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;">Catatan</label>
-                                <textarea class="form-control" placeholder="Masukkan catatan stok opname jika ada..." id="catatan" rows="2" style="border-radius:8px;font-size:13px;resize:vertical;"></textarea>
+                                <textarea class="form-control" placeholder="Masukkan catatan stok opname jika ada..." id="catatan" rows="4" style="border-radius:8px;font-size:13px;resize:vertical;min-height:96px;"></textarea>
                             </div>
                         </div>
                     </div>
@@ -400,9 +423,9 @@
                                 <table class="table table-hover mb-0" id="tb-stock-table">
                                     <thead class="thead-light">
                                         <tr>
-                                            <th class="text-start" style="width:24%;">Nama Bahan Mentah</th>
-                                            <th class="text-center" style="width:48%;">Stok Real</th>
-                                            <th class="text-start" style="width:28%;">Catatan</th>
+                                            <th class="text-start">Nama Bahan Mentah</th>
+                                            <th class="text-center">Stok Real</th>
+                                            <th class="text-start">Catatan</th>
                                         </tr>
                                     </thead>
                                     <tbody id="tbStock"></tbody>
