@@ -948,7 +948,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+        <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12">
             <div class="input-block mb-3">
                 <label>Status</label>
                 <select class="form-select" id="so_filter_status">
@@ -960,6 +960,16 @@
                     <option value="5">Belum Terkirim</option>
                     <option value="6">Sudah Terkirim</option>
                     <option value="7">Dibatalkan</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-2 col-lg-2 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Sumber</label>
+                <select class="form-select" id="so_filter_source">
+                    <option value="">Semua</option>
+                    <option value="pmo">Sinkronisasi PMO</option>
+                    <option value="internal">Internal</option>
                 </select>
             </div>
         </div>

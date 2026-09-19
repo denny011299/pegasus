@@ -116,4 +116,55 @@ class SalesOrderDataTableRefShipmentIdTest extends TestCase
         $this->assertNotNull($row);
         $this->assertNull($row['ref_shipment_id']);
     }
+
+    public function test_source_filter_pmo_only_returns_shipments_with_a_ref_shipment_id(): void
+    {
+        $pmoSoId = $this->createFixtureSo('SHP-DT-'.uniqid());
+        $internalSoId = $this->createFixtureSo(null);
+
+        $result = (new SalesOrder())->getSalesOrderDataTable([
+            'active_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'length' => 100,
+            'order' => [['column' => 7, 'dir' => 'desc']],
+            'source' => 'pmo',
+        ]);
+
+        $ids = collect($result['data'])->pluck('so_id')->all();
+        $this->assertContains($pmoSoId, $ids);
+        $this->assertNotContains($internalSoId, $ids);
+    }
+
+    public function test_source_filter_internal_only_excludes_shipments_with_a_ref_shipment_id(): void
+    {
+        $pmoSoId = $this->createFixtureSo('SHP-DT-'.uniqid());
+        $internalSoId = $this->createFixtureSo(null);
+
+        $result = (new SalesOrder())->getSalesOrderDataTable([
+            'active_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'length' => 100,
+            'order' => [['column' => 7, 'dir' => 'desc']],
+            'source' => 'internal',
+        ]);
+
+        $ids = collect($result['data'])->pluck('so_id')->all();
+        $this->assertContains($internalSoId, $ids);
+        $this->assertNotContains($pmoSoId, $ids);
+    }
+
+    public function test_source_filter_empty_returns_both(): void
+    {
+        $pmoSoId = $this->createFixtureSo('SHP-DT-'.uniqid());
+        $internalSoId = $this->createFixtureSo(null);
+
+        $result = (new SalesOrder())->getSalesOrderDataTable([
+            'active_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'length' => 100,
+            'order' => [['column' => 7, 'dir' => 'desc']],
+            'source' => '',
+        ]);
+
+        $ids = collect($result['data'])->pluck('so_id')->all();
+        $this->assertContains($pmoSoId, $ids);
+        $this->assertContains($internalSoId, $ids);
+    }
 }
