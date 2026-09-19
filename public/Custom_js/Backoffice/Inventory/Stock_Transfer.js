@@ -379,6 +379,14 @@ function hasInsufficientStockRows() {
     });
 }
 
+/**
+ * Cek stok asal hanya untuk create/edit/kirim (dan approve retail → auto-Kirim).
+ * main_request setelah Kirim: approve/terima di penerima — stok asal sudah dipotong, jangan block.
+ */
+function transferNeedsSourceStockGate() {
+    return !(transferIsMainRequest && !transferCanShip);
+}
+
 function hasPendingTransferRows() {
     return transferItems.some(function (item) {
         return item.stock_loading === true;
@@ -3917,7 +3925,8 @@ function approveStockTransfer(type) {
     if ($confirmBtn.data("busy")) return;
     if (!assertKonfirmasiPhotoProof()) return;
 
-    // UX pre-check stok (QC22); gate wajib tetap di BE approveStockTransfer + shipLockedTransfer.
+    // UX pre-check stok asal hanya jika masih akan potong (retail→auto-Kirim). Gate BE tetap di shipLockedTransfer.
+    // main_request setelah Kirim: auto-Terima di penerima — jangan cek stok asal.
     function runApprove() {
         $confirmBtn.data("busy", true);
         if (typeof LoadingButton === "function") LoadingButton($confirmBtn);
@@ -3998,7 +4007,11 @@ function approveStockTransfer(type) {
         });
     }
 
-    if (typeof validateCurrentTransferMatrix === "function" && transferItems.length) {
+    if (
+        transferNeedsSourceStockGate() &&
+        typeof validateCurrentTransferMatrix === "function" &&
+        transferItems.length
+    ) {
         validateCurrentTransferMatrix(function (ok) {
             if (!ok) {
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
@@ -4218,7 +4231,7 @@ function loadTransferDetailForEdit(id) {
                 };
             });
             refreshTransferItemsTable();
-            revalidateAllTransferRows(false);
+            // Flags dulu — transferNeedsSourceStockGate() baca transferCanShip / main_request
             syncTransferEditActions(
                 res.can_ship === true || res.can_ship === 1,
                 res.can_reject === true || res.can_reject === 1,
@@ -4235,6 +4248,9 @@ function loadTransferDetailForEdit(id) {
                     opsApproved: res.ops_approved === true || res.ops_approved === 1,
                 }
             );
+            if (transferNeedsSourceStockGate()) {
+                revalidateAllTransferRows(false);
+            }
             snapshotTransferForm();
             setTransferFormLocked(true);
             setTransferModalLoading(false);
