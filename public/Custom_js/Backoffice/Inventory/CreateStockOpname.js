@@ -204,11 +204,11 @@ function refreshStockOpname(callback) {
                 $("#tbStock").append(`
                     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                         <td>
-                            <span class="text-dark">${escapeHtml(item.product_variant_sku || "-")}</span>
+                            <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
                         </td>
                         <td>
-                            <span class="fw-semibold text-dark d-block" style="font-size:13px;">${escapeHtml(item.pr_name)}</span>
-                            ${item.product_variant_name ? `<span class="d-block mt-1" style="font-size:12px;font-weight:700;color:#475569;">${escapeHtml(item.product_variant_name)}</span>` : ''}
+                            <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
+                            ${item.product_variant_name ? `<div class="text-muted mt-0.5" style="font-size:11.5px;font-weight:600;"><i class="fe fe-tag me-1" style="font-size:10px;"></i>${escapeHtml(item.product_variant_name)}</div>` : ''}
                         </td>
                         <td class="text-center">
                             <div class="input-group rstock">
@@ -308,11 +308,11 @@ function renderMode2(items) {
         $("#tbStock").append(`
             <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                 <td>
-                    <span class="text-dark">${escapeHtml(item.product_variant_sku || "-")}</span>
+                    <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
                 </td>
                 <td>
-                    <span class="fw-semibold text-dark d-block" style="font-size:13px;">${escapeHtml(item.pr_name)}</span>
-                    ${item.product_variant_name ? `<span class="d-block mt-1" style="font-size:12px;font-weight:700;color:#475569;">${escapeHtml(item.product_variant_name)}</span>` : ''}
+                    <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
+                    ${item.product_variant_name ? `<div class="text-muted mt-0.5" style="font-size:11.5px;font-weight:600;"><i class="fe fe-tag me-1" style="font-size:10px;"></i>${escapeHtml(item.product_variant_name)}</div>` : ''}
                 </td>
                 <td class="text-center">
                     <div class="input-group rstock">
