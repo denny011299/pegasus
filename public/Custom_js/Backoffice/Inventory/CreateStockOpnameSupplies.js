@@ -216,7 +216,7 @@ function refreshStockOpname(callback) {
                 $("#tbStock").append(`
                     <tr class="row-stock" data-supplies-id="${item.supplies_id}">
                         <td>
-                            <span class="fw-semibold text-dark" style="font-size:13px;">${escapeHtml(item.supplies_name)}</span>
+                            <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.supplies_name)}</div>
                         </td>
                         <td class="text-center">
                             <div class="input-group rstock">
@@ -364,7 +364,7 @@ function renderMode2(items) {
         $("#tbStock").append(`
             <tr class="row-stock" data-supplies-id="${item.supplies_id}">
                 <td>
-                    <span class="fw-semibold text-dark" style="font-size:13px;">${escapeHtml(item.supplies_name)}</span>
+                    <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.supplies_name)}</div>
                 </td>
                 <td class="text-center">
                     <div class="input-group rstock">

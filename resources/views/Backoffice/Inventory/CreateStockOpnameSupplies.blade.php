@@ -9,10 +9,10 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* min-width: layar sempit scroll horizontal (sama pola Stock Transfer / Opname Produk) */
+        /* min-width yang pas untuk desktop, scroll halus di mobile */
         #tb-stock-table {
             width: 100% !important;
-            min-width: 1280px;
+            min-width: 650px;
             table-layout: auto !important;
             border-collapse: separate;
             border-spacing: 0;
@@ -34,7 +34,7 @@
         }
 
         #tb-stock-table td {
-            padding: 12px 16px;
+            padding: 12px 14px;
             vertical-align: middle;
             border-bottom: 1px solid #f1f5f9;
             color: #334155;
@@ -45,69 +45,107 @@
             transition: background-color 0.15s ease;
         }
 
+        #tb-stock-table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Lebar kolom proporsional (total 100%) */
         #tb-stock-table th:nth-child(1),
         #tb-stock-table td:nth-child(1) {
-            width: 200px;
+            width: 32%;
             min-width: 160px;
-            max-width: 240px;
             word-break: break-word;
             white-space: normal;
         }
 
-        /* Stok Real: input tidak melebar penuh kolom */
+        /* Stok Real: 42% */
         #tb-stock-table th:nth-child(2),
         #tb-stock-table td:nth-child(2) {
-            min-width: 280px;
-            width: 40%;
+            width: 42%;
+            min-width: 240px;
         }
 
-        /* QC3: Catatan nyaman */
+        /* Catatan: 26% */
         #tb-stock-table th:nth-child(3),
         #tb-stock-table td:nth-child(3) {
-            width: 220px;
-            min-width: 160px;
+            width: 26%;
+            min-width: 150px;
         }
 
-        /* Wrap satuan; tiap input ukuran tetap biar 1 pcs tidak kepanjangan */
+        #tb-stock-table input.notes {
+            height: 42px !important;
+            border-radius: 8px !important;
+            font-size: 13px !important;
+            border-color: #cbd5e1 !important;
+            min-width: 120px !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-sizing: border-box;
+            background: #ffffff !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #tb-stock-table input.notes:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+        }
+
+        /* Wrap satuan; 1 input -> 1 col full (100% lebar kolom) */
         #tb-stock-table .rstock {
-            flex-wrap: wrap !important;
             display: flex !important;
+            flex-wrap: wrap !important;
             width: 100% !important;
             gap: 8px !important;
-            align-items: stretch;
+            align-items: center;
             justify-content: flex-start;
         }
 
         #tb-stock-table .rstock .unit-qty-group {
-            flex: 0 0 auto !important;
-            width: auto !important;
+            flex: 1 1 100% !important;
+            width: 100% !important;
+            max-width: 100% !important;
             min-width: 0 !important;
-            max-width: 220px !important;
             flex-wrap: nowrap !important;
+        }
+
+        /* Jika ada lebih dari 1 input satuan, bagi rata kolom */
+        #tb-stock-table .rstock .unit-qty-group:not(:only-child) {
+            flex: 1 1 calc(50% - 4px) !important;
+            width: calc(50% - 4px) !important;
+            min-width: 130px !important;
+            max-width: 100% !important;
         }
 
         #tb-stock-table .rstock .unit-qty-group .form-control {
             height: 42px !important;
             font-size: 14px !important;
-            font-weight: 500 !important;
+            font-weight: 600 !important;
             border-color: #cbd5e1 !important;
-            flex: 0 0 88px !important;
-            width: 88px !important;
-            min-width: 72px !important;
-            max-width: 100px !important;
+            flex: 1 1 auto !important;
+            width: 100% !important;
+            min-width: 50px !important;
+            max-width: none !important;
             border-radius: 0 !important;
+            color: #0f172a !important;
+            background: #ffffff !important;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #tb-stock-table .rstock .unit-qty-group .form-control:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
         }
 
         #tb-stock-table .rstock .unit-qty-group .input-group-text {
             height: 42px !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
+            font-size: 12.5px !important;
+            font-weight: 600 !important;
             background-color: #f8fafc !important;
             border-color: #cbd5e1 !important;
             color: #334155 !important;
-            padding: 0 10px !important;
+            padding: 0 12px !important;
             flex: 0 0 auto !important;
-            min-width: 3.25rem !important;
+            min-width: 3.5rem !important;
             max-width: 7rem !important;
             white-space: nowrap !important;
             overflow: hidden !important;
@@ -116,16 +154,18 @@
         }
 
         #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap {
-            padding: 0 8px !important;
+            padding: 0 10px !important;
             display: flex !important;
             align-items: center !important;
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
             border-top-left-radius: 8px !important;
             border-bottom-left-radius: 8px !important;
         }
 
         #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap .form-check-input {
-            width: 1.05rem;
-            height: 1.05rem;
+            width: 1.1rem;
+            height: 1.1rem;
             margin: 0;
             cursor: pointer;
         }
@@ -141,30 +181,26 @@
         }
 
         @media (max-width: 991.98px) {
+            #tb-stock-table {
+                min-width: 620px;
+            }
             #tb-stock-table th:nth-child(2),
             #tb-stock-table td:nth-child(2) {
-                min-width: 240px;
-                width: auto;
+                min-width: 220px;
             }
-            #tb-stock-table .rstock .unit-qty-group {
-                max-width: 200px !important;
+            #tb-stock-table .rstock .unit-qty-group:not(:only-child) {
+                flex: 1 1 100% !important;
+                width: 100% !important;
             }
         }
 
         @media (max-width: 575.98px) {
-            #tb-stock-table th:nth-child(2),
-            #tb-stock-table td:nth-child(2) {
-                min-width: 180px;
+            #tb-stock-table {
+                min-width: 540px;
             }
             #tb-stock-table .rstock .unit-qty-group {
-                flex: 1 1 calc(50% - 4px) !important;
-                max-width: calc(50% - 4px) !important;
-            }
-            #tb-stock-table .rstock .unit-qty-group .form-control {
-                flex: 1 1 auto !important;
-                width: auto !important;
-                max-width: none !important;
-                min-width: 56px !important;
+                flex: 1 1 100% !important;
+                width: 100% !important;
             }
         }
 
