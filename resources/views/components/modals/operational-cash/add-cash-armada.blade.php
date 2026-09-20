@@ -23,7 +23,8 @@
                   </div>
                 </div>
                 <div class="col-lg-6 col-12 mb-lg-4 mb-0"></div>
-                <div class="row p-0 m-0" id="inputModal">
+                <div class="col-12">
+                <div class="row g-2" id="inputModal">
                   <div class="col-12 col-lg-6">
                     <div class="input-block mb-3">
                       <label>Tanggal<span class="text-danger">*</span></label>
@@ -71,8 +72,8 @@
                         placeholder="Contoh: Pengembalian kas harian">
                     </div>
                   </div>
-                  <div class="col-12 px-2 mb-3 operasional">
-                    <div class="row input_table pg-popup-table-input g-3 align-items-end px-1">
+                  <div class="col-12 mt-3 mb-3 operasional pg-popup-table-input">
+                    <div class="row input_table g-3 align-items-end">
                       {{-- <div class="col-12 col-lg-3">
                                                 <div class="input-block mb-3">
                                                     <label>Tipe<span class="text-danger">*</span></label>
@@ -117,11 +118,13 @@
                     <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailArmada" style="min-height: 15vh">
                         <thead>
-                          <th>No</th>
-                          <th>Tipe</th>
-                          <th style="width: 25%">Keterangan</th>
-                          <th class="text-end">Nominal</th>
-                          <th class="no-sort text-center col-aksi">Aksi</th>
+                          <tr>
+                            <th>No</th>
+                            <th>Tipe</th>
+                            <th style="width: 25%">Keterangan</th>
+                            <th class="text-end">Nominal</th>
+                            <th class="no-sort text-center col-aksi">Aksi</th>
+                          </tr>
                         </thead>
                         <tbody>
                           <tr class="pg-popup-table-empty">
@@ -138,6 +141,7 @@
                       </table>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
