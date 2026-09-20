@@ -88,10 +88,10 @@
       white-space: normal;
     }
 
-    /* QC3: Stok Real cukup untuk ~3 satuan (checkbox+qty+label) tanpa gepeng */
+    /* Stok Real: muat ~3 satuan per baris (sisanya wrap) */
     #tb-stock-table th:nth-child(3),
     #tb-stock-table td:nth-child(3) {
-      min-width: 620px;
+      min-width: 480px;
       width: 48%;
     }
 
@@ -99,7 +99,7 @@
     #tb-stock-table th:nth-child(4),
     #tb-stock-table td:nth-child(4) {
       width: 280px;
-      min-width: 280px;
+      min-width: 220px;
     }
 
     #tb-stock-table input.notes {
@@ -107,15 +107,15 @@
       border-radius: 8px !important;
       font-size: 13px !important;
       border-color: #cbd5e1 !important;
-      min-width: 260px !important;
+      min-width: 180px !important;
       width: 100% !important;
       max-width: none !important;
       box-sizing: border-box;
     }
 
-    /* 1/2/3 satuan: bagi rata full lebar kolom Stok Real */
+    /* Max 3 input satuan / baris; kelebihan wrap ke bawah */
     #tb-stock-table .rstock {
-      flex-wrap: nowrap !important;
+      flex-wrap: wrap !important;
       display: flex !important;
       width: 100% !important;
       gap: 10px !important;
@@ -123,10 +123,10 @@
     }
 
     #tb-stock-table .rstock .unit-qty-group {
-      flex: 1 1 0 !important;
-      width: auto !important;
-      min-width: 190px !important;
-      max-width: none !important;
+      flex: 1 1 calc((100% - 20px) / 3) !important;
+      width: calc((100% - 20px) / 3) !important;
+      min-width: 140px !important;
+      max-width: calc((100% - 20px) / 3) !important;
       flex-wrap: nowrap !important;
     }
 
