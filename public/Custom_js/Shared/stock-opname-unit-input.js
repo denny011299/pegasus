@@ -1,24 +1,3 @@
-/**
- * Singkatan label satuan untuk UI Opname yang sempit.
- * Pakai unit_short_name; kalau >4 karakter, ringkas (huruf awal + konsonan).
- */
-function opnameUnitAbbrev(shortName, fullName) {
-    var short = String(shortName || "").trim();
-    var name = String(fullName || "").trim();
-    var label = short || name || "-";
-    if (label.length > 4) {
-        var letters = label.replace(/[^a-zA-Z0-9]/g, "");
-        if (letters.length > 4) {
-            var first = letters.charAt(0);
-            var rest = letters.slice(1).replace(/[aeiouAEIOU]/g, "");
-            label = (first + rest).substring(0, 4).toUpperCase();
-        } else {
-            label = letters.toUpperCase() || label;
-        }
-    }
-    return label;
-}
-
 /** Nama produk + varian (varian disembunyikan kalau sama / sudah termasuk di nama). */
 function opnameProductTitleHtml(prName, variantName) {
     var p = String(prName || "").trim();
@@ -41,10 +20,7 @@ function opnameProductTitleHtml(prName, variantName) {
  */
 function buildOpnameUnitInputHtml(opts) {
     var unitId = opts.unitId;
-    var unitName =
-        opts.unitName ||
-        opnameUnitAbbrev(opts.unitShortName, opts.unitFullName) ||
-        "";
+    var unitName = opts.unitName || "";
     var systemQty =
         opts.systemQty != null && opts.systemQty !== "" ? opts.systemQty : "";
     var placeholder = opts.placeholder || "";
@@ -63,14 +39,14 @@ function buildOpnameUnitInputHtml(opts) {
     var chkAttr = checked ? " checked" : "";
 
     var checkboxHtml = showCheckbox
-        ? '<span class="input-group-text unit-use-system-wrap" title="Centang untuk menggunakan stock sistem">' +
-          '<input type="checkbox" class="form-check-input m-0 use-system-stock"' +
+        ? '<span class="input-group-text unit-use-system-wrap" title="Centang: gunakan stok sistem">' +
+          '<input type="checkbox" class="form-check-input m-0 use-system-stock" title="Centang: gunakan stok sistem"' +
           chkAttr +
           "></span>"
         : "";
 
     return (
-        '<div class="input-group unit-qty-group">' +
+        '<div class="input-group unit-qty-group' + (checked ? ' is-using-system' : '') + '">' +
         checkboxHtml +
         '<input type="text" class="form-control real-stock nominal_only text-end" value="' +
         displayVal +
@@ -84,7 +60,9 @@ function buildOpnameUnitInputHtml(opts) {
         '" data-system-qty="' +
         systemQty +
         '">' +
-        '<span class="input-group-text">' +
+        '<span class="input-group-text unit-label-addon" title="Satuan: ' +
+        String(unitName).replace(/"/g, "&quot;") +
+        '">' +
         (typeof escapeHtml === "function" ? escapeHtml(unitName) : unitName) +
         "</span>" +
         "</div>"
@@ -95,6 +73,7 @@ function applyOpnameUseSystemStockState($cb) {
     var $group = $cb.closest(".unit-qty-group");
     var $input = $group.find(".real-stock");
     if ($cb.is(":checked")) {
+        $group.addClass("is-using-system");
         if (!$input.data("prev-val-saved")) {
             $input.data("prev-val", $input.val());
             $input.data("prev-ph", $input.attr("placeholder") || "");
@@ -102,6 +81,7 @@ function applyOpnameUseSystemStockState($cb) {
         }
         $input.val("").attr("placeholder", "ikut stock sistem").prop("disabled", true);
     } else {
+        $group.removeClass("is-using-system");
         var prev = $input.data("prev-val");
         var prevPh = $input.data("prev-ph") || "";
         $input.data("prev-val-saved", 0);
@@ -129,6 +109,21 @@ $(document).on("change", ".use-system-stock", function () {
         return;
     }
     applyOpnameUseSystemStockState($cb);
+});
+
+// Klik pada kotak checkbox addon langsung toggle checkbox
+$(document).on("click", ".unit-use-system-wrap", function (e) {
+    if (e.target.tagName !== "INPUT") {
+        var $cb = $(this).find(".use-system-stock");
+        if (!$cb.prop("disabled")) {
+            $cb.prop("checked", !$cb.prop("checked")).trigger("change");
+        }
+    }
+});
+
+// Klik pada label satuan langsung fokus ke input
+$(document).on("click", ".unit-qty-group > .input-group-text:last-child", function () {
+    $(this).closest(".unit-qty-group").find(".real-stock:not(:disabled)").focus();
 });
 
 /** True kalau semua checkbox .use-system-stock di baris ini tercentang. */

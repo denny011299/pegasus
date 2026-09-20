@@ -193,10 +193,7 @@ function refreshStockOpname(callback) {
                             : "";
                     rl_stock += buildOpnameUnitInputHtml({
                         unitId: element.unit_id,
-                        unitName: opnameUnitAbbrev(
-                            element.unit_short_name,
-                            element.unit_name,
-                        ),
+                        unitName: element.unit_short_name,
                         systemQty: data.is_draft ? "" : element.ps_stock,
                         placeholder: createPlaceholder,
                         value: "",
@@ -207,7 +204,7 @@ function refreshStockOpname(callback) {
                 $("#tbStock").append(`
                     <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                         <td>
-                            <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
+                            <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_sku || "-")}</div>
                         </td>
                         <td>
                             ${opnameProductTitleHtml(item.pr_name, item.product_variant_name)}
@@ -295,10 +292,7 @@ function renderMode2(items) {
             let systemHint = element.live_qty ?? element.system_qty;
             rl_stock += buildOpnameUnitInputHtml({
                 unitId: element.unit_id,
-                unitName: opnameUnitAbbrev(
-                    element.unit_short_name,
-                    element.unit_name,
-                ),
+                unitName: element.unit_short_name,
                 systemQty: element.system_qty,
                 placeholder:
                     untouched && systemHint !== null && systemHint !== undefined
@@ -313,7 +307,7 @@ function renderMode2(items) {
         $("#tbStock").append(`
             <tr class="row-stock" data-product-id="${item.product_id}" data-variant-id="${item.product_variant_id}">
                 <td>
-                    <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
+                    <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_sku || "-")}</div>
                 </td>
                 <td>
                     ${opnameProductTitleHtml(item.pr_name, item.product_variant_name)}
