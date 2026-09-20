@@ -113,7 +113,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="col-12 py-3 mb-3 operasional">
+                  <div class="col-12 px-2 py-3 mb-3 operasional">
                     <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailArmada" style="min-height: 15vh">
                         <thead>
