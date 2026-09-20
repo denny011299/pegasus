@@ -55,7 +55,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="col-lg-6 col-12 operasional">
+                  <div class="col-lg-6 col-12 operasional mb-3">
                     <label class="form-label d-flex">
                       Bukti Foto<span class="text-danger">*</span>
                       <span id="check_foto_gudang" style="display: none" class="ms-2">
