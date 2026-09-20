@@ -1,20 +1,14 @@
 {
-    "generated_at": "2026-09-20T23:43:41+07:00",
-    "commit": "5ae47d4efb6abe82751fe4f77d7a97b0bd8a3cec",
+    "generated_at": "2026-09-20T23:49:29+07:00",
+    "commit": "2803e99ff7a467d367e221e4c308136858e71260",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "9de7ef8a87c29e9de1a39b9ee496ca59d4e26196",
-    "previous_generated_at": "2026-09-20T22:47:27+07:00",
+    "previous_commit": "5ae47d4efb6abe82751fe4f77d7a97b0bd8a3cec",
+    "previous_generated_at": "2026-09-20T23:43:41+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/ProductionController.php",
-        "app/Http/Controllers/StockController.php",
-        "app/Http/Controllers/SupplierController.php",
-        "public/Custom_js/Backoffice/Inventory/CreateStockOpname.js",
-        "public/Custom_js/Backoffice/Inventory/CreateStockOpnameSupplies.js",
-        "resources/views/Backoffice/Inventory/CreateStockOpname.blade.php",
-        "resources/views/Backoffice/Inventory/CreateStockOpnameSupplies.blade.php"
+        "resources/views/layout/partials/sidebar.blade.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -3561,7 +3555,7 @@
         "resources/views/layout/partials/header.blade.php": "d8ac579a7d8a8046b6cea784fa56efd4e01eb77c",
         "resources/views/layout/partials/horizontal-sidebar.blade.php": "d185ec087a255ee24d637be162e7c9fa19975327",
         "resources/views/layout/partials/pg-modal-styles.blade.php": "69b56d464001d6c80c70bc4da08957913e952691",
-        "resources/views/layout/partials/sidebar.blade.php": "e7b6f4d12b372cf0414615d5118dd687f8df546e",
+        "resources/views/layout/partials/sidebar.blade.php": "2dd7e5a522c529327034ec638ac62e388ce44712",
         "resources/views/layout/partials/theme-settings.blade.php": "1704db21d313c80f33f3fe5661ad21cf3f59aef4",
         "resources/views/layout/partials/two-col-sidebar.blade.php": "40a1ab62600034a56fa33babfe2dc91ff827794f",
         "resources/views/livewire/add-credit-notes.blade.php": "3c46bded3e823002a3a16840dfaf7cd9a625a033",
