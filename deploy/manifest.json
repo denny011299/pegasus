@@ -1,16 +1,14 @@
 {
-    "generated_at": "2026-09-20T21:02:23+07:00",
-    "commit": "5bfcd87dd77a9859961bcff9fd756ff6c9a4da7c",
+    "generated_at": "2026-09-20T22:00:53+07:00",
+    "commit": "f313ecc2c985d609c3255a6ca3abd26afdf27d8a",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "6caa7bd18123f09460720e5fc721821939409f7c",
-    "previous_generated_at": "2026-09-20T20:26:24+07:00",
+    "previous_commit": "5bfcd87dd77a9859961bcff9fd756ff6c9a4da7c",
+    "previous_generated_at": "2026-09-20T21:02:23+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js",
-        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php",
-        "resources/views/components/modals/stock-transfer/add-stock-transfer.blade.php"
+        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -1141,7 +1139,7 @@
         "public/Custom_js/Backoffice/Inventory/Stock_Product copy.js": "1c37e215e36773841ae4cebd4d63e55ecf8e85b8",
         "public/Custom_js/Backoffice/Inventory/Stock_Product.js": "79d869b70e93650f75c537f735d5919700c6ad9b",
         "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js": "e03195f27e4be5b8c330f9682067167d48b72aa7",
-        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js": "a935e7e909594f31f88238a33949cba403c9f53c",
+        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js": "e5a37a4359fb4dafe32206664750b27f968f839b",
         "public/Custom_js/Backoffice/Login.js": "7564d3b28af05b0682496ab0f605d913d8238e6a",
         "public/Custom_js/Backoffice/Product/Barcode.js": "f14c6d6ec7c0303324d61e2d5d42d57a2375898b",
         "public/Custom_js/Backoffice/Product/Category.js": "1756fbc7ba3cd4d4de70cbc6444fae4584b4c7f2",
