@@ -1842,8 +1842,12 @@ function refreshProduction() {
             }
             table.clear().draw();
             for (let i = 0; i < e.length; i++) {
+                var timeStr = e[i].created_at ? moment(e[i].created_at).format("HH:mm:ss") : "";
+                var timeHtml = timeStr
+                    ? `<div class="d-flex align-items-center gap-1" style="font-size:11.5px;font-weight:600;color:#475569;margin-top:2px;"><i class="fe fe-clock text-primary" style="font-size:11px;"></i><span>${timeStr} WIB</span></div>`
+                    : "";
                 e[i].date =
-                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><div><div class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</div><div style="font-size:11px;color:#94a3b8;">${e[i].created_at ? moment(e[i].created_at).format("HH:mm:ss") : ""}</div></div></div>`;
+                    `<div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fe fe-calendar" style="font-size:14px;"></i></div><div><div class="fw-semibold text-dark">${moment(e[i].production_date).format("D MMM YYYY")}</div>${timeHtml}</div></div>`;
                 if (e[i].production_code) {
                     var cleanCode = $('<div>').html(e[i].production_code).text();
                     e[i].production_code =
