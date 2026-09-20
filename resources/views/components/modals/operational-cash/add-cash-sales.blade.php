@@ -46,7 +46,7 @@
                       <select class="form-select fill" id="staff_id_sales"></select>
                     </div>
                   </div>
-                  <div class="col-12 col-lg-6 foto operasional mb-4">
+                  <div class="col-12 col-lg-6 foto operasional mb-3">
                     <label class="form-label d-flex">
                       Bukti Foto<span class="text-danger">*</span>
                       <span id="check_foto_sales" style="display: none" class="ms-2">
