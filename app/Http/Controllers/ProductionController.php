@@ -1740,6 +1740,13 @@ class ProductionController extends Controller
             $base = array_shift($credits);      // selalu satuan bawah (bisa DELTA negatif kalau naik satuan)
             $naikLevel = $credits;               // level-level di atasnya (kosong kalau tidak naik)
 
+            // GitHub #194: log_saldo dari log utama di bawah harus mencerminkan Sisa TEPAT SETELAH
+            // kredit mentah ini, sebelum ikut dilipat naik satuan oleh $naikLevel -- ditangkap di
+            // sini (sebelum += ) supaya tidak bergantung pada fallback resolveCurrentSaldo() milik
+            // insertLog(), yang kalau dibiarkan akan membaca ss_stock SETELAH semua level naik
+            // satuan selesai diterapkan (log ditulis paling akhir), bukan angka "baru saja masuk".
+            $stokBawahLama = (float) $stokBawah->ss_stock;
+
             $stokBawah->ss_stock += $base['qty'];
             $stokBawah->save();
 
@@ -1767,6 +1774,7 @@ class ProductionController extends Controller
                 'log_notes'    => "Pengembalian stok bahan akibat pembatalan produksi " . LogStock::actorSuffix(),
                 'log_jumlah'   => $butuhTersedia,
                 'unit_id'      => $stokBawah->unit_id,
+                'log_saldo'    => $stokBawahLama + $butuhTersedia,
             ]);
 
             // Jejak konversi kalau memang naik satuan: satuan asal keluar (cat 2), satuan hasil
