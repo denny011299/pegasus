@@ -1616,19 +1616,30 @@ function resolveUnitsFromRaw(raw) {
     return [];
 }
 
+function syncTransferStockAsalColumn() {
+    var show = transferNeedsSourceStockGate();
+    var $table = $("#tableTransferItems");
+    $table.toggleClass("st-hide-stock-asal", !show);
+    var cols = show ? 6 : 5;
+    $table.find("tbody tr.empty-row > td[colspan]").attr("colspan", cols);
+}
+
 function refreshTransferItemsTable() {
+    syncTransferStockAsalColumn();
     var $tbody = $("#tableTransferItems tbody");
     $tbody.empty();
+    var colCount = transferNeedsSourceStockGate() ? 6 : 5;
     if (!transferItems.length) {
         $tbody.html(`
             <tr class="empty-row">
-                <td colspan="6" class="text-center text-muted py-5" style="font-size:14px;">Belum ada produk. Pilih gudang asal terlebih dahulu, lalu pilih/scan produk.</td>
+                <td colspan="${colCount}" class="text-center text-muted py-5" style="font-size:14px;">Belum ada produk. Pilih gudang asal terlebih dahulu, lalu pilih/scan produk.</td>
             </tr>
         `);
         return;
     }
 
     var locked = transferFormLocked === true;
+    var showStockAsal = transferNeedsSourceStockGate();
     transferItems.forEach(function (item, index) {
         var rowClass = item.retail_invalid
             ? " transfer-row-retail-error"
@@ -1651,14 +1662,15 @@ function refreshTransferItemsTable() {
                     ${buildUnitOptions(item)}
                 </select>
             `;
+        var stockAsalTd = showStockAsal
+            ? `<td class="col-stock-asal" style="padding: 14px 8px;">${renderTransferStockAsalHtml(item)}</td>`
+            : "";
         $tbody.append(`
             <tr class="${rowClass}" data-index="${index}" data-variant-id="${item.product_variant_id}">
                 <td style="padding: 14px 12px;">${escapeHtml(item.product_name || "-")}</td>
                 <td style="padding: 14px 12px;">${escapeHtml(item.product_variant_name || "-")}</td>
                 <td style="padding: 14px 12px;">${escapeHtml(item.product_variant_sku || "-")}</td>
-                <td class="col-stock-asal" style="padding: 14px 8px;">
-                    ${renderTransferStockAsalHtml(item)}
-                </td>
+                ${stockAsalTd}
                 <td class="col-qty-unit" style="padding: 14px 8px;">
                     <div class="transfer-qty-unit-wrap">
                         <input type="number" class="form-control form-control-sm transfer-qty" min="1" step="1"
@@ -2864,6 +2876,7 @@ function setTransferFormLocked(locked) {
     }
     refreshTransferItemsTable();
     syncTransferModalChrome();
+    syncTransferStockAsalColumn();
 }
 
 function setTransferModalMode(kind) {

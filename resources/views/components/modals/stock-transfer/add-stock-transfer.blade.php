@@ -280,7 +280,7 @@
                     <th
                       style="min-width: 90px; width: 13%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       SKU</th>
-                    <th
+                    <th class="col-stock-asal"
                       style="min-width: 110px; width: 16%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Stok Asal</th>
                     <th
@@ -293,7 +293,7 @@
                 </thead>
                 <tbody>
                   <tr class="empty-row">
-                    <td colspan="6" class="text-center py-5">
+                    <td colspan="5" class="text-center py-5">
                       <div style="color:#94a3b8;">
                         <i class="fe fe-inbox" style="font-size:36px;display:block;margin-bottom:8px;"></i>
                         <div class="fw-semibold" style="font-size:14px;">Belum ada produk</div>

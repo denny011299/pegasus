@@ -144,6 +144,10 @@
             color: #334155;
             vertical-align: middle;
         }
+        /* Create/edit request: kolom STOK ASAL disembunyikan (cek stok baru saat Kirim) */
+        #add_stock_transfer #tableTransferItems.st-hide-stock-asal .col-stock-asal {
+            display: none !important;
+        }
         #add_stock_transfer #tableTransferItems .col-qty-unit {
             vertical-align: middle;
         }
