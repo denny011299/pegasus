@@ -80,11 +80,13 @@
                         placeholder="Contoh: Untuk kas harian">
                     </div>
                   </div>
+                  
                   <div class="col-12 operasional mt-2">
                     <h5 class="form-title mb-2 text-black pb-2">Detail</h5>
                   </div>
-                  <div class="col-12 px-2 mb-3 operasional">
-                    <div class="row input_table pg-popup-table-input g-3 align-items-end px-1">
+
+                  <div class="col-12 mb-3 operasional pg-popup-table-input">
+                    <div class="row input_table g-3 align-items-end">
                       <div class="col-12 col-lg-6 add">
                         <div class="input-block mb-3" id="row-gudang">
                           <label>Nama Armada<span class="text-danger">*</span></label>
