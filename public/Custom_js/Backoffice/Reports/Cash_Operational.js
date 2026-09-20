@@ -326,6 +326,22 @@
         return false;
     }
 
+    /**
+     * GitHub #196 item 28: tombol "Tambah Aktivitas" di page-header dirender sekali di server
+     * berdasarkan akses `create` ke SALAH SATU dari 4 tipe kas (lihat page-header.blade.php), tapi
+     * halaman ini satu route untuk 4 tipe lewat dropdown #cashType — jadi kalau role hanya punya
+     * `create` di tipe lain (bukan tipe yang sedang dipilih), tombolnya harus disembunyikan untuk
+     * tipe yang sedang aktif itu. Dipanggil tiap #cashType berganti, sama seperti canViewCashType().
+     */
+    function canCreateCashType(type) {
+        if (window.userRoleId === -1) return true;
+        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "create") || hasAccessAction("Kas Admin", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
+        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "create") || hasAccessAction("Kas Gudang", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
+        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "create") || hasAccessAction("Kas Armada", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
+        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "create") || hasAccessAction("Kas Sales", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
+        return false;
+    }
+
     function sanitizeCashTypeOptions() {
         var $cashType = $("#cashType");
         if (!$cashType.length) return;
@@ -377,6 +393,8 @@
             type = $(this).val();
             if (!canViewCashType(String(type || ""))) return;
         }
+
+        $('.btnAddCash').toggle(canCreateCashType(String(type || "")));
 
         // Setting filter
         $('#filter_staff_id').empty(null);
