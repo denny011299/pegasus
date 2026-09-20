@@ -1,15 +1,15 @@
 {
-    "generated_at": "2026-09-20T22:34:19+07:00",
-    "commit": "50700f37cc3924d624e89b90986140ff7ccbff71",
+    "generated_at": "2026-09-20T22:39:19+07:00",
+    "commit": "6ab0ebbf6607c30944bc506b7ae096ab46064afe",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "8f79885d4278b3c2025e6632d01c7c3cbeda90ab",
-    "previous_generated_at": "2026-09-20T22:15:34+07:00",
+    "previous_commit": "50700f37cc3924d624e89b90986140ff7ccbff71",
+    "previous_generated_at": "2026-09-20T22:34:19+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php",
-        "resources/views/components/modals/stock-transfer/add-stock-transfer.blade.php"
+        "resources/views/Backoffice/Inventory/CreateStockOpname.blade.php",
+        "resources/views/Backoffice/Inventory/CreateStockOpnameSupplies.blade.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -3344,8 +3344,8 @@
         "resources/views/Backoffice/Finance/HutangPiutang.blade.php": "edd714be599246960c598e3eb27b5133ec2fb912",
         "resources/views/Backoffice/Finance/Journal.blade.php": "c9bebb6a8344760221526de9d6580d3a07f5ce90",
         "resources/views/Backoffice/Finance/Subcoa.blade.php": "2e1b21cd9948e2d06673c047ce2ddb5836eb7e2a",
-        "resources/views/Backoffice/Inventory/CreateStockOpname.blade.php": "5e4f8b8db64ecd38e856be3a33a787078b9732ec",
-        "resources/views/Backoffice/Inventory/CreateStockOpnameSupplies.blade.php": "a209700655214117aff25074e591a6972023674a",
+        "resources/views/Backoffice/Inventory/CreateStockOpname.blade.php": "19869d6b4427457948cecf8c3422b060b69113c0",
+        "resources/views/Backoffice/Inventory/CreateStockOpnameSupplies.blade.php": "a5363235d57c90fb6b7066331c99b31b8607c631",
         "resources/views/Backoffice/Inventory/Manage_Stock.blade.php": "89419403fc9dce418b70ced5fa4deb793c5bed7c",
         "resources/views/Backoffice/Inventory/Product_Issues.blade.php": "0d83da72b8062c3ad48157163d885ec8256bd59c",
         "resources/views/Backoffice/Inventory/Stock.blade.php": "587cbe49940dd3e53e66c21fbcbd9f8267ff8141",
