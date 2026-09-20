@@ -1,15 +1,13 @@
 {
-    "generated_at": "2026-09-20T22:41:28+07:00",
-    "commit": "4ebc187061f05348f4ab504d9bef26952504bb26",
+    "generated_at": "2026-09-20T22:46:43+07:00",
+    "commit": "18bb37d786b3db0584ab20f56e07ac23844cbfcf",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "6ab0ebbf6607c30944bc506b7ae096ab46064afe",
-    "previous_generated_at": "2026-09-20T22:39:19+07:00",
+    "previous_commit": "4ebc187061f05348f4ab504d9bef26952504bb26",
+    "previous_generated_at": "2026-09-20T22:41:28+07:00",
     "added": [],
     "removed": [],
-    "changed": [
-        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js"
-    ],
+    "changed": [],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
         "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
