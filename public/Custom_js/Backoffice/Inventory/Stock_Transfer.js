@@ -775,7 +775,8 @@ function inisialisasi() {
                 }
             },
             {
-                // Request: Ops / Acc Kirim. Transfer biasa: sender_id (pengirim).
+                // Retail: Ops / Acc Kirim di gudang asal. Main request: yang Kirim dari eceran (acc_by), bukan Ops tujuan.
+                // Transfer biasa: sender_id.
                 data: "sender_name",
                 width: "11%",
                 render: function (data, type, row) {
@@ -788,12 +789,15 @@ function inisialisasi() {
                         row.is_main_request === 1 ||
                         row.source_type === "main_request";
                     var name = data;
-                    if (isRetailReq || isMainReq) {
+                    if (isRetailReq) {
                         var opsName = row.ops_approved_by_name;
                         var shipName = row.ship_acc_by_name;
                         if (opsName && opsName !== "-") name = opsName;
                         else if (shipName && shipName !== "-") name = shipName;
                         else name = "-";
+                    } else if (isMainReq) {
+                        var shipMain = row.ship_acc_by_name;
+                        name = shipMain && shipMain !== "-" ? shipMain : "-";
                     }
                     return renderStockTransferPersonCell(name, "sender");
                 }
