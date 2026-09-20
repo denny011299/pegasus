@@ -369,7 +369,12 @@
             }
             #view_stock_transfer .modal-header,
             #accept_stock_transfer .modal-header {
-                padding: 12px 14px !important;
+                padding: 14px 16px !important;
+            }
+            #view_stock_transfer .modal-body > .border-bottom,
+            #accept_stock_transfer .modal-content > .border-bottom,
+            #accept_stock_transfer .modal-body > .border-bottom {
+                padding: 14px 16px !important;
             }
             #view_stock_transfer #view_transfer_approval_block,
             #accept_stock_transfer [id*="approval"] {
@@ -422,7 +427,7 @@
             #add_stock_transfer .modal-header,
             #view_stock_transfer .modal-header,
             #accept_stock_transfer .modal-header {
-                padding: 10px 14px !important;
+                padding: 14px 16px !important;
             }
             #add_stock_transfer .modal-header .pg-modal-icon,
             #view_stock_transfer .modal-header .pg-modal-icon,
@@ -435,16 +440,22 @@
             #accept_stock_transfer .modal-header .modal-title {
                 font-size: 14px !important;
             }
+            /* Body sections: modal-body p-0 — padding di sini, bukan p-2.5 (tidak ada di theme) */
             #add_stock_transfer .st-route-panel {
-                padding: 8px 10px 4px !important;
+                padding: 14px 16px 8px !important;
             }
             #add_stock_transfer .transfer-product-panel {
-                padding: 10px 12px !important;
+                padding: 14px 16px !important;
+            }
+            #view_stock_transfer .modal-body > .border-bottom,
+            #accept_stock_transfer .modal-content > .border-bottom,
+            #accept_stock_transfer .modal-body > .border-bottom {
+                padding: 14px 16px !important;
             }
             #add_stock_transfer .pg-modal-footer,
             #view_stock_transfer .pg-modal-footer,
             #accept_stock_transfer .pg-modal-footer {
-                padding: 8px 12px !important;
+                padding: 12px 16px !important;
                 gap: 8px !important;
             }
             #add_stock_transfer .pg-modal-footer .btn,
