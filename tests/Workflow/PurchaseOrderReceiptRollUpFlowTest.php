@@ -249,4 +249,44 @@ class PurchaseOrderReceiptRollUpFlowTest extends TestCase
         $this->assertSame('Konversi unit (Hasil naik satuan)', $logs[2]->log_notes);
         $this->assertSame(1, (int) $logs[2]->log_category, 'hasil leg (masuk) comes last');
     }
+
+    /**
+     * GitHub #194: the "Pembelian bahan mentah" masuk log is written BEFORE
+     * insertPoDeliveryDetail() touches stock (see the previous test's docblock), so its log_saldo
+     * must never be left to insertLog()'s resolveCurrentSaldo() fallback -- that fallback reads
+     * ss_stock live at insert time, which at this point in accPO() hasn't been credited yet (and,
+     * once the roll-up conversion legs run afterwards, ends up reading the FINAL folded stock
+     * instead of "right after this receipt"). Reported via screenshot: 8 DOS/22 Piece on hand,
+     * +2 Piece received (rolls up into 1 DOS) -- the masuk row's Sisa column stayed frozen at
+     * "8 DOS, 22 Piece" instead of showing "8 DOS, 24 Piece".
+     */
+    public function test_purchase_log_saldo_reflects_the_receipt_not_the_post_rollup_state(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$supplies, $variant, $pieceStock, $dosStock, $supplier] = $this->createFixture();
+
+        $pieceStock->ss_stock = 10; // pre-existing, below the 12-Piece DOS ratio on its own
+        $pieceStock->save();
+        $dosStock->ss_stock = 8;
+        $dosStock->save();
+
+        // 2 more Piece arrives: 10 + 2 = 12 = exactly 1 DOS, folding the Piece row back to 0.
+        $this->createAndApprovePo($variant, $supplier, 2);
+
+        $dosStock->refresh();
+        $pieceStock->refresh();
+        $this->assertSame(9, $dosStock->ss_stock);
+        $this->assertSame(0, $pieceStock->ss_stock, 'precondition: the roll-up folded the Piece row to 0');
+
+        $purchaseLog = LogStock::where('log_type', 2)
+            ->where('log_item_id', $supplies->supplies_id)
+            ->where('log_notes', 'like', 'Pembelian bahan mentah%')
+            ->firstOrFail();
+
+        $this->assertSame(
+            12.0,
+            (float) $purchaseLog->log_saldo,
+            'BUG WOULD BE: log_saldo reads the post-rollup 0 instead of 10 (old) + 2 (received) = 12'
+        );
+    }
 }
