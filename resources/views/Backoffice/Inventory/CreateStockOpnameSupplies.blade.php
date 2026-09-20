@@ -54,34 +54,35 @@
             white-space: normal;
         }
 
-        /* QC3: Stok Real cukup untuk ~3 satuan tanpa gepeng */
+        /* Stok Real: input tidak melebar penuh kolom */
         #tb-stock-table th:nth-child(2),
         #tb-stock-table td:nth-child(2) {
-            min-width: 480px;
-            width: 52%;
+            min-width: 280px;
+            width: 40%;
         }
 
         /* QC3: Catatan nyaman */
         #tb-stock-table th:nth-child(3),
         #tb-stock-table td:nth-child(3) {
-            width: 280px;
-            min-width: 220px;
+            width: 220px;
+            min-width: 160px;
         }
 
-        /* Max 3 input satuan / baris; kelebihan wrap ke bawah */
+        /* Wrap satuan; tiap input ukuran tetap biar 1 pcs tidak kepanjangan */
         #tb-stock-table .rstock {
             flex-wrap: wrap !important;
             display: flex !important;
             width: 100% !important;
-            gap: 10px !important;
+            gap: 8px !important;
             align-items: stretch;
+            justify-content: flex-start;
         }
 
         #tb-stock-table .rstock .unit-qty-group {
-            flex: 1 1 calc((100% - 20px) / 3) !important;
-            width: calc((100% - 20px) / 3) !important;
-            min-width: 140px !important;
-            max-width: calc((100% - 20px) / 3) !important;
+            flex: 0 0 auto !important;
+            width: auto !important;
+            min-width: 0 !important;
+            max-width: 220px !important;
             flex-wrap: nowrap !important;
         }
 
@@ -90,9 +91,10 @@
             font-size: 14px !important;
             font-weight: 500 !important;
             border-color: #cbd5e1 !important;
-            flex: 1 1 auto !important;
+            flex: 0 0 88px !important;
+            width: 88px !important;
             min-width: 72px !important;
-            width: 0 !important;
+            max-width: 100px !important;
             border-radius: 0 !important;
         }
 
@@ -105,7 +107,11 @@
             color: #334155 !important;
             padding: 0 10px !important;
             flex: 0 0 auto !important;
+            min-width: 3.25rem !important;
+            max-width: 7rem !important;
             white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
             border-radius: 0 !important;
         }
 
@@ -132,6 +138,34 @@
         #tb-stock-table .rstock .unit-qty-group:not(:has(.unit-use-system-wrap)) .form-control {
             border-top-left-radius: 8px !important;
             border-bottom-left-radius: 8px !important;
+        }
+
+        @media (max-width: 991.98px) {
+            #tb-stock-table th:nth-child(2),
+            #tb-stock-table td:nth-child(2) {
+                min-width: 240px;
+                width: auto;
+            }
+            #tb-stock-table .rstock .unit-qty-group {
+                max-width: 200px !important;
+            }
+        }
+
+        @media (max-width: 575.98px) {
+            #tb-stock-table th:nth-child(2),
+            #tb-stock-table td:nth-child(2) {
+                min-width: 180px;
+            }
+            #tb-stock-table .rstock .unit-qty-group {
+                flex: 1 1 calc(50% - 4px) !important;
+                max-width: calc(50% - 4px) !important;
+            }
+            #tb-stock-table .rstock .unit-qty-group .form-control {
+                flex: 1 1 auto !important;
+                width: auto !important;
+                max-width: none !important;
+                min-width: 56px !important;
+            }
         }
 
         .stock-opname-use-system-hint {
@@ -209,9 +243,9 @@
             border-radius: 8px !important;
             font-size: 13px !important;
             border-color: #cbd5e1 !important;
-            min-width: 260px !important;
+            min-width: 140px !important;
             width: 100% !important;
-            max-width: none !important;
+            max-width: 280px !important;
             box-sizing: border-box;
         }
 
