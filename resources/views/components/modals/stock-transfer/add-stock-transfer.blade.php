@@ -233,7 +233,7 @@
                 <input type="number" class="form-control" id="transfer_qty_input" placeholder="Qty"
                   value="1" min="1" step="1" style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;font-weight:600;text-align:center;">
               </div>
-              <div class="transfer-product-field transfer-draft-only" style="min-width: 140px;">
+              <div class="transfer-product-field transfer-draft-only" style="min-width: 180px;">
                 <label class="form-label mb-1.5" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
                   Satuan <span class="text-danger">*</span>
                 </label>
@@ -284,7 +284,7 @@
                       style="min-width: 110px; width: 16%; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Stok Asal</th>
                     <th
-                      style="min-width: 180px; width: 220px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
+                      style="min-width: 240px; width: 260px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Qty / Satuan</th>
                     <th class="no-sort text-center"
                       style="min-width: 50px; width: 56px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
