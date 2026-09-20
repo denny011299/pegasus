@@ -1,14 +1,13 @@
 {
-    "generated_at": "2026-09-20T13:47:14+07:00",
-    "commit": "8a3354eb03e1e3f62b4ae19a83fb754faa232084",
+    "generated_at": "2026-09-20T14:19:17+07:00",
+    "commit": "99d7baa677a4b2802c24faecad195cc490bc5bee",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "7b6c17f77dd514dfdb6ce88043a74e33880c7b64",
-    "previous_generated_at": "2026-09-20T00:33:06+07:00",
+    "previous_commit": "8a3354eb03e1e3f62b4ae19a83fb754faa232084",
+    "previous_generated_at": "2026-09-20T13:47:14+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/ProductionController.php",
         "public/Custom_js/Backoffice/Production/Production.js"
     ],
     "files": {
@@ -1150,7 +1149,7 @@
         "public/Custom_js/Backoffice/Product/Variants.js": "ca6f61a0063a66a9c9b2c12099db44124f65014f",
         "public/Custom_js/Backoffice/Product/insertProduct.js": "064c375cd2e939bd40ad174a7b6446710b12b22c",
         "public/Custom_js/Backoffice/Production/Bom.js": "230e8cebe5995426a851ad6409cd8497598e4573",
-        "public/Custom_js/Backoffice/Production/Production.js": "6491035faa6a8659481f90840f692cf5d4e2f156",
+        "public/Custom_js/Backoffice/Production/Production.js": "737f5241b2b5d19102450c0a29ad3204b1c1c95d",
         "public/Custom_js/Backoffice/Reports/Bahan_Baku.js": "40e1823f6a4cb1ffa9fb076501a8946dd8ef721f",
         "public/Custom_js/Backoffice/Reports/Cash.js": "f0697ba81e9b08a08f395f7b21eaa0d86d708607",
         "public/Custom_js/Backoffice/Reports/Cash_Operational.js": "f8e6aed30470b04f6d2c3af30194436c17765d90",
