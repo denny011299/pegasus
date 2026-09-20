@@ -156,72 +156,32 @@
 @endif
 <!-- /Main Wrapper -->
 
-@php
-  // Jangan tampilkan FAB di halaman auth (login/register) — resolveWarehouseId tanpa session
-  // bisa tetap deteksi opname open gudang default.
-  $fabOnAuthPage = Route::is([
-      'login', 'register', 'forgot-password', 'lock-screen', 'saas-login', 'saas-register',
-  ]);
-  $fabShow = Session::has('user') && ! $fabOnAuthPage;
-@endphp
-@if ($fabShow)
-@php
-  $fabWhId = (int) \App\Models\ProductStock::resolveWarehouseId(null);
-  $fabSnap = $fabWhId > 0
-      ? app(\App\Support\StockOpname\OpenOpnameGuard::class)->statusForWarehouse($fabWhId)
-      : ['product' => ['open' => false], 'supplies' => ['open' => false], 'any_open' => false];
-  $fabAny = !empty($fabSnap['any_open']);
-  $fabProduct = !empty($fabSnap['product']['open']);
-  $fabSupplies = !empty($fabSnap['supplies']['open']);
-  if ($fabProduct && !$fabSupplies) {
-      $fabText = 'Opname Produk aktif';
-      $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
-  } elseif ($fabSupplies && !$fabProduct) {
-      $fabText = 'Opname Bahan aktif';
-      $fabHref = $fabSnap['supplies']['url'] ?? url('/stockOpnameBahan');
-  } elseif ($fabAny) {
-      $fabText = 'Opname Produk & Bahan aktif';
-      $fabHref = $fabSnap['product']['url'] ?? url('/stockOpname');
-  } else {
-      $fabText = 'Opname aktif';
-      $fabHref = url('/stockOpname');
-  }
-@endphp
-{{-- FAB indikator opname (slot ex theme-settings): tampil hanya jika ada opname open --}}
-<a href="{{ $fabHref }}" id="opname-open-fab" class="opname-open-fab"
-   title="{{ $fabText }}"
-   aria-hidden="{{ $fabAny ? 'false' : 'true' }}"
-   style="{{ $fabAny ? 'display:inline-flex' : 'display:none' }}">
-  <span class="opname-open-fab-dot" aria-hidden="true"></span>
-  <span class="opname-open-fab-text">{{ $fabText }}</span>
-</a>
-@endif
 <style>
-  /* Badge status opname — samakan dengan dash-toolbar / card premium */
+  /* Badge status opname — Modern Glassmorphism & Radiant Radar Pulse */
   .opname-status-badges {
     display: inline-flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.4rem;
+    gap: 0.5rem;
   }
   .opname-status-badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 0.75rem;
+    gap: 0.5rem;
+    padding: 0.42rem 0.85rem;
     border-radius: 999px;
-    background: #ffffff;
-    border: 1px solid rgba(15, 23, 42, 0.1);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
     color: #64748b !important;
     text-decoration: none !important;
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.01em;
+    font-weight: 500;
+    letter-spacing: 0.015em;
     line-height: 1.25;
     max-width: 100%;
-    transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .opname-status-label {
     white-space: nowrap;
@@ -233,68 +193,240 @@
   }
   .opname-status-badge:hover {
     color: #0f172a !important;
-    border-color: rgba(29, 78, 216, 0.35);
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    background: #ffffff;
+    border-color: #cbd5e1;
+    box-shadow: 0 3px 10px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
   }
   .opname-status-dot {
+    position: relative;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: #94a3b8;
     flex-shrink: 0;
-  }
-  .opname-status-badge.is-on {
-    color: #166534 !important;
-    background: #f0fdf4;
-    border-color: rgba(22, 163, 74, 0.35);
-  }
-  .opname-status-badge.is-on .opname-status-dot {
-    background: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
-    animation: opname-status-pulse 1.6s ease-in-out infinite;
-  }
-  @keyframes opname-status-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(0.9); }
+    transition: background 0.2s ease;
   }
 
+  /* Active Opname Badge (Luminous Emerald Glow & Live Radar Beacon) */
+  .opname-status-badge.is-on {
+    color: #065f46 !important;
+    font-weight: 600;
+    background: linear-gradient(135deg, rgba(236, 253, 245, 0.95) 0%, rgba(209, 250, 229, 0.85) 100%);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    box-shadow: 0 2px 8px -1px rgba(16, 185, 129, 0.22), 0 1px 2px rgba(15, 23, 42, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .opname-status-badge.is-on:hover {
+    color: #047857 !important;
+    background: linear-gradient(135deg, #dcfce7 0%, #a7f3d0 100%);
+    border-color: rgba(16, 185, 129, 0.7);
+    box-shadow: 0 4px 14px -1px rgba(16, 185, 129, 0.32), inset 0 1px 0 #ffffff;
+    transform: translateY(-1px);
+  }
+  .opname-status-badge.is-on .opname-status-dot {
+    background: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+  }
+  .opname-status-badge.is-on .opname-status-dot::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #10b981;
+    transform: translate(-50%, -50%);
+    animation: opname-soft-ripple 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    pointer-events: none;
+  }
+
+  /* Lampu Opname Navbar (Ramah di Mata, Glow Lembut & Organik) */
+  .opname-open-fab-dot {
+    position: relative;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #34d399;
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.85), 0 0 1px #34d399;
+    flex-shrink: 0;
+    animation: opname-lamp-glow 2.4s ease-in-out infinite;
+  }
+  .opname-open-fab-dot::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #34d399;
+    transform: translate(-50%, -50%);
+    animation: opname-soft-ripple 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    pointer-events: none;
+  }
+  @keyframes opname-lamp-glow {
+    0%, 100% {
+      box-shadow: 0 0 4px rgba(52, 211, 153, 0.7), 0 0 1px #34d399;
+    }
+    50% {
+      box-shadow: 0 0 8px rgba(52, 211, 153, 0.95), 0 0 2px #a7f3d0;
+    }
+  }
+  @keyframes opname-soft-ripple {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 0.6;
+    }
+    60%, 100% {
+      transform: translate(-50%, -50%) scale(2.0);
+      opacity: 0;
+    }
+  }
+
+  /* Badge Stock Opname Navbar — Sleek Dark-Glassmorphism Pill */
+  .header.custom-premium-header .opname-open-fab,
   .opname-open-fab {
-    z-index: 999;
-    position: fixed;
-    right: 20px;
-    bottom: 20px;
+    z-index: 20;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
     display: none;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem 0.95rem 0.6rem 0.8rem;
+    justify-content: center;
+    gap: 7px;
+    height: 28px;
+    width: auto;
+    max-width: min(320px, calc(100vw - 280px));
+    padding: 0 12px;
     border-radius: 999px;
     text-decoration: none !important;
-    color: #166534 !important;
-    background: #ffffff;
-    border: 1px solid rgba(22, 163, 74, 0.35);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.1);
-    font-size: 13px;
-    font-weight: 600;
+    color: #ecfdf5 !important;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(52, 211, 153, 0.32);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 10px rgba(16, 185, 129, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    font-size: 11.5px;
+    font-weight: 500;
     letter-spacing: 0.01em;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    line-height: 1;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .opname-open-fab:hover {
-    color: #14532d !important;
-    transform: translateY(-1px);
-    border-color: rgba(22, 163, 74, 0.55);
-    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06), 0 12px 28px rgba(15, 23, 42, 0.12);
+    color: #ffffff !important;
+    background: rgba(16, 185, 129, 0.22);
+    border-color: rgba(52, 211, 153, 0.55);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.3), 0 0 14px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translate(-50%, -50%) translateY(-1px);
   }
-  .opname-open-fab-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
-    animation: opname-status-pulse 1.6s ease-in-out infinite;
+  .opname-open-fab-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ecfdf5;
+    font-weight: 500;
+  }
+  .opname-open-fab-short {
+    display: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #ecfdf5;
+    font-weight: 500;
+  }
+  .opname-open-fab-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
     flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6ee7b7;
+    margin-left: 2px;
+    padding-left: 6px;
+    border-left: 1px solid rgba(52, 211, 153, 0.28);
+  }
+  .opname-open-fab-arrow {
+    font-size: 10px;
+    color: #6ee7b7;
+    transition: transform 0.15s ease;
+  }
+  .opname-open-fab:hover .opname-open-fab-arrow {
+    transform: translateX(2px);
+    color: #a7f3d0;
+  }
+  @media (max-width: 1199.98px) {
+    .header.custom-premium-header .opname-open-fab,
+    .opname-open-fab {
+      max-width: min(240px, calc(100vw - 220px));
+      font-size: 11px;
+      height: 26px;
+      padding: 0 10px;
+    }
+    .opname-open-fab-cta {
+      display: none;
+    }
   }
   @media (max-width: 991.98px) {
-    .opname-open-fab { right: 12px; bottom: 12px; }
+    /* Pada layar tablet & HP (<= 991.98px):
+       Tombol gudang menyusut jadi ikon bulat 36px di left: 45px (berakhir di 81px).
+       Posisikan badge opname di samping kanan ikon gudang (left: 88px), BUKAN di left: 50%
+       karena user-menu di kanan memakan ~220px sehingga left: 50% menabrak ikon menu. */
+    .header.custom-premium-header .opname-open-fab,
+    .opname-open-fab {
+      left: 88px !important;
+      right: auto !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      max-width: calc(100vw - 310px);
+      height: 26px;
+      padding: 0 10px;
+      font-size: 11px;
+      gap: 6px;
+    }
+    .header.custom-premium-header .opname-open-fab:hover,
+    .opname-open-fab:hover {
+      transform: translateY(-50%) translateY(-1px) !important;
+    }
+    .opname-open-fab-cta {
+      display: none;
+    }
+  }
+  @media (max-width: 575.98px) {
+    /* Pada smartphone portrait (< 576px, misal iPhone/Android 360px-440px):
+       Sembunyikan teks panjang ("Opname Produk aktif"), gunakan label ringkas "Opname"
+       agar pas rapi di antara ikon gudang dan user-menu tanpa menabrak ikon kanan. */
+    .header.custom-premium-header .opname-open-fab,
+    .opname-open-fab {
+      left: 88px !important;
+      max-width: calc(100vw - 235px);
+      height: 26px;
+      padding: 0 9px;
+      font-size: 11px;
+      gap: 5px;
+    }
+    .opname-open-fab-text {
+      display: none !important;
+    }
+    .opname-open-fab-short {
+      display: inline !important;
+    }
+  }
+  @media (max-width: 359.98px) {
+    /* Pada layar ekstra kecil (< 360px): jadikan tombol bulat icon-only dengan lampu hijau */
+    .header.custom-premium-header .opname-open-fab,
+    .opname-open-fab {
+      left: 86px !important;
+      width: 26px !important;
+      height: 26px !important;
+      padding: 0 !important;
+      justify-content: center !important;
+      border-radius: 50% !important;
+    }
+    .opname-open-fab-short {
+      display: none !important;
+    }
   }
 </style>
 
