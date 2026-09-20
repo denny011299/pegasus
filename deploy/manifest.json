@@ -1,13 +1,15 @@
 {
-    "generated_at": "2026-09-20T22:46:43+07:00",
-    "commit": "18bb37d786b3db0584ab20f56e07ac23844cbfcf",
+    "generated_at": "2026-09-20T22:47:27+07:00",
+    "commit": "9de7ef8a87c29e9de1a39b9ee496ca59d4e26196",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "4ebc187061f05348f4ab504d9bef26952504bb26",
-    "previous_generated_at": "2026-09-20T22:41:28+07:00",
+    "previous_commit": "18bb37d786b3db0584ab20f56e07ac23844cbfcf",
+    "previous_generated_at": "2026-09-20T22:46:43+07:00",
     "added": [],
     "removed": [],
-    "changed": [],
+    "changed": [
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php"
+    ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
         "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
@@ -3352,7 +3354,7 @@
         "resources/views/Backoffice/Inventory/Stock_Opname_Bahan.blade.php": "f11c06ba743556c8c0e3f616e37b001f268bb52f",
         "resources/views/Backoffice/Inventory/Stock_Product.blade.php": "996939ba66248fefa2300be05851d79a91681ee0",
         "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "ad78ece5ed2ba0f7959cce7fb90718408f08e301",
-        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "5ba48977c5f8cfe527e8f8e09cf22c6b6f39c51b",
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "32e939bc2448dc31e4c2c51658e44d24b95205ed",
         "resources/views/Backoffice/Order/WorkOrder.blade.php": "57596e54f1848538347b8409c5a27aea92c240bd",
         "resources/views/Backoffice/Order/bestSeller.blade.php": "0c42983b39094530e9902f7da799e214eb61cf09",
         "resources/views/Backoffice/Order/purchase.blade.php": "456f9b3b135ce496c3f06adb1ee0d66432d1b498",
