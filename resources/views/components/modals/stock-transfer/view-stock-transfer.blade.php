@@ -34,7 +34,7 @@
       <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;max-height:calc(100dvh - 1rem);">
 
         {{-- ── HEADER ── --}}
-        <div class="modal-header d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2.5 p-3 p-sm-4">
+        <div class="modal-header d-flex flex-column flex-lg-row align-items-stretch align-items-lg-center justify-content-between gap-2 p-3 p-sm-4">
           <div class="d-flex align-items-center justify-content-between flex-grow-1">
             <div class="d-flex align-items-center gap-2 gap-sm-3">
               <div class="pg-modal-icon flex-shrink-0" style="width:38px;height:38px;">
@@ -92,7 +92,7 @@
               aria-hidden="true"></div>
             <div class="text-muted fw-semibold" style="font-size:13px;">Memuat detail transfer…</div>
           </div>
-          <div class="border-bottom p-2.5 p-md-4" style="background:#ffffff;">
+          <div class="border-bottom p-3 p-md-4" style="background:#ffffff;">
             <div class="row g-3 align-items-stretch">
               {{-- Section Asal --}}
               <div class="col-12 col-md-5">
@@ -196,7 +196,7 @@
           </div>
 
 
-          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2.5 border-bottom p-2.5 px-md-4 py-md-3"
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 border-bottom p-3 px-md-4 py-md-3"
             style="background:#f8fafc;">
             <div class="d-flex align-items-center">
               <i class="fe fe-layers text-primary me-2" style="font-size:15px;"></i>
@@ -231,7 +231,7 @@
           </div>
         </div>
         {{-- ── FOOTER: Tutup ── --}}
-        <div class="modal-footer pg-modal-footer p-2.5 p-md-3">
+        <div class="modal-footer pg-modal-footer p-3">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Tutup</button>
         </div>
 

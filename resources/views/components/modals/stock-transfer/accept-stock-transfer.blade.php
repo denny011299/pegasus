@@ -60,7 +60,7 @@
         </div>
 
         {{-- ── ROUTE INFO PANEL ── --}}
-        <div class="border-bottom p-2.5 p-md-4" style="background:#ffffff;">
+        <div class="border-bottom p-3 p-md-4" style="background:#ffffff;">
           <div class="row g-3 align-items-stretch">
 
             {{-- Info Asal --}}
@@ -167,7 +167,7 @@
 
         {{-- ── PRODUCT TABLE ── --}}
         <div class="modal-body p-0 d-flex flex-column" style="flex:1 1 auto;overflow:hidden;">
-          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2.5 border-bottom p-2.5 px-md-4 py-md-3"
+          <div class="d-flex flex-column flex-sm-row justify-content-between align-items-stretch align-items-sm-center gap-2 border-bottom p-3 px-md-4 py-md-3"
             style="background:#f8fafc;">
             <div class="d-flex align-items-center">
               <i class="fe fe-layers text-success me-2" style="font-size:15px;"></i>
@@ -211,7 +211,7 @@
         </div>
 
         {{-- ── FOOTER ── --}}
-        <div class="modal-footer pg-modal-footer p-2.5 p-md-3">
+        <div class="modal-footer pg-modal-footer p-3">
           <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
           {{-- Tolak terima: di-hide dulu (jangan hapus) — client belum pakai --}}
           <button type="button" class="btn pg-btn-decline btn-reject-accept-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>

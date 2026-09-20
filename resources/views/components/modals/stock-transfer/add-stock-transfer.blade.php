@@ -68,13 +68,13 @@
           </div>
           <div class="pg-modal-body-content">
           {{-- ROUTE PANEL --}}
-          <div class="position-relative st-route-panel p-2.5 p-md-3 pb-md-2" style="background:#ffffff;">
+          <div class="position-relative st-route-panel p-3 p-md-3 pb-md-2" style="background:#ffffff;">
             <div class="collapse show" id="collapseStockTransferForm">
               <div class="row g-3 align-items-center mb-1 st-route-row">
 
                 {{-- Section Asal / Request (BE: from) — di mode request dipindah ke kanan via CSS order --}}
                 <div class="col-md-5 st-card-asal">
-                  <div class="p-2.5 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
+                  <div class="p-3 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#eff6ff; color:#1d4ed8; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bfdbfe;">
@@ -137,7 +137,7 @@
 
                 {{-- Section Tujuan / Penerima (BE: to) — di mode request dipindah ke kiri via CSS order --}}
                 <div class="col-md-5 st-card-tujuan">
-                  <div class="p-2.5 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
+                  <div class="p-3 p-md-3 rounded-3 border h-100" style="background:#f8fafc; border-color:#e2e8f0;">
                     <div class="d-flex align-items-center gap-2 mb-2">
                       <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-2"
                         style="background:#f0fdf4; color:#15803d; font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.4px; border:1px solid #bbf7d0;">
@@ -202,7 +202,7 @@
           </div>
 
           {{-- PRODUCT INPUT TOOLBAR --}}
-          <div class="transfer-product-panel p-2.5 p-md-3" style="background:#f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
+          <div class="transfer-product-panel p-3 p-md-3" style="background:#f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0;">
             <div class="transfer-product-grid">
               <div class="transfer-product-field transfer-product-select">
                 <label class="form-label mb-1.5" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
@@ -258,7 +258,7 @@
 
           {{-- PRODUCT TABLE --}}
           <div class="d-flex flex-column" style="background:#fff;">
-            <div class="d-flex align-items-center justify-content-between border-bottom p-2.5 px-md-4 py-md-3"
+            <div class="d-flex align-items-center justify-content-between border-bottom p-3 px-md-4 py-md-3"
               style="background:#f8fafc;">
               <div class="d-flex align-items-center">
                 <i class="fe fe-layers text-primary me-2" style="font-size:15px;"></i>
@@ -313,7 +313,7 @@
         </div>
 
         {{-- ── FOOTER: Batal, Tolak, Setujui QC/Ops, Kirim, Simpan ── --}}
-        <div class="modal-footer pg-modal-footer p-2.5 p-md-3">
+        <div class="modal-footer pg-modal-footer p-3 p-md-3">
           <button type="button" class="btn pg-btn-cancel btn-cancel-transfer">Batal</button>
           <button type="button" class="btn pg-btn-decline btn-reject-transfer d-none"><i class="fe fe-x me-1"></i>Tolak</button>
           <button type="button" class="btn pg-btn-accept btn-approve-qc-transfer d-none"><i class="fe fe-check me-1"></i>Setujui QC</button>
