@@ -756,7 +756,7 @@ function inisialisasi() {
                 }
             },
             {
-                // Request eceran: sender_id = pemohon. Transfer biasa: tidak ada role request terpisah.
+                // Request eceran/utama: sender_id = pemohon. Transfer biasa: tidak ada role request.
                 data: "sender_name",
                 width: "11%",
                 render: function (data, type, row) {
@@ -764,14 +764,18 @@ function inisialisasi() {
                         row.is_retail_request === true ||
                         row.is_retail_request === 1 ||
                         row.source_type === "retail_request";
-                    if (!isRetailReq) {
+                    var isMainReq =
+                        row.is_main_request === true ||
+                        row.is_main_request === 1 ||
+                        row.source_type === "main_request";
+                    if (!isRetailReq && !isMainReq) {
                         return '<span class="text-muted">-</span>';
                     }
                     return renderStockTransferPersonCell(data, "request");
                 }
             },
             {
-                // Retail: Ops / Acc Kirim. Transfer biasa: sender_id.
+                // Request: Ops / Acc Kirim. Transfer biasa: sender_id (pengirim).
                 data: "sender_name",
                 width: "11%",
                 render: function (data, type, row) {
@@ -779,8 +783,12 @@ function inisialisasi() {
                         row.is_retail_request === true ||
                         row.is_retail_request === 1 ||
                         row.source_type === "retail_request";
+                    var isMainReq =
+                        row.is_main_request === true ||
+                        row.is_main_request === 1 ||
+                        row.source_type === "main_request";
                     var name = data;
-                    if (isRetailReq) {
+                    if (isRetailReq || isMainReq) {
                         var opsName = row.ops_approved_by_name;
                         var shipName = row.ship_acc_by_name;
                         if (opsName && opsName !== "-") name = opsName;
