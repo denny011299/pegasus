@@ -1,14 +1,16 @@
 {
-    "generated_at": "2026-09-20T22:00:53+07:00",
-    "commit": "f313ecc2c985d609c3255a6ca3abd26afdf27d8a",
+    "generated_at": "2026-09-20T22:15:34+07:00",
+    "commit": "8f79885d4278b3c2025e6632d01c7c3cbeda90ab",
     "branch": "fase2/main",
     "file_count": 3580,
-    "previous_commit": "5bfcd87dd77a9859961bcff9fd756ff6c9a4da7c",
-    "previous_generated_at": "2026-09-20T21:02:23+07:00",
+    "previous_commit": "f313ecc2c985d609c3255a6ca3abd26afdf27d8a",
+    "previous_generated_at": "2026-09-20T22:00:53+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js"
+        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js",
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php",
+        "resources/views/components/modals/stock-transfer/add-stock-transfer.blade.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -1139,7 +1141,7 @@
         "public/Custom_js/Backoffice/Inventory/Stock_Product copy.js": "1c37e215e36773841ae4cebd4d63e55ecf8e85b8",
         "public/Custom_js/Backoffice/Inventory/Stock_Product.js": "79d869b70e93650f75c537f735d5919700c6ad9b",
         "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js": "e03195f27e4be5b8c330f9682067167d48b72aa7",
-        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js": "e5a37a4359fb4dafe32206664750b27f968f839b",
+        "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js": "2b22fc2d197759656d39df09a11553ce90fd81b7",
         "public/Custom_js/Backoffice/Login.js": "7564d3b28af05b0682496ab0f605d913d8238e6a",
         "public/Custom_js/Backoffice/Product/Barcode.js": "f14c6d6ec7c0303324d61e2d5d42d57a2375898b",
         "public/Custom_js/Backoffice/Product/Category.js": "1756fbc7ba3cd4d4de70cbc6444fae4584b4c7f2",
@@ -3354,7 +3356,7 @@
         "resources/views/Backoffice/Inventory/Stock_Opname_Bahan.blade.php": "f11c06ba743556c8c0e3f616e37b001f268bb52f",
         "resources/views/Backoffice/Inventory/Stock_Product.blade.php": "996939ba66248fefa2300be05851d79a91681ee0",
         "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "ad78ece5ed2ba0f7959cce7fb90718408f08e301",
-        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "d3dd84037d32189ef4b972e1297aa04d1fc64b11",
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "d2e59bf6cc57322582ddd9d480f3650087b73e0e",
         "resources/views/Backoffice/Order/WorkOrder.blade.php": "57596e54f1848538347b8409c5a27aea92c240bd",
         "resources/views/Backoffice/Order/bestSeller.blade.php": "0c42983b39094530e9902f7da799e214eb61cf09",
         "resources/views/Backoffice/Order/purchase.blade.php": "456f9b3b135ce496c3f06adb1ee0d66432d1b498",
@@ -3527,7 +3529,7 @@
         "resources/views/components/modals/stock-product/modal-safety-stock.blade.php": "c59109a8e4189a7713930496c8d8ea85b18b16a7",
         "resources/views/components/modals/stock-supplies/add-stock-supplies.blade.php": "1cb0f5a689e3b5b99809e3fe0f1f5c4dde0db2d2",
         "resources/views/components/modals/stock-transfer/accept-stock-transfer.blade.php": "557bb925540f5a86f277f7cdbe4ba29ab9a8ff0d",
-        "resources/views/components/modals/stock-transfer/add-stock-transfer.blade.php": "7c2fdbef6be54e67ecd68915ed74016d73247c75",
+        "resources/views/components/modals/stock-transfer/add-stock-transfer.blade.php": "a3a9e33f71ead82cb12f981794c92ed550792086",
         "resources/views/components/modals/stock-transfer/reject-production-transfer.blade.php": "4dac5086ca4568ced70ed2e512e89c55ba5d44e9",
         "resources/views/components/modals/stock-transfer/view-stock-transfer.blade.php": "da271860e2d76cb064b3f9ab1b07b3b31ec18712",
         "resources/views/components/modals/supplier/view-supplier.blade.php": "7fd8511dccc939290d1d25a9656fdd6fe8945d3b",
