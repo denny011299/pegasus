@@ -142,13 +142,13 @@
     #tb-stock-table .rstock .unit-qty-group:not(:only-child) {
       flex: 1 1 calc(50% - 4px) !important;
       width: calc(50% - 4px) !important;
-      min-width: 130px !important;
+      min-width: 140px !important;
       max-width: 100% !important;
     }
 
     #tb-stock-table .rstock .unit-qty-group .form-control {
       height: 42px !important;
-      font-size: 14px !important;
+      font-size: 13.5px !important;
       font-weight: 600 !important;
       border-color: #cbd5e1 !important;
       flex: 1 1 auto !important;
@@ -158,51 +158,120 @@
       border-radius: 0 !important;
       color: #0f172a !important;
       background: #ffffff !important;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
     }
 
     #tb-stock-table .rstock .unit-qty-group .form-control:focus {
       border-color: #3b82f6 !important;
       box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+      z-index: 2;
     }
 
-    #tb-stock-table .rstock .unit-qty-group .input-group-text {
-      height: 42px !important;
-      font-size: 12.5px !important;
-      font-weight: 600 !important;
-      background-color: #f8fafc !important;
-      border-color: #cbd5e1 !important;
-      color: #334155 !important;
-      padding: 0 12px !important;
-      flex: 0 0 auto !important;
-      min-width: 3.5rem !important;
-      max-width: 7rem !important;
-      white-space: nowrap !important;
-      overflow: hidden !important;
-      text-overflow: ellipsis !important;
-      border-radius: 0 !important;
-    }
-
+    /* Checkbox Addon Wrapper */
     #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap {
       padding: 0 10px !important;
       display: flex !important;
       align-items: center !important;
+      justify-content: center !important;
       background-color: #f8fafc !important;
       border-color: #cbd5e1 !important;
       border-top-left-radius: 8px !important;
       border-bottom-left-radius: 8px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+      user-select: none !important;
+      width: 40px !important;
+      flex: 0 0 40px !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap:hover {
+      background-color: #eff6ff !important;
+      border-color: #93c5fd !important;
     }
 
     #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap .form-check-input {
-      width: 1.1rem;
-      height: 1.1rem;
-      margin: 0;
-      cursor: pointer;
+      width: 1.15rem !important;
+      height: 1.15rem !important;
+      margin: 0 !important;
+      cursor: pointer !important;
+      border-radius: 4px !important;
+      border: 1.5px solid #94a3b8 !important;
+      transition: all 0.15s ease !important;
     }
 
+    #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap .form-check-input:hover {
+      border-color: #d97706 !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group .unit-use-system-wrap .form-check-input:checked {
+      background-color: #d97706 !important;
+      border-color: #d97706 !important;
+      box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3) !important;
+    }
+
+    /* Label Satuan (Badge Kanan): lebar tetap, rapi, handling nama panjang */
     #tb-stock-table .rstock .unit-qty-group > .input-group-text:last-child {
+      height: 42px !important;
+      font-size: 11.5px !important;
+      font-weight: 700 !important;
+      background-color: #f8fafc !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+      padding: 0 8px !important;
+      flex: 0 0 82px !important;
+      width: 82px !important;
+      min-width: 82px !important;
+      max-width: 82px !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+      text-overflow: ellipsis !important;
+      text-align: center !important;
+      justify-content: center !important;
       border-top-right-radius: 8px !important;
       border-bottom-right-radius: 8px !important;
+      letter-spacing: 0.3px !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group > .input-group-text:last-child:hover {
+      background-color: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    /* Jika 1 satuan saja (1 col full), badge satuan boleh sedikit lebih leluasa */
+    #tb-stock-table .rstock .unit-qty-group:only-child > .input-group-text:last-child {
+      flex: 0 0 92px !important;
+      width: 92px !important;
+      min-width: 92px !important;
+      max-width: 110px !important;
+    }
+
+    /* State Aktif saat 'Ikut Stok Sistem' dicentang */
+    #tb-stock-table .rstock .unit-qty-group.is-using-system .unit-use-system-wrap {
+      background-color: #fef3c7 !important;
+      border-color: #fde68a !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group.is-using-system .form-control {
+      background-color: #fffdf5 !important;
+      border-color: #fde68a !important;
+      color: #92400e !important;
+      font-style: italic !important;
+      font-weight: 600 !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group.is-using-system .form-control::placeholder {
+      color: #d97706 !important;
+      font-style: italic !important;
+      opacity: 0.9 !important;
+      font-weight: 500 !important;
+    }
+
+    #tb-stock-table .rstock .unit-qty-group.is-using-system > .input-group-text:last-child {
+      background-color: #fef3c7 !important;
+      border-color: #fde68a !important;
+      color: #92400e !important;
     }
 
     #tb-stock-table .rstock .unit-qty-group:not(:has(.unit-use-system-wrap)) .form-control {
