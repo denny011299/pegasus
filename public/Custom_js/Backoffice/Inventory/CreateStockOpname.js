@@ -208,7 +208,7 @@ function refreshStockOpname(callback) {
                         </td>
                         <td>
                             <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
-                            ${item.product_variant_name ? `<div class="text-muted mt-0.5" style="font-size:11.5px;font-weight:600;"><i class="fe fe-tag me-1" style="font-size:10px;"></i>${escapeHtml(item.product_variant_name)}</div>` : ''}
+                            ${item.product_variant_name ? `<div class="fw-bold text-dark mt-0.5" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_name)}</div>` : ''}
                         </td>
                         <td class="text-center">
                             <div class="input-group rstock">
@@ -312,7 +312,7 @@ function renderMode2(items) {
                 </td>
                 <td>
                     <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
-                    ${item.product_variant_name ? `<div class="text-muted mt-0.5" style="font-size:11.5px;font-weight:600;"><i class="fe fe-tag me-1" style="font-size:10px;"></i>${escapeHtml(item.product_variant_name)}</div>` : ''}
+                    ${item.product_variant_name ? `<div class="fw-bold text-dark mt-0.5" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_name)}</div>` : ''}
                 </td>
                 <td class="text-center">
                     <div class="input-group rstock">
