@@ -23,7 +23,8 @@
                   </div>
                 </div>
                 <div class="col-lg-6 col-12 mb-lg-4 mb-0"></div>
-                <div class="row p-0 m-0" id="inputModal">
+                <div class="col-12">
+                <div class="row g-2" id="inputModal">
                   <div class="col-lg-6 col-12 saldo_kas">
                     <div class="input-block mb-3">
                       <label>Aksi Dana<span class="text-danger">*</span></label>
@@ -131,7 +132,7 @@
                       </div>
                     </div>
                   </div>
-                  <div class="col-12 px-2 py-3 mb-3 operasional">
+                  <div class="col-12 py-3 mb-3 operasional">
                     <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailGudang" style="min-height: 15vh">
                         <thead>
@@ -158,6 +159,7 @@
                       </table>
                     </div>
                   </div>
+                </div>
                 </div>
               </div>
             </div>
