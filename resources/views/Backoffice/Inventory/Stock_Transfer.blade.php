@@ -332,11 +332,6 @@
             background-color: #f8fafc !important;
             color: inherit !important;
         }
-        #add_stock_transfer #transfer_stock_available {
-            display: block;
-            margin-top: 4px;
-            font-size: 11px;
-        }
         #add_stock_transfer .select2-dropdown,
         #view_stock_transfer .select2-dropdown,
         #accept_stock_transfer .select2-dropdown {

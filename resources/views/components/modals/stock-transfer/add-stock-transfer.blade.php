@@ -234,12 +234,9 @@
                   value="1" min="1" step="1" style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;font-weight:600;text-align:center;">
               </div>
               <div class="transfer-product-field transfer-draft-only" style="min-width: 140px;">
-                <div class="d-flex align-items-center justify-content-between mb-1.5">
-                  <label class="form-label mb-0" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
-                    Satuan <span class="text-danger">*</span>
-                  </label>
-                  <small id="transfer_stock_available" class="text-muted" style="font-size:11px;font-weight:500;">Stok: -</small>
-                </div>
+                <label class="form-label mb-1.5" style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#475569;">
+                  Satuan <span class="text-danger">*</span>
+                </label>
                 <select class="form-select" id="transfer_unit_input" disabled style="height:38px;border-radius:8px;font-size:13px;border-color:#cbd5e1;">
                   <option value="">Pilih produk dahulu</option>
                 </select>
