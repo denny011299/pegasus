@@ -627,7 +627,7 @@ class ProductionController extends Controller
             ]);
         }
 
-        // QC13/QC18: ajukan batal soft-block — ACC nanti mengembalikan stok bahan + potong hasil.
+        // Soft-block: ajukan batal setelah ACC — dilarang saat opname produk/bahan open.
         $mainWarehouse = $this->activeMainProductionWarehouse();
         if (! $mainWarehouse) {
             return response()->json([
@@ -649,6 +649,16 @@ class ProductionController extends Controller
                 'status' => -1,
                 'header' => 'Stock Opname',
                 'message' => $softBlock,
+            ]);
+        }
+
+        // Maks. 3 hari sejak tanggal produksi (H..H+2).
+        $prodDate = $p->production_date ? \Carbon\Carbon::parse($p->production_date)->startOfDay() : null;
+        if ($prodDate && $prodDate->diffInDays(\Carbon\Carbon::today()) > 2) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Pembatalan Tidak Diizinkan',
+                'message' => 'Pembatalan produksi hanya dapat diajukan maksimal 3 hari sejak tanggal produksi.',
             ]);
         }
 

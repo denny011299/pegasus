@@ -1637,9 +1637,10 @@ function renderProductionStatus(status) {
 }
 
 function renderProductionAction(row) {
-    var isOldRow = moment(row.production_date).isBefore(
-        moment().subtract(2, "days").format("YYYY-MM-DD"),
-    );
+    // Maks. 3 hari sejak tanggal produksi (H + H+1 + H+2) — sesuai aturan PM.
+    var prodDay = moment(row.production_date).startOf("day");
+    var daysAgo = moment().startOf("day").diff(prodDay, "days");
+    var withinCancelWindow = daysAgo >= 0 && daysAgo <= 2;
     var prAct = "";
     var status = parseInt(row.status, 10);
 
@@ -1655,7 +1656,7 @@ function renderProductionAction(row) {
             '" data-bs-toggle="tooltip" title="Lihat Detail Produksi"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (
-        !isOldRow &&
+        withinCancelWindow &&
         status === 2 &&
         row.can_cancel !== false &&
         !row.has_shipped_stock_transfer &&
@@ -1664,9 +1665,9 @@ function renderProductionAction(row) {
         prAct +=
             '<a href="javascript:void(0);" class="btn-action-icon btn_delete" style="' +
             btnStyleDelete +
-            '" data-bs-toggle="tooltip" title="Batalkan Produksi"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
+            '" data-bs-toggle="tooltip" title="Batalkan Produksi (maks. 3 hari)"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
     }
-    if (isOldRow || (status !== 1 && status !== 2)) {
+    if (!withinCancelWindow || (status !== 1 && status !== 2 && status !== 4)) {
         prAct = hasAccessAction("Produksi", "view")
             ? '<a href="javascript:void(0);" class="btn-action-icon btn_view" style="' +
               btnStyleView +
@@ -2474,11 +2475,11 @@ $(document).on("click", ".btn_view", function () {
     addRow(items);
     $("#total_dos").html(formatRupiah(data.total_dos));
     var approvalAction = null;
-    if (
-        !moment(data.production_date).isBefore(
-            moment().subtract(3, "days").format("YYYY-MM-DD"),
-        )
-    ) {
+    // Maks. 3 hari (H..H+2) — sama dengan tombol batal di list.
+    var prodDay = moment(data.production_date).startOf("day");
+    var daysAgo = moment().startOf("day").diff(prodDay, "days");
+    var withinCancelWindow = daysAgo >= 0 && daysAgo <= 2;
+    if (withinCancelWindow) {
         if (data.status == 1) {
             approvalAction = "production";
         } else if (data.status == 4) {
@@ -2927,7 +2928,16 @@ $(document).on("click", "#btn-delete-production", function () {
                 `<p id="text-delete" style="font-size:10pt"></p>`,
             );
             ResetLoadingButton(".btn-konfirmasi", "Batal Produksi");
-            if (e && (e.status === 0 || e.status === -1)) {
+            if (e && e.status === -1) {
+                notifikasi(
+                    "error",
+                    e.header || "Stock Opname",
+                    e.message || "Gudang sedang Stock Opname. Pembatalan ditolak sampai opname selesai.",
+                );
+                refreshProduction();
+                return false;
+            }
+            if (e && e.status === 0) {
                 notifikasi(
                     "error",
                     e.header || "Pembatalan Tidak Diizinkan",
