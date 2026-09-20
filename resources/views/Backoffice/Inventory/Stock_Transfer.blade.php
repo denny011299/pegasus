@@ -216,6 +216,37 @@
         #add_stock_transfer #transfer_unit_input {
             min-width: 160px;
         }
+        /* Desktop lebar: batasi lebar field biar tidak stretch kosong */
+        @media (min-width: 992px) {
+            #add_stock_transfer .modal-dialog {
+                max-width: min(92vw, 1040px) !important;
+            }
+            #add_stock_transfer .transfer-product-grid {
+                grid-template-columns: minmax(240px, 380px) 80px minmax(160px, 200px) auto;
+                justify-content: start;
+            }
+            #add_stock_transfer .transfer-product-select,
+            #add_stock_transfer .transfer-product-select .select2-container,
+            #add_stock_transfer #transfer_sku + .select2-container {
+                max-width: 380px;
+                width: 100% !important;
+            }
+            #add_stock_transfer .st-route-panel .select2-container {
+                max-width: 360px !important;
+                width: 100% !important;
+            }
+            #add_stock_transfer .st-route-panel .form-control:not(textarea),
+            #add_stock_transfer .st-route-panel .form-select {
+                max-width: 360px;
+            }
+            #add_stock_transfer .st-route-panel textarea.form-control,
+            #add_stock_transfer #transfer_note {
+                max-width: 420px;
+            }
+            #add_stock_transfer #transfer_date {
+                max-width: 200px !important;
+            }
+        }
         #add_stock_transfer .transfer-product-field label {
             display: block;
             margin-bottom: 4px;
