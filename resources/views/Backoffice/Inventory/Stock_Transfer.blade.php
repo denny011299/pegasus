@@ -158,15 +158,15 @@
             min-width: 0;
         }
         #add_stock_transfer #tableTransferItems .transfer-qty {
-            width: 78px;
-            flex: 0 0 78px;
-            max-width: 78px;
+            width: 72px;
+            flex: 0 0 72px;
+            max-width: 72px;
             font-size: 14px;
             height: 34px;
         }
         #add_stock_transfer #tableTransferItems .transfer-unit-wrap {
             flex: 1 1 auto;
-            min-width: 0;
+            min-width: 140px;
         }
         #add_stock_transfer #tableTransferItems .transfer-stock-check-spinner {
             width: 1rem;
@@ -175,13 +175,13 @@
             vertical-align: middle;
         }
         #add_stock_transfer #tableTransferItems .transfer-unit {
-            min-width: 0;
+            min-width: 140px;
             width: 100%;
             max-width: 100%;
             height: 34px;
         }
         #add_stock_transfer #tableTransferItems .transfer-retail-unit {
-            min-width: 0;
+            min-width: 140px;
             width: 100%;
             max-width: 100%;
             height: 34px;
@@ -209,9 +209,12 @@
         }
         #add_stock_transfer .transfer-product-grid {
             display: grid;
-            grid-template-columns: minmax(240px, 2fr) minmax(80px, .45fr) minmax(160px, 1fr) auto;
+            grid-template-columns: minmax(220px, 2fr) minmax(72px, .4fr) minmax(180px, 1.15fr) auto;
             gap: 10px;
             align-items: end;
+        }
+        #add_stock_transfer #transfer_unit_input {
+            min-width: 160px;
         }
         #add_stock_transfer .transfer-product-field label {
             display: block;
@@ -343,7 +346,7 @@
         }
         @media (max-width: 991.98px) {
             #add_stock_transfer .transfer-product-grid {
-                grid-template-columns: minmax(0, 2fr) minmax(90px, .7fr) minmax(150px, 1fr);
+                grid-template-columns: minmax(0, 2fr) minmax(80px, .55fr) minmax(170px, 1.1fr);
             }
             #add_stock_transfer .transfer-product-actions {
                 grid-column: 1 / -1;
@@ -389,12 +392,30 @@
         }
         @media (max-width: 575.98px) {
             #add_stock_transfer .transfer-product-grid {
-                grid-template-columns: 85px 1fr !important;
+                grid-template-columns: 70px minmax(160px, 1fr) !important;
                 gap: 8px !important;
             }
             #add_stock_transfer .transfer-product-select,
             #add_stock_transfer .transfer-product-actions {
                 grid-column: 1 / -1;
+            }
+            #add_stock_transfer #transfer_unit_input {
+                min-width: 0 !important;
+                width: 100% !important;
+            }
+            #add_stock_transfer #tableTransferItems {
+                min-width: 720px !important;
+                table-layout: auto !important;
+            }
+            #add_stock_transfer #tableTransferItems .col-qty-unit {
+                min-width: 240px !important;
+            }
+            #add_stock_transfer #tableTransferItems .transfer-unit-wrap {
+                min-width: 150px !important;
+            }
+            #add_stock_transfer #tableTransferItems .transfer-unit,
+            #add_stock_transfer #tableTransferItems .transfer-retail-unit {
+                min-width: 150px !important;
             }
             #add_stock_transfer .transfer-product-actions {
                 display: flex !important;
@@ -463,10 +484,6 @@
                 height: 38px !important;
                 font-size: 12.5px !important;
                 padding: 0 14px !important;
-            }
-            #add_stock_transfer #tableTransferItems {
-                min-width: 680px !important;
-                table-layout: auto !important;
             }
             #view_stock_transfer #tableViewItems,
             #accept_stock_transfer #tableAcceptItems {
