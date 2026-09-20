@@ -117,11 +117,13 @@
                     <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailArmada" style="min-height: 15vh">
                         <thead>
-                          <th>No</th>
-                          <th>Tipe</th>
-                          <th style="width: 25%">Keterangan</th>
-                          <th class="text-end">Nominal</th>
-                          <th class="no-sort text-center col-aksi">Aksi</th>
+                          <tr>
+                            <th>No</th>
+                            <th>Tipe</th>
+                            <th style="width: 25%">Keterangan</th>
+                            <th class="text-end">Nominal</th>
+                            <th class="no-sort text-center col-aksi">Aksi</th>
+                          </tr>
                         </thead>
                         <tbody>
                           <tr class="pg-popup-table-empty">

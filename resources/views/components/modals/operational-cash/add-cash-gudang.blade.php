@@ -135,11 +135,13 @@
                     <div class="table-responsive pg-popup-table-scroll">
                       <table class="table table-center" id="tableDetailGudang" style="min-height: 15vh">
                         <thead>
-                          <th>No</th>
-                          <th>Armada</th>
-                          <th style="width: 25%">Nama</th>
-                          <th class="text-end">Nominal</th>
-                          <th class="no-sort text-center col-aksi">Aksi</th>
+                          <tr>
+                            <th>No</th>
+                            <th>Armada</th>
+                            <th style="width: 25%">Nama</th>
+                            <th class="text-end">Nominal</th>
+                            <th class="no-sort text-center col-aksi">Aksi</th>
+                          </tr>
                         </thead>
                         <tbody>
                           <tr class="pg-popup-table-empty">
