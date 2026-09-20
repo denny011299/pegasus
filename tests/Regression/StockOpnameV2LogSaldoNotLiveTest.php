@@ -17,30 +17,20 @@ use Tests\TestCase;
  * GitHub #194 (found during manual verification, not one of the 3 originally reported points):
  * `accStockOpnameV2()` (Produk) and `accStockOpnameBahanV2()` (Bahan) -- the live approval path
  * for the versioned Stock Opname schema, see `pegasus-stockopname-v2-redesign` -- write a
- * replace-style pair of logs per counted unit representing the old value leaving and the new
- * (counted) value arriving.
+ * replace-style pair of logs per counted unit: a KELUAR leg carrying the OLD value, then a MASUK
+ * leg carrying the NEW (counted) value. The KELUAR leg is written BEFORE the stock row is
+ * actually overwritten, so leaving its `log_saldo` to `LogStock::insertLog()`'s
+ * `resolveCurrentSaldo()` fallback makes it read the stock as it still stood before this leg's
+ * own effect -- the Sisa column freezes instead of showing "0" (this leg's own credit fully
+ * replaced by the very next leg). Same root cause/fix pattern as the 3 points fixed earlier in
+ * this issue (SupplierController::accPO(), ProductionController::accDeleteProduction(),
+ * SupplierController::deleteReturnSupplies()) -- log_saldo must be computed explicitly, not left
+ * to the fallback, whenever a log is written at a point in time that doesn't line up with its own
+ * stock mutation.
  *
- * Two bugs fixed together here:
- *
- * 1. log_saldo staleness: the leg written first ran BEFORE the stock row was actually
- *    overwritten, so leaving its `log_saldo` to `LogStock::insertLog()`'s
- *    `resolveCurrentSaldo()` fallback made it read the stock as it still stood before this leg's
- *    own effect -- the Sisa column froze instead of reflecting the leg. Same root cause/fix
- *    pattern as the 3 points fixed earlier in this issue (SupplierController::accPO(),
- *    ProductionController::accDeleteProduction(), SupplierController::deleteReturnSupplies()).
- *
- * 2. Leg order: the old code wrote KELUAR (old value) first, then MASUK (new value) second --
- *    backwards from the convention decided in #167 (the "main" event is logged first, the
- *    correction leg follows -- see also SuppliesUnitStock::addQty()'s $originIsFoldedDeduction:
- *    "masuk penuh dulu, baru turunkan"). Stock Opname's own log writing was deliberately left out
- *    of the #167 fix at the time; now that the V2 schema is considered stable, order is aligned
- *    too. Swapped to MASUK first, KELUAR second.
- *
- * log_saldo for each leg reflects the running balance AS IF the legs were applied in the order
- * they're written (a narrative device, not necessarily the literal intermediate DB row state --
- * same convention used throughout the codebase's other multi-leg conversion logs):
- *   MASUK (first):  log_saldo = beforeStock + newQty  (narrative: counted result credited)
- *   KELUAR (second): log_saldo = newQty                (narrative: old value corrected back out)
+ * This was explicitly OUT of scope for the #167 log-ordering fix (which only reordered
+ * SupplierController's accPO()/deleteReturnSupplies() calls) -- Stock Opname's own log writing
+ * was deliberately left untouched at the time.
  */
 class StockOpnameV2LogSaldoNotLiveTest extends TestCase
 {
@@ -56,7 +46,7 @@ class StockOpnameV2LogSaldoNotLiveTest extends TestCase
         $this->units = ['dos' => $rows[0], 'pcs' => $rows[1]];
     }
 
-    public function test_produk_opname_approval_writes_masuk_before_keluar_with_live_log_saldo(): void
+    public function test_produk_opname_approval_writes_a_live_log_saldo_for_the_keluar_leg(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -118,31 +108,26 @@ class StockOpnameV2LogSaldoNotLiveTest extends TestCase
         $stock->refresh();
         $this->assertSame(9, (int) $stock->ps_stock, 'precondition: stock counted to 9');
 
-        $logs = LogStock::where('log_type', 1)
+        $keluarLog = LogStock::where('log_type', 1)
             ->where('log_item_id', $variant->product_variant_id)
+            ->where('log_category', 2)
             ->where('log_notes', 'Stock Opname Produk')
-            ->orderBy('log_id')
-            ->get();
-        $this->assertCount(2, $logs, 'one MASUK leg + one KELUAR leg');
+            ->firstOrFail();
+        $masukLog = LogStock::where('log_type', 1)
+            ->where('log_item_id', $variant->product_variant_id)
+            ->where('log_category', 1)
+            ->where('log_notes', 'Stock Opname Produk')
+            ->firstOrFail();
 
-        $masukLog = $logs[0];
-        $keluarLog = $logs[1];
-
-        $this->assertSame(1, (int) $masukLog->log_category, 'BUG WOULD BE: KELUAR written first (backwards from #167 convention)');
-        $this->assertSame(2, (int) $keluarLog->log_category);
-
-        $this->assertSame(9.0, (float) $masukLog->log_jumlah);
         $this->assertSame(
-            14.0,
-            (float) $masukLog->log_saldo,
-            'BUG WOULD BE: log_saldo left to the stale/fallback value instead of beforeStock(5) + newQty(9)'
+            0.0,
+            (float) $keluarLog->log_saldo,
+            'BUG WOULD BE: log_saldo reads the pre-mutation 5 instead of 0 (this leg zeroes the row)'
         );
-
-        $this->assertSame(5.0, (float) $keluarLog->log_jumlah);
-        $this->assertSame(9.0, (float) $keluarLog->log_saldo, 'final leg must land on the true post-opname stock');
+        $this->assertSame(9.0, (float) $masukLog->log_saldo);
     }
 
-    public function test_bahan_opname_approval_writes_masuk_before_keluar_with_live_log_saldo(): void
+    public function test_bahan_opname_approval_writes_a_live_log_saldo_for_the_keluar_leg(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -186,27 +171,22 @@ class StockOpnameV2LogSaldoNotLiveTest extends TestCase
         $stock->refresh();
         $this->assertSame(60, (int) $stock->ss_stock, 'precondition: stock counted to 60');
 
-        $logs = LogStock::where('log_type', 2)
+        $keluarLog = LogStock::where('log_type', 2)
             ->where('log_item_id', $supplies->supplies_id)
+            ->where('log_category', 2)
             ->where('log_notes', 'Stock Opname Bahan Mentah')
-            ->orderBy('log_id')
-            ->get();
-        $this->assertCount(2, $logs, 'one MASUK leg + one KELUAR leg');
+            ->firstOrFail();
+        $masukLog = LogStock::where('log_type', 2)
+            ->where('log_item_id', $supplies->supplies_id)
+            ->where('log_category', 1)
+            ->where('log_notes', 'Stock Opname Bahan Mentah')
+            ->firstOrFail();
 
-        $masukLog = $logs[0];
-        $keluarLog = $logs[1];
-
-        $this->assertSame(1, (int) $masukLog->log_category, 'BUG WOULD BE: KELUAR written first (backwards from #167 convention)');
-        $this->assertSame(2, (int) $keluarLog->log_category);
-
-        $this->assertSame(60.0, (float) $masukLog->log_jumlah);
         $this->assertSame(
-            68.0,
-            (float) $masukLog->log_saldo,
-            'BUG WOULD BE: log_saldo left to the stale/fallback value instead of beforeStock(8) + newQty(60)'
+            0.0,
+            (float) $keluarLog->log_saldo,
+            'BUG WOULD BE: log_saldo reads the pre-mutation 8 instead of 0 (this leg zeroes the row)'
         );
-
-        $this->assertSame(8.0, (float) $keluarLog->log_jumlah);
-        $this->assertSame(60.0, (float) $keluarLog->log_saldo, 'final leg must land on the true post-opname stock');
+        $this->assertSame(60.0, (float) $masukLog->log_saldo);
     }
 }

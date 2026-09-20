@@ -1037,34 +1037,15 @@ class StockController extends Controller
                 }
 
                 $beforeStock = (int) $stock->ps_stock;
-                $newQty = (int) $line->sol_counted_qty;
 
-                $stock->ps_stock = $newQty;
-                $stock->save();
-
-                // GitHub #194: dua leg ini merepresentasikan REPLACE (hasil hitung baru menimpa
-                // nilai lama), bukan delta -- histori sebelumnya menulis KELUAR (nilai lama) dulu
-                // baru MASUK (nilai baru), kebalikan dari konvensi yang sudah dipakai di tempat
-                // lain (#167: event utama ditulis dulu, leg koreksi menyusul -- lihat juga
-                // SuppliesUnitStock::addQty()'s $originIsFoldedDeduction: "masuk penuh dulu, baru
-                // turunkan"). Ditukar supaya histori terbaca MASUK (hasil hitung tiba) dulu, baru
-                // KELUAR (nilai lama yang digantikan, dikoreksi turun ke angka akhir sebenarnya).
-                // log_saldo dihitung eksplisit di kedua leg (bukan fallback resolveCurrentSaldo())
-                // supaya konsisten dengan cara leg lain di roll-up bahan menghitungnya: tiap leg
-                // menunjukkan Sisa SEOLAH-OLAH leg-leg ditulis berurutan seperti tampil di histori.
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode' => $sto->sto_code,
-                    'log_type' => 1,
-                    'log_category' => 1,
-                    'log_item_id' => $line->product_variant_id,
-                    'log_notes' => "Stock Opname Produk",
-                    'log_jumlah' => $newQty,
-                    'log_saldo' => $beforeStock + $newQty,
-                    'unit_id' => $line->unit_id,
-                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
-                ]);
-
+                // GitHub #194: log KELUAR ini ditulis SEBELUM $stock->save() di bawah, jadi
+                // log_saldo tidak boleh dibiarkan ke fallback resolveCurrentSaldo() milik
+                // insertLog() -- fallback itu akan membaca ps_stock LIVE saat baris ditulis, yang
+                // di titik ini masih $beforeStock (BELUM berubah), membuat kolom Sisa histori
+                // terlihat tidak update untuk baris KELUAR ini. Baris ini merepresentasikan "nilai
+                // lama dihapus", jadi Sisa tepat setelahnya = 0 (baris stok kosong sesaat sebelum
+                // diisi ulang oleh log MASUK berikutnya) -- pola sama dengan leg "keluar" pada
+                // konversi satuan (Naik satuan / Bongkar) di roll-up bahan.
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode' => $sto->sto_code,
@@ -1073,7 +1054,23 @@ class StockController extends Controller
                     'log_item_id' => $line->product_variant_id,
                     'log_notes' => "Stock Opname Produk",
                     'log_jumlah' => $beforeStock,
-                    'log_saldo' => $newQty,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                    'log_saldo' => 0,
+                ]);
+
+                $stock->ps_stock = (int) $line->sol_counted_qty;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $sto->sto_code,
+                    'log_type' => 1,
+                    'log_category' => 1,
+                    'log_item_id' => $line->product_variant_id,
+                    'log_notes' => "Stock Opname Produk",
+                    'log_jumlah' => (int) $stock->ps_stock,
+                    'log_saldo' => (float) $stock->ps_stock,
                     'unit_id' => $line->unit_id,
                     'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
                 ]);
@@ -1715,29 +1712,11 @@ class StockController extends Controller
                 }
 
                 $beforeStock = (int) $stock->ss_stock;
-                $newQty = (int) $line->sobl_counted_qty;
 
-                $stock->ss_stock = $newQty;
-                $stock->save();
-
-                // GitHub #194: sama seperti accStockOpnameV2() (Produk) -- dua leg ini
-                // merepresentasikan REPLACE, ditukar jadi MASUK (hasil hitung tiba) dulu baru
-                // KELUAR (nilai lama yang digantikan) supaya ikut konvensi #167 (event utama
-                // ditulis dulu, leg koreksi menyusul). log_saldo dihitung eksplisit di kedua leg,
-                // tidak bergantung fallback resolveCurrentSaldo().
-                (new LogStock())->insertLog([
-                    'log_date' => now(),
-                    'log_kode' => $stob->stob_code,
-                    'log_type' => 2,
-                    'log_category' => 1,
-                    'log_item_id' => $line->supplies_id,
-                    'log_notes' => "Stock Opname Bahan Mentah",
-                    'log_jumlah' => $newQty,
-                    'log_saldo' => $beforeStock + $newQty,
-                    'unit_id' => $line->unit_id,
-                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
-                ]);
-
+                // GitHub #194: sama seperti accStockOpnameV2() (Produk) -- log KELUAR ini ditulis
+                // SEBELUM $stock->save() di bawah, jadi log_saldo tidak boleh dibiarkan ke fallback
+                // resolveCurrentSaldo() milik insertLog(). Sisa tepat setelah leg ini = 0 (baris
+                // stok kosong sesaat sebelum diisi ulang oleh log MASUK berikutnya).
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode' => $stob->stob_code,
@@ -1746,7 +1725,23 @@ class StockController extends Controller
                     'log_item_id' => $line->supplies_id,
                     'log_notes' => "Stock Opname Bahan Mentah",
                     'log_jumlah' => $beforeStock,
-                    'log_saldo' => $newQty,
+                    'unit_id' => $line->unit_id,
+                    'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                    'log_saldo' => 0,
+                ]);
+
+                $stock->ss_stock = (int) $line->sobl_counted_qty;
+                $stock->save();
+
+                (new LogStock())->insertLog([
+                    'log_date' => now(),
+                    'log_kode' => $stob->stob_code,
+                    'log_type' => 2,
+                    'log_category' => 1,
+                    'log_item_id' => $line->supplies_id,
+                    'log_notes' => "Stock Opname Bahan Mentah",
+                    'log_jumlah' => (int) $stock->ss_stock,
+                    'log_saldo' => (float) $stock->ss_stock,
                     'unit_id' => $line->unit_id,
                     'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
                 ]);
