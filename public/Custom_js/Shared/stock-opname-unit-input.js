@@ -1,9 +1,50 @@
 /**
+ * Singkatan label satuan untuk UI Opname yang sempit.
+ * Pakai unit_short_name; kalau >4 karakter, ringkas (huruf awal + konsonan).
+ */
+function opnameUnitAbbrev(shortName, fullName) {
+    var short = String(shortName || "").trim();
+    var name = String(fullName || "").trim();
+    var label = short || name || "-";
+    if (label.length > 4) {
+        var letters = label.replace(/[^a-zA-Z0-9]/g, "");
+        if (letters.length > 4) {
+            var first = letters.charAt(0);
+            var rest = letters.slice(1).replace(/[aeiouAEIOU]/g, "");
+            label = (first + rest).substring(0, 4).toUpperCase();
+        } else {
+            label = letters.toUpperCase() || label;
+        }
+    }
+    return label;
+}
+
+/** Nama produk + varian (varian disembunyikan kalau sama / sudah termasuk di nama). */
+function opnameProductTitleHtml(prName, variantName) {
+    var p = String(prName || "").trim();
+    var v = String(variantName || "").trim();
+    var esc = typeof escapeHtml === "function" ? escapeHtml : function (s) { return s; };
+    var style = "font-size:13px;line-height:1.35;";
+    var html =
+        '<div class="fw-bold text-dark" style="' + style + '">' + esc(p || "-") + "</div>";
+    if (!v) return html;
+    var pL = p.toLowerCase();
+    var vL = v.toLowerCase();
+    if (pL === vL || pL.endsWith(vL)) return html;
+    html +=
+        '<div class="fw-bold text-dark mt-0.5" style="' + style + '">' + esc(v) + "</div>";
+    return html;
+}
+
+/**
  * Unit input Stock Opname: checkbox "ikut stok lama" per satuan (Produk + Bahan).
  */
 function buildOpnameUnitInputHtml(opts) {
     var unitId = opts.unitId;
-    var unitName = opts.unitName || "";
+    var unitName =
+        opts.unitName ||
+        opnameUnitAbbrev(opts.unitShortName, opts.unitFullName) ||
+        "";
     var systemQty =
         opts.systemQty != null && opts.systemQty !== "" ? opts.systemQty : "";
     var placeholder = opts.placeholder || "";

@@ -205,7 +205,10 @@ function refreshStockOpname(callback) {
                             : "";
                     rl_stock += buildOpnameUnitInputHtml({
                         unitId: element.unit_id,
-                        unitName: element.unit_short_name,
+                        unitName: opnameUnitAbbrev(
+                            element.unit_short_name,
+                            element.unit_name,
+                        ),
                         systemQty: data.is_draft ? "" : element.ss_stock,
                         placeholder: createPlaceholder,
                         value: "",
@@ -349,7 +352,10 @@ function renderMode2(items) {
             let prefill = untouched ? "" : formatRupiah(String(element.real_qty));
             rl_stock += buildOpnameUnitInputHtml({
                 unitId: element.unit_id,
-                unitName: element.unit_short_name,
+                unitName: opnameUnitAbbrev(
+                    element.unit_short_name,
+                    element.unit_name,
+                ),
                 systemQty: element.system_qty,
                 placeholder:
                     untouched && !data.is_draft

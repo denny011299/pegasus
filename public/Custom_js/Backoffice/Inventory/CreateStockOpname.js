@@ -193,7 +193,10 @@ function refreshStockOpname(callback) {
                             : "";
                     rl_stock += buildOpnameUnitInputHtml({
                         unitId: element.unit_id,
-                        unitName: element.unit_short_name,
+                        unitName: opnameUnitAbbrev(
+                            element.unit_short_name,
+                            element.unit_name,
+                        ),
                         systemQty: data.is_draft ? "" : element.ps_stock,
                         placeholder: createPlaceholder,
                         value: "",
@@ -207,8 +210,7 @@ function refreshStockOpname(callback) {
                             <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
                         </td>
                         <td>
-                            <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
-                            ${item.product_variant_name ? `<div class="fw-bold text-dark mt-0.5" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_name)}</div>` : ''}
+                            ${opnameProductTitleHtml(item.pr_name, item.product_variant_name)}
                         </td>
                         <td class="text-center">
                             <div class="input-group rstock">
@@ -293,7 +295,10 @@ function renderMode2(items) {
             let systemHint = element.live_qty ?? element.system_qty;
             rl_stock += buildOpnameUnitInputHtml({
                 unitId: element.unit_id,
-                unitName: element.unit_short_name,
+                unitName: opnameUnitAbbrev(
+                    element.unit_short_name,
+                    element.unit_name,
+                ),
                 systemQty: element.system_qty,
                 placeholder:
                     untouched && systemHint !== null && systemHint !== undefined
@@ -311,8 +316,7 @@ function renderMode2(items) {
                     <span class="badge" style="background:#f8fafc;color:#1e293b;border:1px solid #cbd5e1;font-family:monospace;font-size:11.5px;font-weight:700;padding:5px 8px;border-radius:6px;letter-spacing:0.3px;">${escapeHtml(item.product_variant_sku || "-")}</span>
                 </td>
                 <td>
-                    <div class="fw-bold text-dark" style="font-size:13px;line-height:1.35;">${escapeHtml(item.pr_name)}</div>
-                    ${item.product_variant_name ? `<div class="fw-bold text-dark mt-0.5" style="font-size:13px;line-height:1.35;">${escapeHtml(item.product_variant_name)}</div>` : ''}
+                    ${opnameProductTitleHtml(item.pr_name, item.product_variant_name)}
                 </td>
                 <td class="text-center">
                     <div class="input-group rstock">
