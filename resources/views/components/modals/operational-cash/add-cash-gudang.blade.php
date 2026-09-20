@@ -81,7 +81,7 @@
                     </div>
                   </div>
                   <div class="col-12 operasional mt-2">
-                    <h5 class="form-title mb-2 text-black">Detail</h5>
+                    <h5 class="form-title mb-2 text-black pb-2">Detail</h5>
                   </div>
                   <div class="col-12 px-2 mb-3 operasional">
                     <div class="row input_table pg-popup-table-input g-3 align-items-end px-1">

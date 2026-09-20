@@ -71,7 +71,7 @@
                         placeholder="Contoh: Pengembalian kas harian">
                     </div>
                   </div>
-                  <div class="col-12 px-2 mb-3 operasional">
+                  <div class="col-12 px-2 mt-3 mb-3 operasional">
                     <div class="row input_table pg-popup-table-input g-3 align-items-end px-1">
                       {{-- <div class="col-12 col-lg-3">
                                                 <div class="input-block mb-3">
