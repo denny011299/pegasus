@@ -644,4 +644,70 @@ class StockTransferWorkflowTest extends TestCase
         $this->assertSame(2.0, (float) $destDos->ps_stock, 'utama terima 2 DOS sesuai satuan request');
         $this->assertSame(self::DOS_UNIT_ID, (int) $detail->fresh()->received_unit_id);
     }
+
+    /**
+     * Regression: 12 pcs di eceran + request 12 DOS (butuh 144 pcs) harus gagal di
+     * checkTransferStock dengan shortage di satuan DOS (bukan Piece yang bikin FE miss-match).
+     */
+    public function test_check_stock_rejects_oversized_dos_request_with_dos_shortage_unit(): void
+    {
+        $this->actingAsSuperAdminStaff();
+
+        $retailWarehouseId = $this->resolveActiveRetailWarehouseId('Stock Transfer');
+        $this->assignWarehousesToActingStaff($retailWarehouseId, self::MAIN_WAREHOUSE_ID);
+
+        $fx = $this->createProductFixture(defaultUnitId: self::DOS_UNIT_ID, retailUnit: self::PIECE_UNIT_ID);
+        $this->createDosPieceRelation($fx['variant']);
+        $this->createProductStock($fx['variant'], $retailWarehouseId, self::PIECE_UNIT_ID, 12);
+
+        $check = $this->post('/checkTransferStock', [
+            'from_warehouse_id' => $retailWarehouseId,
+            'to_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::DOS_UNIT_ID,
+                'qty' => 12,
+                'label' => 'AAHK oversize DOS',
+            ]],
+        ]);
+        $check->assertOk();
+        $this->assertFalse((bool) $check->json('ok'), '12 DOS butuh 144 pcs; stok 12 pcs harus gagal');
+        $shortages = collect($check->json('shortages') ?: []);
+        $this->assertNotEmpty($shortages);
+        $hit = $shortages->first(
+            fn ($s) => (int) ($s['product_variant_id'] ?? 0) === (int) $fx['variant']->product_variant_id
+        );
+        $this->assertNotNull($hit);
+        $this->assertSame(
+            self::DOS_UNIT_ID,
+            (int) ($hit['unit_id'] ?? 0),
+            'shortage harus di satuan request (DOS) supaya FE match'
+        );
+        $this->assertSame(1.0, (float) ($hit['available'] ?? -1), '12 pcs ≈ 1 DOS tersedia');
+
+        $this->withActiveWarehouse(self::MAIN_WAREHOUSE_ID);
+        $create = $this->post('/insertStockTransfer', [
+            'transfer_date' => now()->format('d-m-Y'),
+            'sender_id' => (int) session('user')->staff_id,
+            'from_warehouse_id' => $retailWarehouseId,
+            'to_warehouse_id' => self::MAIN_WAREHOUSE_ID,
+            'note' => 'should fail on ship',
+            'items' => [[
+                'product_variant_id' => $fx['variant']->product_variant_id,
+                'unit_id' => self::DOS_UNIT_ID,
+                'qty' => 12,
+            ]],
+        ]);
+        $create->assertOk()->assertJson(['status' => 1]);
+        $stId = (int) $create->json('id');
+
+        $this->withActiveWarehouse($retailWarehouseId);
+        $ship = $this->post('/shipStockTransfer', [
+            'id' => $stId,
+            'proof_base64' => self::PROOF_BASE64,
+        ]);
+        $ship->assertOk();
+        $this->assertSame(-1, (int) $ship->json('status'), 'Kirim harus ditolak stok tidak cukup');
+        $this->assertSame(1, (int) StockTransfer::find($stId)->status, 'status tetap Pending');
+    }
 }
