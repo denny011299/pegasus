@@ -1357,6 +1357,9 @@ class StockTransferController extends Controller
             $warehouseId,
             $this->applySourceAvailabilityMode($stockItems, $sourceIsMain)
         );
+        // Eceran→utama: cek di retail_unit; kembalikan shortage ke satuan request (DOS)
+        // supaya FE bisa match unit_id + tampil "Tersedia: N DOS".
+        $result = $this->remapStockShortagesToRequestUnits($result, $normalized, $stockItems);
 
         if (! $result['ok']) {
             $names = array_map(fn ($s) => $s['label'], $result['shortages']);
@@ -3105,6 +3108,62 @@ class StockTransferController extends Controller
             : number_format($retailAvail, 0, ',', '.');
 
         return $snapshot;
+    }
+
+    /**
+     * Setelah cek stok di satuan potong (retail), map shortage balik ke satuan request.
+     * Tanpa ini FE gagal match (cari unit DOS, BE kirim unit pcs) → Kirim tetap hijau.
+     *
+     * @param  array{ok:bool,shortages:array<int,array>}  $result
+     * @param  array<int, array{product_variant_id:int,unit_id:int,qty:float,label?:string}>  $originalItems
+     * @param  array<int, array{product_variant_id:int,unit_id:int,qty:float,label?:string}>  $stockItems
+     * @return array{ok:bool,shortages:array<int,array>}
+     */
+    protected function remapStockShortagesToRequestUnits(
+        array $result,
+        array $originalItems,
+        array $stockItems
+    ): array {
+        if (($result['ok'] ?? true) || empty($result['shortages'])) {
+            return $result;
+        }
+
+        $origByVariant = [];
+        foreach ($originalItems as $item) {
+            $vid = (int) ($item['product_variant_id'] ?? 0);
+            if ($vid > 0) {
+                $origByVariant[$vid] = $item;
+            }
+        }
+
+        $result['shortages'] = array_map(function ($shortage) use ($origByVariant) {
+            $vid = (int) ($shortage['product_variant_id'] ?? 0);
+            $orig = $origByVariant[$vid] ?? null;
+            if (! $orig) {
+                return $shortage;
+            }
+            $origUnit = (int) ($orig['unit_id'] ?? 0);
+            $checkUnit = (int) ($shortage['unit_id'] ?? 0);
+            $available = (float) ($shortage['available'] ?? 0);
+            if ($origUnit > 0 && $checkUnit > 0 && $origUnit !== $checkUnit) {
+                $available = (float) floor(ProductUnitStock::convertQty(
+                    $available,
+                    $checkUnit,
+                    $origUnit,
+                    $vid
+                ));
+            }
+
+            return [
+                'product_variant_id' => $vid,
+                'unit_id' => $origUnit > 0 ? $origUnit : $checkUnit,
+                'qty' => (float) ($orig['qty'] ?? $shortage['qty'] ?? 0),
+                'available' => $available,
+                'label' => $shortage['label'] ?? ($orig['label'] ?? ('Variant #' . $vid)),
+            ];
+        }, $result['shortages']);
+
+        return $result;
     }
 
     /**
