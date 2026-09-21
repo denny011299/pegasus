@@ -371,6 +371,23 @@ function hasInsufficientStockRows() {
     });
 }
 
+/** Shortage dari checkTransferStock — match variant; unit boleh beda setelah konversi eceran. */
+function findTransferStockShortage(shortages, item) {
+    if (!Array.isArray(shortages) || !item) return null;
+    var byVariantAndUnit = shortages.find(function (row) {
+        return (
+            String(row.product_variant_id) === String(item.product_variant_id) &&
+            String(row.unit_id) === String(item.unit_id)
+        );
+    });
+    if (byVariantAndUnit) return byVariantAndUnit;
+    return (
+        shortages.find(function (row) {
+            return String(row.product_variant_id) === String(item.product_variant_id);
+        }) || null
+    );
+}
+
 /**
  * Cek stok asal hanya saat Kirim / approve yang akan potong stok.
  * Create & edit request: jangan query / gate stok.
@@ -2071,13 +2088,8 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
                 }
 
                 var shortages = Array.isArray(res.shortages) ? res.shortages : [];
-                var shortage = shortages.find(function (row) {
-                    return (
-                        String(row.product_variant_id) ===
-                            String(item.product_variant_id) &&
-                        String(row.unit_id) === String(item.unit_id)
-                    );
-                });
+                // Match by variant dulu — BE eceran→utama cek di retail_unit, unit_id bisa beda.
+                var shortage = findTransferStockShortage(shortages, item);
                 if (shortage) {
                     var shortageMsg =
                         "Stok tidak cukup. Tersedia: " +
@@ -2210,6 +2222,22 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
             if (selectedUnit) {
                 item.unit_name = selectedUnit.unit_name || selectedUnit.unit_short_name;
                 item.unit_short_name = selectedUnit.unit_short_name || selectedUnit.unit_name;
+                // available_qty = ekuivalen di satuan terpilih (eceran→utama: floor pcs→DOS).
+                if (selectedUnit.available_qty != null && selectedUnit.available_qty !== "") {
+                    var availSel = parseFloat(selectedUnit.available_qty);
+                    item.available_qty = isNaN(availSel) ? null : availSel;
+                    if (
+                        !isNaN(availSel) &&
+                        Number(item.qty) > availSel + 1e-9
+                    ) {
+                        item.stock_invalid = true;
+                        item.stock_error =
+                            "Stok tidak cukup. Tersedia: " +
+                            formatTransferQty(availSel) +
+                            " " +
+                            transferUnitLabel(selectedUnit);
+                    }
+                }
             }
             validateRetailUnit();
         },
@@ -2472,12 +2500,7 @@ function validateCurrentTransferMatrix(done, showToast) {
             var shortages = Array.isArray(res.shortages) ? res.shortages : [];
             requestItems.forEach(function (entry) {
                 var item = entry.item;
-                var shortage = shortages.find(function (row) {
-                    return (
-                        String(row.product_variant_id) === String(item.product_variant_id) &&
-                        String(row.unit_id) === String(item.unit_id)
-                    );
-                });
+                var shortage = findTransferStockShortage(shortages, item);
                 item.stock_invalid = !!shortage;
                 item.available_qty = shortage ? parseFloat(shortage.available) || 0 : item.available_qty;
                 item.stock_error = shortage
