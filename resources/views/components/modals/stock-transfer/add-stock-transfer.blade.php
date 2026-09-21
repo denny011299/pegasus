@@ -286,7 +286,7 @@
                     <th
                       style="min-width: 240px; width: 260px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Qty / Satuan</th>
-                    <th class="no-sort text-center"
+                    <th class="col-aksi no-sort text-center"
                       style="min-width: 50px; width: 56px; color: #1e3a8a; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing:.5px; padding: 12px 14px;">
                       Aksi</th>
                   </tr>

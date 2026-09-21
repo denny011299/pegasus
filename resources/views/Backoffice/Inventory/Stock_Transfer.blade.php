@@ -144,8 +144,12 @@
             color: #334155;
             vertical-align: middle;
         }
-        /* Create/edit request: kolom STOK ASAL disembunyikan (cek stok baru saat Kirim) */
+        /* Create/edit request: kolom STOK ASAL disembunyikan (cek stok baru saat Kirim / retail approve) */
         #add_stock_transfer #tableTransferItems.st-hide-stock-asal .col-stock-asal {
+            display: none !important;
+        }
+        /* Setujui QC/Ops (termasuk penerimaan main): kolom Aksi tidak perlu */
+        #add_stock_transfer #tableTransferItems.st-hide-aksi .col-aksi {
             display: none !important;
         }
         #add_stock_transfer #tableTransferItems .col-qty-unit {
