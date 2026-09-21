@@ -272,12 +272,11 @@
                     {{-- GitHub #196 item 28: halaman ini satu route untuk 4 tipe kas (admin/gudang/
                     armada/sales) lewat dropdown #cashType, jadi cek awal di sini harus meliputi
                     submodul per tipe juga (sama seperti check.access.any di routes/web.php dan
-                    CashOperasionalPresenter::TYPE_MODULES). Hanya nama modul yang benar-benar ada
-                    di public/assets/json/permission.json (dan karenanya bisa dikelola dari halaman
-                    Izin Akses) — tidak ada alias/modul generik lagi. Visibility per tipe yang
-                    sedang dipilih lalu di-refine di JS (canCreateCashType() di
-                    Cash_Operational.js) tiap #cashType berganti. --}}
-                    @roleCanAny(['Kas Operasional Admin', 'Kas Operasional Gudang', 'Kas Operasional Armada', 'Kas Operasional Sales'], 'create')
+                    CashOperasionalPresenter::TYPE_MODULES) — bukan cuma modul generik "Kas"/"Kas
+                    Operasional" — supaya role yang create-nya di-scope ke satu tipe saja tetap
+                    melihat tombol ini. Visibility per tipe yang sedang dipilih lalu di-refine di JS
+                    (canCreateCashType() di Cash_Operational.js) tiap #cashType berganti. --}}
+                    @roleCanAny(['Kas', 'Kas Operasional', 'Kas Operasional Admin', 'Kas Admin', 'Kas Operasional Gudang', 'Kas Gudang', 'Kas Operasional Armada', 'Kas Armada', 'Kas Operasional Sales', 'Kas Sales'], 'create')
                     <li>
                         <a class="btn btn-primary btnAddCash"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Aktivitas</a>

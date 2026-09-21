@@ -28,12 +28,19 @@ class WarehouseMenuAccess
         'Pengaturan',
         'Profil',
         // GitHub #196: "Kas Admin"/"Kas Gudang"/"Kas Armada"/"Kas Sales"/"Kas Operasional" (tanpa
-        // akhiran tipe) SEMPAT ada di sini sebagai alias fallback untuk check.access.any di
-        // routes/web.php — tapi alias-alias itu (dan modul generiknya) sudah dihapus total dari
-        // routes/web.php dan CashOperasionalPresenter::TYPE_MODULES, jadi tidak ada pemanggil lagi
-        // yang mengirim nama-nama itu ke allows(). Jangan ditambahkan balik: kalau butuh
-        // pengecualian serupa untuk modul baru, pastikan modul itu memang bukan item sidebar
-        // sungguhan (tidak ada di public/assets/json/permission.json) — bukan sekadar alias lama.
+        // akhiran tipe) adalah alias fallback yang cuma dipakai check.access.any di routes/web.php
+        // dan CashOperasionalPresenter::TYPE_MODULES — bukan item sidebar sungguhan (tidak ada di
+        // public/assets/json/permission.json, jadi tidak bisa dicentang di form Izin Akses Gudang
+        // manapun). Tanpa ini, sebuah role yang punya `create` lewat modul generik "Kas
+        // Operasional" (data lama sebelum menu Kas dipecah per tipe Admin/Gudang/Armada/Sales)
+        // selalu ditolak middleware duluan oleh whitelist gudang — RoleAccess::can() malah tidak
+        // pernah sempat dicek — walau item sidebar spesifiknya ("Kas Operasional Admin", dst.)
+        // sendiri sudah di-whitelist di gudang itu.
+        'Kas Admin',
+        'Kas Gudang',
+        'Kas Armada',
+        'Kas Sales',
+        'Kas Operasional',
     ];
 
     public static function isMainOnlyMenu(string $module): bool
