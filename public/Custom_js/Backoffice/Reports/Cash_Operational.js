@@ -317,29 +317,36 @@
     let dd = String(today.getDate()).padStart(2, '0');
     let todayStr = yyyy + '-' + mm + '-' + dd;
 
+    /**
+     * GitHub #196 item 28: hanya nama modul yang benar-benar terdaftar di
+     * public/assets/json/permission.json (dan karenanya bisa dikelola dari halaman Izin Akses) —
+     * tidak ada lagi alias legacy ("Kas Admin", "Kas Gudang", ...) atau modul generik "Kas
+     * Operasional"/"Kas" sebagai fallback. Modul generik itu bisa diam-diam meloloskan/menolak
+     * akses tanpa pernah terlihat/bisa diubah dari UI Izin Akses — lihat root-cause di
+     * CashOperasionalPresenter::TYPE_MODULES untuk detail lengkapnya.
+     */
+    var CASH_TYPE_MODULES = {
+        admin: "Kas Operasional Admin",
+        gudang: "Kas Operasional Gudang",
+        armada: "Kas Operasional Armada",
+        sales: "Kas Operasional Sales",
+    };
+
     function canViewCashType(type) {
         if (window.userRoleId === -1) return true;
-        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "view") || hasAccessAction("Kas Admin", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "view") || hasAccessAction("Kas Gudang", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "view") || hasAccessAction("Kas Armada", "view") || hasAccessAction("Kas Operasional", "view");
-        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "view") || hasAccessAction("Kas Sales", "view") || hasAccessAction("Kas Operasional", "view");
-        return false;
+        return !!CASH_TYPE_MODULES[type] && hasAccessAction(CASH_TYPE_MODULES[type], "view");
     }
 
     /**
-     * GitHub #196 item 28: tombol "Tambah Aktivitas" di page-header dirender sekali di server
-     * berdasarkan akses `create` ke SALAH SATU dari 4 tipe kas (lihat page-header.blade.php), tapi
-     * halaman ini satu route untuk 4 tipe lewat dropdown #cashType — jadi kalau role hanya punya
-     * `create` di tipe lain (bukan tipe yang sedang dipilih), tombolnya harus disembunyikan untuk
-     * tipe yang sedang aktif itu. Dipanggil tiap #cashType berganti, sama seperti canViewCashType().
+     * Tombol "Tambah Aktivitas" di page-header dirender sekali di server berdasarkan akses
+     * `create` ke SALAH SATU dari 4 tipe kas (lihat page-header.blade.php), tapi halaman ini satu
+     * route untuk 4 tipe lewat dropdown #cashType — jadi kalau role hanya punya `create` di tipe
+     * lain (bukan tipe yang sedang dipilih), tombolnya harus disembunyikan untuk tipe yang sedang
+     * aktif itu. Dipanggil tiap #cashType berganti, sama seperti canViewCashType().
      */
     function canCreateCashType(type) {
         if (window.userRoleId === -1) return true;
-        if (type === "admin") return hasAccessAction("Kas Operasional Admin", "create") || hasAccessAction("Kas Admin", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
-        if (type === "gudang") return hasAccessAction("Kas Operasional Gudang", "create") || hasAccessAction("Kas Gudang", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
-        if (type === "armada") return hasAccessAction("Kas Operasional Armada", "create") || hasAccessAction("Kas Armada", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
-        if (type === "sales") return hasAccessAction("Kas Operasional Sales", "create") || hasAccessAction("Kas Sales", "create") || hasAccessAction("Kas Operasional", "create") || hasAccessAction("Kas", "create");
-        return false;
+        return !!CASH_TYPE_MODULES[type] && hasAccessAction(CASH_TYPE_MODULES[type], "create");
     }
 
     function sanitizeCashTypeOptions() {

@@ -6,26 +6,25 @@ use Carbon\Carbon;
 
 class CashOperasionalPresenter
 {
-    /** @var list<string> */
-    public const MODULES = ['Kas', 'Kas Operasional'];
-
     /**
-     * GitHub #196 (item 28): route access (`check.access.any` middleware) recognizes the
-     * per-warehouse/per-type submodules below in ADDITION to the generic "Kas"/"Kas Operasional"
-     * — a role scoped only to e.g. "Kas Operasional Gudang" can open `/getCashGudang` fine. But
-     * this presenter's per-row action buttons (view/acc/tolak) used to check ONLY the generic
-     * `MODULES` list, so that same role never saw its ACC/Tolak buttons even with "others"
-     * granted, despite "view" happening to work whenever the role also had the generic module.
-     * Each row type here now checks its own submodule names too, mirroring the middleware lists
-     * in routes/web.php exactly.
+     * GitHub #196 (item 28): each row type here checks its own submodule name, mirroring the
+     * `check.access.any` middleware lists in routes/web.php exactly — these are the only module
+     * names that actually exist in public/assets/json/permission.json (the source the Izin Akses
+     * role-editor UI reads), so they're the only ones a role can ever be granted or denied through
+     * that screen. Earlier revisions of this map also carried legacy alias names ("Kas Admin",
+     * "Kas Gudang", ...) and a generic "Kas"/"Kas Operasional" fallback for roles whose
+     * `role_access` still had that pre-split module — but those aliases are invisible in the role
+     * editor (not in permission.json) and can silently grant/hide access no admin can see or
+     * revoke from the UI. Removed once the underlying legacy `role_access` data was cleaned up;
+     * don't reintroduce them here.
      *
-     * @var array<string, list<string>>
+     * @var array<string, string>
      */
     private const TYPE_MODULES = [
-        'admin' => ['Kas Operasional Admin', 'Kas Admin'],
-        'gudang' => ['Kas Operasional Gudang', 'Kas Gudang'],
-        'armada' => ['Kas Operasional Armada', 'Kas Armada'],
-        'sales' => ['Kas Operasional Sales', 'Kas Sales'],
+        'admin' => 'Kas Operasional Admin',
+        'gudang' => 'Kas Operasional Gudang',
+        'armada' => 'Kas Operasional Armada',
+        'sales' => 'Kas Operasional Sales',
     ];
 
     private static function money(int $amount): string
@@ -33,11 +32,9 @@ class CashOperasionalPresenter
         return number_format(abs($amount), 0, ',', '.');
     }
 
-    private static function can($user, string $ability, string $type = ''): bool
+    private static function can($user, string $ability, string $type): bool
     {
-        $modules = array_merge(self::TYPE_MODULES[$type] ?? [], self::MODULES);
-
-        return RoleAccess::canAny($user, $modules, $ability);
+        return RoleAccess::can($user, self::TYPE_MODULES[$type], $ability);
     }
 
     private static function statusBadge(int $status): string
