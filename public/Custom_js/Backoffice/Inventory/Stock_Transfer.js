@@ -2102,8 +2102,26 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
                     item.stock_invalid = true;
                     item.available_qty = parseFloat(shortage.available) || 0;
                     item.stock_error = shortageMsg;
+                    item.stock_text =
+                        formatTransferQty(shortage.available) +
+                        " " +
+                        transferUnitLabel(item);
                     if (showToast && typeof toastr !== "undefined") {
                         toastr.error("", item.stock_error);
+                    }
+                    return;
+                }
+
+                // Cadangan: ok=false tapi shortage tidak match unit → tetap block.
+                if (res.ok === false) {
+                    var failMsg = res.message || "Stok tidak mencukupi";
+                    if (rejectInsufficientTransferRow(item, failMsg)) {
+                        return;
+                    }
+                    item.stock_invalid = true;
+                    item.stock_error = failMsg;
+                    if (showToast && typeof toastr !== "undefined") {
+                        toastr.error("", failMsg);
                     }
                     return;
                 }
@@ -2233,6 +2251,10 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
                         item.stock_invalid = true;
                         item.stock_error =
                             "Stok tidak cukup. Tersedia: " +
+                            formatTransferQty(availSel) +
+                            " " +
+                            transferUnitLabel(selectedUnit);
+                        item.stock_text =
                             formatTransferQty(availSel) +
                             " " +
                             transferUnitLabel(selectedUnit);
@@ -2498,30 +2520,38 @@ function validateCurrentTransferMatrix(done, showToast) {
             }
 
             var shortages = Array.isArray(res.shortages) ? res.shortages : [];
+            var anyInvalid = false;
             requestItems.forEach(function (entry) {
                 var item = entry.item;
                 var shortage = findTransferStockShortage(shortages, item);
-                item.stock_invalid = !!shortage;
-                item.available_qty = shortage ? parseFloat(shortage.available) || 0 : item.available_qty;
-                item.stock_error = shortage
-                    ? "Stok tidak cukup. Tersedia: " +
-                      formatTransferQty(shortage.available) +
-                      " " +
-                      transferUnitLabel(item)
-                    : null;
                 if (shortage) {
+                    item.stock_invalid = true;
+                    item.available_qty = parseFloat(shortage.available) || 0;
+                    item.stock_error =
+                        "Stok tidak cukup. Tersedia: " +
+                        formatTransferQty(shortage.available) +
+                        " " +
+                        transferUnitLabel(item);
                     item.stock_text =
                         formatTransferQty(shortage.available) +
                         " " +
                         transferUnitLabel(item);
+                    anyInvalid = true;
+                } else if (res.ok === false) {
+                    item.stock_invalid = true;
+                    item.stock_error = res.message || "Stok tidak mencukupi";
+                    anyInvalid = true;
+                } else {
+                    item.stock_invalid = false;
+                    item.stock_error = null;
                 }
                 item.stock_loading = false;
             });
             refreshTransferItemsTable();
-            if (shortages.length && showToast !== false && typeof toastr !== "undefined") {
+            if (anyInvalid && showToast !== false && typeof toastr !== "undefined") {
                 toastr.error("", res.message || "Stok tidak mencukupi");
             }
-            if (typeof done === "function") done(shortages.length === 0, res);
+            if (typeof done === "function") done(!anyInvalid && res.ok !== false, res);
         },
         error: function () {
             if (runId !== stockValidationRun) return;
