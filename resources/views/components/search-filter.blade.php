@@ -1032,7 +1032,8 @@
 @endif
 
 @if(Route::is(['supplies']))
-<div class="profit-menu card">
+{{-- Filter Jenis/Trading di-hide sampai fitur Trading di-rilis --}}
+<div class="profit-menu card d-none" id="supplies-kind-filter">
     <div class="row card-body pb-0 g-3 align-items-end">
         <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
             <div class="input-block mb-3">
