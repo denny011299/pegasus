@@ -7,11 +7,17 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * GitHub #196 item 28: a role scoped only to a per-type submodule ("Kas Operasional Gudang",
- * "Kas Armada", ...) could already reach its `/getCash*` route (the `check.access.any` middleware
- * in routes/web.php recognizes those exact names), but the presenter's action-column buttons used
- * to check only the generic "Kas"/"Kas Operasional" modules — so ACC/Tolak (and even the view/edit/
- * delete icons) silently never rendered for such a role. No DB needed; a plain stdClass row plus a
- * user with a hand-built role_access payload is enough.
+ * "Kas Operasional Armada", ...) could already reach its `/getCash*` route (the `check.access.any`
+ * middleware in routes/web.php recognizes those exact names), but the presenter's action-column
+ * buttons used to check only the generic "Kas"/"Kas Operasional" modules — so ACC/Tolak (and even
+ * the view/edit/delete icons) silently never rendered for such a role. No DB needed; a plain
+ * stdClass row plus a user with a hand-built role_access payload is enough.
+ *
+ * Follow-up: the generic "Kas"/"Kas Operasional" fallback (and alias names like "Kas Armada") were
+ * later removed entirely from CashOperasionalPresenter::TYPE_MODULES — they aren't in
+ * public/assets/json/permission.json, so no role can ever be granted/denied them from the Izin
+ * Akses UI, and keeping them let stale `role_access` rows silently grant access invisibly. Only
+ * the 4 real submodule names are checked now.
  */
 class CashOperasionalPresenterPerTypeAccessTest extends TestCase
 {
@@ -50,7 +56,7 @@ class CashOperasionalPresenterPerTypeAccessTest extends TestCase
 
     public function test_armada_row_shows_acc_tolak_for_role_scoped_to_armada_submodule_only(): void
     {
-        $user = $this->user('Kas Armada', ['view', 'others']);
+        $user = $this->user('Kas Operasional Armada', ['view', 'others']);
         $row = CashOperasionalPresenter::armadaRow($this->pendingOperasionalRow([
             'cr_id' => 1, 'cr_date' => '2026-09-20', 'cr_type' => 2, 'cr_aksi' => 2, 'cr_nominal' => 20000,
             'cash_id' => 1,
@@ -82,14 +88,15 @@ class CashOperasionalPresenterPerTypeAccessTest extends TestCase
         $this->assertStringContainsString('btn_view_admin', $row['action']);
     }
 
-    public function test_generic_kas_operasional_module_still_grants_access_to_every_type(): void
+    public function test_legacy_generic_and_alias_modules_no_longer_grant_access(): void
     {
-        $user = $this->user('Kas Operasional', ['view', 'others']);
-        $row = CashOperasionalPresenter::gudangRow($this->pendingOperasionalRow([
+        $row = fn (object $user) => CashOperasionalPresenter::gudangRow($this->pendingOperasionalRow([
             'cg_id' => 1, 'cg_date' => '2026-09-20', 'cg_type' => 2, 'cg_aksi' => 2, 'cg_nominal' => 20000,
             'cash_id' => 1,
         ]), $user);
 
-        $this->assertStringContainsString('btn_acc', $row['action']);
+        $this->assertStringNotContainsString('btn_acc', $row($this->user('Kas Operasional', ['view', 'others']))['action']);
+        $this->assertStringNotContainsString('btn_acc', $row($this->user('Kas Gudang', ['view', 'others']))['action']);
+        $this->assertStringNotContainsString('btn_acc', $row($this->user('Kas', ['view', 'others']))['action']);
     }
 }
