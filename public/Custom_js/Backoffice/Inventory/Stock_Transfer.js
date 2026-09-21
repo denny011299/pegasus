@@ -281,13 +281,11 @@ function transferDefaultUnit(raw) {
  * preferRetail: gudang asal eceran → langsung lock ke retail_unit (hindari flash Jerigen/DOS).
  */
 function transferSourcePreferRetailOnly() {
-    // main_request: tujuan = gudang utama aktif → boleh DOS/chain (jangan lock Piece).
+    // main_request / eceran→utama: boleh DOS/chain (jangan lock Piece).
     if (transferIsMainRequest) return false;
+    if (selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") === true) return false;
     // Eceran → eceran / tujuan belum jelas utama: lock retail.
-    return (
-        selectedTransferWarehouseIsMain("#transfer_from_warehouse_id") === false &&
-        selectedTransferWarehouseIsMain("#transfer_to_warehouse_id") !== true
-    );
+    return selectedTransferWarehouseIsMain("#transfer_from_warehouse_id") === false;
 }
 
 function transferUnitsFromRaw(raw, opts) {
@@ -4188,12 +4186,20 @@ $(document).on("change", "#transfer_date", function() {
     $(this).removeClass("is-invalid");
 });
 
-function fillSelectOption($el, id, text) {
+function fillSelectOption($el, id, text, isMainWarehouse) {
     if (!id) return;
     if ($el.find("option[value='" + id + "']").length === 0) {
         $el.append(new Option(text || id, id, true, true));
     }
     $el.val(String(id)).trigger("change");
+    if (isMainWarehouse === undefined || isMainWarehouse === null) return;
+    var flag = parseInt(isMainWarehouse, 10) === 1 ? 1 : 0;
+    var $opt = $el.find("option:selected");
+    if ($opt.length) $opt.attr("data-is_main_warehouse", flag);
+    if ($el.hasClass("select2-hidden-accessible")) {
+        var data = $el.select2("data") || [];
+        if (data[0]) data[0].is_main_warehouse = flag;
+    }
 }
 
 function setTransferModalLoading(isLoading) {
@@ -4274,11 +4280,36 @@ function loadTransferDetailForEdit(id) {
                 Boolean(transferIsRetailRequest || transferIsMainRequest)
             );
             setDefaultSender();
-            fillSelectOption($("#transfer_from_warehouse_id"), res.from_warehouse_id, res.from_warehouse_name);
-            fillSelectOption($("#transfer_to_warehouse_id"), res.to_warehouse_id, res.to_warehouse_name);
+            fillSelectOption(
+                $("#transfer_from_warehouse_id"),
+                res.from_warehouse_id,
+                res.from_warehouse_name,
+                res.from_is_main_warehouse
+            );
+            fillSelectOption(
+                $("#transfer_to_warehouse_id"),
+                res.to_warehouse_id,
+                res.to_warehouse_name,
+                res.to_is_main_warehouse
+            );
             enableTransferProductSelect();
 
             transferItems = (res.items || []).map(function (it) {
+                var units = Array.isArray(it.units) ? it.units.slice() : [];
+                var uid = it.unit_id;
+                // Fallback FE: satuan tersimpan wajib ada di opsi dropdown.
+                if (
+                    uid &&
+                    !units.some(function (u) {
+                        return String(u.unit_id) === String(uid);
+                    })
+                ) {
+                    units.push({
+                        unit_id: uid,
+                        unit_name: it.unit_name || "-",
+                        unit_short_name: it.unit_short_name || it.unit_name || "-",
+                    });
+                }
                 return {
                     product_id: it.product_id,
                     product_variant_id: it.product_variant_id,
@@ -4287,10 +4318,10 @@ function loadTransferDetailForEdit(id) {
                     product_variant_sku: it.sku || "-",
                     sku: it.sku,
                     qty: parseFloat(it.qty) || 1,
-                    unit_id: it.unit_id,
+                    unit_id: uid,
                     unit_name: it.unit_name,
                     stock_text: it.stock_text || "-",
-                    units: it.units || [],
+                    units: units,
                     stock_invalid: false,
                     stock_error: null,
                 };

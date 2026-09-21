@@ -791,13 +791,41 @@ class StockTransferController extends Controller
                     );
                 }
             }
+            $retailUnitId = (int) ($pv->retail_unit ?? 0);
             $snap = ProductUnitStock::sourceSnapshot(
                 (int) $header->from_warehouse_id,
                 (int) $d->product_variant_id,
                 (bool) $sourceIsMain,
-                (int) ($pr->unit_id ?? 0),
-                (int) ($pv->retail_unit ?? 0)
+                $defaultUnitId,
+                $retailUnitId
             );
+            // Eceran → utama: opsi satuan = chain (DOS/Piece/…), sama getTransferSourceStock.
+            // Tanpa expand, dropdown detail cuma Piece → DOS tersimpan tampil salah.
+            if ($sourceIsMain === false && $destinationIsMain === true && $retailUnitId > 0) {
+                $snap = $this->expandEceranSourceUnitsForMainDestination(
+                    $snap,
+                    (int) $header->from_warehouse_id,
+                    (int) $d->product_variant_id,
+                    $defaultUnitId,
+                    $retailUnitId
+                );
+            }
+            $itemUnits = collect((array) ($snap['units'] ?? []))->values()->all();
+            $sentUnitId = (int) $d->unit_id;
+            // Pastikan satuan tersimpan selalu ada di opsi (edit/save tidak jatuh ke Piece).
+            if ($sentUnitId > 0 && ! collect($itemUnits)->contains(
+                fn ($u) => (int) ($u['unit_id'] ?? 0) === $sentUnitId
+            )) {
+                $fallbackUnit = $un ?: Unit::query()->find($sentUnitId);
+                $itemUnits[] = [
+                    'unit_id' => $sentUnitId,
+                    'unit_name' => (string) ($fallbackUnit->unit_name ?? $fallbackUnit->unit_short_name ?? '-'),
+                    'unit_short_name' => (string) ($fallbackUnit->unit_short_name ?? $fallbackUnit->unit_name ?? '-'),
+                    'ps_stock' => 0.0,
+                    'ps_stock_text' => '0',
+                    'available_qty' => 0.0,
+                ];
+            }
 
             $targetUnitRow = $units[$displayTargetUnitId] ?? $targetUnit;
             $stockTargetUnitRow = $units[$targetUnitId] ?? $targetUnitRow;
@@ -809,7 +837,7 @@ class StockTransferController extends Controller
                 'product_name' => $pr->product_name ?? '-',
                 'product_variant_name' => $pv->product_variant_name ?? '-',
                 'sku' => $pv->product_variant_sku ?? ($pv->sku ?? '-'),
-                'unit_id' => (int) $d->unit_id,
+                'unit_id' => $sentUnitId,
                 'unit_name' => $un->unit_name ?? ($un->unit_short_name ?? '-'),
                 'qty' => (float) $d->qty,
                 'qty_received' => $qtyReceivedTarget,
@@ -834,7 +862,7 @@ class StockTransferController extends Controller
                     ? ($qtyReceivedTarget - $convertedSent)
                     : null,
                 'stock_text' => $snap['stock_text'] ?? '-',
-                'units' => $snap['units'] ?? [],
+                'units' => $itemUnits,
             ];
         })->values();
 
@@ -932,8 +960,10 @@ class StockTransferController extends Controller
             'receiver_name' => $receiver->staff_name ?? '-',
             'from_warehouse_id' => $fromWh,
             'from_warehouse_name' => $fromWhModel->warehouse_name ?? '-',
+            'from_is_main_warehouse' => $sourceIsMain === true ? 1 : ($sourceIsMain === false ? 0 : null),
             'to_warehouse_id' => $toWh,
             'to_warehouse_name' => $toWhModel->warehouse_name ?? '-',
+            'to_is_main_warehouse' => $destinationIsMain === true ? 1 : ($destinationIsMain === false ? 0 : null),
             'note' => $header->note,
             'accept_note' => $header->accept_note,
             'source_type' => $header->source_type,
