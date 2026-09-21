@@ -1,6 +1,6 @@
-$(document).on("click", "#btn-login", function () {
+function doLogin() {
     LoadingButton("#btn-login");
-    $('.is-invalid').removeClass('is-invalid');
+    $(".is-invalid").removeClass("is-invalid");
     var username = $("#username").val();
     var password = $("#password").val();
     var valid = 0;
@@ -24,7 +24,7 @@ $(document).on("click", "#btn-login", function () {
         ResetLoadingButton("#btn-login", "Login");
         return false;
     }
-    // Perform login action
+
     $.ajax({
         url: "/loginUser",
         method: "post",
@@ -35,20 +35,38 @@ $(document).on("click", "#btn-login", function () {
         },
         success: async function (response) {
             if (response.length > 0 && response != -1) {
-                var sendTo = "/admin/";
-                window.location.href = sendTo;
+                window.location.href = "/admin/";
             } else {
-                notifikasi("error", "Login Gagal", "Silahkan cek kembali username dan password");
+                notifikasi(
+                    "error",
+                    "Login Gagal",
+                    "Silahkan cek kembali username dan password"
+                );
                 $(".fill").each(function () {
                     $(this).addClass("is-invalid");
                 });
             }
             ResetLoadingButton("#btn-login", "Login");
         },
-        error: function (xhr, status, error) {
+        error: function (xhr) {
             ResetLoadingButton("#btn-login", "Login");
-            if (handlePermissionError(xhr)) return;
+            if (typeof handlePermissionError === "function" && handlePermissionError(xhr)) {
+                return;
+            }
             notifikasi("error", "Login Gagal", "");
         },
     });
+}
+
+$(document).on("click", "#btn-login", function (e) {
+    e.preventDefault();
+    doLogin();
+});
+
+// Enter di username/password → login (tombol type=button tidak submit form)
+$(document).on("keydown", "#username, #password", function (e) {
+    if (e.key === "Enter" || e.keyCode === 13) {
+        e.preventDefault();
+        doLogin();
+    }
 });

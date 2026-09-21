@@ -18,11 +18,12 @@
                         <h1>Login</h1>
                         <p class="account-subtitle">Access to our dashboard</p>
 
-                        <form method="post" action="">
+                        {{-- Login via AJAX ke /loginUser; type=button agar tidak POST ke /login (GET only). --}}
+                        <form id="login-form" method="post" action="{{ url('/loginUser') }}" onsubmit="return false;">
                             @csrf
                             <div class="input-block mb-3">
                                 <label class="form-control-label">Username</label>
-                                <input type="text" class="form-control fill" id="username" name="username">
+                                <input type="text" class="form-control fill" id="username" name="username" autocomplete="username">
                                 <div class="text-danger pt-2">
                                     @error('0')
                                         {{ $message }}
@@ -36,7 +37,7 @@
                                 <label class="form-control-label">Password</label>
                                 <div class="pass-group">
                                     <input type="password" class="form-control pass-input fill" id="password" name="password"
-                                        value="">
+                                        value="" autocomplete="current-password">
                                     <span class="fa-solid fa-eye-slash toggle-password"></span>
                                     <div class="text-danger pt-2">
                                         @error('0')
@@ -48,8 +49,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <button class="btn btn-lg  btn-primary w-100" type="submit" id="btn-login">Login</button>
-                          
+                            <button class="btn btn-lg btn-primary w-100" type="button" id="btn-login">Login</button>
                         </form>
 
                     </div>
