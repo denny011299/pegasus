@@ -392,13 +392,36 @@ function findTransferStockShortage(shortages, item) {
  * Cek stok asal hanya saat Kirim / approve yang akan potong stok.
  * Create & edit request: jangan query / gate stok.
  * Detail terkunci + canShip: preview STOK ASAL + merah + disable Kirim.
+ * retail_request + QC/Ops: sama (BE cek + bisa auto-Kirim). main_request approve = penerimaan → jangan.
  */
 var transferStockGate = false;
 function transferNeedsSourceStockGate() {
+    if (transferStockGate === true) return true;
+    if (!transferFormLocked) return false;
+    if (transferCanShip === true) return true;
+    // Hanya retail_request: mirror BE approveStockTransfer (cek fromWh sebelum auto-Kirim)
     return (
-        transferStockGate === true ||
-        (transferCanShip === true && transferFormLocked === true)
+        transferIsRetailRequest === true &&
+        (transferCanApproveQc === true || transferCanApproveOps === true)
     );
+}
+
+/** Kolom Aksi (hapus baris) tidak relevan saat Setujui QC/Ops. */
+function transferNeedsAksiColumn() {
+    if (
+        transferFormLocked &&
+        (transferCanApproveQc === true || transferCanApproveOps === true)
+    ) {
+        return false;
+    }
+    return true;
+}
+
+function transferItemsVisibleColCount() {
+    var n = 4; // produk, varian, sku, qty
+    if (transferNeedsSourceStockGate()) n += 1;
+    if (transferNeedsAksiColumn()) n += 1;
+    return n;
 }
 
 function hasPendingTransferRows() {
@@ -426,20 +449,50 @@ function clearTransferStockLoads() {
 
 function syncTransferShipButton() {
     var $btn = $("#add_stock_transfer .btn-acc-transfer");
-    if (!$btn.length || $btn.hasClass("d-none")) return;
-    var block =
-        hasPendingTransferRows() ||
-        stockValidationPending > 0 ||
-        retailUnitValidationPending > 0 ||
-        hasInsufficientStockRows();
-    $btn.prop("disabled", block);
-    if (block && hasInsufficientStockRows()) {
-        $btn.attr("title", "Ada produk dengan stok asal tidak cukup");
-    } else if (block) {
-        $btn.attr("title", "Menunggu pengecekan stok…");
-    } else {
-        $btn.removeAttr("title");
+    if ($btn.length && !$btn.hasClass("d-none")) {
+        var block =
+            hasPendingTransferRows() ||
+            stockValidationPending > 0 ||
+            retailUnitValidationPending > 0 ||
+            hasInsufficientStockRows();
+        $btn.prop("disabled", block);
+        if (block && hasInsufficientStockRows()) {
+            $btn.attr("title", "Ada produk dengan stok asal tidak cukup");
+        } else if (block) {
+            $btn.attr("title", "Menunggu pengecekan stok…");
+        } else {
+            $btn.removeAttr("title");
+        }
     }
+    syncTransferApproveButtons();
+}
+
+/** Disable Setujui QC/Ops bila preview stok asal (retail) belum OK — gate BE tetap di approve. */
+function syncTransferApproveButtons() {
+    var selectors = [
+        "#add_stock_transfer .btn-approve-qc-transfer",
+        "#add_stock_transfer .btn-approve-ops-transfer",
+    ];
+    var gateApprove =
+        transferNeedsSourceStockGate() &&
+        (transferCanApproveQc === true || transferCanApproveOps === true);
+    var block =
+        gateApprove &&
+        (hasPendingTransferRows() ||
+            stockValidationPending > 0 ||
+            hasInsufficientStockRows());
+    selectors.forEach(function (sel) {
+        var $btn = $(sel);
+        if (!$btn.length || $btn.hasClass("d-none")) return;
+        $btn.prop("disabled", block);
+        if (block && hasInsufficientStockRows()) {
+            $btn.attr("title", "Ada produk dengan stok asal tidak cukup");
+        } else if (block) {
+            $btn.attr("title", "Menunggu pengecekan stok…");
+        } else {
+            $btn.removeAttr("title");
+        }
+    });
 }
 
 function syncTransferSaveButton() {
@@ -1636,18 +1689,19 @@ function resolveUnitsFromRaw(raw) {
 }
 
 function syncTransferStockAsalColumn() {
-    var show = transferNeedsSourceStockGate();
     var $table = $("#tableTransferItems");
-    $table.toggleClass("st-hide-stock-asal", !show);
-    var cols = show ? 6 : 5;
-    $table.find("tbody tr.empty-row > td[colspan]").attr("colspan", cols);
+    $table.toggleClass("st-hide-stock-asal", !transferNeedsSourceStockGate());
+    $table.toggleClass("st-hide-aksi", !transferNeedsAksiColumn());
+    $table
+        .find("tbody tr.empty-row > td[colspan]")
+        .attr("colspan", transferItemsVisibleColCount());
 }
 
 function refreshTransferItemsTable() {
     syncTransferStockAsalColumn();
     var $tbody = $("#tableTransferItems tbody");
     $tbody.empty();
-    var colCount = transferNeedsSourceStockGate() ? 6 : 5;
+    var colCount = transferItemsVisibleColCount();
     if (!transferItems.length) {
         $tbody.html(`
             <tr class="empty-row">
@@ -1659,6 +1713,7 @@ function refreshTransferItemsTable() {
 
     var locked = transferFormLocked === true;
     var showStockAsal = transferNeedsSourceStockGate();
+    var showAksi = transferNeedsAksiColumn();
     transferItems.forEach(function (item, index) {
         var rowClass = item.retail_invalid
             ? " transfer-row-retail-error"
@@ -1684,6 +1739,17 @@ function refreshTransferItemsTable() {
         var stockAsalTd = showStockAsal
             ? `<td class="col-stock-asal" style="padding: 14px 8px;">${renderTransferStockAsalHtml(item)}</td>`
             : "";
+        var aksiTd = showAksi
+            ? `<td class="col-aksi text-center" style="padding: 14px 8px;">
+                    ${
+                        locked
+                            ? '<span class="text-muted">-</span>'
+                            : `<a class="p-2 btn-action-icon text-danger btn-remove-transfer-item" href="javascript:void(0);" data-index="${index}">
+                                <i class="fe fe-trash-2"></i>
+                           </a>`
+                    }
+                </td>`
+            : "";
         $tbody.append(`
             <tr class="${rowClass}" data-index="${index}" data-variant-id="${item.product_variant_id}">
                 <td style="padding: 14px 12px;">${escapeHtml(item.product_name || "-")}</td>
@@ -1699,15 +1765,7 @@ function refreshTransferItemsTable() {
                         </div>
                     </div>
                 </td>
-                <td class="text-center" style="padding: 14px 8px;">
-                    ${
-                        locked
-                            ? '<span class="text-muted">-</span>'
-                            : `<a class="p-2 btn-action-icon text-danger btn-remove-transfer-item" href="javascript:void(0);" data-index="${index}">
-                                <i class="fe fe-trash-2"></i>
-                           </a>`
-                    }
-                </td>
+                ${aksiTd}
             </tr>
         `);
     });
@@ -1802,7 +1860,7 @@ function transferStockCheckSpinnerHtml() {
 }
 
 function renderTransferStockAsalHtml(item) {
-    // Create/request: stok tidak di-query. Cek stok baru saat Kirim.
+    // Create/request: stok tidak di-query. Cek saat Kirim / retail QC·Ops.
     if (transferNeedsSourceStockGate() && item && item.stock_loading) {
         return transferStockCheckSpinnerHtml();
     }
@@ -3036,7 +3094,6 @@ function syncTransferModalChrome() {
         } else {
             $transfer.addClass("d-none").removeClass("d-inline-flex");
         }
-        syncTransferShipButton();
         if (transferCanApproveQc) {
             $approveQc
                 .removeClass("d-none")
@@ -3053,6 +3110,8 @@ function syncTransferModalChrome() {
         } else {
             $approveOps.addClass("d-none").removeClass("d-inline-flex");
         }
+        // Setelah tombol Kirim/Approve terlihat — gate stok (Kirim + retail QC/Ops)
+        syncTransferShipButton();
     } else if (isEditing) {
         setTransferModalMode("form");
         $title.text("Edit Stock Transfer");
@@ -4036,7 +4095,7 @@ function approveStockTransfer(type) {
     if ($confirmBtn.data("busy")) return;
     if (!assertKonfirmasiPhotoProof()) return;
 
-    // UX pre-check stok asal hanya jika masih akan potong (retail→auto-Kirim). Gate BE tetap di shipLockedTransfer.
+    // UX pre-check stok asal: retail_request (QC/Ops bisa auto-Kirim). Gate BE tetap di approve/ship.
     // main_request setelah Kirim: auto-Terima di penerima — jangan cek stok asal.
     function runApprove() {
         $confirmBtn.data("busy", true);
@@ -4119,7 +4178,8 @@ function approveStockTransfer(type) {
     }
 
     if (
-        transferCanShip &&
+        transferIsRetailRequest &&
+        !transferIsMainRequest &&
         typeof validateCurrentTransferMatrix === "function" &&
         transferItems.length
     ) {
@@ -4400,8 +4460,8 @@ function loadTransferDetailForEdit(id) {
             snapshotTransferForm();
             setTransferFormLocked(true);
             setTransferModalLoading(false);
-            // Preview STOK ASAL + gate Kirim saat modal Acc Kirim dibuka
-            if (transferCanShip && transferItems.length) {
+            // Preview STOK ASAL: Kirim, atau retail QC/Ops (reuse gate yang sama)
+            if (transferNeedsSourceStockGate() && transferItems.length) {
                 revalidateAllTransferRows(false);
             } else {
                 syncTransferShipButton();
