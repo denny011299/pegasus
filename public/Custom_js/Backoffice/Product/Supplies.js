@@ -1,6 +1,8 @@
     var mode=1;
     var table;
     var idUnits = [];
+    // false = Trading belum rilis (UI Jenis/filter di-hide). Data trading di DB tetap utuh.
+    var SUPPLIES_TRADING_UI = false;
     $(document).ready(function(){
         inisialisasi();
         autocompleteUnit("#supplies_unit","#add_supplies .modal-content");
@@ -9,6 +11,11 @@
     });
 
     function syncTradingProductRow() {
+        // Saat UI Trading off: jangan pernah tampilkan row relasi produk
+        if (!SUPPLIES_TRADING_UI) {
+            $("#row-supplies-kind, #row-trading-product").addClass("d-none");
+            return;
+        }
         var kind = $("#supplies_kind").val() || "supply";
         if (kind === "trading") {
             $("#row-trading-product").removeClass("d-none");
@@ -145,11 +152,13 @@
                 },
             },
             columns: [
-                { data: "supplies_name", width: "20%" },
+                { data: "supplies_name", width: "22%" },
                 {
                     data: "kind_badge",
                     width: "10%",
                     className: "text-center align-middle",
+                    // Trading belum rilis — kolom tetap ada di data (edit preserve kind) tapi disembunyikan
+                    visible: SUPPLIES_TRADING_UI,
                     orderable: true,
                     render: function (data, type, row) {
                         var kind = (row && row.supplies_kind ? row.supplies_kind : "").toLowerCase();
@@ -163,13 +172,13 @@
                         return '<span class="badge rounded-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Bahan Mentah</span>';
                     },
                 },
-                { data: "variant_values", width: "20%", orderable: false },
-                { data: "unit_values", width: "12%", orderable: false },
-                { data: "desc", width: "15%" },
+                { data: "variant_values", width: "22%", orderable: false },
+                { data: "unit_values", width: "14%", orderable: false },
+                { data: "desc", width: "18%" },
                 {
                     data: "created_by_name",
                     defaultContent: "-",
-                    width: "10%",
+                    width: "12%",
                     render: function (data) {
                         return typeof renderCreatedByName === "function"
                             ? renderCreatedByName(data)
@@ -179,7 +188,7 @@
                 {
                     data: "action",
                     className: "text-center align-middle",
-                    width: "13%",
+                    width: "12%",
                     orderable: false,
                     searchable: false,
                 },
@@ -238,12 +247,22 @@
             valid=-1;
             $('#row-satuan .select2-selection--single').addClass('is-invalids');
         }
-        if (($("#supplies_kind").val() || "supply") === "trading") {
-            if (!$("#trading_product_variant_id").val()) {
+        // UI Trading off: create selalu supply. Update: kind dari field hidden (hasil load edit) — jangan overwrite Trading existing.
+        var kindToSave = "supply";
+        var tradingPvToSave = "";
+        if (SUPPLIES_TRADING_UI) {
+            kindToSave = $("#supplies_kind").val() || "supply";
+            tradingPvToSave = kindToSave === "trading" ? ($("#trading_product_variant_id").val() || "") : "";
+            if (kindToSave === "trading" && !tradingPvToSave) {
                 valid = -1;
                 $("#trading_product_variant_id").addClass("is-invalid");
                 $("#row-trading-product .select2-selection--single").addClass("is-invalids");
             }
+        } else if (mode === 2) {
+            kindToSave = $("#supplies_kind").val() || "supply";
+            tradingPvToSave = kindToSave === "trading"
+                ? ($("#trading_product_variant_id").val() || "")
+                : "";
         }
 
         if(valid==-1){
@@ -259,10 +278,8 @@
             supplies_default_unit:$('#unit_id').val(),
             lead_time_days:Math.max(0, parseInt($('#lead_time_days').val(), 10) || 0),
             safety_stock:Math.max(0, parseInt($('#safety_stock').val(), 10) || 0),
-            supplies_kind: $('#supplies_kind').val() || 'supply',
-            trading_product_variant_id: ($('#supplies_kind').val() === 'trading')
-                ? ($('#trading_product_variant_id').val() || '')
-                : '',
+            supplies_kind: kindToSave,
+            trading_product_variant_id: tradingPvToSave,
             supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
             supplies_unit:JSON.stringify($('#supplies_unit').val()),
              _token:token

@@ -20,7 +20,8 @@
                       placeholder="Input Nama Bahan Mentah">
                   </div>
                 </div>
-                <div class="col-12 col-lg-4">
+                {{-- Trading belum rilis: UI Jenis di-hide; field tetap di DOM supaya edit tidak overwrite kind --}}
+                <div class="col-12 col-lg-4 d-none" id="row-supplies-kind">
                   <div class="input-block mb-3">
                     <label>Jenis<span class="text-danger">*</span></label>
                     <select class="form-select fill" id="supplies_kind">
