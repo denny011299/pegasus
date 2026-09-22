@@ -97,6 +97,7 @@ class ShipmentChangeStatusDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
+            'Endpoint ini bisa dinonaktifkan sewaktu-waktu lewat menu Status API Eksternal (galat API_ENDPOINT_DISABLED bila dinonaktifkan).',
             'status pada body adalah LABEL (String, sama seperti ipm_status_label pada respons endpoint Shipment lain), BUKAN angka ipm_status maupun status internal sistem.',
             'HANYA SATU transisi yang diizinkan untuk saat ini: dari "Dijadwalkan" ke "Sudah terkirim". Mengirim label yang valid tapi bukan bagian dari transisi ini (mis. shipment yang statusnya sudah "Sudah terkirim" dikirim ulang "Sudah terkirim", atau shipment "Dijadwalkan" diminta jadi "Berjalan"/"Belum terkirim") ditolak dengan galat INVALID_STATUS_TRANSITION — beda dengan INVALID_STATUS yang berarti labelnya sendiri tidak dikenali sama sekali.',
             'Transisi "Dijadwalkan" ke "Sudah terkirim" MEMOTONG STOK sungguhan, proses yang sama dengan konfirmasi di POST /shipments/shipped. Kalau stok tidak mencukupi, permintaan gagal INSUFFICIENT_STOCK dan status shipment TETAP "Dijadwalkan".',

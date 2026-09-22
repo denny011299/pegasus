@@ -221,6 +221,7 @@ class ExternalApiShipmentShowFlowTest extends TestCase
             'ref_shipment_id' => $refShipmentId,
             'shipment_date' => '2026-07-24',
             'armada_code' => $armada->customer_code,
+            'status' => 'onprocess',
             'notes' => 'Catatan pengiriman',
             'items' => [[
                 'variant_sku' => $fx['sku'],

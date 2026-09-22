@@ -97,6 +97,8 @@ class StockAlertFlowTest extends TestCase
     /** Creates + accepts a Sales Order today for $qty pieces, so it lands inside the 30-day window. */
     private function sellQty(ProductVariant $variant, int $qty): void
     {
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
+
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
@@ -117,7 +119,9 @@ class StockAlertFlowTest extends TestCase
         $this->assertSame('1', $response->getContent());
 
         $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId, self::MAIN_WAREHOUSE_ID);
+        // approveShipmentTwoStage() switches the acting staff — restore super admin for the caller.
+        $this->actingAsSuperAdminStaff();
     }
 
     private function getAlertFor(int $variantId): ?object

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\BatchLookup;
 use App\Support\SalesOrderStock;
+use App\Support\ShipmentApproval;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -248,6 +249,16 @@ class SalesOrder extends Model
         if ($hasRetailWh) {
             $select[] = 'sales_orders.retail_warehouse_id';
         }
+        $hasApprovalCols = Schema::hasColumn($this->getTable(), 'qc_approved_by');
+        if ($hasApprovalCols) {
+            $select[] = 'sales_orders.qc_approved_by';
+            $select[] = 'sales_orders.qc_approved_at';
+            $select[] = 'sales_orders.ops_approved_by';
+            $select[] = 'sales_orders.ops_approved_at';
+            $select[] = 'sales_orders.rejected_by';
+            $select[] = 'sales_orders.reject_stage';
+            $select[] = 'sales_orders.reject_reason';
+        }
 
         $rows = (clone $base)
             ->select($select)
@@ -265,6 +276,27 @@ class SalesOrder extends Model
                 $retailWhNames = Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id');
             }
         }
+
+        // Approval 2 tahap (status 1 "Pending") — dihitung SEKALI per request (bukan per baris)
+        // supaya tidak query gudang utama/role berulang. resolveActorRole() sendiri murah
+        // (query staff_warehouses/staffs terindeks), aman dipanggil per baris kalau approvalWh > 0.
+        $approvalWh = $hasApprovalCols ? (int) ProductStock::resolveWarehouseId(null) : 0;
+        $approvalUser = $hasApprovalCols ? Session::get('user') : null;
+        $approverIdSet = [];
+        if ($hasApprovalCols) {
+            foreach ($rows as $row) {
+                if ($row->qc_approved_by) {
+                    $approverIdSet[(int) $row->qc_approved_by] = true;
+                }
+                if ($row->ops_approved_by) {
+                    $approverIdSet[(int) $row->ops_approved_by] = true;
+                }
+                if ($row->rejected_by) {
+                    $approverIdSet[(int) $row->rejected_by] = true;
+                }
+            }
+        }
+        $approverNames = $approverIdSet !== [] ? BatchLookup::staffNames(array_keys($approverIdSet)) : collect();
 
         $dataOut = [];
         foreach ($rows as $row) {
@@ -291,6 +323,32 @@ class SalesOrder extends Model
                 $item['retail_warehouse_name'] = $rid > 0
                     ? ($retailWhNames->get($rid) ?? '-')
                     : null;
+            }
+            if ($hasApprovalCols) {
+                $qcBy = (int) ($row->qc_approved_by ?? 0);
+                $opsBy = (int) ($row->ops_approved_by ?? 0);
+                $rejBy = (int) ($row->rejected_by ?? 0);
+                $item['qc_approved_by'] = $qcBy > 0 ? $qcBy : null;
+                $item['qc_approved_by_name'] = $qcBy > 0 ? ($approverNames->get($qcBy) ?? '-') : null;
+                $item['qc_approved_at'] = $row->qc_approved_at;
+                $item['ops_approved_by'] = $opsBy > 0 ? $opsBy : null;
+                $item['ops_approved_by_name'] = $opsBy > 0 ? ($approverNames->get($opsBy) ?? '-') : null;
+                $item['ops_approved_at'] = $row->ops_approved_at;
+                $item['rejected_by_name'] = $rejBy > 0 ? ($approverNames->get($rejBy) ?? '-') : null;
+                $item['reject_stage'] = $row->reject_stage;
+                $item['reject_reason'] = $row->reject_reason;
+
+                // Flag "bisa approve/tolak tahap X" untuk USER YANG SEDANG LOGIN — dihitung di
+                // server (bukan JS) supaya tombol yang tampil selalu konsisten dengan guard
+                // approveShipment()/rejectShipment() di CustomerController.
+                $item['can_approve_qc'] = false;
+                $item['can_approve_ops'] = false;
+                if ((int) $row->status === 1 && $approvalWh > 0 && $approvalUser
+                    && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh)) {
+                    $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $row);
+                    $item['can_approve_qc'] = $actorRole === 'qc';
+                    $item['can_approve_ops'] = $actorRole === 'ops';
+                }
             }
             $dataOut[] = $item;
         }
