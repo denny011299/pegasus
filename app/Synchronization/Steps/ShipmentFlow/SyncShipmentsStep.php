@@ -2,60 +2,77 @@
 
 namespace App\Synchronization\Steps\ShipmentFlow;
 
+use App\Models\Customer;
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\SalesOrder;
+use App\Models\SalesOrderDetail;
+use App\Models\Unit;
+use App\Support\SalesOrderStock;
+use App\Support\ShipmentApproval;
 use App\Synchronization\SyncStepResult;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Langkah 2 — Sinkronisasi Pengiriman.
+ * Langkah 2 — Sinkronisasi Pengiriman. REKONSILIASI DUA ARAH sejak Spec B (2026-09-23, lihat
+ * cdocs/docs/specs/shipment-pmo-sync-flow.md) — beda dari versi sebelumnya yang murni report-only
+ * terhadap sales_orders yang sudah ada:
+ *   - ref_shipment_id BELUM ada di Pegasus -> baris sales_orders + sales_order_details BARU
+ *     dibuat langsung (backfill gap, GitHub #190) — TANPA mutasi stok, TANPA alur approval 2
+ *     tahap (itu channel push real-time yang tujuannya mencegat pemotongan stok SEBELUM
+ *     terjadi; Sync murni mencerminkan kenyataan yang PMO SUDAH putuskan).
+ *   - ref_shipment_id SUDAH ada DAN masih bisa ditulis ulang dari sumber eksternal
+ *     (App\Support\ShipmentApproval::isEditableFromExternalSource() — status 1 Pending, belum
+ *     ada approval/reject sama sekali; aturan yang SAMA dengan POST /shipments/shipped) -> baris
+ *     yang sama ditimpa (header + detail + status), TANPA mutasi stok, + catatan
+ *     pmo_sync_note/pmo_synced_at.
+ *   - ref_shipment_id SUDAH ada TAPI approval sudah mulai berjalan / status sudah maju/Ditolak ->
+ *     DILEWATI (SyncStepResult::$skipped), TIDAK ditimpa — dicatat sebagai notice, bukan gagal.
  *
- * Contoh response GET /getShipments dikonfirmasi 2026-08-21 (percakapan
- * langsung dengan pemilik produk, BUKAN dari dokumen PMO — belum ada
- * cdocs/integrations/*.design.md untuk alur ini):
+ * Contoh response GET /getShipments dikonfirmasi 2026-08-21 (percakapan langsung dengan pemilik
+ * produk, BUKAN dari dokumen PMO):
  *
  *   { "ref_shipment_id": 930032026150631, "armada_id": 9818022026044148,
  *     "date": "2026-03-31", "bukti_foto": null, "status": "Sudah Dikirim",
  *     "items": [ { "variant_sku": "PGAZ1500ML", "qty": 2, "unit_id": 9506012026014611 }, ... ] }
  *
- * REKONSILIASI, bukan report-only (arah disepakati sebelum contoh payload
- * ada — lihat riwayat percakapan): tiap baris dicocokkan ke sales_orders
- * yang SUDAH ADA lewat ref_shipment_id (kolom itu diisi lewat arah push,
- * App\Http\Controllers\ExternalApi\V1\ShipmentController). Baris PMO yang
- * ref_shipment_id-nya tidak ditemukan di Pegasus dilaporkan gagal — TIDAK
- * PERNAH membuat sales_orders baru dari sini.
+ * `status` DIKONFIRMASI ULANG 2026-09-23 (investigasi langsung ke database PMO, lihat
+ * cdocs/docs/specs/shipment-pmo-sync-flow.md §3 dan issue dokumentasi
+ * https://github.com/denny011299/PMO/issues/24): field ini SEBENARNYA mengirim nilai ENUM MENTAH
+ * kolom `oms_delivery.status` milik PMO (`onschedule`/`onprocess`/`pending`/`success`/`canceled`),
+ * BUKAN label UI seperti contoh "Sudah Dikirim" di atas (yang ternyata anomali/tidak mewakili
+ * kontrak sebenarnya) — lihat STATUS_MAP di bawah untuk pemetaannya ke sales_orders.status.
  *
- * `sales_delivery_orders`/`sales_delivery_orders_details` (dibuat migrasi
- * 2025-12-03) belum pernah dipakai kode lain sama sekali sebelum langkah
- * ini — tidak ada model, tidak ada controller, 0 baris di snapshot dev.
- * Jadi tidak ada konvensi insert yang sudah ada untuk diikuti; pola di bawah
- * (DB::table() langsung, generateSdoNumber() lokal) sengaja meniru gaya
- * SyncUnitStep/SyncProductStep pada alur Produk, bukan menyalin dari
- * modul lain.
+ * `armada_id` di-resolve lewat customers.ref_armada_id (Sinkronisasi Armada, SyncArmadaStep,
+ * sudah dibangun sejak spec ini pertama ditulis) — dicocokkan sebagai STRING (id PMO 16 digit,
+ * presisi float/JS int overflow, lihat GitHub #64), bukan lagi dilaporkan notice-only.
  *
- * TIGA hal SENGAJA belum ditulis ke Pegasus, dilaporkan lewat notices saja:
- * - `armada_id` (16 digit, id PMO asli) — "Armada" belum punya kolom
- *   referensi di Pegasus (customers TIDAK punya ref_armada_id). Alur
- *   GET /getArmada (§10 design doc Produk) yang akan menyediakan pemetaan
- *   itu belum dibangun. PENTING: ini BUKAN customers.customer_id yang
- *   dipakai istilah "armada_id" pada CashPaymentController — namespace id
- *   yang berbeda sama sekali (lihat komentar kelas itu).
- * - `bukti_foto` — seluruh contoh yang dikonfirmasi bernilai null, jadi
- *   bentuknya (URL? nama berkas kompatibel dengan sales_orders.so_img via
- *   ShipmentPhotoStore?) belum pernah terlihat pada data nyata.
- * - `status` ("Sudah Dikirim" pada contoh) — TIDAK cocok persis dengan
- *   label yang dikenal App\ExternalApi\Support\ShipmentStatusMap
- *   ("Sudah terkirim", beda kata "dikirim" vs "terkirim"). Daripada
- *   menebak keduanya sama, sales_orders.status TIDAK PERNAH ditulis oleh
- *   langkah ini — nilainya hanya dilaporkan apa adanya.
+ * `bukti_foto` disimpan APA ADANYA (raw) ke sales_orders.pmo_bukti_foto — bentuknya belum pernah
+ * terlihat terisi dari data nyata (issue #24 di atas juga menanyakan ini), jadi TIDAK ada asumsi
+ * bentuk (URL/nama berkas/base64) yang dipaksakan di sini.
  *
- * Kalau salah satu dari ketiganya perlu benar-benar disinkronkan, itu
- * keputusan produk baru (kolom baru + migrasi untuk armada_id/bukti_foto,
- * atau konfirmasi kosakata status) — bukan sesuatu yang bisa diselesaikan
- * dengan menebak dari kode yang ada.
+ * `sales_delivery_orders`/`sales_delivery_orders_details` (dibuat migrasi 2025-12-03) TIDAK LAGI
+ * ditulis langkah ini (DIPUTUSKAN 2026-09-23) — tabel itu milik modul "Sales Order Delivery" yang
+ * sudah deprecated sejak 2026-08-04, tidak dibaca modul mana pun.
  */
 class SyncShipmentsStep extends ShipmentFlowStep
 {
-    private const SDO_NUMBER_PREFIX = 'SDO';
+    /**
+     * Enum PMO (`oms_delivery.status`) -> sales_orders.status internal. Pemetaan LAMA yang sudah
+     * ada (kebalikan App\ExternalApi\Support\ShipmentStatusMap::fromInternal() untuk status
+     * legacy 4/5/6/7 — TIDAK diubah Spec A, yang hanya mengubah arti status 1 dan 3), bukan
+     * pemetaan baru, cuma baru sekarang benar-benar dipakai di sini.
+     *
+     * @var array<string, int>
+     */
+    private const STATUS_MAP = [
+        'onschedule' => 4, // Dijadwalkan (legacy, sama seperti hasil lama PUT /shipments/scheduled)
+        'onprocess' => 2,  // Diterima/Confirmed — TANPA stok pernah dipotong di sini, lihat docblock kelas
+        'pending' => 5,    // Belum Terkirim
+        'success' => 6,    // Sudah Terkirim
+        'canceled' => 7,   // Dibatalkan
+    ];
 
     public function handle(): SyncStepResult
     {
@@ -95,20 +112,32 @@ class SyncShipmentsStep extends ShipmentFlowStep
             return;
         }
 
-        $salesOrder = DB::table('sales_orders')->where('ref_shipment_id', $refShipmentId)->first();
-
-        if (! $salesOrder) {
+        $statusEnum = $this->pickString($row, ['status']);
+        $internalStatus = self::STATUS_MAP[$statusEnum] ?? null;
+        if ($internalStatus === null) {
             $result->failed++;
             $result->addError(
-                $label.': tidak ada sales_orders dengan ref_shipment_id ini di Pegasus — kemungkinan '
-                .'belum dibuat lewat Platform API Eksternal (POST /shipments/scheduled atau /shipped), '
-                .'atau sudah dihapus. Tidak dibuatkan sales_orders baru dari sini.'
+                $label.': status PMO "'.$statusEnum.'" tidak dikenal (yang dikenal: '
+                .implode(', ', array_keys(self::STATUS_MAP)).') — kemungkinan kontrak PMO berubah, '
+                .'lihat https://github.com/denny011299/PMO/issues/24. Baris dilewati, tidak ada yang ditulis.'
             );
 
             return;
         }
 
-        $this->noteUnwrittenFields($row, $label, $result);
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->first();
+        $isInsert = $so === null;
+
+        if (! $isInsert && ! ShipmentApproval::isEditableFromExternalSource($so)) {
+            $result->skipped++;
+            $result->addNotice(
+                $label.': sudah tersentuh approval (atau statusnya sudah maju/Ditolak) di sisi IPM — '
+                .'dilewati, TIDAK ditimpa dari Sync. Hanya shipment yang masih Pending dan belum ada '
+                .'approval sama sekali yang boleh ditulis ulang dari PMO.'
+            );
+
+            return;
+        }
 
         [$items, $itemFailed] = $this->resolveItems($row, $label, $result);
 
@@ -119,14 +148,69 @@ class SyncShipmentsStep extends ShipmentFlowStep
             return;
         }
 
-        $sdoId = $this->upsertDeliveryOrder($row, $salesOrder, $label, $now, $result);
+        $armadaId = $this->pickString($row, ['armada_id']);
+        $customer = $armadaId !== ''
+            ? Customer::where('ref_armada_id', $armadaId)->first()
+            : null;
 
-        foreach ($items as &$item) {
-            $item['sdo_id'] = $sdoId;
+        if ($customer === null) {
+            if ($isInsert) {
+                // Dokumen Pengiriman baru wajib punya armada yang jelas — beda dengan update
+                // (baris di bawah), di mana armada lama tetap dipertahankan kalau yang baru tidak
+                // ketemu.
+                $result->failed++;
+                $result->addError(
+                    $label.': armada_id PMO "'.$armadaId.'" tidak ditemukan di customers.ref_armada_id '
+                    .'— jalankan Sinkronisasi Armada lebih dulu, atau pastikan armada_id benar.'
+                );
+
+                return;
+            }
+
+            $result->addNotice(
+                $label.': armada_id PMO "'.$armadaId.'" tidak ditemukan di customers.ref_armada_id — '
+                .'armada pada dokumen yang sudah ada dipertahankan apa adanya, tidak diubah.'
+            );
         }
-        unset($item);
 
-        DB::table('sales_delivery_orders_details')->insert($items);
+        $date = $this->pickString($row, ['date']);
+        $buktiFoto = $this->pickString($row, ['bukti_foto']);
+        $warehouseId = SalesOrderStock::mainWarehouseId();
+
+        DB::transaction(function () use (
+            $so, $isInsert, $items, $customer, $date, $internalStatus, $buktiFoto,
+            $refShipmentId, $label, $now, $warehouseId
+        ) {
+            if ($isInsert) {
+                $so = (new SalesOrder())->insertSalesOrder([
+                    'so_customer' => (string) $customer->customer_id,
+                    'so_date' => $date !== '' ? $date : $now->toDateString(),
+                    'so_total' => 0,
+                    'so_img' => json_encode([]),
+                ]);
+                $so->ref_shipment_id = $refShipmentId;
+            } else {
+                if ($customer !== null) {
+                    $so->so_customer = (string) $customer->customer_id;
+                }
+                if ($date !== '') {
+                    $so->so_date = $date;
+                }
+            }
+
+            $so->status = $internalStatus;
+            $so->pmo_bukti_foto = $buktiFoto !== '' ? $buktiFoto : $so->pmo_bukti_foto;
+            if (! $isInsert) {
+                $so->pmo_sync_note = 'Diperbarui dari Sinkronisasi PMO pada '.$now->format('d/m/Y H:i')
+                    .' — perubahan dari sisi PMO, tanpa mutasi status barang.';
+                $so->pmo_synced_at = $now;
+            }
+            $so->save();
+
+            $this->replaceDetails($so, $items, $warehouseId);
+        });
+
+        $isInsert ? $result->inserted++ : $result->updated++;
 
         if ($itemFailed) {
             $result->addNotice($label.': sebagian baris item gagal dipetakan dan dilewati — lihat rincian di atas.');
@@ -134,54 +218,46 @@ class SyncShipmentsStep extends ShipmentFlowStep
     }
 
     /**
-     * armada_id/bukti_foto/status TIDAK ditulis ke mana pun — lihat
-     * penjelasan lengkap pada docblock kelas ini. Hanya dicatat sebagai
-     * notice supaya operator tahu PMO mengirimkannya.
-     *
-     * @param  array<string, mixed>  $row
-     */
-    private function noteUnwrittenFields(array $row, string $label, SyncStepResult $result): void
-    {
-        $armadaId = $this->pickString($row, ['armada_id']);
-        if ($armadaId !== '') {
-            $result->addNotice(
-                $label.': armada_id PMO "'.$armadaId.'" belum disinkronkan — menunggu alur '
-                .'Sinkronisasi Armada (GET /getArmada, belum dibangun).'
-            );
-        }
-
-        $buktiFoto = $this->pickString($row, ['bukti_foto']);
-        if ($buktiFoto !== '') {
-            $result->addNotice(
-                $label.': bukti_foto dikirim PMO ("'.$buktiFoto.'") tapi belum disimpan — bentuknya '
-                .'belum pernah dikonfirmasi dari data nyata.'
-            );
-        }
-
-        $status = $this->pickString($row, ['status']);
-        if ($status !== '') {
-            $result->addNotice(
-                $label.': status PMO "'.$status.'" tidak cocok dengan kosakata ShipmentStatusMap yang '
-                .'dikenal — sales_orders.status TIDAK diubah.'
-            );
-        }
-    }
-
-    /**
-     * Cocokkan tiap items[].variant_sku ke product_variants (D5 pada alur
-     * Produk: variant_sku adalah kunci varian) dan items[].unit_id ke
-     * units.ref_unit_id. Baris item yang gagal dipetakan dilaporkan lalu
+     * Cocokkan tiap items[].variant_sku ke product_variants (D5 pada alur Produk: variant_sku
+     * adalah kunci varian) dan items[].unit_id ke units.ref_unit_id — sekaligus resolve nama
+     * produk (GET /getShipments TIDAK mengirim product_name/variant_name sama sekali, beda
+     * dengan body POST /shipments/shipped). Baris item yang gagal dipetakan dilaporkan lalu
      * dilewati — sisanya tetap disinkronkan (D7).
      *
      * @param  array<string, mixed>  $row
-     * @return array{0: array<int, array<string, mixed>>, 1: bool} baris siap-insert (belum ada sdo_id) + ada-yang-gagal
+     * @return array{0: array<int, array<string, mixed>>, 1: bool} baris siap-insert + ada-yang-gagal
      */
     private function resolveItems(array $row, string $label, SyncStepResult $result): array
     {
+        $items = $this->pickList($row, ['items']);
+        $skus = [];
+        $refUnitIds = [];
+        foreach ($items as $item) {
+            $sku = $this->pickString($item, ['variant_sku']);
+            if ($sku !== '') {
+                $skus[] = $sku;
+            }
+            $refUnitIds[] = $this->pickInt($item, ['unit_id']);
+        }
+
+        $variantsBySku = $skus !== []
+            ? ProductVariant::whereIn('product_variant_sku', $skus)->where('status', 1)
+                ->get(['product_variant_id', 'product_id', 'product_variant_sku', 'product_variant_name'])
+                ->keyBy(static fn (ProductVariant $v) => mb_strtoupper((string) $v->product_variant_sku))
+            : collect();
+        $unitsByRef = $refUnitIds !== []
+            ? Unit::whereIn('ref_unit_id', array_filter($refUnitIds))->where('status', 1)
+                ->get(['unit_id', 'ref_unit_id'])->keyBy('ref_unit_id')
+            : collect();
+        $productNames = $variantsBySku->isNotEmpty()
+            ? Product::whereIn('product_id', $variantsBySku->pluck('product_id')->unique()->values())
+                ->pluck('product_name', 'product_id')
+            : collect();
+
         $resolved = [];
         $anyFailed = false;
 
-        foreach ($this->pickList($row, ['items']) as $itemIndex => $item) {
+        foreach ($items as $itemIndex => $item) {
             $itemLabel = $label.' baris item ke-'.($itemIndex + 1);
             $sku = $this->pickString($item, ['variant_sku']);
             $refUnitId = $this->pickInt($item, ['unit_id']);
@@ -194,31 +270,16 @@ class SyncShipmentsStep extends ShipmentFlowStep
                 continue;
             }
 
-            $variants = DB::table('product_variants')
-                ->where('product_variant_sku', $sku)
-                ->where('status', 1)
-                ->get();
-
-            if ($variants->count() > 1) {
-                $result->addError(
-                    $itemLabel.': SKU "'.$sku.'" ada pada '.$variants->count().' varian produk aktif '
-                    .'di Pegasus — ambigu, tidak bisa dipetakan.'
-                );
+            $variant = $variantsBySku->get(mb_strtoupper($sku));
+            if ($variant === null) {
+                $result->addError($itemLabel.': SKU "'.$sku.'" tidak ditemukan sebagai varian produk aktif di Pegasus.');
                 $anyFailed = true;
 
                 continue;
             }
 
-            if ($variants->isEmpty()) {
-                $result->addError($itemLabel.': SKU "'.$sku.'" tidak ditemukan di Pegasus.');
-                $anyFailed = true;
-
-                continue;
-            }
-
-            $unit = DB::table('units')->where('ref_unit_id', $refUnitId)->where('status', 1)->first();
-
-            if (! $unit) {
+            $unit = $unitsByRef->get($refUnitId);
+            if ($unit === null) {
                 $result->addError(
                     $itemLabel.': unit_id PMO '.$refUnitId.' tidak ditemukan di Pegasus — jalankan '
                     .'Sinkronisasi Satuan pada alur Produk lebih dulu.'
@@ -229,13 +290,12 @@ class SyncShipmentsStep extends ShipmentFlowStep
             }
 
             $resolved[] = [
-                'product_variant_id' => $variants->first()->product_variant_id,
-                'sdod_sku' => mb_substr($sku, 0, 50),
-                'sdod_qty' => $qty,
-                'unit_id' => $unit->unit_id,
-                'status' => 1,
-                'created_at' => Carbon::now(),
-                'updated_at' => Carbon::now(),
+                'product_variant_id' => (int) $variant->product_variant_id,
+                'product_name' => $productNames->get($variant->product_id) ?? '-',
+                'variant_name' => (string) ($variant->product_variant_name ?? ''),
+                'variant_sku' => (string) $variant->product_variant_sku,
+                'internal_unit_id' => (int) $unit->unit_id,
+                'qty' => $qty,
             ];
         }
 
@@ -243,66 +303,31 @@ class SyncShipmentsStep extends ShipmentFlowStep
     }
 
     /**
-     * Satu shipment PMO <-> satu sales_delivery_orders (dicocokkan lewat
-     * so_id, bukan bikin baris baru tiap kali disinkronkan ulang). Baris
-     * detail LAMA dihapus lalu diganti dengan yang baru dari PMO —
-     * shipment ini adalah sumber kebenaran, bukan diakumulasi (sama seperti
-     * update pada langkah-langkah alur Produk).
+     * Ganti seluruh sales_order_details milik $so dengan $items — baris lama dinonaktifkan
+     * (status = 0), sama persis pola App\Http\Controllers\ExternalApi\V1\ShipmentController::
+     * replaceDetails(). warehouse_id selalu gudang utama (Sync tidak tahu konteks gudang eceran).
      *
-     * @param  array<string, mixed>  $row
+     * @param  array<int, array<string, mixed>>  $items
      */
-    private function upsertDeliveryOrder(array $row, object $salesOrder, string $label, Carbon $now, SyncStepResult $result): int
+    private function replaceDetails(SalesOrder $so, array $items, int $warehouseId): void
     {
-        $date = $this->pickString($row, ['date']);
-        $existing = DB::table('sales_delivery_orders')->where('so_id', $salesOrder->so_id)->first();
+        $keptIds = [];
 
-        if ($existing) {
-            DB::table('sales_delivery_orders')->where('sdo_id', $existing->sdo_id)->update([
-                'sdo_date' => $date !== '' ? $date : $existing->sdo_date,
-                'updated_at' => $now,
+        foreach ($items as $item) {
+            $keptIds[] = (new SalesOrderDetail())->insertSalesOrderDetail([
+                'so_id' => $so->so_id,
+                'product_variant_id' => $item['product_variant_id'],
+                'product_name' => $item['product_name'],
+                'product_variant_name' => $item['variant_name'],
+                'product_variant_sku' => $item['variant_sku'],
+                'unit_id' => $item['internal_unit_id'],
+                'warehouse_id' => $warehouseId,
+                'product_variant_price' => 0,
+                'so_qty' => $item['qty'],
+                'so_subtotal' => 0,
             ]);
-            DB::table('sales_delivery_orders_details')->where('sdo_id', $existing->sdo_id)->delete();
-
-            $result->updated++;
-
-            return (int) $existing->sdo_id;
         }
 
-        // sdo_receiver/sdo_phone wajib diisi (NOT NULL) tapi PMO tidak
-        // mengirim nama/telepon penerima sama sekali — sdo_receiver
-        // memakai nama pelanggan dari sales_orders yang cocok, sdo_phone
-        // dibiarkan kosong sampai ada sumber datanya.
-        $sdoId = (int) DB::table('sales_delivery_orders')->insertGetId([
-            'so_id' => $salesOrder->so_id,
-            'sdo_number' => $this->generateSdoNumber(),
-            'sdo_receiver' => mb_substr((string) $salesOrder->so_customer, 0, 150),
-            'sdo_date' => $date !== '' ? $date : $now->toDateString(),
-            'sdo_phone' => '',
-            'sdo_desc' => 'Dibuat otomatis oleh Sinkronisasi Pengiriman PMO ('.$label.').',
-            'status' => 1,
-            'created_at' => $now,
-            'updated_at' => $now,
-        ], 'sdo_id');
-
-        $result->inserted++;
-
-        return $sdoId;
-    }
-
-    /**
-     * "SDO" + 6 digit (mis. SDO000001) — muat dalam sdo_number varchar(10).
-     * Pola sama seperti generateXID() lain di codebase (prefix + max+1),
-     * dengan risiko race condition yang sama (tidak ada locking) — belum
-     * ada konvensi lain untuk diikuti karena tabel ini belum pernah dipakai.
-     */
-    private function generateSdoNumber(): string
-    {
-        $maxSuffix = DB::table('sales_delivery_orders')
-            ->where('sdo_number', 'like', self::SDO_NUMBER_PREFIX.'%')
-            ->pluck('sdo_number')
-            ->map(fn ($number) => (int) substr((string) $number, strlen(self::SDO_NUMBER_PREFIX)))
-            ->max();
-
-        return self::SDO_NUMBER_PREFIX.str_pad((string) (($maxSuffix ?? 0) + 1), 6, '0', STR_PAD_LEFT);
+        SalesOrderDetail::where('so_id', $so->so_id)->whereNotIn('sod_id', $keptIds)->update(['status' => 0]);
     }
 }
