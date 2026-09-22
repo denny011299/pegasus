@@ -10,8 +10,10 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
+use App\Models\Warehouse;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
+use App\Support\ShipmentApproval;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use App\Support\UnitRollUp;
@@ -58,6 +60,18 @@ class CustomerController extends Controller
 
     function insertSalesOrder(Request $req)
     {
+        // Blokir insert internal (2026-09, keputusan PM) — Pengiriman baru hanya boleh datang
+        // dari PMO lewat POST /api/external/v1/shipments/shipped. Guard di sini, BUKAN cuma
+        // menyembunyikan tombol/modal di Sales_Order.blade.php, supaya request langsung ke
+        // endpoint ini juga tetap ditolak. Lihat config/pegasus.php.
+        if (! config('pegasus.shipment_internal_insert_enabled')) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Tidak Tersedia',
+                'message' => 'Tambah Pengiriman manual sedang dinonaktifkan. Pengiriman baru hanya dibuat lewat sinkronisasi PMO.',
+            ]);
+        }
+
         $data = $req->all();
 
         $productsData = json_decode($data['products'] ?? '[]', true);
@@ -436,61 +450,259 @@ class CustomerController extends Controller
         }
     }
 
+    /**
+     * DIMATIKAN (2026-09, lihat cdocs/docs/specs/shipment-external-api-approval-flow.md): semua
+     * Pengiriman berstatus 1 "Pending" sekarang WAJIB lewat approval 2 tahap (approveShipment
+     * QC lalu Ops) - tidak ada lagi jalur ACC tunggal admin, termasuk untuk data lama yang sudah
+     * terlanjur Pending. Route/tombol lama sengaja dibiarkan memanggil method ini supaya
+     * kegagalannya jelas (bukan 404), bukan dihapus.
+     */
     function accSO(Request $req)
     {
-        $data = $req->all();
-
-        $so = SalesOrder::find($data['so_id'] ?? null);
-        if (! $so) {
-            return response()->json([
-                'status' => 0,
-                'header' => 'Gagal ACC',
-                'message' => 'Pengiriman tidak ditemukan',
-            ]);
-        }
-
-        if ((int) $so->status !== 1) {
-            $staff = Staff::find($so->acc_by);
-            return response()->json([
-                'status' => -2,
-                'header' => 'Gagal ACC',
-                'message' => 'Pengajuan sudah diterima/ditolak oleh ' . ($staff->staff_name ?? '-'),
-            ]);
-        }
-
-        // Logika potong stok + set status Confirmed ada di SalesOrderApproval::confirm() -
-        // dipakai bersama External API POST /shipments/shipped. Pengecekan status di atas
-        // sengaja tetap di sini (bukan dipindah seluruhnya ke confirm()) supaya pesan "sudah
-        // diterima/ditolak oleh {staff}" yang menyebut nama tetap ada di jalur admin ini.
-        $staffId = Session::get('user') ? Session::get('user')->staff_id : null;
-        $result = SalesOrderApproval::confirm($so, $staffId);
-
-        if (! ($result['ok'] ?? false)) {
-            return response()->json([
-                'status' => $result['status'] ?? 0,
-                'header' => $result['header'] ?? 'Gagal ACC',
-                'message' => $result['message'] ?? 'Stok tidak mencukupi',
-                'products' => $result['products'] ?? [],
-                'recommendations' => $result['recommendations'] ?? [],
-            ]);
-        }
-
-        return 1;
+        return response()->json([
+            'status' => -1,
+            'header' => 'Tidak Bisa ACC Langsung',
+            'message' => 'Pengiriman sekarang wajib melalui approval 2 tahap (Staf QC & Gudang lalu Kepala Operasional). Gunakan tombol Setujui pada baris ini.',
+        ]);
     }
+
+    /** DIMATIKAN — lihat docblock accSO(). Gunakan rejectShipment(). */
     function declineSO(Request $req)
     {
-        $data = $req->all();
-        $q = SalesOrder::find($data['so_id']);
-        if ($q->status != 1) {
-            $staff = Staff::find($q->acc_by)->staff_name;
+        return response()->json([
+            'status' => -1,
+            'header' => 'Tidak Bisa Tolak Langsung',
+            'message' => 'Pengiriman sekarang wajib melalui approval 2 tahap (Staf QC & Gudang lalu Kepala Operasional). Gunakan tombol Tolak pada baris ini.',
+        ]);
+    }
+
+    /**
+     * POST /approveShipment — approval tahap QC (Staf QC & Gudang) atau Ops (Kepala Operasional)
+     * untuk satu Pengiriman berstatus 1 "Pending". Berurut: Ops hanya bisa setelah QC approve.
+     * Direksi/Developer boleh menggantikan tiap tahap (App\Support\ShipmentApproval).
+     *
+     * Approval selalu terkait gudang utama SUNGGUHAN, dihitung lewat
+     * App\Support\SalesOrderStock::mainWarehouseId() — BUKAN
+     * App\Models\ProductStock::resolveWarehouseId(null) yang dipakai sales_order_details, karena
+     * fungsi itu ikut membaca active_warehouse_id SESI staf yang sedang approve (bisa gudang
+     * eceran), sementara gudang approval harus selalu gudang utama terlepas dari itu. Hanya
+     * tahap Ops yang wajib gudang aktif user = gudang utama itu (DIPUTUSKAN 2026-09-23,
+     * koreksi dari keputusan awal yang mewajibkan kedua tahap). Tahap QC boleh approve dari
+     * gudang aktif mana pun - siapa yang berhak jadi QC untuk gudang utama tetap ditentukan
+     * lewat penugasan staff_warehouses (App\Support\ShipmentApproval::resolveActorRole()),
+     * bukan gudang aktif sesi.
+     *
+     * type=ops yang melengkapi approval memicu App\Support\SalesOrderApproval::confirm() (cek
+     * stok + potong stok + status -> 2 Diterima) di dalam transaksi yang sama - kalau gagal,
+     * approval Ops ITU SENDIRI di-rollback (tetap Pending, ops_approved_by tetap null), bukan
+     * cuma potong stoknya yang batal.
+     */
+    function approveShipment(Request $req)
+    {
+        $soId = (int) ($req->so_id ?? 0);
+        $type = strtolower(trim((string) ($req->type ?? '')));
+        if (! in_array($type, ['qc', 'ops'], true)) {
+            return response()->json(['status' => -1, 'message' => 'Tipe approval tidak valid']);
+        }
+
+        $so = SalesOrder::where('so_id', $soId)->where('status', 1)->first();
+        if (! $so) {
+            return response()->json(['status' => -1, 'message' => 'Pengiriman tidak ditemukan / sudah tidak bisa di-approve']);
+        }
+
+        // BUKAN ProductStock::resolveWarehouseId(null) - itu mengikuti active_warehouse_id
+        // SESI staf (bisa gudang eceran), sedangkan gudang approval selalu gudang utama
+        // sungguhan terlepas dari gudang aktif staf saat ini.
+        $warehouseId = SalesOrderStock::mainWarehouseId();
+        if ($warehouseId <= 0) {
+            return response()->json(['status' => -1, 'message' => 'Gudang utama tidak ditemukan']);
+        }
+
+        if ($type === 'ops' && ! ShipmentApproval::canApproveOps($so)) {
             return response()->json([
-                "status" => -2,
-                "header" => "Gagal ACC",
-                "message" => "Pengajuan sudah diterma/ditolak oleh " . $staff
+                'status' => -1,
+                'message' => ShipmentApproval::isOpsApproved($so)
+                    ? 'Kepala Operasional sudah approve'
+                    : 'Approve QC terlebih dahulu sebelum Kepala Operasional',
             ]);
         }
-        (new SalesOrder())->declineSO($data);
-        return 1;
+        if ($type === 'qc' && ShipmentApproval::isQcApproved($so)) {
+            return response()->json(['status' => -1, 'message' => 'QC sudah approve']);
+        }
+
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        if ($staffId <= 0) {
+            return response()->json(['status' => -1, 'message' => 'User login tidak valid']);
+        }
+
+        // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops (Kepala Operasional) —
+        // DIPUTUSKAN 2026-09-23, koreksi dari keputusan awal yang mewajibkan kedua tahap. Tahap
+        // QC (Staf QC & Gudang) boleh approve dari gudang aktif mana pun; penentuan siapa QC-nya
+        // tetap lewat resolveActorRole() di bawah (assigned ke gudang utama lewat staff_warehouses
+        // — itu penugasan data, beda dengan gudang aktif sesi yang dicek di sini).
+        if ($type === 'ops') {
+            $whName = Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama';
+            if (! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Approval Kepala Operasional hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
+                ]);
+            }
+        }
+
+        $actorRole = ShipmentApproval::resolveActorRole($user, $warehouseId, $so);
+        if ($actorRole !== $type) {
+            return response()->json([
+                'status' => -1,
+                'message' => $type === 'qc'
+                    ? 'Hanya Staf QC & Gudang (assigned), Direksi, atau Developer yang boleh approve QC'
+                    : 'Hanya Kepala Operasional, Direksi, atau Developer yang boleh approve',
+            ]);
+        }
+
+        $confirmResult = ['ok' => true];
+        try {
+            DB::transaction(function () use ($soId, $type, $staffId, &$confirmResult) {
+                $locked = SalesOrder::where('so_id', $soId)->where('status', 1)->lockForUpdate()->first();
+                if (! $locked) {
+                    throw new \RuntimeException('Pengiriman sudah diproses');
+                }
+
+                if ($type === 'qc') {
+                    if (ShipmentApproval::isQcApproved($locked)) {
+                        throw new \RuntimeException('QC sudah approve');
+                    }
+                    $locked->qc_approved_by = $staffId;
+                    $locked->qc_approved_at = now();
+                    $locked->save();
+
+                    return;
+                }
+
+                if (ShipmentApproval::isOpsApproved($locked)) {
+                    throw new \RuntimeException('Kepala Operasional sudah approve');
+                }
+                if (! ShipmentApproval::isQcApproved($locked)) {
+                    throw new \RuntimeException('Approve QC terlebih dahulu sebelum Kepala Operasional');
+                }
+                $locked->ops_approved_by = $staffId;
+                $locked->ops_approved_at = now();
+                $locked->save();
+
+                // Approval tahap kedua lengkap -> cek stok + potong stok + status -> 2 Diterima,
+                // logika sama persis dengan accSO() lama (SalesOrderApproval::confirm()). Gagal
+                // (stok kurang / soft-block Stock Opname) -> exception, SELURUH transaksi
+                // (termasuk ops_approved_by di atas) di-rollback, tetap Pending.
+                $confirmResult = SalesOrderApproval::confirm($locked, $staffId);
+                if (! ($confirmResult['ok'] ?? false)) {
+                    throw new \RuntimeException($confirmResult['message'] ?? 'Stok tidak mencukupi');
+                }
+            });
+        } catch (\Throwable $e) {
+            if (! ($confirmResult['ok'] ?? true)) {
+                return response()->json([
+                    'status' => -1,
+                    'header' => $confirmResult['header'] ?? 'Gagal ACC',
+                    'message' => $confirmResult['message'] ?? 'Stok tidak mencukupi',
+                    'products' => $confirmResult['products'] ?? [],
+                    'recommendations' => $confirmResult['recommendations'] ?? [],
+                ]);
+            }
+
+            return response()->json(['status' => -1, 'message' => $e->getMessage() ?: 'Gagal approve Pengiriman']);
+        }
+
+        $label = $type === 'qc' ? 'Staf QC & Gudang' : 'Kepala Operasional';
+        $message = $type === 'ops'
+            ? 'Approval ' . $label . ' berhasil. Stok dipotong, Pengiriman menjadi Diterima.'
+            : 'Approval ' . $label . ' berhasil. Menunggu approval Kepala Operasional.';
+
+        return response()->json(['status' => 1, 'message' => $message]);
+    }
+
+    /**
+     * POST /rejectShipment — tolak Pengiriman berstatus 1 "Pending" di tahap QC atau Ops. Boleh
+     * di tahap mana pun (tidak perlu menunggu urutan seperti approve), tidak ada mutasi stok.
+     * Alasan penolakan WAJIB diisi (DIPUTUSKAN 2026-09) - pesan galat jelas kalau kosong.
+     */
+    function rejectShipment(Request $req)
+    {
+        $soId = (int) ($req->so_id ?? 0);
+        $type = strtolower(trim((string) ($req->type ?? '')));
+        $reason = trim((string) ($req->reason ?? ''));
+        if (! in_array($type, ['qc', 'ops'], true)) {
+            return response()->json(['status' => -1, 'message' => 'Tipe approval tidak valid']);
+        }
+        if ($reason === '') {
+            return response()->json(['status' => -1, 'message' => 'Alasan penolakan wajib diisi.']);
+        }
+
+        $so = SalesOrder::where('so_id', $soId)->where('status', 1)->first();
+        if (! $so) {
+            return response()->json(['status' => -1, 'message' => 'Pengiriman tidak ditemukan / sudah tidak bisa ditolak']);
+        }
+
+        // BUKAN ProductStock::resolveWarehouseId(null) — lihat catatan di approveShipment().
+        $warehouseId = SalesOrderStock::mainWarehouseId();
+        $user = Session::get('user');
+        $staffId = (int) ($user->staff_id ?? 0);
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        if ($staffId <= 0) {
+            return response()->json(['status' => -1, 'message' => 'User login tidak valid']);
+        }
+
+        if ($warehouseId <= 0) {
+            return response()->json(['status' => -1, 'message' => 'Gudang utama tidak ditemukan']);
+        }
+
+        // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops — lihat catatan yang sama di
+        // approveShipment().
+        if ($type === 'ops') {
+            $whName = Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama';
+            if (! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Penolakan tahap Kepala Operasional hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
+                ]);
+            }
+        }
+
+        // Guard urutan dan role SAMA seperti approve (resolveActorRole) — tahap Ops hanya bisa
+        // menolak setelah QC approve, sama seperti tahap Ops hanya bisa approve setelah QC approve.
+        $actorRole = ShipmentApproval::resolveActorRole($user, $warehouseId, $so);
+        if ($actorRole !== $type) {
+            return response()->json([
+                'status' => -1,
+                'message' => $type === 'qc'
+                    ? 'Hanya Staf QC & Gudang (assigned), Direksi, atau Developer yang boleh menolak di tahap QC'
+                    : 'Hanya Kepala Operasional, Direksi, atau Developer yang boleh menolak di tahap Kepala Operasional',
+            ]);
+        }
+
+        try {
+            DB::transaction(function () use ($soId, $type, $staffId, $reason) {
+                $locked = SalesOrder::where('so_id', $soId)->where('status', 1)->lockForUpdate()->first();
+                if (! $locked) {
+                    throw new \RuntimeException('Pengiriman sudah diproses');
+                }
+                if (ShipmentApproval::isRejected($locked)) {
+                    throw new \RuntimeException('Pengiriman sudah ditolak sebelumnya');
+                }
+
+                $locked->status = 3; // Ditolak
+                $locked->rejected_by = $staffId;
+                $locked->rejected_at = now();
+                $locked->reject_stage = $type;
+                $locked->reject_reason = $reason;
+                $locked->save();
+            });
+        } catch (\Throwable $e) {
+            return response()->json(['status' => -1, 'message' => $e->getMessage() ?: 'Gagal menolak Pengiriman']);
+        }
+
+        return response()->json(['status' => 1, 'message' => 'Pengiriman ditolak']);
     }
 
     function updateSalesOrderDetail(Request $req)

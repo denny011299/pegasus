@@ -84,6 +84,11 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
 
     private function insertSalesOrder(array $product, ?int $retailWarehouseId, int $qty, int $unitId): int
     {
+        // Insert Pengiriman manual dinonaktifkan bawaan (2026-09) — dibuka lagi khusus di test
+        // ini karena butuh fixture SO nyata, bukan menguji endpoint-nya sendiri. Lihat
+        // config/pegasus.php.
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
+
         $payload = [
             'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
@@ -132,7 +137,7 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         $so = SalesOrder::findOrFail($soId);
         $this->assertSame($retailWarehouseId, (int) $so->retail_warehouse_id);
 
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId, self::MAIN_WAREHOUSE_ID);
 
         $so->refresh();
         $this->assertSame(2, (int) $so->status);
@@ -150,6 +155,7 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         $fx = $this->createProductFixture(retailUnit: self::PIECE_UNIT_ID);
         $this->createProductStock($fx['variant'], self::RETAIL_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
         $soCountBefore = SalesOrder::count();
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
 
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => $this->customerId(),
@@ -199,7 +205,7 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         // Only 2 Piece in stock, ordering 22 -> needs 20 more -> ceil(20/12)=2 DOS broken down.
         $soId = $this->insertSalesOrder($fx, retailWarehouseId: null, qty: 22, unitId: self::PIECE_UNIT_ID);
 
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId, self::MAIN_WAREHOUSE_ID);
 
         $so = SalesOrder::findOrFail($soId);
         $this->assertSame(2, (int) $so->status);

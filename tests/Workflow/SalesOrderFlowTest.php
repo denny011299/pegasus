@@ -19,6 +19,14 @@ use Tests\TestCase;
  * `cdocs/testing/guides/DATABASE_TRANSACTION_GUIDE.md` is likely why the gap went unprioritised.
  * `accSO()`/`updateSalesOrder()` are now genuinely transactional; atomicity itself is asserted in
  * `tests/DatabaseTransaction/SalesOrderUpdateAtomicityTest.php`, not here.
+ *
+ * Updated 2026-09 (shipment-approval-flow v2, see
+ * cdocs/docs/specs/shipment-external-api-approval-flow.md): accSO()/declineSO() are RETIRED —
+ * every Pending Pengiriman now goes through 2-stage approval (App\Support\ShipmentApproval,
+ * CustomerController::approveShipment()/rejectShipment()) instead, exercised here via
+ * Tests\Support\ActingAsStaff::approveShipmentTwoStage()/rejectShipmentAtQcStage(). Manual insert
+ * itself is also disabled by default (config('pegasus.shipment_internal_insert_enabled')) — opened
+ * back up for this file's fixtures only, since this flow's insert step is not itself under test.
  */
 class SalesOrderFlowTest extends TestCase
 {
@@ -50,6 +58,8 @@ class SalesOrderFlowTest extends TestCase
 
     private function insertSalesOrder(ProductStock $stock, int $qty): int
     {
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
+
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
@@ -95,8 +105,7 @@ class SalesOrderFlowTest extends TestCase
         $this->assertSame($startingStock, $stock->ps_stock, 'inserting an SO must not touch stock before approval');
         $this->assertSame($logCountBefore, DB::table('log_stocks')->count(), 'inserting an SO must not write a log_stocks row');
 
-        $accResponse = $this->post('/accSO', ['so_id' => $soId]);
-        $accResponse->assertStatus(200);
+        $this->approveShipmentTwoStage($soId);
 
         $so->refresh();
         $this->assertSame(2, (int) $so->status, 'approving an SO sets status to 2');
@@ -123,7 +132,7 @@ class SalesOrderFlowTest extends TestCase
 
         $soId = $this->insertSalesOrder($stock, $qty);
 
-        $this->post('/declineSO', ['so_id' => $soId])->assertStatus(200);
+        $this->rejectShipmentAtQcStage($soId);
 
         $so = SalesOrder::find($soId);
         $this->assertSame(3, (int) $so->status, 'declining a pending SO sets status to 3');
@@ -147,22 +156,21 @@ class SalesOrderFlowTest extends TestCase
         $stock->ps_stock = $qty - 1;
         $stock->save();
 
-        // accSO()'s insufficient-stock rejection (CustomerController.php's "Langkah 3") returns a
-        // bare string (product names joined by ', '), not a JSON object — unlike its own
-        // "Mohon masukkan relasi produk" rejection a few lines above it, which does return JSON.
-        // Confirmed intentional, not a bug: Sales_Order.js's #btn-accept-so handler already has a
-        // working `typeof e === "object"` branch specifically for this bare-string shape
-        // (`Stock Product yang tidak mencukupi : ` + the string). This assertion previously
-        // expected a JSON `{header: 'Stok tidak cukup', ...}` shape this code path has never
-        // actually returned.
-        $accResponse = $this->post('/accSO', ['so_id' => $soId]);
-        $accResponse->assertStatus(200);
-        $rejectionText = trim($accResponse->getContent(), '"');
-        $this->assertNotSame('1', $rejectionText, 'insufficient stock must not silently succeed');
-        $this->assertNotEmpty($rejectionText, 'the response must at least name which product fell short');
+        // Stock is only actually checked at the Ops stage (App\Support\SalesOrderApproval::
+        // confirm(), called from CustomerController::approveShipment() when the ops stage
+        // completes) — QC has no stock guard at all.
+        $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
+        $this->withActiveWarehouse(1);
+        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc'])->assertStatus(200)->assertJson(['status' => 1]);
+
+        $opsResponse = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
+        $opsResponse->assertStatus(200);
+        $this->assertSame(-1, (int) $opsResponse->json('status'), 'insufficient stock must not silently succeed');
+        $this->assertNotEmpty($opsResponse->json('message'), 'the response must at least name which product fell short');
 
         $so = SalesOrder::find($soId);
         $this->assertSame(1, (int) $so->status, 'a rejected approval must leave the SO pending, not partially approved');
+        $this->assertNull($so->ops_approved_by, 'a failed Ops confirm must roll back the ops_approved_by stamp too, not just stock');
 
         $stock->refresh();
         $this->assertSame($qty - 1, $stock->ps_stock, 'a rejected approval must not touch stock at all');
