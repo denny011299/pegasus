@@ -1322,8 +1322,10 @@ function renderSoStatus(status, row) {
 }
 
 function renderSoAction(row) {
+    // Pending bisa punya sampai 4 ikon sekaligus (Setujui + Tolak + Lihat + Hapus) — flex-wrap
+    // supaya ikon melipat ke baris kedua kalau kolom Aksi sempit, bukan meluber keluar sel/baris.
     var soa =
-        '<div class="d-flex justify-content-center align-items-center gap-2">';
+        '<div class="d-flex flex-wrap justify-content-center align-items-center gap-1 py-1">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
     var canView = soHasAccess("Pengiriman", "view");
@@ -1338,35 +1340,42 @@ function renderSoAction(row) {
     if (canApprove) {
         var approveType = canApproveQc ? "qc" : "ops";
         var approveLabel = canApproveQc ? "Setujui (Staf QC & Gudang)" : "Setujui (Kepala Operasional)";
+        // .btn-action-approve — kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
+        // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini —
+        // aturan dasar .btn-action-icon menimpa background/color dengan !important, jadi warna
+        // custom lewat inline style tidak pernah kelihatan; kelas ini sudah dibuat khusus untuk
+        // menembus itu.
         soa +=
-            '<a class="btn-action-icon btn-approve-shipment" data-id="' +
+            '<a class="btn-action-icon btn-approve-shipment btn-action-approve" data-id="' +
             row.so_id +
             '" data-type="' +
             approveType +
-            '" href="javascript:void(0);" style="background:#dcfce7;border:1px solid #bbf7d0;color:#166534;" data-bs-toggle="tooltip" title="' +
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="' +
             approveLabel +
             '"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
     }
     if (canReject) {
         var rejectType = canApproveQc ? "qc" : "ops";
         soa +=
-            '<a class="btn-action-icon btn-reject-shipment" data-id="' +
+            '<a class="btn-action-icon btn-reject-shipment btn-action-reject" data-id="' +
             row.so_id +
             '" data-type="' +
             rejectType +
-            '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Tolak"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Tolak"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
     }
     if (canView) {
         soa +=
-            '<a class="btn-action-icon btn_view" data-id="' +
+            '<a class="btn-action-icon btn_view btn-action-view" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (canDelete) {
+        // btn_delete sudah punya warna sendiri dari .btn-action-icon.btn_delete di
+        // header.blade.php — tidak diubah, sudah sesuai sebelum perubahan ini.
         soa +=
             '<a class="btn-action-icon btn_delete" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
     if (!canApprove && !canReject && !canView && !canDelete) {
@@ -1631,7 +1640,10 @@ function inisialisasi() {
             {
                 data: null,
                 className: "text-center align-middle",
-                width: "11%",
+                // Diperlebar dari 11% — Pending sekarang bisa menampilkan sampai 4 ikon aksi
+                // sekaligus (Setujui/Tolak/Lihat/Hapus), 11% terlalu sempit dan bikin ikon
+                // meluber keluar sel.
+                width: "16%",
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {
