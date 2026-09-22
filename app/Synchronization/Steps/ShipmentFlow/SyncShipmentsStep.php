@@ -25,8 +25,10 @@ use Illuminate\Support\Facades\DB;
  *   - ref_shipment_id SUDAH ada DAN masih bisa ditulis ulang dari sumber eksternal
  *     (App\Support\ShipmentApproval::isEditableFromExternalSource() — status 1 Pending, belum
  *     ada approval/reject sama sekali; aturan yang SAMA dengan POST /shipments/shipped) -> baris
- *     yang sama ditimpa (header + detail + status), TANPA mutasi stok, + catatan
- *     pmo_sync_note/pmo_synced_at.
+ *     yang sama ditimpa (header + detail + status), TANPA mutasi stok, + `pmo_synced_at` (SELALU
+ *     ditulis, insert maupun update) dan `pmo_sync_note` (diisi kalau ADA sesuatu untuk
+ *     dicatat — ringkasan perubahan pada update, dan/atau keterangan tidak ada bukti foto,
+ *     lihat catatan `bukti_foto` di bawah).
  *   - ref_shipment_id SUDAH ada TAPI approval sudah mulai berjalan / status sudah maju/Ditolak ->
  *     DILEWATI (SyncStepResult::$skipped), TIDAK ditimpa — dicatat sebagai notice, bukan gagal.
  *
@@ -48,9 +50,13 @@ use Illuminate\Support\Facades\DB;
  * sudah dibangun sejak spec ini pertama ditulis) — dicocokkan sebagai STRING (id PMO 16 digit,
  * presisi float/JS int overflow, lihat GitHub #64), bukan lagi dilaporkan notice-only.
  *
- * `bukti_foto` disimpan APA ADANYA (raw) ke sales_orders.pmo_bukti_foto — bentuknya belum pernah
- * terlihat terisi dari data nyata (issue #24 di atas juga menanyakan ini), jadi TIDAK ada asumsi
- * bentuk (URL/nama berkas/base64) yang dipaksakan di sini.
+ * `bukti_foto` DIKONFIRMASI 2026-09-23 (langsung dari pemilik produk): PMO memang TIDAK PERNAH
+ * punya input bukti foto sama sekali di sisi mereka — bukan soal bentuknya belum diketahui,
+ * field ini SECARA STRUKTURAL akan selalu kosong. Tetap disimpan APA ADANYA (raw, opsional) ke
+ * sales_orders.pmo_bukti_foto kalau-kalau suatu saat terisi, tapi TIDAK ditunggu/tidak
+ * memblokir apa pun — dan setiap kali kosong, satu baris catatan ditambahkan ("Tidak ada bukti
+ * foto — pengiriman ini disinkronkan dari PMO.") supaya operator yang membuka dokumen ini tahu
+ * KENAPA tidak ada bukti foto, bukan mengira datanya hilang/gagal tersimpan.
  *
  * `sales_delivery_orders`/`sales_delivery_orders_details` (dibuat migrasi 2025-12-03) TIDAK LAGI
  * ditulis langkah ini (DIPUTUSKAN 2026-09-23) — tabel itu milik modul "Sales Order Delivery" yang
@@ -200,11 +206,22 @@ class SyncShipmentsStep extends ShipmentFlowStep
 
             $so->status = $internalStatus;
             $so->pmo_bukti_foto = $buktiFoto !== '' ? $buktiFoto : $so->pmo_bukti_foto;
-            if (! $isInsert) {
-                $so->pmo_sync_note = 'Diperbarui dari Sinkronisasi PMO pada '.$now->format('d/m/Y H:i')
-                    .' — perubahan dari sisi PMO, tanpa mutasi status barang.';
-                $so->pmo_synced_at = $now;
+
+            // bukti_foto SECARA STRUKTURAL selalu kosong dari PMO (lihat docblock kelas ini) —
+            // catatan ini bukan tanda ada yang gagal, murni menjelaskan KENAPA tidak ada bukti
+            // foto di dokumen ini, supaya operator tidak mengira datanya hilang.
+            $noteParts = [];
+            if ($buktiFoto === '') {
+                $noteParts[] = 'Tidak ada bukti foto — pengiriman ini disinkronkan dari PMO.';
             }
+            if (! $isInsert) {
+                $noteParts[] = 'Diperbarui dari Sinkronisasi PMO pada '.$now->format('d/m/Y H:i')
+                    .' — perubahan dari sisi PMO, tanpa mutasi status barang.';
+            }
+            if ($noteParts !== []) {
+                $so->pmo_sync_note = implode("\n", $noteParts);
+            }
+            $so->pmo_synced_at = $now;
             $so->save();
 
             $this->replaceDetails($so, $items, $warehouseId);

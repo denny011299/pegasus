@@ -147,7 +147,8 @@ class SyncShipmentsStepFlowTest extends TestCase
         $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
         $this->assertSame(2, (int) $so->status, 'onprocess must map to internal status 2 (Diterima)');
         $this->assertSame((string) $armada->customer_id, $so->so_customer);
-        $this->assertNull($so->pmo_sync_note, 'insert must not set the update-only sync note');
+        $this->assertNotNull($so->pmo_synced_at, 'pmo_synced_at must be stamped on insert too');
+        $this->assertStringContainsString('Tidak ada bukti foto', (string) $so->pmo_sync_note, 'no bukti_foto must leave a note explaining why, even on insert');
 
         $detail = SalesOrderDetail::where('so_id', $so->so_id)->firstOrFail();
         $this->assertSame(5, (int) $detail->sod_qty);
