@@ -1322,10 +1322,8 @@ function renderSoStatus(status, row) {
 }
 
 function renderSoAction(row) {
-    // Pending bisa punya sampai 4 ikon sekaligus (Setujui + Tolak + Lihat + Hapus) — flex-wrap
-    // supaya ikon melipat ke baris kedua kalau kolom Aksi sempit, bukan meluber keluar sel/baris.
     var soa =
-        '<div class="d-flex flex-wrap justify-content-center align-items-center gap-1 py-1">';
+        '<div class="d-flex justify-content-center align-items-center gap-1">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
     var canView = soHasAccess("Pengiriman", "view");
@@ -1643,7 +1641,7 @@ function inisialisasi() {
                 // Diperlebar dari 11% — Pending sekarang bisa menampilkan sampai 4 ikon aksi
                 // sekaligus (Setujui/Tolak/Lihat/Hapus), 11% terlalu sempit dan bikin ikon
                 // meluber keluar sel.
-                width: "16%",
+                width: "15%",
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {
