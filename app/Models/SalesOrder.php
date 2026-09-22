@@ -51,6 +51,7 @@ class SalesOrder extends Model
 
         $hasCreatedBy = Schema::hasColumn($this->getTable(), 'created_by');
         $hasAccBy = Schema::hasColumn($this->getTable(), 'acc_by');
+        $hasRejectedBy = Schema::hasColumn($this->getTable(), 'rejected_by');
 
         $customerIds = $result->pluck('so_customer')->filter()->unique()->values()->all();
         $customers = $customerIds !== []
@@ -67,6 +68,9 @@ class SalesOrder extends Model
             }
             if ($hasAccBy && ($row->acc_by ?? null)) {
                 $staffIdSet[(int) $row->acc_by] = true;
+            }
+            if ($hasRejectedBy && ($row->rejected_by ?? null)) {
+                $staffIdSet[(int) $row->rejected_by] = true;
             }
         }
         $staffNames = BatchLookup::staffNames(array_keys($staffIdSet));
@@ -107,6 +111,9 @@ class SalesOrder extends Model
             $value->acc_by_name = $hasAccBy && ($value->acc_by ?? null)
                 ? ($staffNames->get((int) $value->acc_by) ?? '-')
                 : '-';
+            $value->rejected_by_name = $hasRejectedBy && ($value->rejected_by ?? null)
+                ? ($staffNames->get((int) $value->rejected_by) ?? '-')
+                : null;
             if ($hasRetailWh) {
                 $rid = (int) ($value->retail_warehouse_id ?? 0);
                 $value->retail_warehouse_name = $rid > 0

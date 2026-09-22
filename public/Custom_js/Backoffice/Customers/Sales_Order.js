@@ -140,6 +140,10 @@ function loadSalesOrderWithItems(soId, onSuccess, onError) {
 function openSalesOrderRevisionModal(data) {
     products = [];
     mode = 2;
+    // Tampilkan alasan penolakan di sini juga — staf yang merevisi perlu tahu kenapa
+    // ditolak sebelum mengedit ulang. updateSalesOrder() sendiri yang mengembalikan status ke
+    // Pending saat disimpan, jadi banner ini otomatis tidak relevan lagi setelah submit.
+    renderSoRejectBanner(data);
     $("#add_sales_order .modal-title").html("Revisi Pengiriman");
     $("#add_sales_order input").empty().val("");
     $("#so_customer, #sales_id").empty();
@@ -235,6 +239,44 @@ function openSalesOrderRevisionModal(data) {
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
 
+/**
+ * Banner alasan penolakan (approval 2 tahap) di modal Detail Pengiriman — hanya tampil kalau
+ * status Ditolak (3) DAN reject_reason terisi. reject_stage/reject_reason/rejected_at/
+ * rejected_by_name dikirim SalesOrder::getSalesOrder() apa adanya (kolom sudah ada sejak
+ * approval 2 tahap, lihat App\Support\ShipmentApproval).
+ */
+function renderSoRejectBanner(data) {
+    var status = parseInt(data.status, 10);
+    var reason = (data.reject_reason || "").toString().trim();
+    if (status !== 3 || !reason) {
+        $("#so_reject_banner").hide();
+        return;
+    }
+
+    var stageLabel =
+        data.reject_stage === "ops"
+            ? "di tahap Kepala Operasional"
+            : data.reject_stage === "qc"
+              ? "di tahap Staf QC & Gudang"
+              : "";
+    $("#so_reject_stage_label").text(stageLabel);
+    $("#so_reject_reason_text").text(reason);
+
+    var metaParts = [];
+    if (data.rejected_by_name) metaParts.push("oleh " + data.rejected_by_name);
+    if (data.rejected_at) {
+        var d = new Date(data.rejected_at);
+        if (!isNaN(d.getTime())) {
+            metaParts.push(
+                d.toLocaleDateString("id-ID") + " " + d.toLocaleTimeString("id-ID").slice(0, 5),
+            );
+        }
+    }
+    $("#so_reject_meta_text").text(metaParts.join(" — "));
+
+    $("#so_reject_banner").show();
+}
+
 function openSalesOrderDetailModal(data, intent) {
     intent = intent === "confirm" ? "confirm" : "view";
     var img =
@@ -318,6 +360,8 @@ function openSalesOrderDetailModal(data, intent) {
     );
     $("#so_scan_barcode, #so_scan_qty").attr("disabled", true);
     setSoProductInputVisible(false);
+
+    renderSoRejectBanner(data);
 
     var soStatus = parseInt(data.status, 10);
     var confirmMode =
@@ -569,6 +613,7 @@ $(document).on("click", ".btnAdd", function () {
     initSalesOrderProductInput();
     mode = 1;
     products = [];
+    $("#so_reject_banner").hide();
     $("#tableSalesModal").html("");
     refreshTableProduct();
     $("#add_sales_order .modal-title").html("Tambah Pengiriman");
