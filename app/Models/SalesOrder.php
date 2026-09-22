@@ -287,7 +287,10 @@ class SalesOrder extends Model
         // Approval 2 tahap (status 1 "Pending") — dihitung SEKALI per request (bukan per baris)
         // supaya tidak query gudang utama/role berulang. resolveActorRole() sendiri murah
         // (query staff_warehouses/staffs terindeks), aman dipanggil per baris kalau approvalWh > 0.
-        $approvalWh = $hasApprovalCols ? (int) ProductStock::resolveWarehouseId(null) : 0;
+        // SalesOrderStock::mainWarehouseId(), BUKAN ProductStock::resolveWarehouseId(null) — yang
+        // terakhir mengikuti active_warehouse_id SESI staf yang sedang membuka tabel ini (bisa
+        // gudang eceran), padahal gudang approval selalu gudang utama sungguhan.
+        $approvalWh = $hasApprovalCols ? SalesOrderStock::mainWarehouseId() : 0;
         $approvalUser = $hasApprovalCols ? Session::get('user') : null;
         $approverIdSet = [];
         if ($hasApprovalCols) {
@@ -348,13 +351,18 @@ class SalesOrder extends Model
                 // Flag "bisa approve/tolak tahap X" untuk USER YANG SEDANG LOGIN — dihitung di
                 // server (bukan JS) supaya tombol yang tampil selalu konsisten dengan guard
                 // approveShipment()/rejectShipment() di CustomerController.
+                //
+                // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops (DIPUTUSKAN 2026-09-23,
+                // koreksi dari keputusan awal yang mewajibkan kedua tahap) — tahap QC boleh
+                // approve dari gudang aktif mana pun, resolveActorRole() sendiri sudah membatasi
+                // lewat penugasan staff_warehouses (data assignment, bukan sesi gudang aktif).
                 $item['can_approve_qc'] = false;
                 $item['can_approve_ops'] = false;
-                if ((int) $row->status === 1 && $approvalWh > 0 && $approvalUser
-                    && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh)) {
+                if ((int) $row->status === 1 && $approvalWh > 0 && $approvalUser) {
                     $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $row);
                     $item['can_approve_qc'] = $actorRole === 'qc';
-                    $item['can_approve_ops'] = $actorRole === 'ops';
+                    $item['can_approve_ops'] = $actorRole === 'ops'
+                        && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh);
                 }
             }
             $dataOut[] = $item;

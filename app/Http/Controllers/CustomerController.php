@@ -10,7 +10,6 @@ use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
-use App\Models\ProductStock;
 use App\Models\Warehouse;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
@@ -482,9 +481,16 @@ class CustomerController extends Controller
      * untuk satu Pengiriman berstatus 1 "Pending". Berurut: Ops hanya bisa setelah QC approve.
      * Direksi/Developer boleh menggantikan tiap tahap (App\Support\ShipmentApproval).
      *
-     * Approval selalu di gudang utama (sama seperti gudang yang dipakai sales_order_details -
-     * lihat App\Models\ProductStock::resolveWarehouseId(null)), dan wajib gudang aktif user =
-     * gudang utama itu (DIPUTUSKAN 2026-09) - sama seperti Stock Transfer.
+     * Approval selalu terkait gudang utama SUNGGUHAN, dihitung lewat
+     * App\Support\SalesOrderStock::mainWarehouseId() — BUKAN
+     * App\Models\ProductStock::resolveWarehouseId(null) yang dipakai sales_order_details, karena
+     * fungsi itu ikut membaca active_warehouse_id SESI staf yang sedang approve (bisa gudang
+     * eceran), sementara gudang approval harus selalu gudang utama terlepas dari itu. Hanya
+     * tahap Ops yang wajib gudang aktif user = gudang utama itu (DIPUTUSKAN 2026-09-23,
+     * koreksi dari keputusan awal yang mewajibkan kedua tahap). Tahap QC boleh approve dari
+     * gudang aktif mana pun - siapa yang berhak jadi QC untuk gudang utama tetap ditentukan
+     * lewat penugasan staff_warehouses (App\Support\ShipmentApproval::resolveActorRole()),
+     * bukan gudang aktif sesi.
      *
      * type=ops yang melengkapi approval memicu App\Support\SalesOrderApproval::confirm() (cek
      * stok + potong stok + status -> 2 Diterima) di dalam transaksi yang sama - kalau gagal,
@@ -504,7 +510,10 @@ class CustomerController extends Controller
             return response()->json(['status' => -1, 'message' => 'Pengiriman tidak ditemukan / sudah tidak bisa di-approve']);
         }
 
-        $warehouseId = (int) ProductStock::resolveWarehouseId(null);
+        // BUKAN ProductStock::resolveWarehouseId(null) - itu mengikuti active_warehouse_id
+        // SESI staf (bisa gudang eceran), sedangkan gudang approval selalu gudang utama
+        // sungguhan terlepas dari gudang aktif staf saat ini.
+        $warehouseId = SalesOrderStock::mainWarehouseId();
         if ($warehouseId <= 0) {
             return response()->json(['status' => -1, 'message' => 'Gudang utama tidak ditemukan']);
         }
@@ -528,12 +537,19 @@ class CustomerController extends Controller
             return response()->json(['status' => -1, 'message' => 'User login tidak valid']);
         }
 
-        $whName = Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama';
-        if (! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
-            return response()->json([
-                'status' => -1,
-                'message' => 'Approval hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
-            ]);
+        // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops (Kepala Operasional) —
+        // DIPUTUSKAN 2026-09-23, koreksi dari keputusan awal yang mewajibkan kedua tahap. Tahap
+        // QC (Staf QC & Gudang) boleh approve dari gudang aktif mana pun; penentuan siapa QC-nya
+        // tetap lewat resolveActorRole() di bawah (assigned ke gudang utama lewat staff_warehouses
+        // — itu penugasan data, beda dengan gudang aktif sesi yang dicek di sini).
+        if ($type === 'ops') {
+            $whName = Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama';
+            if (! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Approval Kepala Operasional hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
+                ]);
+            }
         }
 
         $actorRole = ShipmentApproval::resolveActorRole($user, $warehouseId, $so);
@@ -628,7 +644,8 @@ class CustomerController extends Controller
             return response()->json(['status' => -1, 'message' => 'Pengiriman tidak ditemukan / sudah tidak bisa ditolak']);
         }
 
-        $warehouseId = (int) ProductStock::resolveWarehouseId(null);
+        // BUKAN ProductStock::resolveWarehouseId(null) — lihat catatan di approveShipment().
+        $warehouseId = SalesOrderStock::mainWarehouseId();
         $user = Session::get('user');
         $staffId = (int) ($user->staff_id ?? 0);
         $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
@@ -636,12 +653,20 @@ class CustomerController extends Controller
             return response()->json(['status' => -1, 'message' => 'User login tidak valid']);
         }
 
-        $whName = $warehouseId > 0 ? (Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama') : 'gudang utama';
-        if ($warehouseId <= 0 || ! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
-            return response()->json([
-                'status' => -1,
-                'message' => 'Penolakan hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
-            ]);
+        if ($warehouseId <= 0) {
+            return response()->json(['status' => -1, 'message' => 'Gudang utama tidak ditemukan']);
+        }
+
+        // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops — lihat catatan yang sama di
+        // approveShipment().
+        if ($type === 'ops') {
+            $whName = Warehouse::find($warehouseId)->warehouse_name ?? 'gudang utama';
+            if (! ShipmentApproval::isAtWarehouseForApproval($user, $warehouseId, $activeWh)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => 'Penolakan tahap Kepala Operasional hanya bisa dilakukan di gudang utama (' . $whName . '). Ganti gudang aktif terlebih dahulu.',
+                ]);
+            }
         }
 
         // Guard urutan dan role SAMA seperti approve (resolveActorRole) — tahap Ops hanya bisa

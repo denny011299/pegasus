@@ -7,7 +7,15 @@ use App\Models\Staff;
 
 /**
  * Approval berurut Pengiriman (sales_orders) status 1 "Pending": Staf QC & Gudang lalu Kepala
- * Operasional, keduanya di gudang utama — lihat cdocs/docs/specs/shipment-external-api-approval-flow.md.
+ * Operasional, keduanya terkait gudang utama — lihat
+ * cdocs/docs/specs/shipment-external-api-approval-flow.md.
+ *
+ * "Wajib gudang aktif sesi = gudang utama" HANYA berlaku untuk tahap Ops (DIPUTUSKAN
+ * 2026-09-23, koreksi dari keputusan awal yang mewajibkan kedua tahap) — lihat
+ * isAtWarehouseForApproval() dan pemanggilnya di CustomerController::approveShipment()/
+ * rejectShipment()/App\Models\SalesOrder::getSalesOrderDataTable(). Tahap QC tidak pernah
+ * dicek terhadap gudang aktif sesi di sini; siapa yang berhak jadi QC tetap ditentukan lewat
+ * penugasan staff_warehouses ke gudang utama (resolveActorRole() di bawah).
  *
  * Beda dengan App\Support\StockTransferApproval (yang dipakai sebagai referensi pola): tidak ada
  * routing retail_request/main_request di sini, gudang approval SELALU gudang utama
@@ -64,7 +72,10 @@ class ShipmentApproval
         return in_array($roleId, [RoleIds::DIREKSI, RoleIds::DEVELOPER], true);
     }
 
-    /** Approval hanya boleh dilakukan saat gudang aktif user = gudang utama tempat approval berlaku. */
+    /**
+     * Gudang aktif user = gudang utama tempat approval berlaku — hanya dipakai untuk tahap Ops,
+     * lihat catatan "DIPUTUSKAN 2026-09-23" di docblock kelas ini. JANGAN dipanggil untuk tahap QC.
+     */
     public static function isAtWarehouseForApproval($user, int $warehouseId, int $activeWarehouseId): bool
     {
         if ($warehouseId <= 0 || $activeWarehouseId <= 0 || $activeWarehouseId !== $warehouseId) {
