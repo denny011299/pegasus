@@ -954,12 +954,13 @@
                 <select class="form-select" id="so_filter_status">
                     <option value="">Semua Status</option>
                     <option value="1">Pending</option>
+                    <option value="requested">Requested (tunggu QC)</option>
+                    <option value="need_approval">Need Approval (tunggu Ops)</option>
                     <option value="2">Diterima</option>
                     <option value="3">Ditolak</option>
-                    <option value="4">Dijadwalkan</option>
-                    <option value="5">Belum Terkirim</option>
-                    <option value="6">Sudah Terkirim</option>
-                    <option value="7">Dibatalkan</option>
+                    {{-- status 4/5/6/7 (Dijadwalkan/Belum Terkirim/Sudah Terkirim/Dibatalkan) adalah status
+                         PMO — sengaja disembunyikan dari filter meski datanya masih ada, lihat
+                         App\ExternalApi\Support\ShipmentStatusMap docblock untuk pemetaannya. --}}
                 </select>
             </div>
         </div>
