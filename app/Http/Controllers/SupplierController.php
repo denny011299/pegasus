@@ -659,6 +659,19 @@ class SupplierController extends Controller
             }
 
             if (! $isTrading && $sv) {
+                // GitHub #194: log ini ditulis SEBELUM insertPoDeliveryDetail() menyentuh stok
+                // (lihat komentar di atas), jadi log_saldo tidak boleh dibiarkan ke fallback
+                // resolveCurrentSaldo() milik insertLog() -- fallback itu membaca ss_stock LIVE
+                // saat baris ditulis, yang di titik ini masih stok SEBELUM pembelian masuk sama
+                // sekali. Histori jadi menampilkan Sisa yang tidak berubah untuk baris "masuk" ini
+                // (kolom Sisa terlihat "tidak update"). Dihitung eksplisit di sini: stok lama di
+                // satuan yang dibeli + qty yang diterima, sebelum roll-up ikut melipatnya.
+                $stockRow = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                    ->where("unit_id", "=", $value['unit_id'])
+                    ->where("status", "=", 1)
+                    ->first();
+                $saldoAfterMasuk = (float) ($stockRow->ss_stock ?? 0) + (float) $value["pdod_qty"];
+
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode'    => $po->po_number,
@@ -668,6 +681,7 @@ class SupplierController extends Controller
                     'log_notes'  => "Pembelian bahan mentah " . $supplierName . " " . LogStock::actorSuffix(),
                     'log_jumlah' => $value["pdod_qty"],
                     'unit_id'    => $value['unit_id'],
+                    'log_saldo'  => $saldoAfterMasuk,
                 ]);
             }
 
@@ -1191,6 +1205,17 @@ class SupplierController extends Controller
             // accPO(): histori terbaca keluar → konversi → masuk, membingungkan.
             $sup = SuppliesVariant::find($value['supplies_variant_id']);
 
+            // GitHub #194: sama seperti "Pembelian bahan mentah" di accPO() -- log ini ditulis
+            // SEBELUM deleteProductIssuesDetail() mengembalikan stok (lihat komentar di atas),
+            // jadi fallback resolveCurrentSaldo() milik insertLog() masih membaca stok SEBELUM
+            // retur dibatalkan. Dihitung eksplisit: stok lama di satuan retur + qty yang
+            // dikembalikan, sebelum roll-up ikut melipatnya.
+            $stockRow = SuppliesStock::where('supplies_id', $sup->supplies_id)
+                ->where('unit_id', $value['unit_id'])
+                ->where('status', 1)
+                ->first();
+            $saldoAfterMasuk = (float) ($stockRow->ss_stock ?? 0) + (float) $value['rsd_qty'];
+
             (new LogStock())->insertLog([
                 'log_date' => now(),
                 'log_kode'    => $pi->pi_code,
@@ -1200,6 +1225,7 @@ class SupplierController extends Controller
                 'log_notes'  => 'Pembatalan retur pembelian dari pembelian ' . $po->po_number . ' ' . LogStock::actorSuffix(),
                 'log_jumlah' => $value['rsd_qty'],
                 'unit_id'    => $value['unit_id'],
+                'log_saldo'  => $saldoAfterMasuk,
             ]);
 
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);

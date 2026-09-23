@@ -50,6 +50,11 @@ class SalesOrderInvoiceFlowTest extends TestCase
     {
         $stock = $this->pickFixtureStock();
 
+        // Insert Pengiriman manual dinonaktifkan bawaan (2026-09) — dibuka lagi khusus di test
+        // ini karena butuh fixture SO nyata, bukan menguji endpoint-nya sendiri. Lihat
+        // config/pegasus.php.
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
+
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
@@ -70,7 +75,11 @@ class SalesOrderInvoiceFlowTest extends TestCase
         $this->assertSame('1', $response->getContent());
 
         $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId);
+        // approveShipmentTwoStage() switches the acting staff to a scoped Direksi (Pengiriman|view
+        // only) — callers of this helper go on to hit routes that need broader access
+        // (insertInvoiceSO needs Pengiriman|create), so restore super admin before returning.
+        $this->actingAsSuperAdminStaff();
 
         return $soId;
     }

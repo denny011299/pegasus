@@ -160,4 +160,52 @@ trait ActingAsStaff
 
         return $this;
     }
+
+    /**
+     * Approve a Pengiriman (sales_orders) row through BOTH stages of the QC -> Ops approval
+     * (App\Support\ShipmentApproval, App\Http\Controllers\CustomerController::approveShipment())
+     * as a single Direksi actor, which is allowed to stand in for either stage (in order) —
+     * mirrors StockTransferApprovalPermissionTest's actingAsElevatedApprover() pattern rather than
+     * relying on the -1 super-admin bypass, which does NOT apply to this actor-role gate (same as
+     * StockTransferApproval — see its class docblock).
+     *
+     * Switches the acting staff via session (this call replaces whoever was previously acting()),
+     * asserts both approvals succeed, and pins active_warehouse_id to the given warehouse (must be
+     * the main warehouse — approval only happens there). Caller is responsible for switching back
+     * to a different acting staff afterwards if the rest of the test needs one.
+     */
+    protected function approveShipmentTwoStage(int $soId, int $mainWarehouseId = 1): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
+        $this->withActiveWarehouse($mainWarehouseId);
+
+        $qc = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc']);
+        $qc->assertStatus(200);
+        if ((int) ($qc->json('status') ?? 0) !== 1) {
+            throw new \RuntimeException('approveShipmentTwoStage: QC stage failed — '.$qc->json('message'));
+        }
+
+        $ops = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
+        $ops->assertStatus(200);
+        if ((int) ($ops->json('status') ?? 0) !== 1) {
+            throw new \RuntimeException('approveShipmentTwoStage: Ops stage failed — '.$ops->json('message'));
+        }
+    }
+
+    /**
+     * Reject a Pengiriman at the QC stage (App\Http\Controllers\CustomerController::
+     * rejectShipment()) as a Direksi actor — see approveShipmentTwoStage()'s docblock for why a
+     * real elevated role is used instead of the -1 super-admin bypass.
+     */
+    protected function rejectShipmentAtQcStage(int $soId, string $reason = 'Test rejection', int $mainWarehouseId = 1): void
+    {
+        $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
+        $this->withActiveWarehouse($mainWarehouseId);
+
+        $response = $this->post('/rejectShipment', ['so_id' => $soId, 'type' => 'qc', 'reason' => $reason]);
+        $response->assertStatus(200);
+        if ((int) ($response->json('status') ?? 0) !== 1) {
+            throw new \RuntimeException('rejectShipmentAtQcStage failed — '.$response->json('message'));
+        }
+    }
 }

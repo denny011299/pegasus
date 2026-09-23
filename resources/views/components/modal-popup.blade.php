@@ -116,6 +116,9 @@
 @endif
 
 @if (Route::is(['salesOrder']))
+  {{-- Modal ini dipakai BERSAMA oleh Tambah Pengiriman (dinonaktifkan, lihat page-header.blade.php),
+       DAN oleh Detail/Revisi Pengiriman (row click, TIDAK dinonaktifkan) — jangan disembunyikan
+       seluruhnya di sini, cukup jalur "Tambah"-nya (tombol + guard backend insertSalesOrder). --}}
   <!-- modal -->
   @include('components.modals.sales-order.add-sales-order')
 @endif

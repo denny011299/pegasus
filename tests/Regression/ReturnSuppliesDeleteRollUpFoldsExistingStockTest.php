@@ -173,5 +173,17 @@ class ReturnSuppliesDeleteRollUpFoldsExistingStockTest extends TestCase
                 );
             }
         }
+
+        // GitHub #194: precisely because the cancellation masuk log is written BEFORE
+        // deleteProductIssuesDetail() touches stock (the ordering just asserted above), its
+        // log_saldo must not be left to insertLog()'s resolveCurrentSaldo() fallback -- that would
+        // read ss_stock as it stood PRIOR to this cancellation restoring anything at all (6),
+        // instead of right after this leg's own credit (6 old + 6 restored = 12).
+        $cancelLog = $logs[$cancelLogIndex];
+        $this->assertSame(
+            12.0,
+            (float) $cancelLog->log_saldo,
+            'BUG WOULD BE: log_saldo reads the pre-cancellation 6 instead of 6 (old) + 6 (restored) = 12'
+        );
     }
 }

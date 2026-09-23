@@ -15,8 +15,14 @@ use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
 /**
- * External API v1 shipment confirmation — App\Http\Controllers\ExternalApi\V1\ShipmentController::
- * shipped(). Real warehouse id from the committed seed snapshot: 1 = Gudang Pusat (main), see
+ * External API v1 shipment upsert — App\Http\Controllers\ExternalApi\V1\ShipmentController::
+ * shipped(). Sejak flow "shipment-approval-flow v2" (2026-09), insert/update TIDAK LAGI
+ * memotong stok maupun mengubah status ke Confirmed — hasilnya SELALU status 1 "Pending",
+ * menunggu approval 2 tahap (App\Support\ShipmentApproval, App\Http\Controllers\
+ * CustomerController::approveShipment()) di sisi admin sebelum stok dipotong. Lihat
+ * cdocs/docs/specs/shipment-external-api-approval-flow.md.
+ *
+ * Real warehouse id from the committed seed snapshot: 1 = Gudang Pusat (main), see
  * SalesOrderRetailAndUnitConversionFlowTest's docblock.
  */
 class ExternalApiShipmentShippedFlowTest extends TestCase
@@ -25,10 +31,8 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
 
     private const MAIN_WAREHOUSE_ID = 1;
 
-    /** sales_orders.status, lihat migrasi 2026_08_11_130000_* dan model SalesOrder. */
-    private const STATUS_SCHEDULED = 4;
-
-    private const STATUS_CONFIRMED = 2;
+    /** sales_orders.status "Pending" — SATU-SATUNYA hasil insert/update shipped() sekarang. */
+    private const STATUS_PENDING = 1;
 
     private array $writtenPhotoPaths = [];
 
@@ -124,17 +128,49 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         return $item;
     }
 
+    /** @param  array<string, mixed>  $overrides */
+    private function payload(string $refShipmentId, string $armadaCode, array $items, array $overrides = []): array
+    {
+        return array_merge([
+            'ref_shipment_id' => $refShipmentId,
+            'shipment_date' => '2026-07-25',
+            'armada_code' => $armadaCode,
+            'status' => 'onprocess',
+            'items' => $items,
+        ], $overrides);
+    }
+
     public function test_a_request_without_an_api_key_is_rejected(): void
     {
         $this->postJson('/api/external/v1/shipments/shipped', [
             'ref_shipment_id' => 'SHP-1',
             'shipment_date' => '2026-07-25',
             'armada_code' => 'X',
+            'status' => 'onprocess',
             'items' => [],
         ])->assertStatus(401)->assertJson(['success' => false, 'error' => ['code' => 'UNAUTHENTICATED']]);
     }
 
-    public function test_shipped_creates_and_confirms_a_brand_new_shipment(): void
+    public function test_shipped_rejects_a_status_other_than_onprocess(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            'SHP-'.uniqid(),
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId)],
+            ['status' => 'onschedule'],
+        ), $headers);
+
+        $response->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'INVALID_STATUS']]);
+    }
+
+    public function test_shipped_creates_a_new_shipment_as_pending_without_touching_stock(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -144,13 +180,12 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'notes' => 'Pengiriman test',
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId)],
+            ['notes' => 'Pengiriman test'],
+        ), $headers);
 
         $response->assertStatus(201)->assertJson([
             'success' => true,
@@ -163,7 +198,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
 
         $soId = $response->json('data.shipment_internal_id');
         $so = SalesOrder::findOrFail($soId);
-        $this->assertSame(self::STATUS_CONFIRMED, (int) $so->status);
+        $this->assertSame(self::STATUS_PENDING, (int) $so->status, 'insert must always land on Pending, never auto-confirm');
         $this->assertSame($refShipmentId, $so->ref_shipment_id);
         $this->assertSame((string) $armada->customer_id, $so->so_customer);
         $this->assertSame('2026-07-25', $so->so_date);
@@ -177,7 +212,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->assertSame(24, (int) $detail->sod_qty);
 
         $stock->refresh();
-        $this->assertSame(76, (int) $stock->ps_stock, 'stock must actually be deducted on shipped()');
+        $this->assertSame(100, (int) $stock->ps_stock, 'shipped() must never deduct stock — that only happens at Ops approval');
     }
 
     public function test_shipped_stores_the_optional_ref_nota_id_per_item(): void
@@ -193,12 +228,11 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         // 16-digit PMO id (oms_order.id), see GitHub #180.
         $refNotaId = 4328012026102327;
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, refNotaId: $refNotaId)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, refNotaId: $refNotaId)],
+        ), $headers);
 
         $response->assertStatus(201);
         $soId = $response->json('data.shipment_internal_id');
@@ -215,30 +249,26 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $refUnitId = random_int(900000, 999999);
         $unit = $this->createUnit($refUnitId);
         $fx = $this->createProductFixture($unit);
-        $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
         $mixedCaseSku = strtolower($fx['sku']);
         $this->assertNotSame($fx['sku'], $mixedCaseSku, 'fixture sku must contain uppercase letters for this test to be meaningful');
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($mixedCaseSku, $refUnitId, qty: 7)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($mixedCaseSku, $refUnitId, qty: 7)],
+        ), $headers);
 
         $response->assertStatus(201);
         $soId = $response->json('data.shipment_internal_id');
         $detail = SalesOrderDetail::where('so_id', $soId)->firstOrFail();
         $this->assertSame($fx['variant']->product_variant_id, $detail->product_variant_id);
         $this->assertSame(7, (int) $detail->sod_qty);
-
-        $stock->refresh();
-        $this->assertSame(93, (int) $stock->ps_stock);
     }
 
-    public function test_shipped_confirms_an_existing_scheduled_shipment_with_matching_data(): void
+    public function test_shipped_force_upserts_differing_details_while_still_pending(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -248,64 +278,18 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $scheduleResponse = $this->putJson('/api/external/v1/shipments/scheduled', [
-            'ref_shipment_id' => $refShipmentId,
-            'scheduled_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [
-                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
-            ],
-        ], $headers);
-        $scheduleResponse->assertStatus(201);
-        $soId = $scheduleResponse->json('data.shipment_internal_id');
-
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ], $headers);
-
-        $response->assertStatus(200)->assertJson([
-            'success' => true,
-            'data' => [
-                'shipment_internal_id' => $soId,
-                'ipm_status' => 2,
-                'ipm_status_label' => 'Berjalan',
-            ],
-        ]);
-
-        $this->assertSame(self::STATUS_CONFIRMED, (int) SalesOrder::findOrFail($soId)->status);
-        $stock->refresh();
-        $this->assertSame(76, (int) $stock->ps_stock);
-    }
-
-    public function test_shipped_force_upserts_differing_details_before_confirming(): void
-    {
-        $headers = $this->externalApiHeaders();
-        $armada = $this->createArmada();
-        $refUnitId = random_int(900000, 999999);
-        $unit = $this->createUnit($refUnitId);
-        $fx = $this->createProductFixture($unit);
-        $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
-        $refShipmentId = 'SHP-'.uniqid();
-
-        $this->putJson('/api/external/v1/shipments/scheduled', [
-            'ref_shipment_id' => $refShipmentId,
-            'scheduled_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [
-                ['sku' => $fx['sku'], 'qty' => 10, 'unit_id' => $refUnitId],
-            ],
-        ], $headers)->assertStatus(201);
+        $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 10)],
+        ), $headers)->assertStatus(201);
 
         // Qty berbeda dari yang tersimpan (10 -> 30) - detail_handler default "force".
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 30)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 30)],
+        ), $headers);
 
         $response->assertStatus(200)->assertJson([
             'success' => true,
@@ -315,9 +299,10 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $soId = $response->json('data.shipment_internal_id');
         $detail = SalesOrderDetail::where('so_id', $soId)->where('status', 1)->firstOrFail();
         $this->assertSame(30, (int) $detail->sod_qty, 'force must overwrite the stored qty');
+        $this->assertSame(self::STATUS_PENDING, (int) SalesOrder::findOrFail($soId)->status);
 
         $stock->refresh();
-        $this->assertSame(70, (int) $stock->ps_stock, '100 - 30 (the forced qty, not the original 10)');
+        $this->assertSame(100, (int) $stock->ps_stock, 'still Pending — nothing deducted yet');
     }
 
     public function test_shipped_rejects_differing_details_when_detail_handler_is_validate(): void
@@ -330,22 +315,18 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->putJson('/api/external/v1/shipments/scheduled', [
-            'ref_shipment_id' => $refShipmentId,
-            'scheduled_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [
-                ['sku' => $fx['sku'], 'qty' => 10, 'unit_id' => $refUnitId],
-            ],
-        ], $headers)->assertStatus(201);
+        $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 10)],
+        ), $headers)->assertStatus(201);
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'detail_handler' => 'validate',
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 30)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 30)],
+            ['detail_handler' => 'validate'],
+        ), $headers);
 
         $response->assertStatus(409)->assertJson([
             'success' => false,
@@ -354,16 +335,16 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->assertContains('items', $response->json('error.details.mismatched_fields'));
 
         $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
-        $this->assertSame(self::STATUS_SCHEDULED, (int) $so->status, 'a rejected mismatch must not confirm the shipment');
+        $this->assertSame(self::STATUS_PENDING, (int) $so->status, 'a rejected mismatch must not change the status');
 
         $detail = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)->firstOrFail();
         $this->assertSame(10, (int) $detail->sod_qty, 'validate must never change stored data');
 
         $stock->refresh();
-        $this->assertSame(100, (int) $stock->ps_stock, 'nothing should be deducted when the request is rejected');
+        $this->assertSame(100, (int) $stock->ps_stock);
     }
 
-    public function test_shipped_with_validate_still_confirms_when_data_already_matches(): void
+    public function test_shipped_with_validate_still_succeeds_when_data_already_matches(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -373,22 +354,18 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $this->putJson('/api/external/v1/shipments/scheduled', [
-            'ref_shipment_id' => $refShipmentId,
-            'scheduled_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [
-                ['sku' => $fx['sku'], 'qty' => 24, 'unit_id' => $refUnitId],
-            ],
-        ], $headers)->assertStatus(201);
+        $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+        ), $headers)->assertStatus(201);
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'detail_handler' => 'validate',
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+            ['detail_handler' => 'validate'],
+        ), $headers);
 
         $response->assertStatus(200)->assertJson([
             'success' => true,
@@ -396,7 +373,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         ]);
     }
 
-    public function test_shipped_is_idempotent_and_does_not_deduct_stock_twice(): void
+    public function test_shipped_rejects_updating_a_shipment_that_already_has_approval(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -406,100 +383,66 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $payload = [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ];
+        $created = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+        ), $headers)->assertStatus(201);
+        $soId = $created->json('data.shipment_internal_id');
 
-        $first = $this->postJson('/api/external/v1/shipments/shipped', $payload, $headers);
-        $first->assertStatus(201);
-        $soId = $first->json('data.shipment_internal_id');
+        // Simulasikan approval QC sudah terjadi di sisi admin.
+        $so = SalesOrder::findOrFail($soId);
+        $so->qc_approved_by = 1;
+        $so->qc_approved_at = now();
+        $so->save();
 
-        $second = $this->postJson('/api/external/v1/shipments/shipped', $payload, $headers);
-        $second->assertStatus(200)->assertJson([
-            'success' => true,
-            'data' => [
-                'shipment_internal_id' => $soId,
-                'ipm_status' => 2,
-                'ipm_status_label' => 'Berjalan',
-            ],
-            'meta' => ['idempotent_replay' => true],
-        ]);
-
-        $stock->refresh();
-        $this->assertSame(76, (int) $stock->ps_stock, 'a replayed request must not deduct stock a second time');
-        $this->assertSame(1, SalesOrder::where('ref_shipment_id', $refShipmentId)->count());
-    }
-
-    public function test_shipped_replay_ignores_a_different_payload_once_already_confirmed(): void
-    {
-        $headers = $this->externalApiHeaders();
-        $armada = $this->createArmada();
-        $refUnitId = random_int(900000, 999999);
-        $unit = $this->createUnit($refUnitId);
-        $fx = $this->createProductFixture($unit);
-        $stock = $this->createStock($fx['variant'], $unit->unit_id, 100);
-        $refShipmentId = 'SHP-'.uniqid();
-
-        $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
-        ], $headers)->assertStatus(201);
-
-        // Payload beda (qty 99, detail_handler validate) - tetap idempotent replay murni karena
-        // sudah "Berjalan", TIDAK dibandingkan / ditolak.
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'detail_handler' => 'validate',
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 99)],
-        ], $headers);
-
-        $response->assertStatus(200)->assertJson([
-            'success' => true,
-            'data' => ['ipm_status' => 2],
-            'meta' => ['idempotent_replay' => true],
-        ]);
-
-        $stock->refresh();
-        $this->assertSame(76, (int) $stock->ps_stock);
-        $detail = SalesOrderDetail::where('so_id', SalesOrder::where('ref_shipment_id', $refShipmentId)->value('so_id'))
-            ->where('status', 1)->firstOrFail();
-        $this->assertSame(24, (int) $detail->sod_qty, 'the original confirmed qty must be untouched');
-    }
-
-    public function test_shipped_leaves_the_shipment_scheduled_when_stock_is_insufficient(): void
-    {
-        $headers = $this->externalApiHeaders();
-        $armada = $this->createArmada();
-        $refUnitId = random_int(900000, 999999);
-        $unit = $this->createUnit($refUnitId);
-        $fx = $this->createProductFixture($unit);
-        $stock = $this->createStock($fx['variant'], $unit->unit_id, 5);
-        $refShipmentId = 'SHP-'.uniqid();
-
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => $refShipmentId,
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 99)],
+        ), $headers);
 
         $response->assertStatus(409)->assertJson([
             'success' => false,
-            'error' => ['code' => 'INSUFFICIENT_STOCK'],
+            'error' => ['code' => 'SHIPMENT_NOT_UPDATABLE'],
         ]);
 
-        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
-        $this->assertSame(self::STATUS_SCHEDULED, (int) $so->status, 'the SO must still exist, just not confirmed');
+        $detail = SalesOrderDetail::where('so_id', $soId)->where('status', 1)->firstOrFail();
+        $this->assertSame(24, (int) $detail->sod_qty, 'PMO must not be able to rewrite a shipment once approval has started');
 
         $stock->refresh();
-        $this->assertSame(5, (int) $stock->ps_stock, 'nothing must be deducted on a failed confirm');
+        $this->assertSame(100, (int) $stock->ps_stock);
+    }
+
+    public function test_shipped_rejects_updating_a_shipment_that_is_already_confirmed(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 100);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $created = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId)],
+        ), $headers)->assertStatus(201);
+        $soId = $created->json('data.shipment_internal_id');
+
+        $so = SalesOrder::findOrFail($soId);
+        $so->status = 2; // Confirmed/Diterima, seperti hasil approval Ops selesai.
+        $so->save();
+
+        $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 5)],
+        ), $headers)->assertStatus(409)->assertJson([
+            'success' => false,
+            'error' => ['code' => 'SHIPMENT_NOT_UPDATABLE'],
+        ]);
     }
 
     public function test_shipped_auto_creates_an_unknown_armada_code(): void
@@ -513,12 +456,11 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $newArmadaCode = 'NEW-ARMADA-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => 'SHP-'.uniqid(),
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $newArmadaCode,
-            'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
-        ], $headers);
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            'SHP-'.uniqid(),
+            $newArmadaCode,
+            [$this->itemPayload($fx['sku'], $refUnitId)],
+        ), $headers);
 
         $response->assertStatus(201);
 
@@ -534,12 +476,11 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $refUnitId = random_int(900000, 999999);
         $this->createUnit($refUnitId);
 
-        $this->postJson('/api/external/v1/shipments/shipped', [
-            'ref_shipment_id' => 'SHP-'.uniqid(),
-            'shipment_date' => '2026-07-25',
-            'armada_code' => $armada->customer_code,
-            'items' => [$this->itemPayload('DOES-NOT-EXIST-'.uniqid(), $refUnitId)],
-        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+        $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            'SHP-'.uniqid(),
+            $armada->customer_code,
+            [$this->itemPayload('DOES-NOT-EXIST-'.uniqid(), $refUnitId)],
+        ), $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
     }
 
     public function test_shipped_accepts_photos_as_multipart_file_uploads(): void
@@ -556,6 +497,7 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
             'ref_shipment_id' => $refShipmentId,
             'shipment_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
+            'status' => 'onprocess',
             'items' => [$this->itemPayload($fx['sku'], $refUnitId)],
             'photos' => [UploadedFile::fake()->image('bukti.jpg', 10, 10)],
         ], array_merge($headers, ['Accept' => 'application/json']));
@@ -569,5 +511,33 @@ class ExternalApiShipmentShippedFlowTest extends TestCase
         $path = public_path('issue/'.$storedPhotos[0]);
         $this->assertFileExists($path);
         $this->writtenPhotoPaths[] = $path;
+    }
+
+    public function test_shipped_creates_a_shortage_document_when_requested(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 999999);
+        $unit = $this->createUnit($refUnitId);
+        $fx = $this->createProductFixture($unit);
+        $this->createStock($fx['variant'], $unit->unit_id, 5);
+        $refShipmentId = 'SHP-'.uniqid();
+
+        $response = $this->postJson('/api/external/v1/shipments/shipped', $this->payload(
+            $refShipmentId,
+            $armada->customer_code,
+            [$this->itemPayload($fx['sku'], $refUnitId, qty: 24)],
+            ['auto_create_shortage_doc' => true],
+        ), $headers);
+
+        // Shortage tidak menghalangi shipment tetap tersimpan Pending.
+        $response->assertStatus(201)->assertJson([
+            'success' => true,
+            'data' => ['shortage_doc_created' => true],
+        ]);
+        $this->assertNotNull($response->json('data.shortage_doc_number'));
+
+        $so = SalesOrder::where('ref_shipment_id', $refShipmentId)->firstOrFail();
+        $this->assertSame(self::STATUS_PENDING, (int) $so->status);
     }
 }

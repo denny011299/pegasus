@@ -6,17 +6,35 @@ use Carbon\Carbon;
 
 class CashOperasionalPresenter
 {
-    /** @var list<string> */
-    public const MODULES = ['Kas', 'Kas Operasional'];
+    /**
+     * GitHub #196 (item 28): each row type here checks its own submodule name, mirroring the
+     * `check.access.any` middleware lists in routes/web.php exactly — these are the only module
+     * names that actually exist in public/assets/json/permission.json (the source the Izin Akses
+     * role-editor UI reads), so they're the only ones a role can ever be granted or denied through
+     * that screen. Earlier revisions of this map also carried legacy alias names ("Kas Admin",
+     * "Kas Gudang", ...) and a generic "Kas"/"Kas Operasional" fallback for roles whose
+     * `role_access` still had that pre-split module — but those aliases are invisible in the role
+     * editor (not in permission.json) and can silently grant/hide access no admin can see or
+     * revoke from the UI. Removed once the underlying legacy `role_access` data was cleaned up;
+     * don't reintroduce them here.
+     *
+     * @var array<string, string>
+     */
+    private const TYPE_MODULES = [
+        'admin' => 'Kas Operasional Admin',
+        'gudang' => 'Kas Operasional Gudang',
+        'armada' => 'Kas Operasional Armada',
+        'sales' => 'Kas Operasional Sales',
+    ];
 
     private static function money(int $amount): string
     {
         return number_format(abs($amount), 0, ',', '.');
     }
 
-    private static function can($user, string $ability): bool
+    private static function can($user, string $ability, string $type): bool
     {
-        return RoleAccess::canAny($user, self::MODULES, $ability);
+        return RoleAccess::can($user, self::TYPE_MODULES[$type], $ability);
     }
 
     private static function statusBadge(int $status): string
@@ -73,18 +91,18 @@ class CashOperasionalPresenter
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
         $action = '';
-        if (self::can($user, 'view')) {
+        if (self::can($user, 'view', 'admin')) {
             $action .= '<a class="me-2 btn-action-icon btn-action-view p-2 btn_view_admin" data-id="' . (int) $row->ca_id . '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
         }
         if ((int) $row->status === 1) {
             if ((int) $row->ca_type === 1) {
-                if (self::can($user, 'edit')) {
+                if (self::can($user, 'edit', 'admin')) {
                     $action .= '<a class="me-2 btn-action-icon btn-action-edit p-2 btn_edit_admin" data-id="' . (int) $row->ca_id . '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
                 }
-                if (self::can($user, 'delete')) {
+                if (self::can($user, 'delete', 'admin')) {
                     $action .= '<a class="p-2 btn-action-icon btn-action-delete btn_delete_admin" data-id="' . (int) $row->ca_id . '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
                 }
-            } elseif ((int) $row->ca_type === 2 && self::can($user, 'others')) {
+            } elseif ((int) $row->ca_type === 2 && self::can($user, 'others', 'admin')) {
                 // GitHub #117/#130: bg-success/bg-danger + text-light are Bootstrap utility
                 // classes, which lose to header.blade.php's global `.btn-action-icon { ...
                 // !important }` reset — these rendered plain/uncolored in practice. Use the
@@ -127,18 +145,18 @@ class CashOperasionalPresenter
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
         $action = '';
-        if (self::can($user, 'view')) {
+        if (self::can($user, 'view', 'gudang')) {
             $action .= '<a class="me-2 btn-action-icon btn-action-view p-2 btn_view_gudang" data-id="' . (int) $row->cg_id . '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
         }
         if ((int) $row->status === 1) {
             if ((int) $row->cg_type === 1) {
-                if (self::can($user, 'edit')) {
+                if (self::can($user, 'edit', 'gudang')) {
                     $action .= '<a class="me-2 btn-action-icon btn-action-edit p-2 btn_edit_gudang" data-id="' . (int) $row->cg_id . '" data-bs-target="#edit-category"><i class="fe fe-edit"></i></a>';
                 }
-                if (self::can($user, 'delete')) {
+                if (self::can($user, 'delete', 'gudang')) {
                     $action .= '<a class="p-2 btn-action-icon btn-action-delete btn_delete_gudang" data-id="' . (int) $row->cg_id . '" href="javascript:void(0);"><i class="fe fe-trash-2"></i></a>';
                 }
-            } elseif ((int) $row->cg_type === 2 && self::can($user, 'others')) {
+            } elseif ((int) $row->cg_type === 2 && self::can($user, 'others', 'gudang')) {
                 // GitHub #117/#130: see the same note in adminRow() above.
                 $action .= '<a class="me-2 btn-action-icon btn-action-approve p-2 btn_acc" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-check"></i></a>';
                 $action .= '<a class="me-2 btn-action-icon btn-action-reject p-2 btn_decline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-x"></i></a>';
@@ -188,10 +206,10 @@ class CashOperasionalPresenter
 
         $action = '';
         $hideView = (int) $row->status === 2 && (int) $row->cr_type === 1;
-        if (!$hideView && self::can($user, 'view')) {
+        if (!$hideView && self::can($user, 'view', 'armada')) {
             $action .= '<a class="me-2 btn-action-icon btn-action-view p-2 btn_view_armada" data-id="' . (int) $row->cr_id . '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
         }
-        if ((int) $row->status === 1 && (int) ($row->cr_aksi ?? 0) === 2 && self::can($user, 'others')) {
+        if ((int) $row->status === 1 && (int) ($row->cr_aksi ?? 0) === 2 && self::can($user, 'others', 'armada')) {
             // GitHub #117/#130: see the same note in adminRow() above.
             $action .= '<a class="me-2 btn-action-icon btn-action-approve p-2 btn_acc" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-check"></i></a>';
             $action .= '<a class="me-2 btn-action-icon btn-action-reject p-2 btn_decline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-x"></i></a>';
@@ -239,10 +257,10 @@ class CashOperasionalPresenter
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
         $action = '';
-        if (self::can($user, 'view')) {
+        if (self::can($user, 'view', 'sales')) {
             $action .= '<a class="me-2 btn-action-icon btn-action-view p-2 btn_view_sales" data-id="' . (int) $row->cs_id . '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
         }
-        if ((int) $row->status === 1 && (int) ($row->cs_aksi ?? 0) === 1 && self::can($user, 'others')) {
+        if ((int) $row->status === 1 && (int) ($row->cs_aksi ?? 0) === 1 && self::can($user, 'others', 'sales')) {
             // GitHub #117/#130: see the same note in adminRow() above.
             $action .= '<a class="me-2 btn-action-icon btn-action-approve p-2 btn_acc" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-check"></i></a>';
             $action .= '<a class="me-2 btn-action-icon btn-action-reject p-2 btn_decline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-x"></i></a>';

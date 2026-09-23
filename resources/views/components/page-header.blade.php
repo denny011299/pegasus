@@ -82,10 +82,17 @@
                 @endif
                 @if (Route::is(['salesOrder']))
                     @roleCan('Pengiriman', 'create')
+                    {{-- Tambah Pengiriman manual DINONAKTIFKAN (2026-09, keputusan PM) — Pengiriman
+                         baru hanya dari sinkronisasi PMO. Lihat config/pegasus.php
+                         (shipment_internal_insert_enabled) — matikan flag ini, bukan hapus markup,
+                         supaya gampang dibuka lagi nanti. Tombol Tambah Pengembalian TIDAK terkena,
+                         itu fitur berbeda. --}}
+                    @if (config('pegasus.shipment_internal_insert_enabled'))
                     <li id="btn-container-pengiriman">
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengiriman</a>
                     </li>
+                    @endif
                     <li id="btn-container-pengembalian" style="display: none;">
                         <a class="btn btn-primary" id="cr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengembalian</a>
@@ -269,7 +276,15 @@
                     @endroleCan
                 @endif
                 @if (Route::is(['operationalCash']))
-                    @roleCanAny(['Kas', 'Kas Operasional'], 'create')
+                    {{-- GitHub #196 item 28: halaman ini satu route untuk 4 tipe kas (admin/gudang/
+                    armada/sales) lewat dropdown #cashType, jadi cek awal di sini harus meliputi
+                    submodul per tipe juga (sama seperti check.access.any di routes/web.php dan
+                    CashOperasionalPresenter::TYPE_MODULES). Hanya nama modul yang benar-benar ada
+                    di public/assets/json/permission.json (dan karenanya bisa dikelola dari halaman
+                    Izin Akses) — tidak ada alias/modul generik lagi. Visibility per tipe yang
+                    sedang dipilih lalu di-refine di JS (canCreateCashType() di
+                    Cash_Operational.js) tiap #cashType berganti. --}}
+                    @roleCanAny(['Kas Operasional Admin', 'Kas Operasional Gudang', 'Kas Operasional Armada', 'Kas Operasional Sales'], 'create')
                     <li>
                         <a class="btn btn-primary btnAddCash"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Aktivitas</a>

@@ -851,9 +851,8 @@
                         $canShow('Stok Produk');
                     @endphp
                     @php
-                        $showBahanKimia =
-                        $canShow('Daftar Bahan Kimia') ||
-                        $canShow('Stok Bahan Kimia');
+                        // Sementara disembunyikan di live (fase2/main) — Daftar + Stok Bahan Kimia
+                        $showBahanKimia = false;
                     @endphp
                     @php
                         $showBahan =

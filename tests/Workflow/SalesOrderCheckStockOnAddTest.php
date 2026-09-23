@@ -289,6 +289,7 @@ class SalesOrderCheckStockOnAddTest extends TestCase
 
         // ...but insertSalesOrder() itself (final submit, bypassing the popup's per-row gate,
         // e.g. an already-built document reopened later) must stay unblocked — GitHub #99.
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => (int) DB::table('customers')->where('status', 1)->value('customer_id'),
             'so_date' => now()->toDateString(),

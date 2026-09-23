@@ -365,6 +365,10 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/customerReturns', [CustomerReturnController::class, 'index'])->name('customerReturns.index');
         Route::get('/customerReturns/context', [CustomerReturnController::class, 'context'])->name('customerReturns.context');
         Route::get('/customerReturns/{docKey}', [CustomerReturnController::class, 'show'])->name('customerReturns.show')->where('docKey', '[A-Za-z0-9:_-]+');
+        // Approval 2 tahap (QC/Ops): gate di controller (actor role, gudang aktif), sama pola
+        // dengan approveStockTransfer/rejectStockTransfer — bukan permission "others".
+        Route::post('/approveShipment', [CustomerController::class, 'approveShipment'])->name('approveShipment');
+        Route::post('/rejectShipment', [CustomerController::class, 'rejectShipment'])->name('rejectShipment');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');
@@ -630,16 +634,16 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/pettyCash', [ReportController::class, 'PettyCash'])->name('pettyCash');
         Route::get('/getPettyCash', [ReportController::class, 'getPettyCash'])->name('getPettyCash');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,any')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,any')->group(function () {
         Route::get('/getCashAdmin', [ReportController::class, 'getCashAdmin'])->name('getCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,any')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,any')->group(function () {
         Route::get('/getCashGudang', [ReportController::class, 'getCashGudang'])->name('getCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,any')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,any')->group(function () {
         Route::get('/getCashArmada', [ReportController::class, 'getCashArmada'])->name('getCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,any')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Sales,any')->group(function () {
         Route::get('/getCashSales', [ReportController::class, 'getCashSales'])->name('getCashSales');
     });
     Route::get('/operationalCash', [ReportController::class, 'OperationalCash'])->name('operationalCash');
@@ -647,59 +651,59 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/insertCash', [ReportController::class, 'insertCash'])->name('insertCash');
         Route::post('/insertPettyCash', [ReportController::class, 'insertPettyCash'])->name('insertPettyCash');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,create')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,create')->group(function () {
         Route::post('/insertCashAdmin', [ReportController::class, 'insertCashAdmin'])->name('insertCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,create')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,create')->group(function () {
         Route::post('/insertCashGudang', [ReportController::class, 'insertCashGudang'])->name('insertCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,create')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,create')->group(function () {
         Route::post('/insertCashArmada', [ReportController::class, 'insertCashArmada'])->name('insertCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,create')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Sales,create')->group(function () {
         Route::post('/insertCashSales', [ReportController::class, 'insertCashSales'])->name('insertCashSales');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,edit')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,edit')->group(function () {
         Route::post('/updateCashAdmin', [ReportController::class, 'updateCashAdmin'])->name('updateCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,edit')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,edit')->group(function () {
         Route::post('/updateCashGudang', [ReportController::class, 'updateCashGudang'])->name('updateCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,edit')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,edit')->group(function () {
         Route::post('/updateCashArmada', [ReportController::class, 'updateCashArmada'])->name('updateCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,edit')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Sales,edit')->group(function () {
         Route::post('/updateCashSales', [ReportController::class, 'updateCashSales'])->name('updateCashSales');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,delete')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,delete')->group(function () {
         Route::post('/deleteCashAdmin', [ReportController::class, 'deleteCashAdmin'])->name('deleteCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,delete')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,delete')->group(function () {
         Route::post('/deleteCashGudang', [ReportController::class, 'deleteCashGudang'])->name('deleteCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,delete')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,delete')->group(function () {
         Route::post('/deleteCashArmada', [ReportController::class, 'deleteCashArmada'])->name('deleteCashArmada');
     });
-    Route::middleware('check.access.any:Kas Operasional Sales,Kas Sales,Kas Operasional,delete')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Sales,delete')->group(function () {
         Route::post('/deleteCashSales', [ReportController::class, 'deleteCashSales'])->name('deleteCashSales');
     });
-    Route::middleware('check.access.any:Kas Operasional Admin,Kas Admin,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Admin,others')->group(function () {
         Route::post('/acceptCashAdmin', [ReportController::class, 'acceptCashAdmin'])->name('acceptCashAdmin');
         Route::post('/declineCashAdmin', [ReportController::class, 'declineCashAdmin'])->name('declineCashAdmin');
     });
-    Route::middleware('check.access.any:Kas Operasional Gudang,Kas Gudang,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Gudang,others')->group(function () {
         Route::post('/acceptCashGudang', [ReportController::class, 'acceptCashGudang'])->name('acceptCashGudang');
         Route::post('/declineCashGudang', [ReportController::class, 'declineCashGudang'])->name('declineCashGudang');
     });
-    Route::middleware('check.access.any:Kas Operasional Armada,Kas Armada,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas Operasional Armada,others')->group(function () {
         Route::post('/acceptCashArmada', [ReportController::class, 'acceptCashArmada'])->name('acceptCashArmada');
         Route::post('/declineCashArmada', [ReportController::class, 'declineCashArmada'])->name('declineCashArmada');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional Sales,Kas Sales,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas,Kas Operasional Sales,others')->group(function () {
         Route::post('/acceptCashSales', [ReportController::class, 'acceptCashSales'])->name('acceptCashSales');
         Route::post('/declineCashSales', [ReportController::class, 'declineCashSales'])->name('declineCashSales');
     });
-    Route::middleware('check.access.any:Kas,Kas Operasional,others')->group(function () {
+    Route::middleware('check.access.any:Kas,others')->group(function () {
         Route::post('/acceptCashBesar', [ReportController::class, 'acceptCashBesar'])->name('acceptCashBesar');
         Route::post('/declineCashBesar', [ReportController::class, 'declineCashBesar'])->name('declineCashBesar');
     });

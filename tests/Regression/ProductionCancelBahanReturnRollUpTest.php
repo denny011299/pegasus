@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Production;
+use App\Models\LogStock;
 use App\Models\Supplies;
 use App\Models\SuppliesRelation;
 use App\Models\SuppliesStock;
@@ -157,5 +158,20 @@ class ProductionCancelBahanReturnRollUpTest extends TestCase
         // 6 Piece yang sudah ada + 6 Piece yang dikembalikan = 12 = tepat 1 DOS.
         $this->assertSame(0, (int) $pieceStock->ss_stock, 'BUG WOULD BE: stuck at 12 Piece, never rolled up');
         $this->assertSame(1, (int) $dosStock->ss_stock, 'existing 6 + returned 6 = 12 = exactly 1 DOS');
+
+        // GitHub #194: log utama "Pengembalian stok bahan" ditulis SETELAH base + naikLevel
+        // sama-sama di-apply, jadi log_saldo tidak boleh dibiarkan ke fallback resolveCurrentSaldo()
+        // -- itu akan membaca ss_stock akhir yang SUDAH ter-fold (0), bukan angka tepat setelah
+        // kredit mentah 6 Piece ini (6 lama + 6 dikembalikan = 12).
+        $returnLog = LogStock::where('log_type', 2)
+            ->where('log_item_id', $supplies->supplies_id)
+            ->where('log_notes', 'like', 'Pengembalian stok bahan akibat pembatalan produksi%')
+            ->firstOrFail();
+
+        $this->assertSame(
+            12.0,
+            (float) $returnLog->log_saldo,
+            'BUG WOULD BE: log_saldo reads the post-rollup 0 instead of 6 (old) + 6 (returned) = 12'
+        );
     }
 }
