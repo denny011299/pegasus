@@ -1,20 +1,19 @@
 {
-    "generated_at": "2026-09-24T10:44:43+07:00",
-    "commit": "7af96fbf4b46ccbd42138998598658760246ff34",
+    "generated_at": "2026-09-24T12:25:21+07:00",
+    "commit": "0b3933321b3c771086938cf0659c441543f931ff",
     "branch": "fase2/main",
-    "file_count": 3586,
-    "previous_commit": "ab5a60aff4da91c0f52bdd19dd5fe320e2aa1928",
-    "previous_generated_at": "2026-09-23T12:13:20+07:00",
-    "added": [],
+    "file_count": 3587,
+    "previous_commit": "7af96fbf4b46ccbd42138998598658760246ff34",
+    "previous_generated_at": "2026-09-24T10:44:43+07:00",
+    "added": [
+        "resources/views/Backoffice/Inventory/Stock_Opname_Live.blade.php"
+    ],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/ProductController.php",
-        "app/Models/SalesOrder.php",
-        "public/Custom_js/Backoffice/Customers/Sales_Order.js",
-        "public/Custom_js/Backoffice/Product/Product.js",
-        "resources/views/Backoffice/Product/Product.blade.php",
-        "resources/views/components/modals/shared/modal-konfirmasi.blade.php",
-        "resources/views/components/search-filter.blade.php"
+        "app/Http/Controllers/StockController.php",
+        "app/Support/StockOpname/OpenOpnameGuard.php",
+        "app/Support/StockOpname/OpnamePageLock.php",
+        "routes/web.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -128,7 +127,7 @@
         "app/Http/Controllers/ProductionController.php": "241f584baedaf68c020315efefc548c7092241b6",
         "app/Http/Controllers/ReportController.php": "837d641b09be755ea46a452b07a227042571c671",
         "app/Http/Controllers/SettingController.php": "d8136ec412df6f24a741df8c64e0b44f40220279",
-        "app/Http/Controllers/StockController.php": "44b1cc4be672f48ce01d3047848cedf18b767d69",
+        "app/Http/Controllers/StockController.php": "20f78f6947ea9cce3c9663cecb75d04d5e63e620",
         "app/Http/Controllers/StockTransferController.php": "3def879e6bb14428b9672ae3379287689bae8b37",
         "app/Http/Controllers/SupplierController.php": "5b91f9f8bbac405a2503a7c22ed8696d2956df59",
         "app/Http/Controllers/SynchronizationController.php": "f96f4d39f0a9e5f3ab3a7bc95a0ecc41e4cc6993",
@@ -261,11 +260,11 @@
         "app/Support/StockOpname/BahanOpnameLifecycle.php": "7e69379c09a42c201fcfabf5ce1452675ab07ec3",
         "app/Support/StockOpname/BahanOpnameLineReader.php": "4cd6ee6c30f403be68f45f850b8c26140877e05c",
         "app/Support/StockOpname/LegacyQtyString.php": "26c9971f8f64ae570a947c747e46dde6668907b0",
-        "app/Support/StockOpname/OpenOpnameGuard.php": "30f29e68e6ef3fb2d763855f57cfbc17019bd0c2",
+        "app/Support/StockOpname/OpenOpnameGuard.php": "cbdcc47f473eead5e4bec538579a76ef0edb2f29",
         "app/Support/StockOpname/OpenOpnameStatusSignal.php": "64e7ca982ab4b8b2583b1b7ba55a9cdcfaeacf5c",
         "app/Support/StockOpname/OpnameLifecycle.php": "ba89c085eebc8eec9c9ea83705dbee969ce0f6b6",
         "app/Support/StockOpname/OpnameLineReader.php": "082a7d713cea9ac4583b71ea17afd633edeec8c2",
-        "app/Support/StockOpname/OpnamePageLock.php": "d126004760ebf1101d156b304fb9997fc20c2398",
+        "app/Support/StockOpname/OpnamePageLock.php": "fac095f085e682d6083bfc08f5899ee598a79a48",
         "app/Support/StockOpname/UseSystemStock.php": "386852967cadb355810fbb4c0d543537e2097e2d",
         "app/Support/StockOpnameUntouchedUnitHealer.php": "0e23ba81d5ca7380db36711cff1939dc4d54733a",
         "app/Support/StockTransferApproval.php": "b4de506c45b52ecf7951bebbe0f5b7305941940d",
@@ -3364,6 +3363,7 @@
         "resources/views/Backoffice/Inventory/Stock_Alert_Supplies.blade.php": "5e00e33df8131f31483403e83ae6585e3ae52ebc",
         "resources/views/Backoffice/Inventory/Stock_Opname.blade.php": "e1381ab495a188e79bdc4653d5ca479d4682cb81",
         "resources/views/Backoffice/Inventory/Stock_Opname_Bahan.blade.php": "f11c06ba743556c8c0e3f616e37b001f268bb52f",
+        "resources/views/Backoffice/Inventory/Stock_Opname_Live.blade.php": "bcb33c8b4a1b5ef945892ba5b3cd22c6eb22a019",
         "resources/views/Backoffice/Inventory/Stock_Product.blade.php": "996939ba66248fefa2300be05851d79a91681ee0",
         "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "ad78ece5ed2ba0f7959cce7fb90718408f08e301",
         "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "a96294d9ef38456507cc7d05f7abee5279b159db",
@@ -3602,6 +3602,6 @@
         "routes/api.php": "19412517ef6e482315cd5fb480cabff8c6bc429c",
         "routes/console.php": "f728022530195d870dd557525e90f8641e384743",
         "routes/external-api/v1.php": "4f31a6e4ed85aad15abd209bc96bf20dd83fdc88",
-        "routes/web.php": "499fe25bb982bbb8934265359172828ee08c7480"
+        "routes/web.php": "fe3578dcda2c1e662de275a4f0a99d0b0651e6b9"
     }
 }
