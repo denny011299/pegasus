@@ -122,6 +122,26 @@ class SalesOrder extends Model
             }
         }
 
+        // can_approve_qc/can_approve_ops — sama persis dengan getSalesOrderDataTable() (dipakai
+        // openSalesOrderDetailModal() saat membuka modal konfirmasi dari /getSalesOrder single-row),
+        // supaya tombol Terima/Tolak di modal tidak pernah lepas dari guard approveShipment()/
+        // rejectShipment() di CustomerController.
+        if (Schema::hasColumn($this->getTable(), 'qc_approved_by')) {
+            $approvalWh = SalesOrderStock::mainWarehouseId();
+            $approvalUser = Session::get('user');
+            $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+            foreach ($result as $value) {
+                $value->can_approve_qc = false;
+                $value->can_approve_ops = false;
+                if ((int) $value->status === 1 && $approvalWh > 0 && $approvalUser) {
+                    $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $value);
+                    $value->can_approve_qc = $actorRole === 'qc';
+                    $value->can_approve_ops = $actorRole === 'ops'
+                        && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh);
+                }
+            }
+        }
+
         return $result;
     }
 

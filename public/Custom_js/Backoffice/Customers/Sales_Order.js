@@ -37,6 +37,20 @@ function showSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-none").addClass("d-inline-flex");
     setSoModalMode("confirm");
 }
+/** Approval 2 tahap QC & Gudang / Kepala Operasional — modal detail dipakai ulang sebagai
+ * "Konfirmasi Pengiriman" bertema hijau, sama seperti Customer_Return.js (Pengembalian), dan
+ * TERPISAH dari .btn_acc/.btn_decline lama (endpoint /accSO, /declineSO) supaya tidak tabrakan. */
+function hideSoQcOpsButtons() {
+    $(".btn-so-qcops-accept, .btn-so-qcops-decline")
+        .removeClass("d-inline-flex")
+        .addClass("d-none");
+}
+function showSoQcOpsButtons() {
+    $(".btn-so-qcops-accept, .btn-so-qcops-decline")
+        .removeClass("d-none")
+        .addClass("d-inline-flex");
+    setSoModalMode("confirm");
+}
 function setSoModalMode(kind) {
     var $modal = $("#add_sales_order");
     var $icon = $modal.find(".pg-modal-icon i");
@@ -364,11 +378,30 @@ function openSalesOrderDetailModal(data, intent) {
     renderSoRejectBanner(data);
 
     var soStatus = parseInt(data.status, 10);
+    // Terima true/1 — sama pola renderSoAction() (JSON kadang kirim 1, bukan boolean true)
+    var soCanApproveQc = data.can_approve_qc === true || data.can_approve_qc === 1;
+    var soCanApproveOps = data.can_approve_ops === true || data.can_approve_ops === 1;
+    var qcOpsMode =
+        intent === "confirm" &&
+        soStatus === 1 &&
+        (soCanApproveQc || soCanApproveOps);
     var confirmMode =
+        !qcOpsMode &&
         intent === "confirm" &&
         soStatus === 1 &&
         soHasAccess("Pengiriman", "others");
-    if (confirmMode) {
+    if (qcOpsMode) {
+        hideSoAccButtons();
+        var approveType = soCanApproveQc ? "qc" : "ops";
+        var approveLabel = soCanApproveQc ? "Staf QC & Gudang" : "Kepala Operasional";
+        showSoQcOpsButtons();
+        $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman (" + approveLabel + ")");
+        $(".btn-so-qcops-accept, .btn-so-qcops-decline")
+            .attr("so_id", data.so_id)
+            .attr("data-type", approveType)
+            .attr("data-label", approveLabel);
+    } else if (confirmMode) {
+        hideSoQcOpsButtons();
         showSoAccButtons();
         $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
         $(".btn_acc").attr("so_id", data.so_id);
@@ -377,6 +410,7 @@ function openSalesOrderDetailModal(data, intent) {
         $(".btn_decline").data("items", data.items);
     } else {
         hideSoAccButtons();
+        hideSoQcOpsButtons();
     }
 
     $("#so_ppn").trigger("blur");
@@ -1387,12 +1421,13 @@ function renderSoAction(row) {
     // Terima true/1 — sama pola Stock_Transfer.js (JSON kadang kirim 1)
     var canApproveQc = pending && (row.can_approve_qc === true || row.can_approve_qc === 1);
     var canApproveOps = pending && (row.can_approve_ops === true || row.can_approve_ops === 1);
+    // Satu ikon buka modal konfirmasi (Terima+Tolak ada di footernya) — tidak ada lagi ikon
+    // Tolak terpisah di baris, mengikuti pola Customer_Return.js (Pengembalian): approve dan
+    // reject sama-sama gerbang lewat modal detail yang sama.
     var canApprove = canApproveQc || canApproveOps;
-    var canReject = canApprove;
     var canDelete = pending && soHasAccess("Pengiriman", "delete");
     if (canApprove) {
-        var approveType = canApproveQc ? "qc" : "ops";
-        var approveLabel = canApproveQc ? "Setujui (Staf QC & Gudang)" : "Setujui (Kepala Operasional)";
+        var approveLabel = canApproveQc ? "Konfirmasi (Staf QC & Gudang)" : "Konfirmasi (Kepala Operasional)";
         // .btn-action-approve — kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
         // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini —
         // aturan dasar .btn-action-icon menimpa background/color dengan !important, jadi warna
@@ -1401,20 +1436,9 @@ function renderSoAction(row) {
         soa +=
             '<a class="btn-action-icon btn-approve-shipment btn-action-approve" data-id="' +
             row.so_id +
-            '" data-type="' +
-            approveType +
             '" href="javascript:void(0);" data-bs-toggle="tooltip" title="' +
             approveLabel +
             '"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
-    }
-    if (canReject) {
-        var rejectType = canApproveQc ? "qc" : "ops";
-        soa +=
-            '<a class="btn-action-icon btn-reject-shipment btn-action-reject" data-id="' +
-            row.so_id +
-            '" data-type="' +
-            rejectType +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Tolak"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
     }
     if (canView) {
         soa +=
@@ -1431,7 +1455,7 @@ function renderSoAction(row) {
             '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
-    if (!canApprove && !canReject && !canView && !canDelete) {
+    if (!canApprove && !canView && !canDelete) {
         return '<span class="text-muted small">—</span>';
     }
     return soa;
@@ -1468,21 +1492,49 @@ $(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
     hideKonfirmasiRejectReason();
 });
 
-$(document).on("click", ".btn-approve-shipment", function () {
+// Ikon baris tidak lagi langsung buka popup konfirmasi kecil — buka modal detail
+// (#add_sales_order dalam mode qcOps, lihat openSalesOrderDetailModal()) yang berisi Terima
+// dan Tolak di footernya, sama seperti Customer_Return.js (Pengembalian).
+$(document).on("click", ".btn-approve-shipment", function (e) {
+    e.preventDefault();
+    var soId = parseInt($(this).attr("data-id"), 10);
+    if (!soId) return;
+    loadSalesOrderWithItems(soId, function (data) {
+        openSalesOrderDetailModal(data, "confirm");
+    });
+});
+
+// Dari dalam modal detail: Terima/Tolak menyembunyikan modal detail lalu membuka popup
+// konfirmasi kecil yang sama (#modalKonfirmasi) — pola sama dengan Customer_Return.js
+// processRecord().
+$(document).on("click", ".btn-so-qcops-accept", function () {
     var $btn = $(this);
-    var soId = $btn.data("id");
-    var type = $btn.data("type");
-    var label = type === "qc" ? "Staf QC & Gudang" : "Kepala Operasional";
+    var soId = $btn.attr("so_id");
+    var type = $btn.attr("data-type");
+    var label = $btn.attr("data-label");
     var confirmMsg =
         type === "ops"
             ? "Setujui Pengiriman ini (Kepala Operasional)? Stok akan dicek dan dipotong, status menjadi Diterima."
             : "Setujui Pengiriman ini (Staf QC & Gudang)? Selanjutnya menunggu approval Kepala Operasional.";
+    $("#add_sales_order").modal("hide");
     showModalKonfirmasi(confirmMsg, "btn-approve-shipment-confirm");
     hideKonfirmasiRejectReason();
     $("#modalKonfirmasi #btn-approve-shipment-confirm")
         .attr("data-id", soId)
         .attr("data-type", type)
         .attr("data-label", label);
+});
+
+$(document).on("click", ".btn-so-qcops-decline", function () {
+    var $btn = $(this);
+    var soId = $btn.attr("so_id");
+    var type = $btn.attr("data-type");
+    $("#add_sales_order").modal("hide");
+    showModalKonfirmasi("Tolak Pengiriman ini? Tuliskan alasan penolakan di bawah.", "btn-reject-shipment-confirm", true, "Tolak");
+    showKonfirmasiRejectReason();
+    $("#modalKonfirmasi #btn-reject-shipment-confirm")
+        .attr("data-id", soId)
+        .attr("data-type", type);
 });
 
 $(document).on("click", "#btn-approve-shipment-confirm", function () {
@@ -1525,17 +1577,6 @@ $(document).on("click", "#btn-approve-shipment-confirm", function () {
             );
         },
     });
-});
-
-$(document).on("click", ".btn-reject-shipment", function () {
-    var $btn = $(this);
-    var soId = $btn.data("id");
-    var type = $btn.data("type");
-    showModalKonfirmasi("Tolak Pengiriman ini? Tuliskan alasan penolakan di bawah.", "btn-reject-shipment-confirm", true, "Tolak");
-    showKonfirmasiRejectReason();
-    $("#modalKonfirmasi #btn-reject-shipment-confirm")
-        .attr("data-id", soId)
-        .attr("data-type", type);
 });
 
 $(document).on("click", "#btn-reject-shipment-confirm", function () {
