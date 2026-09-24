@@ -233,6 +233,35 @@ class StockController extends Controller
         return response()->json(['ok' => 1, 'status' => 1]);
     }
 
+    /** Monitor live: siapa pegang Input + dokumen open — URL tersembunyi (tanpa sidebar). */
+    public function stockOpnameLiveStatus()
+    {
+        return view('Backoffice.Inventory.Stock_Opname_Live');
+    }
+
+    public function getStockOpnameLiveStatus()
+    {
+        $locks = OpnamePageLock::liveLocksSnapshot();
+        $docs = app(OpenOpnameGuard::class)->liveOpenDocumentsSnapshot();
+
+        return response()->json([
+            'ok' => 1,
+            'status' => 1,
+            'server_time' => now()->format('Y-m-d H:i:s'),
+            'ttl_seconds' => OpnamePageLock::TTL_SECONDS,
+            'page_locks' => $locks,
+            'open_documents' => $docs,
+            'counts' => [
+                'page_locks' => count($locks),
+                'open_documents' => count($docs),
+            ],
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+        ]);
+    }
+
     /**
      * Rancang ulang 2026-08-27 (merged from main's efef95e): dokumen baru ditulis ke
      * stock_opname_lines (satu baris per satuan, angka betulan), BUKAN lagi ke
