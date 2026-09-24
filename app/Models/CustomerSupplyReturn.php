@@ -13,6 +13,8 @@ class CustomerSupplyReturn extends Model
         'return_number',
         'return_group',
         'so_id',
+        'ref_shipment_id',
+        'idempotency_key',
         'customer_id',
         'return_date',
         'ref_number',

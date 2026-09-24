@@ -11,6 +11,7 @@ use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\Unit;
 use App\Support\CustomerReturnCreation;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -76,10 +77,41 @@ use Illuminate\Validation\ValidationException;
  * dikosongkan (kolom ini sudah nullable sejak awal, lihat migrasi 2026_08_15_161200_*) — belum ada
  * skema rujukan staf QC dari sisi PMO, di luar cakupan diskusi 2026-08-17 ini.
  *
- * TIDAK idempoten (beda dengan /shipments/shipped dan /payments/cash) — tidak ada field acuan
- * unik seperti ref_shipment_id/ref_payment_id pada kontrak WhatsApp ini, ref_number di sini murni
- * catatan bebas (sama seperti pada alur admin), bukan kunci dedup. Setiap POST yang lolos validasi
- * selalu membuat dokumen pengembalian baru, sama seperti /shipments/scheduled.
+ * GitHub #203 — retur per-nota dari PMO: saat shipment yang sudah "Berjalan" diedit dan
+ * sebagian/semua notanya ditandai "Belum dikirim", PMO memanggil endpoint ini untuk memberi tahu
+ * IPM barang dari nota-nota itu kembali, TERLEPAS dari sudah di tahap approval mana pun shipment
+ * asalnya (lihat App\Support\ShipmentApproval) — beda dengan POST /shipments/shipped yang berhenti
+ * bisa ditulis ulang begitu ada approval/reject. Endpoint ini TIDAK menyentuh status/stok shipment
+ * asal sama sekali (di luar cakupan GitHub #203, lihat body issue) — ia murni mencatat dokumen
+ * pengembalian yang tertaut ke shipment itu:
+ *   - ref_shipment_id (opsional) — sales_orders.ref_shipment_id milik shipment asal, dipakai
+ *     PEMANGGIL DARI PMO. Disimpan apa adanya ke customer_supply_returns/customer_product_returns
+ *     (kolom baru, lihat migrasi 2026_09_24_090000_*) — TIDAK divalidasi harus ada di sales_orders
+ *     (retur bisa merujuk shipment yang sudah lama, dan tidak ada alasan bisnis menolak retur
+ *     hanya karena baris shipment-nya sendiri sudah tidak ada/berubah referensi).
+ *   - items[].ref_nota_id (opsional) — pola SAMA dengan sales_order_details.ref_nota_id pada
+ *     POST /shipments/shipped (GitHub #180): id nota (oms_order.id) PMO asal baris retur itu,
+ *     disimpan ke customer_supply_return_details/customer_product_return_details.ref_nota_id,
+ *     murni penelusuran, tidak divalidasi maupun memengaruhi logika lain. Ikut jadi bagian kunci
+ *     penggabungan baris di resolveItems() (beda dari sebelum GitHub #203) supaya dua baris retur
+ *     item+satuan yang sama TAPI dari nota PMO yang berbeda tidak tergabung jadi satu baris dan
+ *     kehilangan keterlacakan per-nota.
+ *
+ * proof/proof_base64 jadi OPSIONAL ketika ref_shipment_id dikirim (lihat validatePayload()) —
+ * form edit pengiriman PMO tidak punya field upload foto untuk kasus retur ini (beda dengan retur
+ * yang dibuat manual dari halaman admin, fotonya tetap wajib kalau ref_shipment_id kosong).
+ * customer_supply_returns.proof_path/customer_product_returns.proof_path dilonggarkan NULLABLE di
+ * migrasi yang sama untuk menampung ini.
+ *
+ * IDEMPOTEN sejak GitHub #203 (BEDA dari sebelumnya) HANYA ketika ref_shipment_id dikirim — key-nya
+ * dihitung idempotencyKey() dari ref_shipment_id + return_date + isi items[] (lihat method itu).
+ * Permintaan yang sama persis dikirim ulang (mis. retry PMO setelah timeout jaringan) mengembalikan
+ * dokumen yang SUDAH ada (200, bukan 201, 'idempotent_replay' => true pada meta), TIDAK membuat
+ * dokumen kedua — dijamin sampai level constraint unique kolom idempotency_key (lihat
+ * store()/QueryException di bawah), bukan cuma cek SELECT lebih dulu, supaya dua permintaan retry
+ * yang nyaris bersamaan tetap tidak lolos berdua. Permintaan TANPA ref_shipment_id (retur manual
+ * ala admin lewat integrasi lain) TETAP TIDAK idempoten seperti semula — setiap POST yang lolos
+ * validasi selalu membuat dokumen baru, sama seperti /shipments/scheduled.
  */
 class ShipmentReturnController extends Controller
 {
@@ -94,13 +126,25 @@ class ShipmentReturnController extends Controller
         // ke pemanggil, supaya kelihatan jelas mana yang masih perlu diisi lewat halaman admin.
         $pendingWarehouseCount = collect($productDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count();
 
+        $refShipmentId = $data['ref_shipment_id'] ?? null;
+        $idempotencyKey = $refShipmentId !== null
+            ? $this->idempotencyKey($refShipmentId, $data['return_date'], $supplyDetails, $productDetails)
+            : null;
+
+        if ($idempotencyKey !== null) {
+            $existing = CustomerReturnCreation::findByIdempotencyKey($idempotencyKey);
+            if ($existing !== null) {
+                return $this->presentResult($existing, $data['armada_code'], $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
+            }
+        }
+
         $newProofPath = null;
 
         try {
             $newProofPath = CustomerReturnCreation::storeProofFromInput(
                 $data['proof_base64'] ?? null,
                 $request->hasFile('proof') ? $request->file('proof') : null,
-                true,
+                $refShipmentId === null,
             );
 
             $this->assertAgainstCatalog($supplyDetails, $productDetails);
@@ -113,23 +157,77 @@ class ShipmentReturnController extends Controller
                 'proof_path' => $newProofPath,
                 'qc_staff_id' => null,
                 'created_by' => null,
+                'ref_shipment_id' => $refShipmentId,
+                'idempotency_key' => $idempotencyKey,
             ], $supplyDetails, $productDetails);
+        } catch (QueryException $e) {
+            CustomerReturnCreation::deleteProof($newProofPath);
+
+            // Dua permintaan dengan ref_shipment_id + items identik, nyaris bersamaan -- keduanya
+            // sama-sama tidak menemukan baris di atas, lalu unique index idempotency_key menolak
+            // yang kalah cepat. Perlakukan sebagai replay terhadap dokumen yang barusan dibuat
+            // request lain, sama pola race yang sudah ditangani ShipmentController::scheduled()/
+            // shipped().
+            $raced = $idempotencyKey !== null ? CustomerReturnCreation::findByIdempotencyKey($idempotencyKey) : null;
+            if ($raced === null) {
+                throw $e;
+            }
+
+            return $this->presentResult($raced, $data['armada_code'], $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
         } catch (\Throwable $e) {
             CustomerReturnCreation::deleteProof($newProofPath);
             throw $e;
         }
 
+        return $this->presentResult($result, $data['armada_code'], $pendingWarehouseCount, 201);
+    }
+
+    /**
+     * @param  array{doc_key:string, return_group:string, return_type:string, supply_return_id:?int, product_return_id:?int}  $result
+     */
+    private function presentResult(array $result, string $armadaCode, int $pendingWarehouseCount, int $httpStatus, array $meta = []): JsonResponse
+    {
         return ApiResponse::success([
             'return_number' => $result['return_group'],
             'return_type' => $result['return_type'],
             'supply_return_id' => $result['supply_return_id'],
             'product_return_id' => $result['product_return_id'],
-            'armada_code' => $data['armada_code'],
+            'armada_code' => $armadaCode,
             'pending_warehouse_items' => $pendingWarehouseCount,
             'message' => $pendingWarehouseCount > 0
                 ? 'Pengembalian berhasil disimpan. '.$pendingWarehouseCount.' baris produk satuan eceran belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.'
                 : 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah ditentukan otomatis.',
-        ], [], 201);
+        ], $meta, $httpStatus);
+    }
+
+    /**
+     * Key idempotensi GitHub #203 — hanya dihitung ketika ref_shipment_id dikirim (lihat docblock
+     * kelas ini). Dibangun dari ref_shipment_id + return_date + isi items[] SETELAH digabung
+     * (supplyDetails/productDetails, sudah termasuk ref_nota_id di kuncinya lewat resolveItems())
+     * supaya urutan baris pada payload atau penggabungan qty tidak mengubah key untuk payload yang
+     * "sama" secara isi. gudang_id/satuan_id TIDAK ikut mempengaruhi key -- unit_id/warehouse_id
+     * hasil resolusi sudah cukup mewakili baris yang sama, tidak perlu membawa representasi mentah
+     * dari body permintaan.
+     *
+     * @param  array<int, array<string, mixed>>  $supplyDetails
+     * @param  array<int, array<string, mixed>>  $productDetails
+     */
+    private function idempotencyKey(string $refShipmentId, string $returnDate, array $supplyDetails, array $productDetails): string
+    {
+        $normalize = static function (array $details, array $keys): array {
+            return collect($details)
+                ->map(static fn ($detail) => collect($keys)->map(fn ($key) => $detail[$key] ?? null)->implode('|'))
+                ->sort()->values()->all();
+        };
+
+        $payload = [
+            'ref_shipment_id' => $refShipmentId,
+            'return_date' => $returnDate,
+            'supplies' => $normalize($supplyDetails, ['supplies_id', 'unit_id', 'warehouse_id', 'ref_nota_id', 'qty']),
+            'products' => $normalize($productDetails, ['product_variant_id', 'unit_id', 'warehouse_id', 'ref_nota_id', 'qty']),
+        ];
+
+        return hash('sha256', json_encode($payload));
     }
 
     /* ------------------------------------------------------------------ */
@@ -147,10 +245,15 @@ class ShipmentReturnController extends Controller
                 'required', 'string',
                 Rule::exists('customers', 'customer_code')->where('status', 1),
             ],
+            'ref_shipment_id' => ['nullable', 'string', 'max:100'],
             'ref_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:2000'],
-            'proof' => ['required_without:proof_base64', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
-            'proof_base64' => ['required_without:proof', 'string'],
+            // proof/proof_base64 jadi opsional (GitHub #203) begitu ref_shipment_id dikirim -- lihat
+            // docblock kelas ini. required_without_all HANYA mewajibkan field ini kalau KEDUA field
+            // lain yang disebut kosong, jadi retur ala admin (tanpa ref_shipment_id) tetap wajib
+            // mengirim salah satu dari proof/proof_base64, persis perilaku sebelum GitHub #203.
+            'proof' => ['required_without_all:proof_base64,ref_shipment_id', 'file', 'image', 'mimes:jpeg,jpg,png,webp', 'max:5120'],
+            'proof_base64' => ['required_without_all:proof,ref_shipment_id', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.type' => ['required', 'integer', Rule::in([1, 2])],
             'items.*.ref_id' => ['required'],
@@ -163,6 +266,7 @@ class ShipmentReturnController extends Controller
                 'nullable', 'integer',
                 Rule::exists('warehouses', 'id')->where('status', 1),
             ],
+            'items.*.ref_nota_id' => ['nullable', 'integer'],
         ]);
     }
 
@@ -226,6 +330,9 @@ class ShipmentReturnController extends Controller
             $itemGudangId = isset($item['gudang_id']) && $item['gudang_id'] !== null && $item['gudang_id'] !== ''
                 ? (int) $item['gudang_id']
                 : null;
+            $itemRefNotaId = isset($item['ref_nota_id']) && $item['ref_nota_id'] !== null && $item['ref_nota_id'] !== ''
+                ? (int) $item['ref_nota_id']
+                : null;
 
             if ($type === 1) {
                 $refSuppliesId = (int) $item['ref_id'];
@@ -236,13 +343,17 @@ class ShipmentReturnController extends Controller
                     ]);
                 }
 
-                $key = $supplies->supplies_id.'|'.$unit->unit_id;
+                // ref_nota_id ikut jadi bagian kunci penggabungan (GitHub #203) -- dua baris bahan
+                // yang sama tapi berasal dari nota PMO berbeda TIDAK digabung, supaya keterlacakan
+                // per-nota tidak hilang.
+                $key = $supplies->supplies_id.'|'.$unit->unit_id.'|'.($itemRefNotaId ?? '');
                 if (isset($supplyDetails[$key])) {
                     $supplyDetails[$key]['qty'] += $qty;
                 } else {
                     $supplyDetails[$key] = [
                         'supplies_id' => (int) $supplies->supplies_id,
                         'unit_id' => (int) $unit->unit_id,
+                        'ref_nota_id' => $itemRefNotaId,
                         'qty' => $qty,
                     ];
                 }
@@ -258,13 +369,16 @@ class ShipmentReturnController extends Controller
                 $retailUnitId = $hasRetailCol ? (int) ($variant->retail_unit ?? 0) : 0;
                 $isEceran = $retailUnitId > 0 && $retailUnitId === (int) $unit->unit_id;
 
-                $key = $variant->product_variant_id.'|'.$unit->unit_id;
+                // ref_nota_id ikut jadi bagian kunci penggabungan (GitHub #203), sama alasan seperti
+                // baris bahan di atas.
+                $key = $variant->product_variant_id.'|'.$unit->unit_id.'|'.($itemRefNotaId ?? '');
                 if (isset($productDetails[$key])) {
                     $productDetails[$key]['qty'] += $qty;
                 } else {
                     $productDetails[$key] = [
                         'product_variant_id' => (int) $variant->product_variant_id,
                         'unit_id' => (int) $unit->unit_id,
+                        'ref_nota_id' => $itemRefNotaId,
                         'qty' => $qty,
                         // Ditandai underscore -- flag internal untuk resolveProductWarehouses() di
                         // bawah, dibuang sebelum baris ini sampai ke CustomerReturnCreation.

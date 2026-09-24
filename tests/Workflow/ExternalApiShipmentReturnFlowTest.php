@@ -15,7 +15,8 @@ use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
 /**
- * External API v1 POST /shipments/returns (GitHub #58) —
+ * External API v1 POST /shipments/returns (GitHub #58, extended by GitHub #203 for
+ * ref_shipment_id/items[].ref_nota_id/optional proof/idempotency) —
  * App\Http\Controllers\ExternalApi\V1\ShipmentReturnController::store(), which delegates the
  * actual row-creation to App\Support\CustomerReturnCreation::create() — the same code path
  * App\Http\Controllers\CustomerReturnController::store() uses for the admin "Tambah Pengembalian"
@@ -517,5 +518,137 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
 
         $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
+    }
+
+    /**
+     * GitHub #203: proof becomes optional the moment ref_shipment_id is sent -- PMO's edit-shipment
+     * form has no photo field for this case. No ref_shipment_id still requires proof (proven above
+     * by test_store_rejects_a_request_without_proof).
+     */
+    public function test_store_allows_no_proof_when_ref_shipment_id_is_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+        $refNotaId = random_int(100000, 999999);
+
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'armada_code' => $armada->customer_code,
+            'ref_shipment_id' => 'PMO-SHP-'.uniqid(),
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId, 'ref_nota_id' => $refNotaId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $supplyReturnId = $response->json('data.supply_return_id');
+        $this->assertNull(\App\Models\CustomerSupplyReturn::find($supplyReturnId)->proof_path);
+
+        $supplyDetail = CustomerSupplyReturnDetail::where('return_id', $supplyReturnId)->firstOrFail();
+        $this->assertSame($refNotaId, (int) $supplyDetail->ref_nota_id, 'items[].ref_nota_id must be stored on the detail row');
+    }
+
+    /**
+     * GitHub #203: a repeated request with the same ref_shipment_id + return_date + items must
+     * return the SAME document (200, meta.idempotent_replay: true), not create a second one --
+     * beda dengan test_store_is_not_idempotent_and_creates_a_new_document_each_time() di atas,
+     * yang mengirim payload TANPA ref_shipment_id sama sekali.
+     */
+    public function test_store_is_idempotent_when_ref_shipment_id_is_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $payload = [
+            'return_date' => '2026-08-17',
+            'armada_code' => $armada->customer_code,
+            'ref_shipment_id' => 'PMO-SHP-'.uniqid(),
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ];
+
+        $before = \App\Models\CustomerSupplyReturn::count();
+        $first = $this->postJson('/api/external/v1/shipments/returns', $payload, $headers);
+        $second = $this->postJson('/api/external/v1/shipments/returns', $payload, $headers);
+
+        $first->assertStatus(201);
+        $this->assertNull($first->json('meta.idempotent_replay'), 'a freshly-created document has no idempotent_replay meta at all');
+        $second->assertStatus(200)->assertJson(['meta' => ['idempotent_replay' => true]]);
+        $this->assertSame($first->json('data.return_number'), $second->json('data.return_number'));
+        $this->assertSame($first->json('data.supply_return_id'), $second->json('data.supply_return_id'));
+        $this->assertSame($before + 1, \App\Models\CustomerSupplyReturn::count(), 'the replayed request must not create a second document');
+    }
+
+    /**
+     * A different ref_shipment_id (or different items[]) must NOT collide with an unrelated
+     * document's idempotency key -- proves the key is actually scoped per shipment+payload, not a
+     * blanket "any ref_shipment_id already used" check.
+     */
+    public function test_store_creates_separate_documents_for_different_ref_shipment_ids(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $makePayload = fn (string $refShipmentId) => [
+            'return_date' => '2026-08-17',
+            'armada_code' => $armada->customer_code,
+            'ref_shipment_id' => $refShipmentId,
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ];
+
+        $first = $this->postJson('/api/external/v1/shipments/returns', $makePayload('PMO-SHP-'.uniqid()), $headers);
+        $second = $this->postJson('/api/external/v1/shipments/returns', $makePayload('PMO-SHP-'.uniqid()), $headers);
+
+        $first->assertStatus(201);
+        $second->assertStatus(201);
+        $this->assertNotSame($first->json('data.return_number'), $second->json('data.return_number'));
+    }
+
+    /**
+     * GitHub #203: two lines with the same supplies_id/unit_id but a different ref_nota_id must
+     * NOT be merged into one detail row -- per-nota traceability would be lost otherwise.
+     */
+    public function test_store_does_not_merge_lines_that_differ_only_by_ref_nota_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'armada_code' => $armada->customer_code,
+            'ref_shipment_id' => 'PMO-SHP-'.uniqid(),
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 3, 'satuan_id' => $refUnitId, 'ref_nota_id' => 111],
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 4, 'satuan_id' => $refUnitId, 'ref_nota_id' => 222],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $supplyReturnId = $response->json('data.supply_return_id');
+        $details = CustomerSupplyReturnDetail::where('return_id', $supplyReturnId)->orderBy('ref_nota_id')->get();
+        $this->assertCount(2, $details, 'lines with the same item+unit but different ref_nota_id must stay separate');
+        $this->assertSame(111, (int) $details[0]->ref_nota_id);
+        $this->assertSame(3, (int) $details[0]->qty);
+        $this->assertSame(222, (int) $details[1]->ref_nota_id);
+        $this->assertSame(4, (int) $details[1]->qty);
     }
 }
