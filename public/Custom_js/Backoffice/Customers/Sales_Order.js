@@ -1384,8 +1384,9 @@ function renderSoAction(row) {
     // Approval 2 tahap (Staf QC & Gudang -> Kepala Operasional) — can_approve_qc/can_approve_ops
     // dihitung SERVER-SIDE (SalesOrder::getSalesOrderDataTable()), bukan dari ability "others"
     // lagi. Tombol Tolak muncul mengikuti tahap approve yang sama (guard sama di rejectShipment()).
-    var canApproveQc = pending && row.can_approve_qc === true;
-    var canApproveOps = pending && row.can_approve_ops === true;
+    // Terima true/1 — sama pola Stock_Transfer.js (JSON kadang kirim 1)
+    var canApproveQc = pending && (row.can_approve_qc === true || row.can_approve_qc === 1);
+    var canApproveOps = pending && (row.can_approve_ops === true || row.can_approve_ops === 1);
     var canApprove = canApproveQc || canApproveOps;
     var canReject = canApprove;
     var canDelete = pending && soHasAccess("Pengiriman", "delete");
