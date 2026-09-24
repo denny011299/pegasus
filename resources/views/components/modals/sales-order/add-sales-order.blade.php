@@ -189,6 +189,12 @@
                 <button type="button" class="btn pg-btn-decline btn_decline d-none"><i class="fe fe-x me-1"></i>Tolak</button>
                 <button type="button" class="btn pg-btn-accept btn_acc d-none"><i class="fe fe-check-circle me-1"></i>Terima</button>
               @endroleCan
+              {{-- Approval 2 tahap QC & Gudang / Kepala Operasional — visibility murni JS
+                   (can_approve_qc/can_approve_ops dari server, lihat openSalesOrderDetailModal()
+                   di Sales_Order.js), BUKAN @roleCan, karena siapa yang boleh approve tahap mana
+                   ditentukan oleh penugasan staff_warehouses + gudang aktif, bukan ability statis. --}}
+              <button type="button" class="btn pg-btn-decline btn-so-qcops-decline d-none"><i class="fe fe-x me-1"></i>Tolak</button>
+              <button type="button" class="btn pg-btn-accept btn-so-qcops-accept d-none"><i class="fe fe-check-circle me-1"></i>Terima</button>
               <button type="button" class="btn pg-btn-save paid-continue-btn btn-save">
                 <i class="fe fe-save me-1"></i><span id="btn_save_text">Tambah Pengiriman</span>
               </button>
