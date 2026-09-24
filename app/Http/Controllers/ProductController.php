@@ -136,7 +136,7 @@ class ProductController extends Controller
             'update_url' => $isChemical ? '/updateChemical' : '/updateProduct',
             'delete_url' => $isChemical ? '/deleteChemical' : '/deleteProduct',
             'edit_url_prefix' => $isChemical ? '/updateChemical/' : '/updateProduct/',
-            'search_placeholder' => $isChemical ? 'Cari Bahan Kimia' : 'Cari Produk',
+            'search_placeholder' => $isChemical ? 'Cari bahan kimia / SKU' : 'Cari produk / SKU',
             'delete_confirm' => $isChemical
                 ? 'Apakah yakin ingin menghapus bahan kimia ini?'
                 : 'Apakah yakin ingin menghapus produk ini?',
@@ -268,11 +268,12 @@ class ProductController extends Controller
 
         $columns = [
             0 => 'products.product_name',
-            1 => 'cat.category_name',
-            2 => 'products.product_name', // unit_values (derived)
-            3 => 'products.product_name', // variant_values (derived)
-            4 => 'st.staff_name',
-            5 => 'products.product_id',   // action — no meaningful sort
+            1 => 'products.product_name', // sku_list (derived)
+            2 => 'cat.category_name',
+            3 => 'products.product_name', // unit_values (derived)
+            4 => 'products.product_name', // variant_values (derived)
+            5 => 'st.staff_name',
+            6 => 'products.product_id',   // action — no meaningful sort
         ];
         $orderCol = $columns[$orderColIdx] ?? 'products.product_name';
 
@@ -306,7 +307,10 @@ class ProductController extends Controller
                             ->from('product_variants')
                             ->whereColumn('product_variants.product_id', 'products.product_id')
                             ->where('product_variants.status', 1)
-                            ->where('product_variants.product_variant_name', 'like', $like);
+                            ->where(function ($vq) use ($like) {
+                                $vq->where('product_variants.product_variant_name', 'like', $like)
+                                    ->orWhere('product_variants.product_variant_sku', 'like', $like);
+                            });
                     })
                     ->orWhereExists(function ($sq) use ($like) {
                         $sq->select(DB::raw(1))
@@ -348,7 +352,7 @@ class ProductController extends Controller
         // Batch variants
         $variantsByProduct = collect();
         if ($productIds !== []) {
-            $variantCols = ['product_id', 'product_variant_id', 'product_variant_name'];
+            $variantCols = ['product_id', 'product_variant_id', 'product_variant_name', 'product_variant_sku'];
             if ($hasRetailUnitCol) {
                 $variantCols[] = 'retail_unit';
             }
@@ -396,7 +400,17 @@ class ProductController extends Controller
                 }
             }
 
-            $variantNames = ($variantsByProduct->get($row->product_id) ?? collect())
+            $variants = $variantsByProduct->get($row->product_id) ?? collect();
+
+            $skuList = $variants
+                ->pluck('product_variant_sku')
+                ->map(fn ($sku) => trim((string) $sku))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+
+            $variantNames = $variants
                 ->map(function ($variantRow) use ($unitsMap, $hasRetailUnitCol) {
                     $variantName = trim((string) ($variantRow->product_variant_name ?? ''));
                     if (! $hasRetailUnitCol) {
@@ -419,6 +433,7 @@ class ProductController extends Controller
                 'product_name' => $row->product_name,
                 'product_category' => $row->product_category ?: '-',
                 'unit_values' => $unitNames !== [] ? implode(', ', $unitNames) : '-',
+                'sku_list' => $skuList,
                 'variant_values' => $variantNames !== [] ? implode(', ', $variantNames) : '-',
                 'created_by_name' => $row->created_by_name ?: '-',
                 'action' => $this->buildProductActionHtml(
@@ -481,7 +496,9 @@ class ProductController extends Controller
             if (strtolower($name) === 'standar') {
                 $name = '';
             }
-            $excludeId = !empty($v['product_variant_id']) ? (int) $v['product_variant_id'] : null;
+            // "" / "0" dari form = varian baru; jangan di-exclude atau find() gagal → false positive SKU bentrok
+            $excludeId = (int) ($v['product_variant_id'] ?? 0);
+            $excludeId = $excludeId > 0 ? $excludeId : null;
 
             if ($sku !== '') {
                 if (isset($seenSku[$sku])) {
@@ -619,8 +636,14 @@ class ProductController extends Controller
         (new Product())->updateProduct($data);
         foreach ($variant as $key => $value) {
             $value['product_id'] = $data["product_id"];
-            if (!isset($value["product_variant_id"])) $t = (new ProductVariant())->insertProductVariant($value);
-            else $t = (new ProductVariant())->updateProductVariant($value);
+            $existingId = (int) ($value['product_variant_id'] ?? 0);
+            if ($existingId <= 0) {
+                unset($value['product_variant_id']);
+                $t = (new ProductVariant())->insertProductVariant($value);
+            } else {
+                $value['product_variant_id'] = $existingId;
+                $t = (new ProductVariant())->updateProductVariant($value);
+            }
             $variant[$key]["product_variant_id"] = $t;
             if (isset($safetyPayload[$key])) {
                 $safetyPayload[$key]['product_variant_id'] = $t;
@@ -1204,6 +1227,13 @@ class ProductController extends Controller
         $canEdit = RoleAccess::can(Session::get('user'), 'Safety Stock', 'edit');
         foreach ($variants as $i => $variant) {
             $variants[$i]['lead_time_days'] = max(0, (int) ($variant['lead_time_days'] ?? 0));
+            // Form kirim "" untuk varian baru — normalisasi biar exclude/insert konsisten
+            $vid = (int) ($variant['product_variant_id'] ?? 0);
+            if ($vid > 0) {
+                $variants[$i]['product_variant_id'] = $vid;
+            } else {
+                unset($variants[$i]['product_variant_id']);
+            }
             if (! $canEdit) {
                 unset($variants[$i]['safety_stock'], $variants[$i]['safety_unit_id']);
             } elseif (array_key_exists('safety_stock', $variant)) {

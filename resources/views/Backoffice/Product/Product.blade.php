@@ -92,7 +92,8 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 18% 12% 12% 35% 13% 10%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 16% 16% 10% 10% 22% 14% 12%;">
+                                        <span style="width:70%"></span>
                                         <span style="width:70%"></span>
                                         <span style="width:65%"></span>
                                         <span style="width:60%"></span>
@@ -102,8 +103,9 @@
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 18% 12% 12% 35% 13% 10%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 16% 16% 10% 10% 22% 14% 12%;">
                                                 <span class="skel-text" style="width:75%"></span>
+                                                <span class="skel-text" style="width:80%"></span>
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:65%"></span>
                                                 <span class="skel-text" style="width:85%"></span>
@@ -123,6 +125,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>{{ ($productPage['name_label'] ?? 'Nama Produk') }}</th>
+                                            <th>SKU</th>
                                             <th>Kategori</th>
                                             <th>Satuan</th>
                                             <th>Variasi</th>
