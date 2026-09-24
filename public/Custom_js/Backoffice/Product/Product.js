@@ -54,14 +54,31 @@
                 type: "GET",
             },
             columns: [
-                { data: "product_name", width: "18%" },
-                { data: "product_category", width: "12%" },
-                { data: "unit_values", width: "12%" },
-                { data: "variant_values", width: "35%" },
+                { data: "product_name", width: "16%" },
+                {
+                    data: "sku_list",
+                    width: "16%",
+                    orderable: false,
+                    render: function (data) {
+                        if (!Array.isArray(data) || !data.length) return "-";
+                        return data
+                            .map(function (sku) {
+                                return (
+                                    '<div class="font-monospace small text-dark">' +
+                                    $("<div>").text(sku).html() +
+                                    "</div>"
+                                );
+                            })
+                            .join("");
+                    },
+                },
+                { data: "product_category", width: "10%" },
+                { data: "unit_values", width: "10%" },
+                { data: "variant_values", width: "22%" },
                 {
                     data: "created_by_name",
                     defaultContent: "-",
-                    width: "13%",
+                    width: "14%",
                     render: function (data, type, row) {
                         // renderCreatedBySync: menandai baris yang berasal dari
                         // Sinkronisasi PMO (ref_product_id terisi).
@@ -73,7 +90,7 @@
                 {
                     data: "action",
                     className: "text-center align-middle",
-                    width: "10%",
+                    width: "12%",
                     orderable: false,
                     searchable: false,
                 },

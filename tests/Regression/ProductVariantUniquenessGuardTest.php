@@ -191,6 +191,33 @@ class ProductVariantUniquenessGuardTest extends TestCase
         $this->assertSame('Biru', $variantB->product_variant_name, 'the rejected rename must not have been persisted');
     }
 
+    public function test_update_product_allows_adding_second_variant_while_keeping_first_sku(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        [$product, $variant] = $this->makeProductWithVariant('Audi Lube 4T 800ml', 'GUARDTEST-SKU-5A');
+
+        $response = $this->post('/updateProduct', [
+            'product_id' => $product->product_id,
+            'product_name' => $product->product_name,
+            'category_id' => $product->category_id,
+            'unit_id' => self::PIECE_UNIT_ID,
+            'product_unit' => json_encode([self::PIECE_UNIT_ID]),
+            'product_variant' => json_encode([
+                // Form sering kirim product_variant_id sebagai string (atau "" untuk baris baru)
+                ['product_variant_id' => (string) $variant->product_variant_id, 'variant_name' => 'Audi Lube 4T 800ml', 'variant_sku' => 'GUARDTEST-SKU-5A', 'variant_barcode' => '', 'variant_alert' => 0, 'unit_id' => self::PIECE_UNIT_ID],
+                ['product_variant_id' => '', 'variant_name' => 'Audi Lube 4T 1000ml', 'variant_sku' => 'GUARDTEST-SKU-5B', 'variant_barcode' => '', 'variant_alert' => 0, 'unit_id' => self::PIECE_UNIT_ID],
+            ]),
+            'product_relasi' => json_encode([[], []]),
+        ]);
+
+        $response->assertStatus(200);
+        $this->assertEquals('1', trim($response->getContent(), '"'), 'tambah varian kedua tidak boleh bentrok dengan SKU diri sendiri');
+        $this->assertSame(
+            1,
+            ProductVariant::where('product_variant_sku', 'GUARDTEST-SKU-5B')->where('status', 1)->count()
+        );
+    }
+
     public function test_update_product_allows_resubmitting_a_variant_with_its_own_unchanged_sku_and_name(): void
     {
         $this->actingAsSuperAdminStaff();
