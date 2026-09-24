@@ -5,16 +5,13 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Http\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
-use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
-use App\Models\SuppliesStock;
 use App\Models\Unit;
 use App\Support\CustomerReturnCreation;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -52,30 +49,34 @@ use Illuminate\Validation\ValidationException;
  *       - gudang_id (opsional): warehouses.id LANGSUNG — SAMA seperti gudang_id opsional pada
  *         POST /stock/check dan {gudang_id} pada PUT/DELETE /master/warehouses/{gudang_id}, BUKAN
  *         kolom rujukan eksternal seperti ref_unit_id/ref_product_id (gudang tidak disinkronkan
- *         PMO — lihat catatan StockController::check()). Hanya benar-benar dipakai untuk baris
- *         produk jadi yang satuannya sama dengan satuan eceran produk itu (lihat resolveItems());
- *         diabaikan untuk baris bahan mentah dan baris produk satuan non-eceran.
+ *         PMO — lihat catatan StockController::check()). Dipakai untuk SEMUA tipe baris (bahan
+ *         maupun produk, eceran maupun bukan) sejak revisi GitHub #203 di bawah — PMO memang tidak
+ *         pernah mengirimnya sama sekali untuk kasus pengembalian, jadi baris yang tidak
+ *         menyertakannya dibiarkan warehouse_id NULL, bukan lagi di-auto-default.
  *
- * warehouse_id sekarang DITENTUKAN OTOMATIS per baris (bukan selalu dikosongkan seperti
- * sebelumnya) — aturan bisnis yang sama dengan form admin (lihat cr-active-warehouse-badge/
- * isRetailUnit() di Customer_Return.js), DIKONFIRMASI pemilik produk 2026-08-17:
- *   - type=1 (bahan mentah/kemasan): SELALU gudang utama (SuppliesStock::resolveWarehouseId(null)),
- *     gudang_id pada item (kalau ada) diabaikan.
- *   - type=2 (produk jadi), satuan BUKAN satuan eceran produk itu (product_variants.retail_unit):
- *     SELALU gudang utama juga (ProductStock::resolveWarehouseId(null)), gudang_id diabaikan.
- *   - type=2, satuan = satuan eceran produk itu: pakai items[].gudang_id KALAU dikirim; kalau
- *     tidak, warehouse_id tetap NULL untuk baris itu SAJA (belum wajib — PMO belum tentu tahu
- *     modul Gudang ada). Ini SATU-SATUNYA kasus yang masih bisa menyisakan warehouse_id kosong.
- *     Rencana ke depan: field ini akan diwajibkan untuk kasus ini begitu PMO sudah terintegrasi
- *     dengan modul Gudang — BELUM diterapkan sebagai validasi wajib di sini.
- * Baris yang dibuat lewat endpoint ini BERSTATUS Pending (1) sama seperti dibuat lewat admin.
- * Kalau ada baris yang warehouse_id-nya masih NULL (kasus terakhir di atas), dokumennya TIDAK BISA
- * langsung di-ACC sampai staf gudang mengisi warehouse_id lewat halaman admin Pengiriman >
- * Pengembalian — CustomerReturnController::validateSupplyDetails()/validateProductDetails() tetap
- * menolak warehouse_id kosong sebelum accept() memotong stok. Migrasi 2026_08_17_090100_* yang
- * mengizinkan NULL di kedua tabel detail masih relevan untuk kasus ini. qc_staff_id masih selalu
- * dikosongkan (kolom ini sudah nullable sejak awal, lihat migrasi 2026_08_15_161200_*) — belum ada
- * skema rujukan staf QC dari sisi PMO, di luar cakupan diskusi 2026-08-17 ini.
+ * warehouse_id per baris — REVISI GitHub #203 (2026-09-25), MEMBALIK aturan auto-default gudang
+ * utama yang tadinya dikonfirmasi pemilik produk 2026-08-17. Aturan LAMA (bahan mentah & produk
+ * non-eceran SELALU otomatis ke gudang utama, gudang_id item diabaikan untuk keduanya) TIDAK
+ * BERLAKU LAGI. Aturan BARU, berlaku untuk SEMUA baris tanpa kecuali (bahan maupun produk, eceran
+ * maupun bukan):
+ *   - pakai items[].gudang_id KALAU dikirim (divalidasi warehouses aktif di validatePayload());
+ *   - kalau tidak dikirim, warehouse_id baris itu dibiarkan NULL — TIDAK PERNAH diisi otomatis ke
+ *     gudang utama lagi.
+ * Alasannya: endpoint ini SELALU dipanggil PMO (bukan admin), dan PMO memang tidak pernah mengirim
+ * gudang_id sama sekali untuk kasus pengembalian — auto-default ke gudang utama untuk bahan/produk
+ * non-eceran selama ini diam-diam MENYEMBUNYIKAN keputusan penempatan gudang dari staf gudang,
+ * padahal barang retur fisiknya belum tentu benar-benar ada di gudang utama. Sekarang staf gudang
+ * WAJIB menentukan sendiri gudang tujuan tiap baris lewat halaman admin Pengiriman > Pengembalian
+ * (modal Edit, dropdown gudang per baris — lihat Customer_Return.js) sebelum dokumen bisa di-ACC.
+ * Baris yang dibuat lewat endpoint ini BERSTATUS Pending (1) sama seperti dibuat lewat admin. Kalau
+ * ADA baris yang warehouse_id-nya masih NULL (sekarang bisa baris tipe apa pun, bukan cuma produk
+ * eceran seperti sebelum revisi ini), dokumennya TIDAK BISA langsung di-ACC sampai staf gudang
+ * mengisi warehouse_id lewat halaman admin — CustomerReturnController::validateSupplyDetails()/
+ * validateProductDetails() tetap menolak warehouse_id kosong sebelum accept() memotong stok, sudah
+ * berlaku untuk kedua sisi sejak sebelum revisi ini (tidak berubah). Migrasi 2026_08_17_090100_*
+ * yang mengizinkan NULL di kedua tabel detail masih relevan, sekarang malah jadi jalur utama bukan
+ * kasus khusus. qc_staff_id masih selalu dikosongkan (kolom ini sudah nullable sejak awal, lihat
+ * migrasi 2026_08_15_161200_*) — belum ada skema rujukan staf QC dari sisi PMO.
  *
  * GitHub #203 — retur per-nota dari PMO: saat shipment yang sudah "Berjalan" diedit dan
  * sebagian/semua notanya ditandai "Belum dikirim", PMO memanggil endpoint ini untuk memberi tahu
@@ -121,10 +122,12 @@ class ShipmentReturnController extends Controller
         $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
 
         [$supplyDetails, $productDetails] = $this->resolveItems($data['items']);
-        // Cuma baris produk satuan eceran tanpa gudang_id yang bisa lolos sampai sini dengan
-        // warehouse_id NULL -- lihat resolveProductWarehouses(). Dihitung untuk ditampilkan balik
-        // ke pemanggil, supaya kelihatan jelas mana yang masih perlu diisi lewat halaman admin.
-        $pendingWarehouseCount = collect($productDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count();
+        // Sejak revisi GitHub #203 (2026-09-25), baris APA PUN (bahan maupun produk) bisa lolos
+        // sampai sini dengan warehouse_id NULL -- lihat resolveSupplyWarehouses()/
+        // resolveProductWarehouses(). Dihitung dari KEDUA sisi untuk ditampilkan balik ke pemanggil,
+        // supaya kelihatan jelas berapa baris yang masih perlu diisi lewat halaman admin.
+        $pendingWarehouseCount = collect($supplyDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count()
+            + collect($productDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count();
 
         $refShipmentId = $data['ref_shipment_id'] ?? null;
         $idempotencyKey = $refShipmentId !== null
@@ -195,8 +198,8 @@ class ShipmentReturnController extends Controller
             'armada_code' => $armadaCode,
             'pending_warehouse_items' => $pendingWarehouseCount,
             'message' => $pendingWarehouseCount > 0
-                ? 'Pengembalian berhasil disimpan. '.$pendingWarehouseCount.' baris produk satuan eceran belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.'
-                : 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah ditentukan otomatis.',
+                ? 'Pengembalian berhasil disimpan. '.$pendingWarehouseCount.' baris belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.'
+                : 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah terisi.',
         ], $meta, $httpStatus);
     }
 
@@ -303,18 +306,10 @@ class ShipmentReturnController extends Controller
             fn ($item) => (string) $item['ref_id'],
             array_filter($items, fn ($item) => (int) $item['type'] === 2),
         )));
-        // retail_unit ikut diambil di sini (bukan lewat CustomerReturnCreation::productsContext(),
-        // yang mengunci lookup ke SKU juga) supaya isEceran() bisa dihitung sekali per baris tanpa
-        // query tambahan -- sama query yang sudah ada, cuma nambah satu kolom.
-        $hasRetailCol = Schema::hasColumn('product_variants', 'retail_unit');
-        $variantCols = ['product_variant_id', 'product_variant_sku'];
-        if ($hasRetailCol) {
-            $variantCols[] = 'retail_unit';
-        }
         $variantsBySku = $skus === []
             ? collect()
             : ProductVariant::whereIn('product_variant_sku', $skus)->where('status', 1)
-                ->get($variantCols)->keyBy('product_variant_sku');
+                ->get(['product_variant_id', 'product_variant_sku'])->keyBy('product_variant_sku');
 
         $supplyDetails = [];
         $productDetails = [];
@@ -355,6 +350,9 @@ class ShipmentReturnController extends Controller
                         'unit_id' => (int) $unit->unit_id,
                         'ref_nota_id' => $itemRefNotaId,
                         'qty' => $qty,
+                        // Ditandai underscore -- flag internal untuk resolveSupplyWarehouses() di
+                        // bawah, dibuang sebelum baris ini sampai ke CustomerReturnCreation.
+                        '_gudang_id' => $itemGudangId,
                     ];
                 }
             } else {
@@ -365,9 +363,6 @@ class ShipmentReturnController extends Controller
                         "items.$index.ref_id" => 'Produk dengan SKU "'.$sku.'" tidak ditemukan atau tidak aktif.',
                     ]);
                 }
-
-                $retailUnitId = $hasRetailCol ? (int) ($variant->retail_unit ?? 0) : 0;
-                $isEceran = $retailUnitId > 0 && $retailUnitId === (int) $unit->unit_id;
 
                 // ref_nota_id ikut jadi bagian kunci penggabungan (GitHub #203), sama alasan seperti
                 // baris bahan di atas.
@@ -382,7 +377,6 @@ class ShipmentReturnController extends Controller
                         'qty' => $qty,
                         // Ditandai underscore -- flag internal untuk resolveProductWarehouses() di
                         // bawah, dibuang sebelum baris ini sampai ke CustomerReturnCreation.
-                        '_is_eceran' => $isEceran,
                         '_gudang_id' => $itemGudangId,
                     ];
                 }
@@ -396,40 +390,34 @@ class ShipmentReturnController extends Controller
     }
 
     /**
-     * Bahan mentah/kemasan SELALU ke gudang utama, tidak ada pengecualian — lihat docblock kelas
-     * ini. gudang_id pada item type=1 (kalau dikirim) sengaja tidak pernah dibaca sampai sini.
+     * REVISI GitHub #203 (2026-09-25) — TIDAK PERNAH auto-default ke gudang utama lagi, lihat
+     * docblock kelas ini. Pakai items[].gudang_id kalau dikirim, kalau tidak dibiarkan NULL supaya
+     * staf gudang mengisinya manual lewat halaman admin sebelum dokumen bisa di-ACC.
      *
      * @param  array<string, array<string, mixed>>  $supplyDetails  diubah in-place (by reference).
      */
     private function resolveSupplyWarehouses(array &$supplyDetails): void
     {
-        if ($supplyDetails === []) {
-            return;
-        }
-        $mainWarehouseId = SuppliesStock::resolveWarehouseId(null);
         foreach ($supplyDetails as &$detail) {
-            $detail['warehouse_id'] = $mainWarehouseId;
+            $detail['warehouse_id'] = $detail['_gudang_id'];
+            unset($detail['_gudang_id']);
         }
         unset($detail);
     }
 
     /**
-     * Produk jadi satuan BUKAN eceran -> gudang utama (gudang_id item diabaikan, sama seperti
-     * bahan). Produk jadi satuan eceran -> pakai gudang_id item kalau ada, kalau tidak dibiarkan
-     * NULL (satu-satunya kasus yang boleh menyisakan warehouse_id kosong — lihat docblock kelas
-     * ini soal kenapa ini belum diwajibkan).
+     * REVISI GitHub #203 (2026-09-25) — sama seperti resolveSupplyWarehouses(), TIDAK PERNAH
+     * auto-default ke gudang utama lagi (dulu baris non-eceran selalu ke gudang utama, hanya baris
+     * eceran yang boleh kosong). Sekarang SEMUA baris produk memakai items[].gudang_id kalau
+     * dikirim, kalau tidak dibiarkan NULL, terlepas dari satuannya eceran atau bukan.
      *
      * @param  array<string, array<string, mixed>>  $productDetails  diubah in-place (by reference).
      */
     private function resolveProductWarehouses(array &$productDetails): void
     {
-        if ($productDetails === []) {
-            return;
-        }
-        $mainWarehouseId = ProductStock::resolveWarehouseId(null);
         foreach ($productDetails as &$detail) {
-            $detail['warehouse_id'] = $detail['_is_eceran'] ? $detail['_gudang_id'] : $mainWarehouseId;
-            unset($detail['_is_eceran'], $detail['_gudang_id']);
+            $detail['warehouse_id'] = $detail['_gudang_id'];
+            unset($detail['_gudang_id']);
         }
         unset($detail);
     }

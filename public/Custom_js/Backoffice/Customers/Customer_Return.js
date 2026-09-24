@@ -32,12 +32,14 @@
     // Bootstrap .d-none uses !important; pair with explicit hide/show like Sales_Order.js
     function hideCrAccButtons() {
         $("#cr-accept,#cr-decline").addClass("d-none");
+        $("#cr-accept-warning").addClass("d-none");
         setCrModalMode("form");
     }
 
     function showCrAccButtons() {
         $("#cr-accept,#cr-decline").removeClass("d-none");
         setCrModalMode("confirm");
+        syncCrAcceptEnabled();
     }
 
     function esc(value) {
@@ -842,7 +844,7 @@
                 '<td class="px-4">' + lineTypeBadge("supply") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.supplies_name) + '</td>' +
                 "<td>" + qtyCell("supply", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + esc(line.warehouse_name) + "</td>" +
+                '<td class="px-4">' + (line.warehouse_id ? esc(line.warehouse_name) : baseWarehouseCell("supply", index, editable)) + "</td>" +
                 lineActionCell("supply", index, editable) +
                 "</tr>";
         });
@@ -851,7 +853,7 @@
                 '<td class="px-4">' + lineTypeBadge("product") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.product_label) + '</td>' +
                 "<td>" + qtyCell("product", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + productWarehouseCell(line, index, editable) + "</td>" +
+                '<td class="px-4">' + (line.warehouse_id ? productWarehouseCell(line, index, editable) : baseWarehouseCell("product", index, editable)) + "</td>" +
                 lineActionCell("product", index, editable) +
                 "</tr>";
         });
@@ -862,8 +864,67 @@
         $("#cr-all-lines").html(html);
         updateCounts();
         initCrRetailWarehouseSelects();
+        initCrBaseWarehouseSelects();
         syncCrSaveEnabled();
+        syncCrAcceptEnabled();
         if (typeof feather !== "undefined") feather.replace();
+    }
+
+    /**
+     * GitHub #203: baris dari PMO yang gudangnya belum ditentukan (warehouse_id NULL — endpoint
+     * External API tidak lagi auto-default ke gudang utama, lihat ShipmentReturnController) dapat
+     * dropdown gudang dasar di sini, terpisah dari cr-retail-warehouse (yang cuma untuk
+     * destination_warehouse_id baris eceran) supaya keduanya tidak saling bentrok logikanya. Hanya
+     * tampil kalau warehouse_id memang kosong -- baris yang sudah terisi (admin-created atau PMO
+     * yang sudah kirim gudang_id) tetap pakai tampilan lama (esc(line.warehouse_name)/
+     * productWarehouseCell()), tidak berubah.
+     */
+    function baseWarehouseCell(type, index, editable) {
+        if (!editable) {
+            return '<span class="text-danger small"><i class="fe fe-alert-triangle me-1"></i>Belum diisi</span>';
+        }
+        return '<select class="form-select form-select-sm cr-base-warehouse" id="cr_base_wh_' + type + '_' + index + '" ' +
+            'data-type="' + type + '" data-index="' + index + '"></select>';
+    }
+
+    function applyCrBaseWarehouseSelection($select, selectedData) {
+        var type = $select.data("type");
+        var index = parseInt($select.data("index"), 10);
+        var line = type === "supply" ? supplyLines[index] : productLines[index];
+        if (!line) return false;
+        var data = selectedData || ($select.select2("data") || [])[0] || null;
+        var id = parseInt((data && (data.id || data.warehouse_id)) || $select.val(), 10) || 0;
+        if (!id) {
+            line.warehouse_id = null;
+            line.warehouse_name = null;
+            markCrRetailWarehouseSelect($select, true);
+            syncCrSaveEnabled();
+            syncCrAcceptEnabled();
+            return false;
+        }
+        var name =
+            (data && (data.text || data.warehouse_name)) ||
+            $select.find("option:selected").text() ||
+            "";
+        line.warehouse_id = id;
+        line.warehouse_name = name;
+        markCrRetailWarehouseSelect($select, false);
+        syncCrSaveEnabled();
+        syncCrAcceptEnabled();
+        return true;
+    }
+
+    function initCrBaseWarehouseSelects() {
+        $("#customer-return-modal .cr-base-warehouse").each(function () {
+            var $select = $(this);
+            var selector = "#" + $select.attr("id");
+            if (typeof autocompleteWarehouse === "function") {
+                autocompleteWarehouse(selector, "#customer-return-modal", {
+                    placeholder: "Pilih gudang tujuan",
+                });
+            }
+            markCrRetailWarehouseSelect($select, true);
+        });
     }
 
     function productWarehouseCell(line, index, editable) {
@@ -932,6 +993,14 @@
         return true;
     }
 
+    function syncBaseWarehousesFromDom() {
+        var synced = false;
+        $("#customer-return-modal .cr-base-warehouse").each(function () {
+            if (applyCrBaseWarehouseSelection($(this))) synced = true;
+        });
+        return synced;
+    }
+
     function syncRetailDestinationsFromDom() {
         var synced = false;
         $("#customer-return-modal .cr-retail-warehouse").each(function () {
@@ -986,10 +1055,32 @@
         });
     }
 
+    /** GitHub #203: baris apa pun (bahan atau produk) yang belum punya gudang dasar sama sekali. */
+    function missingBaseWarehouses() {
+        return supplyLines.some(function (line) { return !parseInt(line.warehouse_id || 0, 10); }) ||
+            productLines.some(function (line) { return !parseInt(line.warehouse_id || 0, 10); });
+    }
+
     function syncCrSaveEnabled() {
         var $btn = $("#cr-save");
         if (!$btn.length || $btn.hasClass("d-none") || !isCrEditable()) return;
-        $btn.prop("disabled", missingRetailDestinations());
+        $btn.prop("disabled", missingRetailDestinations() || missingBaseWarehouses());
+    }
+
+    /**
+     * GitHub #203: tombol Terima juga digembok di sisi klien kalau masih ada baris tanpa gudang
+     * dasar -- sebelumnya cuma digembok server-side (validateSupplyDetails()/validateProductDetails()
+     * di CustomerReturnController menolak dengan 422), yang baru kelihatan SETELAH staf klik Terima.
+     * Dokumen dalam mode "confirm" read-only (lihat openRecord()), jadi staf harus buka Edit dulu
+     * untuk mengisi gudang yang kosong sebelum bisa kembali ke sini dan menerima.
+     */
+    function syncCrAcceptEnabled() {
+        var $btn = $("#cr-accept");
+        if (!$btn.length || $btn.hasClass("d-none")) return;
+        var blocked = missingBaseWarehouses();
+        $btn.prop("disabled", blocked);
+        $btn.attr("title", blocked ? "Semua baris harus punya gudang tujuan -- buka Edit untuk mengisinya." : "");
+        $("#cr-accept-warning").toggleClass("d-none", !blocked);
     }
 
     function resetModal() {
@@ -1263,14 +1354,14 @@
                         supplies_name: detail.supplies_name,
                         unit_id: parseInt(detail.unit_id, 10),
                         unit_name: detail.unit_name || detail.unit_short_name || "-",
-                        warehouse_id: parseInt(detail.warehouse_id, 10),
+                        warehouse_id: parseInt(detail.warehouse_id, 10) || null,
                         warehouse_name: detail.warehouse_name,
                         qty: parseInt(detail.qty, 10),
                     };
                 });
                 productLines = (record.product_details || []).map(function (detail) {
                     var retailUnit = parseInt(detail.retail_unit, 10) || 0;
-                    var warehouseId = parseInt(detail.warehouse_id, 10);
+                    var warehouseId = parseInt(detail.warehouse_id, 10) || null;
                     var destId = parseInt(detail.destination_warehouse_id, 10) || 0;
                     var destName = detail.destination_warehouse_name || "";
                     var warehouseName = detail.warehouse_name;
@@ -1339,6 +1430,16 @@
         if (crMode === "create" && !photos.length && !proofFile) {
             $("#cr-btn-upload-proof").addClass("border-danger text-danger");
             if (typeof toastr !== "undefined") toastr.error("Bukti foto wajib diunggah.");
+            return;
+        }
+        syncBaseWarehousesFromDom();
+        if (missingBaseWarehouses()) {
+            $("#customer-return-modal .cr-base-warehouse").each(function () {
+                markCrRetailWarehouseSelect($(this), !$(this).val());
+            });
+            if (typeof toastr !== "undefined") {
+                toastr.error("Pilih gudang tujuan pada setiap baris sebelum menyimpan.");
+            }
             return;
         }
         syncRetailDestinationsFromDom();
@@ -1676,6 +1777,15 @@
         });
         $(document).on("select2:select", "#customer-return-modal .cr-retail-warehouse", function (e) {
             if (applyCrRetailWarehouseSelection($(this), e.params && e.params.data)) {
+                renderAllLines();
+            }
+        });
+
+        $(document).on("change", "#customer-return-modal .cr-base-warehouse", function () {
+            applyCrBaseWarehouseSelection($(this));
+        });
+        $(document).on("select2:select", "#customer-return-modal .cr-base-warehouse", function (e) {
+            if (applyCrBaseWarehouseSelection($(this), e.params && e.params.data)) {
                 renderAllLines();
             }
         });

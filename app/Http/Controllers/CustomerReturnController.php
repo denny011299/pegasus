@@ -1048,7 +1048,12 @@ class CustomerReturnController extends Controller
             $supplyDetails = DB::table('customer_supply_return_details as d')
                 ->join('supplies as s', 's.supplies_id', '=', 'd.supplies_id')
                 ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
-                ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
+                // leftJoin (GitHub #203 follow-up) -- warehouse_id boleh NULL (retur dari PMO yang
+                // belum diisi admin), sebuah INNER JOIN di sini akan DIAM-DIAM MEMBUANG baris itu
+                // dari respons, jadi baris yang justru paling perlu diisi manual tidak pernah
+                // muncul di modal Edit sama sekali. Bug lama, baru kelihatan sekarang karena baris
+                // dengan warehouse_id NULL sebelumnya cuma bisa terjadi pada kasus produk eceran.
+                ->leftJoin('warehouses as w', 'w.id', '=', 'd.warehouse_id')
                 ->where('d.return_id', $supply->return_id)
                 ->where('d.status', 1)
                 ->orderBy('d.return_detail_id')
@@ -1093,7 +1098,8 @@ class CustomerReturnController extends Controller
                 ->join('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
                 ->join('products as p', 'p.product_id', '=', 'pv.product_id')
                 ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
-                ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
+                // leftJoin, sama alasan seperti sisi bahan di atas.
+                ->leftJoin('warehouses as w', 'w.id', '=', 'd.warehouse_id')
                 ->where('d.return_id', $product->return_id)
                 ->where('d.status', 1)
                 ->orderBy('d.return_detail_id');
