@@ -474,9 +474,10 @@ class ShipmentController extends Controller
      */
     private function isShippedUpdatable(SalesOrder $so): bool
     {
-        // App\Support\ShipmentApproval::isEditableFromExternalSource() — dipakai bersama dengan
-        // Sinkronisasi Pengiriman (SyncShipmentsStep), aturannya harus sama persis di kedua channel.
-        return ShipmentApproval::isEditableFromExternalSource($so);
+        return (int) $so->status === self::STATUS_PENDING
+            && ! ShipmentApproval::isQcApproved($so)
+            && ! ShipmentApproval::isOpsApproved($so)
+            && ! ShipmentApproval::isRejected($so);
     }
 
     private function shippedNotUpdatableError(SalesOrder $so): JsonResponse

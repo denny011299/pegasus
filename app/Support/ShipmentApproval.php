@@ -60,22 +60,6 @@ class ShipmentApproval
         return self::isQcApproved($so) && ! self::isOpsApproved($so) && ! self::isRejected($so);
     }
 
-    /**
-     * Boleh ditulis ulang dari sumber eksternal (PMO) lewat POST /shipments/shipped ATAU
-     * Sinkronisasi Pengiriman (App\Synchronization\Steps\ShipmentFlow\SyncShipmentsStep) — masih
-     * status 1 "Pending" DAN belum ada satu pun approval/reject tercatat. Begitu proses approval
-     * mulai berjalan (sebagian atau seluruhnya), atau status sudah maju/Ditolak, kedua sumber
-     * eksternal itu TIDAK BOLEH lagi menimpa baris ini — dipakai bersama supaya aturannya sama
-     * persis di kedua channel, tidak ditulis ulang berbeda di masing-masing.
-     */
-    public static function isEditableFromExternalSource(SalesOrder $so): bool
-    {
-        return (int) $so->status === 1
-            && ! self::isQcApproved($so)
-            && ! self::isOpsApproved($so)
-            && ! self::isRejected($so);
-    }
-
     /** Direksi / Developer — boleh menggantikan QC atau Kepala Ops (berurut, tidak skip tahap). */
     public static function isElevatedApprover($user): bool
     {
