@@ -1,20 +1,15 @@
 {
-    "generated_at": "2026-09-24T12:25:21+07:00",
-    "commit": "0b3933321b3c771086938cf0659c441543f931ff",
+    "generated_at": "2026-09-24T13:06:47+07:00",
+    "commit": "c3653b9c9b4e4110344919aaee4423c8970e0701",
     "branch": "fase2/main",
-    "file_count": 3587,
-    "previous_commit": "7af96fbf4b46ccbd42138998598658760246ff34",
-    "previous_generated_at": "2026-09-24T10:44:43+07:00",
+    "file_count": 3588,
+    "previous_commit": "0b3933321b3c771086938cf0659c441543f931ff",
+    "previous_generated_at": "2026-09-24T12:25:21+07:00",
     "added": [
-        "resources/views/Backoffice/Inventory/Stock_Opname_Live.blade.php"
+        "resources/views/layout/fullscreen.blade.php"
     ],
     "removed": [],
-    "changed": [
-        "app/Http/Controllers/StockController.php",
-        "app/Support/StockOpname/OpenOpnameGuard.php",
-        "app/Support/StockOpname/OpnamePageLock.php",
-        "routes/web.php"
-    ],
+    "changed": [],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
         "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
@@ -3560,6 +3555,7 @@
         "resources/views/components/tickets-tab.blade.php": "5f57ef69e80ac95e6439205954ca8a23bb1d6349",
         "resources/views/errors/403.blade.php": "d5d899bc2118c0ded777e7c6e236feb34226160d",
         "resources/views/errors/deploy-issue.blade.php": "637d3caf6500e3201329135424c6e8922792e8ab",
+        "resources/views/layout/fullscreen.blade.php": "9d391544893c3bf369bee192e40048b99aced0a4",
         "resources/views/layout/mainlayout.blade.php": "e15cc801b2127ec3e4e7c48500e75afdbd60897a",
         "resources/views/layout/partials/collapsed-sidebar.blade.php": "5b27ff14d8134dc787fe65b0c1151073520f825f",
         "resources/views/layout/partials/footer-scripts.blade.php": "169f4a76f6973f148874c5393c2bf0747c0cc340",
