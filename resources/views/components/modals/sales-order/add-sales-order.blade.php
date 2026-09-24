@@ -90,18 +90,6 @@
                   </div>
                 </div>
                 <div class="col-12 row pe-0">
-                  {{-- Alasan penolakan (approval 2 tahap) — diisi JS lewat renderSoRejectBanner(),
-                       hanya tampil saat SO ini status Ditolak dan punya reject_reason. --}}
-                  <div class="col-12" id="so_reject_banner" style="display:none;">
-                    <div class="mb-3" style="border-radius:10px;background:#fef2f2;border:1px solid #fecaca;padding:12px 16px;display:flex;gap:10px;align-items:flex-start;">
-                      <i class="fe fe-x-circle" style="color:#dc2626;font-size:18px;margin-top:1px;"></i>
-                      <div>
-                        <div style="color:#991b1b;font-weight:700;font-size:13px;">Pengiriman Ditolak <span id="so_reject_stage_label"></span></div>
-                        <div style="color:#7f1d1d;font-size:13px;margin-top:2px;" id="so_reject_reason_text"></div>
-                        <div style="color:#b91c1c;font-size:12px;margin-top:4px;" id="so_reject_meta_text"></div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
                 <div class="col-12 row pe-0 mb-4 align-items-end">
                   <div class="col-lg-6 col-md-12 col-12 pe-0">

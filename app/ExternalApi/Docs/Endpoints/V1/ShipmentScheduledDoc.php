@@ -115,7 +115,6 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'Endpoint ini bisa dinonaktifkan sewaktu-waktu lewat menu Status API Eksternal (galat API_ENDPOINT_DISABLED bila dinonaktifkan) — gunakan POST /shipments/shipped sebagai gantinya untuk mengirim/memperbarui shipment.',
             'Upsert lewat ref_shipment_id: BELUM ada -> dibuat baru (respons 201). SUDAH ada dan masih "Dijadwalkan" -> diperbarui, seluruh field (armada_code/scheduled_date/items) ditimpa dengan yang dikirim permintaan ini (respons 200). SUDAH ada tapi statusnya sudah maju (bukan "Dijadwalkan" lagi, mis. sudah dikirim lewat /shipments/shipped atau berubah lewat change-status) -> ditolak SHIPMENT_NOT_UPDATABLE, tidak ada yang berubah.',
             'Memperbarui shipment MENGGANTI seluruh items[] lama dengan yang dikirim permintaan ini, bukan menggabungkan — kirim daftar item LENGKAP tiap kali memperbarui, bukan hanya item yang berubah.',
             'Shipment SELALU dijadwalkan/diperbarui (SO dibuat/ditulis), baik ada shortage atau tidak — shortage TIDAK menolak permintaan. auto_create_shortage_doc hanya mengatur apakah kekurangan itu dicatat sebagai dokumen terpisah; setiap permintaan yang memicunya membuat dokumen BARU, tidak menimpa dokumen dari permintaan sebelumnya.',

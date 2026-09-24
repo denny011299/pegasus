@@ -365,10 +365,6 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/customerReturns', [CustomerReturnController::class, 'index'])->name('customerReturns.index');
         Route::get('/customerReturns/context', [CustomerReturnController::class, 'context'])->name('customerReturns.context');
         Route::get('/customerReturns/{docKey}', [CustomerReturnController::class, 'show'])->name('customerReturns.show')->where('docKey', '[A-Za-z0-9:_-]+');
-        // Approval 2 tahap (QC/Ops): gate di controller (actor role, gudang aktif), sama pola
-        // dengan approveStockTransfer/rejectStockTransfer — bukan permission "others".
-        Route::post('/approveShipment', [CustomerController::class, 'approveShipment'])->name('approveShipment');
-        Route::post('/rejectShipment', [CustomerController::class, 'rejectShipment'])->name('rejectShipment');
     });
     Route::middleware('check.access:Pengiriman|create')->group(function () {
         Route::post('/insertSalesOrder', [CustomerController::class, 'insertSalesOrder'])->name('insertSalesOrder');

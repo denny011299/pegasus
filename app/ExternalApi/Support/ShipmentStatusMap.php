@@ -51,33 +51,26 @@ class ShipmentStatusMap
     /**
      * sales_orders.status (internal) -> ipm_status (kontrak API).
      *
-     * DIUBAH sejak flow "shipment-approval-flow v2" (2026-09, lihat
-     * cdocs/docs/specs/shipment-external-api-approval-flow.md) - status 1 dan 3 dipetakan ULANG,
-     * dipisah dari 4 yang sebelumnya dianggap setara:
-     *   - 1 ("Pending" - HASIL SATU-SATUNYA insert/update POST /shipments/shipped sekarang,
-     *     menunggu approval 2 tahap admin Staf QC & Gudang -> Kepala Operasional sebelum stok
-     *     dipotong) -> ipm_status 2 "Berjalan". PMO tidak perlu tahu detail approval QC/Ops di
-     *     sisi IPM - dari sudut pandang PMO prosesnya "berjalan" sampai nanti benar-benar
-     *     Sudah/Belum terkirim atau Dibatalkan.
-     *   - 2 (Confirmed, approval 2 tahap selesai + stok dipotong lewat
-     *     SalesOrderApproval::confirm()) -> ipm_status 2 "Berjalan" JUGA - sengaja SAMA dengan 1,
-     *     PMO tidak membedakan "menunggu approval" dari "sudah disetujui semua".
-     *   - 3 (Ditolak - hasil reject di salah satu tahap approval, ATAU dihapus lewat alur admin
-     *     biasa) -> ipm_status -1 "Dibatalkan" (sebelumnya null/tidak ada padanan).
-     *   - 4 (Dijadwalkan - LEGACY, PUT /shipments/scheduled yang menghasilkannya sudah
-     *     dinonaktifkan, data lama saja) -> TETAP ipm_status 1 "Dijadwalkan", tidak diubah.
+     * Hanya status yang benar-benar bisa dihasilkan endpoint Shipment yang dipetakan di sini:
+     *   - 1 (Created, dibuat manual lewat halaman admin) dan 4 (Dijadwalkan, dibuat lewat
+     *     /shipments/scheduled atau /shipments/shipped saat ref_shipment_id belum ada) DIANGGAP
+     *     SETARA dari sudut pandang ipm_status - keduanya "belum di-ACC" -> ipm_status 1.
+     *   - 2 (Confirmed, sudah di-ACC + stok dipotong lewat SalesOrderApproval::confirm()) ->
+     *     ipm_status 2 "Berjalan".
      *   - 5, 6 (dipaksa lewat PATCH /shipments/{ref}/change-status, lihat ShipmentController) ->
      *     ipm_status 3 "Belum terkirim" dan 4 "Sudah terkirim" berturut-turut.
      *   - 7 (dibatalkan lewat PUT /shipments/{ref}/cancel) -> ipm_status -1 "Dibatalkan".
+     *   - 3 (Ditolak/dihapus lewat alur admin biasa, BUKAN lewat /shipments/cancel) BELUM ada
+     *     padanan di kosakata ipm_status ini -> null.
      */
     public static function fromInternal(int $internalStatus): ?int
     {
         return match ($internalStatus) {
-            1, 2 => self::IPM_RUNNING,
-            3, 7 => self::IPM_CANCELLED,
-            4 => self::IPM_SCHEDULED,
+            1, 4 => self::IPM_SCHEDULED,
+            2 => self::IPM_RUNNING,
             5 => self::IPM_NOT_DELIVERED,
             6 => self::IPM_DELIVERED,
+            7 => self::IPM_CANCELLED,
             default => null,
         };
     }

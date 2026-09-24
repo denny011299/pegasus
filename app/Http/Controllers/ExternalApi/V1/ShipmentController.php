@@ -16,10 +16,8 @@ use App\Models\SalesOrderDetail;
 use App\Models\ShipmentShortageDocument;
 use App\Models\Unit;
 use App\Support\ArmadaUpsert;
-use App\Support\ProductUnitStock;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderCancellation;
-use App\Support\ShipmentApproval;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -46,26 +44,9 @@ class ShipmentController extends Controller
 {
     use ChecksStockAvailability;
 
-    /**
-     * sales_orders.status "Pending" (badge admin Pengiriman) — sejak GitHub shipment-approval-flow
-     * v2 (2026-09), SATU-SATUNYA status yang dihasilkan insert/update POST /shipments/shipped.
-     * Menunggu approval 2 tahap (Staf QC & Gudang -> Kepala Operasional) di sisi admin — lihat
-     * App\Support\ShipmentApproval — sebelum stok dipotong dan status maju ke Confirmed (2).
-     */
-    private const STATUS_PENDING = 1;
-
     /** sales_orders.status, lihat migrasi 2026_08_11_130000_* dan model SalesOrder. */
     private const STATUS_CONFIRMED = 2;
 
-    /** sales_orders.status "Ditolak" — hasil reject di salah satu tahap approval (lihat STATUS_PENDING). */
-    private const STATUS_REJECTED = 3;
-
-    /**
-     * sales_orders.status "Dijadwalkan" — LEGACY, tidak dihasilkan lagi oleh endpoint mana pun
-     * (PUT /shipments/scheduled dinonaktifkan lewat menu Status API Eksternal, kodenya sengaja
-     * dibiarkan apa adanya). Dipertahankan di sini karena data lama masih memakainya dan
-     * ALLOWED_TRANSITIONS/ShipmentStatusMap masih merujuknya.
-     */
     private const STATUS_SCHEDULED = 4;
 
     /**
@@ -289,44 +270,36 @@ class ShipmentController extends Controller
     /**
      * POST /api/external/v1/shipments/shipped
      *
-     * Sejak flow "shipment-approval-flow v2" (2026-09), endpoint ini SATU-SATUNYA pintu masuk
-     * shipment dari PMO — PUT /shipments/scheduled dinonaktifkan lewat menu Status API Eksternal.
-     * PMO memanggil endpoint ini saat shipment yang tadinya "Dijadwalkan" berubah jadi "Berjalan".
-     *
-     * body.status WAJIB "onprocess" (kosakata status PMO untuk "Berjalan"), baik insert maupun
-     * update — nilai lain ditolak INVALID_STATUS (422). Ini murni penanda dari kontrak, TIDAK
-     * menentukan status hasil di Pegasus: hasilnya selalu "Pending" (lihat di bawah).
-     *
-     * Upsert lewat ref_shipment_id, TIDAK LAGI idempoten/langsung memotong stok seperti
-     * sebelumnya:
-     *   - ref_shipment_id BELUM ada -> buat baris sales_orders + sales_order_details baru,
-     *     status SELALU "Pending" (terlepas dari shortage stok) — menunggu approval 2 tahap
-     *     admin (Staf QC & Gudang lalu Kepala Operasional) sebelum stok benar-benar dipotong.
-     *   - ref_shipment_id SUDAH ada, status "Pending" DAN belum ada satu pun approval/reject
-     *     tercatat -> baris yang sama diperbarui (bukan bikin baru), status TETAP "Pending".
-     *     Beda antara data tersimpan vs permintaan ditangani lewat detail_handler:
+     * Idempoten lewat ref_shipment_id (satu-satunya endpoint Shipment yang begitu — beda dengan
+     * /shipments/scheduled yang menolak duplikat):
+     *   - ref_shipment_id BELUM ada -> buat baris sales_orders + sales_order_details baru
+     *     (reuse SalesOrder::insertSalesOrder()/SalesOrderDetail::insertSalesOrderDetail(), sama
+     *     seperti scheduled()), lalu langsung dikonfirmasi (lihat di bawah).
+     *   - ref_shipment_id SUDAH ada, sales_orders.status belum Confirmed (1 Created / 4
+     *     Dijadwalkan) -> baris yang sama diperbarui (bukan bikin baru), lalu dikonfirmasi.
+     *     Beda antara data tersimpan vs permintaan ini ditangani lewat detail_handler:
      *       - "force" (bawaan): timpa (armada_code/shipment_date/notes/photos/items).
      *       - "validate": TOLAK dengan galat informatif shipment_detail_mismatch, tidak ada yang
-     *         berubah.
-     *   - ref_shipment_id SUDAH ada TAPI sudah pernah di-approve/ditolak sebagian atau
-     *     seluruhnya oleh admin (atau statusnya sudah maju dari "Pending") -> DITOLAK
-     *     SHIPMENT_NOT_UPDATABLE (409), TIDAK menimpa apa pun — begitu proses approval admin
-     *     sudah berjalan, riwayatnya tidak lagi bisa ditulis ulang dari sisi PMO.
+     *         berubah — tidak ada beda sama sekali (data sudah identik) selalu lanjut ke
+     *         konfirmasi apa pun nilai detail_handler-nya.
+     *   - ref_shipment_id SUDAH ada, sales_orders.status = Confirmed (2, sudah pernah di-"ship"
+     *     lewat panggilan sebelumnya) -> idempotent replay MURNI: isi permintaan ini TIDAK
+     *     dibandingkan sama sekali (sama seperti /payments/cash), tidak ada stok yang dipotong
+     *     dua kali, tidak ada detail yang diubah — status yang sudah tersimpan dikembalikan apa
+     *     adanya lewat meta.idempotent_replay.
      *
-     * Potong stok TIDAK LAGI terjadi di endpoint ini — itu sekarang murni tanggung jawab
-     * approval tahap kedua (Kepala Operasional) di sisi admin Pengiriman.
+     * Konfirmasi (potong stok + status -> Confirmed) memakai ulang App\Support\
+     * SalesOrderApproval::confirm() — PERSIS logika accSO() yang dipakai halaman admin Pengiriman
+     * (buildPlan -> executeDeduct -> set status), diekstrak supaya bisa dipakai di sini juga.
+     * Kalau stok tidak cukup, baris sales_orders TETAP ada (status tidak maju ke Confirmed) —
+     * sama seperti kalau admin gagal ACC lewat halaman admin, bukan galat 500.
      *
-     * Cek stok kekurangan tetap dijalankan (sama seperti PUT /shipments/scheduled dulu, lewat
-     * Concerns\ChecksStockAvailability) untuk auto_create_shortage_doc (opsional) — murni catatan
-     * untuk staf gudang/pembelian, TIDAK menghalangi shipment tetap tersimpan Pending walau ada
-     * kekurangan; stok sungguhan baru dicek ulang (dan wajib cukup) saat approval tahap kedua.
-     *
-     * variant_sku (BUKAN "sku" seperti /stock/check) di-resolve ke product_variant_id lewat
-     * Concerns\ChecksStockAvailability::resolveVariantsAndUnits() — resolusinya sama, cuma nama
-     * field bodinya beda di endpoint ini. items[].product_name/variant_name TIDAK di-lookup dari
-     * database — dipakai apa adanya dari body permintaan untuk sales_order_details.sod_nama/
-     * sod_variant, sama seperti field yang sudah diterima SalesOrderDetail::insertSalesOrderDetail()
-     * dari form admin.
+     * variant_sku (BUKAN "sku" seperti /stock/check dan /shipments/scheduled) di-resolve ke
+     * product_variant_id lewat Concerns\ChecksStockAvailability::resolveVariantsAndUnits() —
+     * resolusinya sama, cuma nama field bodinya beda di endpoint ini. items[].product_name/
+     * variant_name TIDAK di-lookup dari database — dipakai apa adanya dari body permintaan untuk
+     * sales_order_details.sod_nama/sod_variant, sama seperti field yang sudah diterima
+     * SalesOrderDetail::insertSalesOrderDetail() dari form admin.
      *
      * photos menerima file sungguhan lewat multipart/form-data (photos[] sebagai upload) ATAU
      * data URI base64 lewat JSON murni — lihat App\ExternalApi\Support\ShipmentPhotoStore.
@@ -336,20 +309,6 @@ class ShipmentController extends Controller
     public function shipped(Request $request): JsonResponse
     {
         $data = $this->validateShippedPayload($request);
-
-        // Kosakata status PMO (p_status): onschedule/onprocess/pending/success — endpoint ini
-        // HANYA menerima "onprocess" ("Berjalan"), baik insert maupun update. Ini murni penanda
-        // dari kontrak, TIDAK menentukan status hasil di Pegasus (selalu "Pending", lihat
-        // docblock method ini) — nilai lain ditolak supaya kesalahan pengiriman dari PMO
-        // (mis. masih mengirim status lama) kelihatan jelas, bukan diam-diam diterima.
-        if ($data['status'] !== 'onprocess') {
-            return ApiResponse::error(
-                ErrorCatalog::INVALID_STATUS,
-                'Field status harus "onprocess". Nilai lain tidak diterima endpoint ini.',
-                422,
-            );
-        }
-
         $detailHandler = $data['detail_handler'] ?? 'force';
 
         [$variantsBySku, $unitsByRef] = $this->resolveVariantsAndUnits(
@@ -388,18 +347,13 @@ class ShipmentController extends Controller
         $photos = new ShipmentPhotoStore();
         $httpStatus = 200;
 
-        $so = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
-        if ($so !== null && ! $this->isShippedUpdatable($so)) {
-            $photos->cleanup();
-
-            return $this->shippedNotUpdatableError($so);
-        }
-
-        $warehouseId = ProductStock::resolveWarehouseId(null);
-        $shortageCheck = $this->computeShippedShortage($warehouseId, $resolvedItems);
-        $autoCreateShortageDoc = (bool) ($data['auto_create_shortage_doc'] ?? false);
-
         try {
+            $so = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
+
+            if ($so !== null && (int) $so->status === self::STATUS_CONFIRMED) {
+                return $this->presentShipped($so, ['idempotent_replay' => true]);
+            }
+
             if ($so === null) {
                 $so = DB::transaction(fn () => $this->createShippedSo($data, $customer, $resolvedItems, $photos));
                 $httpStatus = 201;
@@ -425,119 +379,30 @@ class ShipmentController extends Controller
             // Dua permintaan dengan ref_shipment_id baru yang sama, nyaris bersamaan.
             $raced = SalesOrder::where('ref_shipment_id', $data['ref_shipment_id'])->first();
             if ($raced !== null) {
-                if (! $this->isShippedUpdatable($raced)) {
-                    return $this->shippedNotUpdatableError($raced);
-                }
-
-                $mismatch = $this->diffAgainstExisting($raced, $data, $customer, $resolvedItems);
-                if ($mismatch !== [] && $detailHandler === 'validate') {
-                    return $this->mismatchError($mismatch);
-                }
-                $so = $mismatch !== []
-                    ? DB::transaction(fn () => $this->upsertShippedSo($raced, $data, $customer, $resolvedItems, $photos))
-                    : $raced;
-            } else {
-                throw $e;
+                return $this->presentShipped($raced, ['idempotent_replay' => (int) $raced->status === self::STATUS_CONFIRMED]);
             }
+
+            throw $e;
         } catch (\Throwable $e) {
             $photos->cleanup();
 
             throw $e;
         }
 
-        $shortageDocNumber = null;
-        if ($autoCreateShortageDoc && $shortageCheck['has_shortage']) {
-            $shortageItems = array_values(array_filter(
-                $shortageCheck['items'],
-                static fn (array $item) => $item['shortage'] > 0,
-            ));
-
-            $doc = ShipmentShortageDocument::createForShortage(
-                $so->so_id,
-                $data['ref_shipment_id'],
-                $shortageItems,
-                null,
+        $result = SalesOrderApproval::confirm($so->fresh(), null);
+        if (! ($result['ok'] ?? false)) {
+            return ApiResponse::error(
+                ErrorCatalog::INSUFFICIENT_STOCK,
+                $result['message'] ?? 'Stok tidak mencukupi.',
+                409,
+                [
+                    'products' => $result['products'] ?? [],
+                    'recommendations' => $result['recommendations'] ?? [],
+                ],
             );
-            $shortageDocNumber = $doc->doc_number;
         }
 
-        return $this->presentShipped($so->fresh(), [
-            'shortage_doc_created' => $shortageDocNumber !== null,
-            'shortage_doc_number' => $shortageDocNumber,
-        ], $httpStatus);
-    }
-
-    /**
-     * Boleh diupdate lewat POST /shipments/shipped: masih "Pending" DAN belum ada satu pun
-     * approval/reject tercatat dari admin. Begitu approval tahap mana pun sudah jalan (atau
-     * status sudah maju/Ditolak), PMO tidak boleh lagi menulis ulang lewat endpoint ini.
-     */
-    private function isShippedUpdatable(SalesOrder $so): bool
-    {
-        return (int) $so->status === self::STATUS_PENDING
-            && ! ShipmentApproval::isQcApproved($so)
-            && ! ShipmentApproval::isOpsApproved($so)
-            && ! ShipmentApproval::isRejected($so);
-    }
-
-    private function shippedNotUpdatableError(SalesOrder $so): JsonResponse
-    {
-        $status = (int) $so->status;
-        if ($status === self::STATUS_PENDING && ShipmentApproval::isRejected($so)) {
-            $stageLabel = 'Ditolak';
-        } elseif ($status === self::STATUS_PENDING && ShipmentApproval::isOpsApproved($so)) {
-            $stageLabel = 'Pending (sudah disetujui Kepala Operasional)';
-        } elseif ($status === self::STATUS_PENDING && ShipmentApproval::isQcApproved($so)) {
-            $stageLabel = 'Pending (sudah disetujui Staf QC & Gudang)';
-        } else {
-            $ipm = ShipmentStatusMap::fromInternal($status);
-            $stageLabel = $ipm !== null ? ShipmentStatusMap::label($ipm) : 'Tidak diketahui';
-        }
-
-        return ApiResponse::error(
-            ErrorCatalog::SHIPMENT_NOT_UPDATABLE,
-            'Pengiriman dengan referensi '.$so->ref_shipment_id.' sudah berstatus "'.$stageLabel.'" di sisi IPM '
-                .'dan tidak bisa diperbarui lagi lewat endpoint ini — hanya bisa selama masih "Pending" dan '
-                .'belum ada approval/penolakan sama sekali dari admin.',
-            409,
-        );
-    }
-
-    /**
-     * Shortage untuk items[] bentuk shipped() (variant_sku/qty/unit_id sudah di-resolve ke
-     * product_variant_id/internal_unit_id) — TIDAK bisa lewat
-     * Concerns\ChecksStockAvailability::checkStockAvailability() apa adanya (itu menerima bentuk
-     * items[] milik scheduled()/stock/check, field "sku" bukan "variant_sku"), tapi perhitungan
-     * ketersediaannya sama persis.
-     *
-     * @param  array<int, array<string, mixed>>  $resolvedItems
-     * @return array{has_shortage: bool, items: array<int, array{sku:string, unit_id:int, requested:int, available:int, shortage:int}>}
-     */
-    private function computeShippedShortage(int $warehouseId, array $resolvedItems): array
-    {
-        $hasShortage = false;
-        $items = array_map(function (array $item) use ($warehouseId, &$hasShortage) {
-            $requested = (int) $item['qty'];
-            $available = (int) round(ProductUnitStock::totalAvailable(
-                $warehouseId,
-                $item['product_variant_id'],
-                $item['internal_unit_id'],
-            ));
-            $shortage = max(0, $requested - $available);
-            if ($shortage > 0) {
-                $hasShortage = true;
-            }
-
-            return [
-                'sku' => $item['variant_sku'],
-                'unit_id' => $item['unit_id'],
-                'requested' => $requested,
-                'available' => $available,
-                'shortage' => $shortage,
-            ];
-        }, $resolvedItems);
-
-        return ['has_shortage' => $hasShortage, 'items' => $items];
+        return $this->presentShipped($so->fresh(), [], $httpStatus);
     }
 
     /**
@@ -794,10 +659,8 @@ class ShipmentController extends Controller
             'ref_shipment_id' => ['required', 'string', 'max:100'],
             'shipment_date' => ['required', 'date'],
             'armada_code' => ['required', 'string', 'max:64'],
-            'status' => ['required', 'string'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'detail_handler' => ['nullable', 'string', Rule::in(['force', 'validate'])],
-            'auto_create_shortage_doc' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_sku' => [
                 'required', 'string',
@@ -828,7 +691,7 @@ class ShipmentController extends Controller
         ]);
         $so->ref_shipment_id = $data['ref_shipment_id'];
         $so->notes = $data['notes'] ?? null;
-        $so->status = self::STATUS_PENDING;
+        $so->status = self::STATUS_SCHEDULED;
         $so->save();
 
         $this->replaceDetails($so, $resolvedItems);
@@ -942,12 +805,12 @@ class ShipmentController extends Controller
     /* Respons                                                             */
     /* ------------------------------------------------------------------ */
 
-    private function presentShipped(SalesOrder $so, array $extraData = [], int $httpStatus = 200, array $meta = []): JsonResponse
+    private function presentShipped(SalesOrder $so, array $meta = [], int $httpStatus = 200): JsonResponse
     {
         return ApiResponse::success(array_merge([
             'ref_shipment_id' => (string) $so->ref_shipment_id,
             'shipment_internal_id' => (int) $so->so_id,
-        ], $this->ipmStatusFields($so), $extraData), $meta, $httpStatus);
+        ], $this->ipmStatusFields($so)), $meta, $httpStatus);
     }
 
     /**

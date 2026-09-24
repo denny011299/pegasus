@@ -140,10 +140,6 @@ function loadSalesOrderWithItems(soId, onSuccess, onError) {
 function openSalesOrderRevisionModal(data) {
     products = [];
     mode = 2;
-    // Tampilkan alasan penolakan di sini juga — staf yang merevisi perlu tahu kenapa
-    // ditolak sebelum mengedit ulang. updateSalesOrder() sendiri yang mengembalikan status ke
-    // Pending saat disimpan, jadi banner ini otomatis tidak relevan lagi setelah submit.
-    renderSoRejectBanner(data);
     $("#add_sales_order .modal-title").html("Revisi Pengiriman");
     $("#add_sales_order input").empty().val("");
     $("#so_customer, #sales_id").empty();
@@ -239,44 +235,6 @@ function openSalesOrderRevisionModal(data) {
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
 
-/**
- * Banner alasan penolakan (approval 2 tahap) di modal Detail Pengiriman — hanya tampil kalau
- * status Ditolak (3) DAN reject_reason terisi. reject_stage/reject_reason/rejected_at/
- * rejected_by_name dikirim SalesOrder::getSalesOrder() apa adanya (kolom sudah ada sejak
- * approval 2 tahap, lihat App\Support\ShipmentApproval).
- */
-function renderSoRejectBanner(data) {
-    var status = parseInt(data.status, 10);
-    var reason = (data.reject_reason || "").toString().trim();
-    if (status !== 3 || !reason) {
-        $("#so_reject_banner").hide();
-        return;
-    }
-
-    var stageLabel =
-        data.reject_stage === "ops"
-            ? "di tahap Kepala Operasional"
-            : data.reject_stage === "qc"
-              ? "di tahap Staf QC & Gudang"
-              : "";
-    $("#so_reject_stage_label").text(stageLabel);
-    $("#so_reject_reason_text").text(reason);
-
-    var metaParts = [];
-    if (data.rejected_by_name) metaParts.push("oleh " + data.rejected_by_name);
-    if (data.rejected_at) {
-        var d = new Date(data.rejected_at);
-        if (!isNaN(d.getTime())) {
-            metaParts.push(
-                d.toLocaleDateString("id-ID") + " " + d.toLocaleTimeString("id-ID").slice(0, 5),
-            );
-        }
-    }
-    $("#so_reject_meta_text").text(metaParts.join(" — "));
-
-    $("#so_reject_banner").show();
-}
-
 function openSalesOrderDetailModal(data, intent) {
     intent = intent === "confirm" ? "confirm" : "view";
     var img =
@@ -360,8 +318,6 @@ function openSalesOrderDetailModal(data, intent) {
     );
     $("#so_scan_barcode, #so_scan_qty").attr("disabled", true);
     setSoProductInputVisible(false);
-
-    renderSoRejectBanner(data);
 
     var soStatus = parseInt(data.status, 10);
     var confirmMode =
@@ -613,7 +569,6 @@ $(document).on("click", ".btnAdd", function () {
     initSalesOrderProductInput();
     mode = 1;
     products = [];
-    $("#so_reject_banner").hide();
     $("#tableSalesModal").html("");
     refreshTableProduct();
     $("#add_sales_order .modal-title").html("Tambah Pengiriman");
@@ -1327,19 +1282,10 @@ function salesOrderAjax(data, callback) {
     });
 }
 
-function renderSoStatus(status, row) {
+function renderSoStatus(status) {
     status = parseInt(status, 10);
     if (status === 1) {
-        var stage = "Menunggu Staf QC & Gudang";
-        if (row && row.ops_approved_by_name) {
-            stage = "Menunggu potong stok";
-        } else if (row && row.qc_approved_by_name) {
-            stage = "Menunggu Kepala Operasional";
-        }
-        return (
-            '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>' +
-            '<div class="small text-muted mt-1">' + stage + "</div>"
-        );
+        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
     }
     if (status === 2) {
         return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Diterima</span>';
@@ -1368,166 +1314,35 @@ function renderSoStatus(status, row) {
 
 function renderSoAction(row) {
     var soa =
-        '<div class="d-flex justify-content-center align-items-center gap-1">';
+        '<div class="d-flex justify-content-center align-items-center gap-2">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
     var canView = soHasAccess("Pengiriman", "view");
-    // Approval 2 tahap (Staf QC & Gudang -> Kepala Operasional) — can_approve_qc/can_approve_ops
-    // dihitung SERVER-SIDE (SalesOrder::getSalesOrderDataTable()), bukan dari ability "others"
-    // lagi. Tombol Tolak muncul mengikuti tahap approve yang sama (guard sama di rejectShipment()).
-    var canApproveQc = pending && row.can_approve_qc === true;
-    var canApproveOps = pending && row.can_approve_ops === true;
-    var canApprove = canApproveQc || canApproveOps;
-    var canReject = canApprove;
+    var canConfirm = pending && soHasAccess("Pengiriman", "others");
     var canDelete = pending && soHasAccess("Pengiriman", "delete");
-    if (canApprove) {
-        var approveType = canApproveQc ? "qc" : "ops";
-        var approveLabel = canApproveQc ? "Setujui (Staf QC & Gudang)" : "Setujui (Kepala Operasional)";
-        // .btn-action-approve — kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
-        // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini —
-        // aturan dasar .btn-action-icon menimpa background/color dengan !important, jadi warna
-        // custom lewat inline style tidak pernah kelihatan; kelas ini sudah dibuat khusus untuk
-        // menembus itu.
+    if (canConfirm) {
         soa +=
-            '<a class="btn-action-icon btn-approve-shipment btn-action-approve" data-id="' +
+            '<a class="btn-action-icon btn_confirm btn-action-approve" data-id="' +
             row.so_id +
-            '" data-type="' +
-            approveType +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="' +
-            approveLabel +
-            '"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
-    }
-    if (canReject) {
-        var rejectType = canApproveQc ? "qc" : "ops";
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+    } else if (canView) {
         soa +=
-            '<a class="btn-action-icon btn-reject-shipment btn-action-reject" data-id="' +
+            '<a class="btn-action-icon btn_view" data-id="' +
             row.so_id +
-            '" data-type="' +
-            rejectType +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Tolak"><i class="fe fe-x-circle" style="font-size:14px;"></i></a>';
-    }
-    if (canView) {
-        soa +=
-            '<a class="btn-action-icon btn_view btn-action-view" data-id="' +
-            row.so_id +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (canDelete) {
-        // btn_delete sudah punya warna sendiri dari .btn-action-icon.btn_delete di
-        // header.blade.php — tidak diubah, sudah sesuai sebelum perubahan ini.
         soa +=
             '<a class="btn-action-icon btn_delete" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
-    if (!canApprove && !canReject && !canView && !canDelete) {
+    if (!canConfirm && !canView && !canDelete) {
         return '<span class="text-muted small">—</span>';
     }
     return soa;
 }
-
-$(document).on("click", ".btn-approve-shipment", function () {
-    var $btn = $(this);
-    var soId = $btn.data("id");
-    var type = $btn.data("type");
-    var label = type === "qc" ? "Staf QC & Gudang" : "Kepala Operasional";
-    var confirmMsg =
-        type === "ops"
-            ? "Setujui Pengiriman ini (Kepala Operasional)? Stok akan dicek dan dipotong, status menjadi Diterima."
-            : "Setujui Pengiriman ini (Staf QC & Gudang)? Selanjutnya menunggu approval Kepala Operasional.";
-    Swal.fire({
-        title: "Konfirmasi",
-        text: confirmMsg,
-        icon: "question",
-        showCancelButton: true,
-        confirmButtonText: "Ya, Setujui",
-        cancelButtonText: "Batal",
-    }).then(function (result) {
-        if (!result.isConfirmed) return;
-        // Ikon aksi kecil (bukan tombol berteks) — kunci lewat pointer-events, bukan
-        // LoadingButton/ResetLoadingButton (itu mengganti isi .html() dengan teks, cocok untuk
-        // tombol besar, tidak untuk ikon bundar sekecil ini).
-        $btn.css("pointer-events", "none").css("opacity", "0.6");
-        $.ajax({
-            url: "/approveShipment",
-            method: "post",
-            data: { so_id: soId, type: type, _token: token },
-            success: function (res) {
-                if (!res || res.status != 1) {
-                    $btn.css("pointer-events", "").css("opacity", "");
-                    notifikasi(
-                        "error",
-                        "Gagal Approve",
-                        (res && res.message) || "Gagal approve " + label,
-                    );
-                    return;
-                }
-                notifikasi("success", "Berhasil", res.message || "Approval berhasil");
-                refreshSalesOrder();
-            },
-            error: function (err) {
-                $btn.css("pointer-events", "").css("opacity", "");
-                if (handlePermissionError(err)) return;
-                notifikasi(
-                    "error",
-                    "Gagal Approve",
-                    (err.responseJSON && err.responseJSON.message) || "Gagal approve " + label,
-                );
-            },
-        });
-    });
-});
-
-$(document).on("click", ".btn-reject-shipment", function () {
-    var $btn = $(this);
-    var soId = $btn.data("id");
-    var type = $btn.data("type");
-    Swal.fire({
-        title: "Tolak Pengiriman",
-        input: "textarea",
-        inputLabel: "Alasan penolakan (wajib diisi)",
-        inputPlaceholder: "Tuliskan alasan penolakan...",
-        showCancelButton: true,
-        confirmButtonText: "Tolak",
-        cancelButtonText: "Batal",
-        inputValidator: function (value) {
-            if (!value || !value.trim()) {
-                return "Alasan penolakan wajib diisi.";
-            }
-        },
-    }).then(function (result) {
-        if (!result.isConfirmed) return;
-        $btn.css("pointer-events", "none").css("opacity", "0.6");
-        $.ajax({
-            url: "/rejectShipment",
-            method: "post",
-            data: { so_id: soId, type: type, reason: result.value, _token: token },
-            success: function (res) {
-                if (!res || res.status != 1) {
-                    $btn.css("pointer-events", "").css("opacity", "");
-                    notifikasi(
-                        "error",
-                        "Gagal Menolak",
-                        (res && res.message) || "Gagal menolak Pengiriman",
-                    );
-                    return;
-                }
-                notifikasi("success", "Berhasil", res.message || "Pengiriman ditolak");
-                refreshSalesOrder();
-            },
-            error: function (err) {
-                $btn.css("pointer-events", "").css("opacity", "");
-                if (handlePermissionError(err)) return;
-                notifikasi(
-                    "error",
-                    "Gagal Menolak",
-                    (err.responseJSON && err.responseJSON.message) || "Gagal menolak Pengiriman",
-                );
-            },
-        });
-    });
-});
 
 function maybeOpenDeepLinkModals() {
     if (!revisionAutoOpened && revisionSoId) {
@@ -1651,8 +1466,8 @@ function inisialisasi() {
                 data: "status",
                 width: "12%",
                 className: "text-center",
-                render: function (data, type, row) {
-                    return renderSoStatus(data, row);
+                render: function (data) {
+                    return renderSoStatus(data);
                 },
             },
             {
@@ -1683,10 +1498,7 @@ function inisialisasi() {
             {
                 data: null,
                 className: "text-center align-middle",
-                // Diperlebar dari 11% — Pending sekarang bisa menampilkan sampai 4 ikon aksi
-                // sekaligus (Setujui/Tolak/Lihat/Hapus), 11% terlalu sempit dan bikin ikon
-                // meluber keluar sel.
-                width: "15%",
+                width: "11%",
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {

@@ -112,7 +112,6 @@ class SalesOrderUpdateRejectsNoOpEditOnFullyConsumedStockTest extends TestCase
             'sod_id' => $sodId,
         ], fn ($v) => $v !== null);
 
-        config(['pegasus.shipment_internal_insert_enabled' => true]);
         $insertResponse = $this->post('/insertSalesOrder', [
             'so_customer' => $customerId,
             'so_date' => now()->toDateString(),
@@ -123,10 +122,7 @@ class SalesOrderUpdateRejectsNoOpEditOnFullyConsumedStockTest extends TestCase
         $insertResponse->assertStatus(200);
         $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
 
-        $this->approveShipmentTwoStage($soId, self::WAREHOUSE_ID);
-        // approveShipmentTwoStage() switches the acting staff — updateSalesOrder() below needs
-        // Pengiriman|edit, so restore super admin.
-        $this->actingAsSuperAdminStaff();
+        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
 
         $productStock->refresh();
         $this->assertSame(0, $productStock->ps_stock, 'the order consumed exactly all available stock');

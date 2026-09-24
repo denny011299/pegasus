@@ -82,17 +82,10 @@
                 @endif
                 @if (Route::is(['salesOrder']))
                     @roleCan('Pengiriman', 'create')
-                    {{-- Tambah Pengiriman manual DINONAKTIFKAN (2026-09, keputusan PM) — Pengiriman
-                         baru hanya dari sinkronisasi PMO. Lihat config/pegasus.php
-                         (shipment_internal_insert_enabled) — matikan flag ini, bukan hapus markup,
-                         supaya gampang dibuka lagi nanti. Tombol Tambah Pengembalian TIDAK terkena,
-                         itu fitur berbeda. --}}
-                    @if (config('pegasus.shipment_internal_insert_enabled'))
                     <li id="btn-container-pengiriman">
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengiriman</a>
                     </li>
-                    @endif
                     <li id="btn-container-pengembalian" style="display: none;">
                         <a class="btn btn-primary" id="cr-add"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
                             Pengembalian</a>

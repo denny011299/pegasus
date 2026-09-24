@@ -109,7 +109,6 @@ class SalesOrderCreationIsNotBlockedByCurrentStockTest extends TestCase
     public function test_a_pengiriman_can_be_created_while_stock_is_still_zero(): void
     {
         $this->actingAsSuperAdminStaff();
-        config(['pegasus.shipment_internal_insert_enabled' => true]);
 
         $fx = $this->createFixture(startingStock: 0);
 
@@ -137,7 +136,6 @@ class SalesOrderCreationIsNotBlockedByCurrentStockTest extends TestCase
     public function test_acc_still_refuses_while_stock_is_short_then_succeeds_once_stock_arrives(): void
     {
         $this->actingAsSuperAdminStaff();
-        config(['pegasus.shipment_internal_insert_enabled' => true]);
 
         $fx = $this->createFixture(startingStock: 0);
 
@@ -151,16 +149,9 @@ class SalesOrderCreationIsNotBlockedByCurrentStockTest extends TestCase
 
         $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
 
-        // ACC tunggal (accSO) is retired — every Pending Pengiriman now goes through 2-stage
-        // approval (App\Support\ShipmentApproval). Stock is only actually checked at the Ops
-        // stage, same point SalesOrderApproval::confirm() has always checked it.
-        $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
-        $this->withActiveWarehouse(self::WAREHOUSE_ID);
-        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc'])->assertStatus(200)->assertJson(['status' => 1]);
-
-        $refused = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
+        $refused = $this->post('/accSO', ['so_id' => $soId]);
         $refused->assertStatus(200);
-        $this->assertSame(-1, (int) $refused->json('status'), 'ACC must still refuse while stock is short');
+        $this->assertNotSame('1', trim($refused->getContent(), '"'), 'ACC must still refuse while stock is short');
         $this->assertSame(1, (int) SalesOrder::find($soId)->status, 'a refused ACC leaves the Pengiriman pending');
 
         // Stock arrives (production finished / PO received) after the document was filed.
@@ -168,9 +159,9 @@ class SalesOrderCreationIsNotBlockedByCurrentStockTest extends TestCase
         $fx['productStock']->ps_stock = 5;
         $fx['productStock']->save();
 
-        $accepted = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
+        $accepted = $this->post('/accSO', ['so_id' => $soId]);
         $accepted->assertStatus(200);
-        $this->assertSame(1, (int) $accepted->json('status'), 'ACC must succeed once the stock is there');
+        $this->assertSame('1', trim($accepted->getContent(), '"'), 'ACC must succeed once the stock is there');
 
         $fx['productStock']->refresh();
         $this->assertSame(0, (int) $fx['productStock']->ps_stock, 'ACC is the point where stock is deducted');

@@ -9,7 +9,6 @@ use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\SalesOrder;
 use App\Models\Unit;
-use App\Support\SalesOrderApproval;
 use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
@@ -115,13 +114,7 @@ class ExternalApiShipmentCancelFlowTest extends TestCase
         return ['ref' => $refShipmentId, 'variant' => $fx['variant']];
     }
 
-    /**
-     * @return array{ref: string, variant: ProductVariant} confirmed/"Berjalan" (status=2, stock
-     *   deducted) shipment. shipped() itself only ever lands on Pending (status=1) sekarang (lihat
-     *   ExternalApiShipmentShippedFlowTest) — Confirmed di sini disimulasikan langsung lewat
-     *   App\Support\SalesOrderApproval::confirm() (proses yang SAMA yang dijalankan approval tahap
-     *   Ops di admin), supaya test ini tetap fokus pada cancel(), bukan approval.
-     */
+    /** @return array{ref: string, variant: ProductVariant} confirmed/"Berjalan" (status=2, stock deducted) shipment. */
     private function createShippedShipment(array $headers): array
     {
         $armada = $this->createArmada();
@@ -131,11 +124,10 @@ class ExternalApiShipmentCancelFlowTest extends TestCase
         $this->createStock($fx['variant'], $unit->unit_id, 100);
         $refShipmentId = 'SHP-'.uniqid();
 
-        $response = $this->postJson('/api/external/v1/shipments/shipped', [
+        $this->postJson('/api/external/v1/shipments/shipped', [
             'ref_shipment_id' => $refShipmentId,
             'shipment_date' => '2026-07-25',
             'armada_code' => $armada->customer_code,
-            'status' => 'onprocess',
             'items' => [[
                 'variant_sku' => $fx['sku'],
                 'qty' => 24,
@@ -143,10 +135,6 @@ class ExternalApiShipmentCancelFlowTest extends TestCase
                 'product_name' => 'Cancel Test Product',
             ]],
         ], $headers)->assertStatus(201);
-
-        $so = SalesOrder::findOrFail($response->json('data.shipment_internal_id'));
-        $result = SalesOrderApproval::confirm($so, null);
-        $this->assertTrue($result['ok'] ?? false, 'test fixture setup must succeed confirming the shipment');
 
         return ['ref' => $refShipmentId, 'variant' => $fx['variant']];
     }
