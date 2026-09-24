@@ -29,19 +29,6 @@
           </div>
           <input type="hidden" id="konfirmasi_photo_proof_base64">
         </div>
-        {{-- Alasan penolakan (mis. Tolak QC/Ops Pengiriman) — disembunyikan default, ditampilkan
-             lewat JS (showKonfirmasiRejectReason) hanya untuk aksi tolak yang butuh alasan wajib. --}}
-        <div id="konfirmasi-reject-reason" class="mt-3 d-none">
-          <label class="form-label fw-semibold text-muted mb-2"
-                 style="font-size:11px;text-transform:uppercase;letter-spacing:.4px;">
-            Alasan Penolakan<span class="text-danger ms-1">*</span>
-          </label>
-          <textarea class="form-control" id="konfirmasi_reject_reason" rows="3"
-                    placeholder="Tuliskan alasan penolakan..."></textarea>
-          <div id="konfirmasi-reject-reason-error" class="text-danger mt-1" style="font-size:11px;display:none;">
-            Alasan penolakan wajib diisi
-          </div>
-        </div>
         {{-- Terima ST: lihat bukti Kirim yang sudah ada (bukan capture) --}}
         <div id="konfirmasi-photo-view" class="mt-3 d-none">
           <label class="form-label fw-semibold text-muted mb-2"

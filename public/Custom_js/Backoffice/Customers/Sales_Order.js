@@ -1330,24 +1330,15 @@ function salesOrderAjax(data, callback) {
 function renderSoStatus(status, row) {
     status = parseInt(status, 10);
     if (status === 1) {
-        // Same "requested" / "need_approval" phase badges as Stock_Transfer.js
-        // (StockTransferController's pseudo-status filter), derived from
-        // qc_approved_by_name/ops_approved_by_name instead of a real status value.
+        var stage = "Menunggu Staf QC & Gudang";
         if (row && row.ops_approved_by_name) {
-            return (
-                '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Pending</span>' +
-                '<div class="small text-muted mt-1">Menunggu potong stok</div>'
-            );
-        }
-        if (row && row.qc_approved_by_name) {
-            return (
-                '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>' +
-                '<div class="small text-muted mt-1">Menunggu Kepala Operasional</div>'
-            );
+            stage = "Menunggu potong stok";
+        } else if (row && row.qc_approved_by_name) {
+            stage = "Menunggu Kepala Operasional";
         }
         return (
-            '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Requested</span>' +
-            '<div class="small text-muted mt-1">Menunggu Staf QC &amp; Gudang</div>'
+            '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>' +
+            '<div class="small text-muted mt-1">' + stage + "</div>"
         );
     }
     if (status === 2) {
@@ -1436,37 +1427,6 @@ function renderSoAction(row) {
     return soa;
 }
 
-/** Alasan penolakan wajib (Tolak QC/Ops Pengiriman) — sama pola dengan showKonfirmasiPhotoProof
- * di Stock_Transfer.js: field disuntik ke #modalKonfirmasi yang dipakai bersama banyak halaman
- * lain, jadi selalu di-reset & disembunyikan lagi setelah dipakai. */
-var soRejectReasonRequired = false;
-function resetKonfirmasiRejectReason() {
-    $("#konfirmasi_reject_reason").val("");
-    $("#konfirmasi-reject-reason-error").hide();
-}
-function showKonfirmasiRejectReason() {
-    soRejectReasonRequired = true;
-    resetKonfirmasiRejectReason();
-    $("#konfirmasi-reject-reason").removeClass("d-none");
-}
-function hideKonfirmasiRejectReason() {
-    soRejectReasonRequired = false;
-    $("#konfirmasi-reject-reason").addClass("d-none");
-    resetKonfirmasiRejectReason();
-}
-function getKonfirmasiRejectReason() {
-    return ($("#konfirmasi_reject_reason").val() || "").trim();
-}
-function assertKonfirmasiRejectReason() {
-    if (!soRejectReasonRequired) return true;
-    if (getKonfirmasiRejectReason()) return true;
-    $("#konfirmasi-reject-reason-error").show();
-    return false;
-}
-$(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
-    hideKonfirmasiRejectReason();
-});
-
 $(document).on("click", ".btn-approve-shipment", function () {
     var $btn = $(this);
     var soId = $btn.data("id");
@@ -1476,53 +1436,46 @@ $(document).on("click", ".btn-approve-shipment", function () {
         type === "ops"
             ? "Setujui Pengiriman ini (Kepala Operasional)? Stok akan dicek dan dipotong, status menjadi Diterima."
             : "Setujui Pengiriman ini (Staf QC & Gudang)? Selanjutnya menunggu approval Kepala Operasional.";
-    showModalKonfirmasi(confirmMsg, "btn-approve-shipment-confirm");
-    hideKonfirmasiRejectReason();
-    $("#modalKonfirmasi #btn-approve-shipment-confirm")
-        .attr("data-id", soId)
-        .attr("data-type", type)
-        .attr("data-label", label);
-});
-
-$(document).on("click", "#btn-approve-shipment-confirm", function () {
-    var $confirmBtn = $(this);
-    if ($confirmBtn.data("busy")) return;
-    var soId = $confirmBtn.attr("data-id");
-    var type = $confirmBtn.attr("data-type");
-    var label = $confirmBtn.attr("data-label");
-    $confirmBtn.data("busy", true);
-    LoadingButton($confirmBtn);
-    $.ajax({
-        url: "/approveShipment",
-        method: "post",
-        data: { so_id: soId, type: type, _token: token },
-        success: function (res) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
-            if (!res || res.status != 1) {
-                closeModalConfirm();
+    Swal.fire({
+        title: "Konfirmasi",
+        text: confirmMsg,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Ya, Setujui",
+        cancelButtonText: "Batal",
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        // Ikon aksi kecil (bukan tombol berteks) — kunci lewat pointer-events, bukan
+        // LoadingButton/ResetLoadingButton (itu mengganti isi .html() dengan teks, cocok untuk
+        // tombol besar, tidak untuk ikon bundar sekecil ini).
+        $btn.css("pointer-events", "none").css("opacity", "0.6");
+        $.ajax({
+            url: "/approveShipment",
+            method: "post",
+            data: { so_id: soId, type: type, _token: token },
+            success: function (res) {
+                if (!res || res.status != 1) {
+                    $btn.css("pointer-events", "").css("opacity", "");
+                    notifikasi(
+                        "error",
+                        "Gagal Approve",
+                        (res && res.message) || "Gagal approve " + label,
+                    );
+                    return;
+                }
+                notifikasi("success", "Berhasil", res.message || "Approval berhasil");
+                refreshSalesOrder();
+            },
+            error: function (err) {
+                $btn.css("pointer-events", "").css("opacity", "");
+                if (handlePermissionError(err)) return;
                 notifikasi(
                     "error",
                     "Gagal Approve",
-                    (res && res.message) || "Gagal approve " + label,
+                    (err.responseJSON && err.responseJSON.message) || "Gagal approve " + label,
                 );
-                return;
-            }
-            closeModalConfirm();
-            notifikasi("success", "Berhasil", res.message || "Approval berhasil");
-            refreshSalesOrder();
-        },
-        error: function (err) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
-            closeModalConfirm();
-            if (handlePermissionError(err)) return;
-            notifikasi(
-                "error",
-                "Gagal Approve",
-                (err.responseJSON && err.responseJSON.message) || "Gagal approve " + label,
-            );
-        },
+            },
+        });
     });
 });
 
@@ -1530,53 +1483,49 @@ $(document).on("click", ".btn-reject-shipment", function () {
     var $btn = $(this);
     var soId = $btn.data("id");
     var type = $btn.data("type");
-    showModalKonfirmasi("Tolak Pengiriman ini? Tuliskan alasan penolakan di bawah.", "btn-reject-shipment-confirm", true, "Tolak");
-    showKonfirmasiRejectReason();
-    $("#modalKonfirmasi #btn-reject-shipment-confirm")
-        .attr("data-id", soId)
-        .attr("data-type", type);
-});
-
-$(document).on("click", "#btn-reject-shipment-confirm", function () {
-    var $confirmBtn = $(this);
-    if ($confirmBtn.data("busy")) return;
-    if (!assertKonfirmasiRejectReason()) return;
-    var soId = $confirmBtn.attr("data-id");
-    var type = $confirmBtn.attr("data-type");
-    var reason = getKonfirmasiRejectReason();
-    $confirmBtn.data("busy", true);
-    LoadingButton($confirmBtn);
-    $.ajax({
-        url: "/rejectShipment",
-        method: "post",
-        data: { so_id: soId, type: type, reason: reason, _token: token },
-        success: function (res) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Tolak');
-            if (!res || res.status != 1) {
-                closeModalConfirm();
+    Swal.fire({
+        title: "Tolak Pengiriman",
+        input: "textarea",
+        inputLabel: "Alasan penolakan (wajib diisi)",
+        inputPlaceholder: "Tuliskan alasan penolakan...",
+        showCancelButton: true,
+        confirmButtonText: "Tolak",
+        cancelButtonText: "Batal",
+        inputValidator: function (value) {
+            if (!value || !value.trim()) {
+                return "Alasan penolakan wajib diisi.";
+            }
+        },
+    }).then(function (result) {
+        if (!result.isConfirmed) return;
+        $btn.css("pointer-events", "none").css("opacity", "0.6");
+        $.ajax({
+            url: "/rejectShipment",
+            method: "post",
+            data: { so_id: soId, type: type, reason: result.value, _token: token },
+            success: function (res) {
+                if (!res || res.status != 1) {
+                    $btn.css("pointer-events", "").css("opacity", "");
+                    notifikasi(
+                        "error",
+                        "Gagal Menolak",
+                        (res && res.message) || "Gagal menolak Pengiriman",
+                    );
+                    return;
+                }
+                notifikasi("success", "Berhasil", res.message || "Pengiriman ditolak");
+                refreshSalesOrder();
+            },
+            error: function (err) {
+                $btn.css("pointer-events", "").css("opacity", "");
+                if (handlePermissionError(err)) return;
                 notifikasi(
                     "error",
                     "Gagal Menolak",
-                    (res && res.message) || "Gagal menolak Pengiriman",
+                    (err.responseJSON && err.responseJSON.message) || "Gagal menolak Pengiriman",
                 );
-                return;
-            }
-            closeModalConfirm();
-            notifikasi("success", "Berhasil", res.message || "Pengiriman ditolak");
-            refreshSalesOrder();
-        },
-        error: function (err) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Tolak');
-            closeModalConfirm();
-            if (handlePermissionError(err)) return;
-            notifikasi(
-                "error",
-                "Gagal Menolak",
-                (err.responseJSON && err.responseJSON.message) || "Gagal menolak Pengiriman",
-            );
-        },
+            },
+        });
     });
 });
 

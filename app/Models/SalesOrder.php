@@ -202,19 +202,8 @@ class SalesOrder extends Model
         if ($dateTo !== '') {
             $base->whereDate('sales_orders.so_date', '<=', $dateTo);
         }
-        $hasApprovalColsForFilter = Schema::hasColumn($this->getTable(), 'qc_approved_by');
         if ($statusFilter !== '' && ctype_digit($statusFilter)) {
             $base->where('sales_orders.status', (int) $statusFilter);
-        } elseif ($statusFilter === 'requested' && $hasApprovalColsForFilter) {
-            // Pending, belum di-acc QC sama sekali — mirror StockTransferController's
-            // "requested" bucket (StockTransfer.php ~line 419).
-            $base->where('sales_orders.status', 1)
-                ->whereNull('sales_orders.qc_approved_by');
-        } elseif ($statusFilter === 'need_approval' && $hasApprovalColsForFilter) {
-            // Sudah di-acc QC, menunggu Ops.
-            $base->where('sales_orders.status', 1)
-                ->whereNotNull('sales_orders.qc_approved_by')
-                ->whereNull('sales_orders.ops_approved_by');
         }
         if ($sourceFilter === 'pmo') {
             $base->whereNotNull('sales_orders.ref_shipment_id');
