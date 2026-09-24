@@ -1,15 +1,17 @@
 {
-    "generated_at": "2026-09-24T13:06:47+07:00",
-    "commit": "c3653b9c9b4e4110344919aaee4423c8970e0701",
+    "generated_at": "2026-09-24T15:10:52+07:00",
+    "commit": "15d09a6b059a687d3fe3f0cbe08f1a69e97834b1",
     "branch": "fase2/main",
     "file_count": 3588,
-    "previous_commit": "0b3933321b3c771086938cf0659c441543f931ff",
-    "previous_generated_at": "2026-09-24T12:25:21+07:00",
-    "added": [
-        "resources/views/layout/fullscreen.blade.php"
-    ],
+    "previous_commit": "c3653b9c9b4e4110344919aaee4423c8970e0701",
+    "previous_generated_at": "2026-09-24T13:06:47+07:00",
+    "added": [],
     "removed": [],
-    "changed": [],
+    "changed": [
+        "config/pegasus.php",
+        "public/Custom_js/Backoffice/Customers/Sales_Order.js",
+        "resources/views/components/page-header.blade.php"
+    ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
         "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
@@ -326,7 +328,7 @@
         "config/logging.php": "f163e17e3d43b2aa18f20994b2d26c2ccabd5abc",
         "config/mail.php": "55990e37cb337eee513173e5c48479cbb1e5202e",
         "config/maintenance.php": "661670db271a685138cf77eb5e8428dcc4fd381c",
-        "config/pegasus.php": "568afad8486ddec170272ba1ff65fee62d88856b",
+        "config/pegasus.php": "43649ff6ba828534d6b6e3007124e3b95684b38e",
         "config/queue.php": "258c42a365b1b4bee36b69053966a3fd836a9394",
         "config/services.php": "e5d2f1a1f6f4d2ebf16e796ab0ac542c572f43bf",
         "config/session.php": "a131d62aba06ee4d064036ab24530211c2dd9a99",
@@ -1123,7 +1125,7 @@
         "public/Custom_js/Backoffice/Customers/Customer_Product_Return.js": "828f1be139630c77925651b5819cf5d69b399556",
         "public/Custom_js/Backoffice/Customers/Customer_Return.js": "5d0d7c33df03b18f8b138449fc7c0d1f50cf01e7",
         "public/Custom_js/Backoffice/Customers/Customer_Supply_Return.js": "171199a89637e41de8861e6916ca510f08e23b7f",
-        "public/Custom_js/Backoffice/Customers/Sales_Order.js": "0482e450bc7531df26724d70e7ec862f7de3a308",
+        "public/Custom_js/Backoffice/Customers/Sales_Order.js": "9ca31d6e1c9725d2f1a9f28d595f28600adc04ec",
         "public/Custom_js/Backoffice/Customers/Sales_Order_detail copy.js": "399cc82d4d7d53e7a0ae2d19b7df29ac808a3ce0",
         "public/Custom_js/Backoffice/Customers/Sales_Order_detail.js": "9a20680970f5bdb8d162a732e9345bdf5b935006",
         "public/Custom_js/Backoffice/Customers/insertCustomer.js": "c8e5cb77ef8027eb05471aec7dc4513ecf74066a",
@@ -3546,7 +3548,7 @@
         "resources/views/components/modals/warehouse-type/add-warehouse-type.blade.php": "3bc33df8aafb46232fd7225790c3e666f4740d30",
         "resources/views/components/modals/warehouse/add-warehouse.blade.php": "b55f722bd5fb12031840c65e427426eb888f90ab",
         "resources/views/components/opname-status-badges.blade.php": "2523c85926b255729a797c54971d6b8ecbd0ea2e",
-        "resources/views/components/page-header.blade.php": "8282142c95cce8b5aecf6c2da08ddb6415e1d9f0",
+        "resources/views/components/page-header.blade.php": "1b3093fd312d8c84b4ba6751bf00d5266de95bd5",
         "resources/views/components/search-filter.blade.php": "53d1a9ea5f0ab44e1c4e084f35fd3603f01802e5",
         "resources/views/components/settings-menu.blade.php": "894470e7174ad56f4065a00e2bafee331575c158",
         "resources/views/components/tickets-card.blade.php": "8d3c9b984c5a8ed8d8a802dfd1477bd5fff14fd2",
