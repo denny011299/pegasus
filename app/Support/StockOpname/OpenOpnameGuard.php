@@ -2,8 +2,10 @@
 
 namespace App\Support\StockOpname;
 
+use App\Models\Staff;
 use App\Models\StockOpname;
 use App\Models\StockOpnameBahan;
+use App\Models\Warehouse;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -120,6 +122,92 @@ class OpenOpnameGuard
             ],
             'any_open' => $productOpen || $suppliesOpen,
         ];
+    }
+
+    /**
+     * Semua dokumen opname open (status=1, hari ini) lintas gudang — untuk monitor.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function liveOpenDocumentsSnapshot(?Carbon $date = null): array
+    {
+        $date = $date ?? Carbon::today();
+        $dateStr = $date->toDateString();
+        $out = [];
+
+        $productQ = StockOpname::query()
+            ->where('status', 1)
+            ->whereDate('sto_date', $dateStr);
+        if (Schema::hasColumn('stock_opnames', 'is_old_version')) {
+            $productQ->where('is_old_version', false);
+        }
+        $products = $productQ->orderBy('warehouse_id')->orderBy('sto_id')->get();
+
+        $suppliesQ = StockOpnameBahan::query()
+            ->where('status', 1)
+            ->whereDate('stob_date', $dateStr);
+        if (Schema::hasColumn('stock_opname_bahans', 'is_old_version')) {
+            $suppliesQ->where('is_old_version', false);
+        }
+        $supplies = $suppliesQ->orderBy('warehouse_id')->orderBy('stob_id')->get();
+
+        $whIds = $products->pluck('warehouse_id')
+            ->merge($supplies->pluck('warehouse_id'))
+            ->unique()
+            ->filter()
+            ->all();
+        $staffIds = $products->pluck('staff_id')
+            ->merge($products->pluck('created_by'))
+            ->merge($supplies->pluck('staff_id'))
+            ->merge($supplies->pluck('created_by'))
+            ->unique()
+            ->filter()
+            ->all();
+
+        $whNames = $whIds
+            ? Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id')
+            : collect();
+        $staffNames = $staffIds
+            ? Staff::whereIn('staff_id', $staffIds)->pluck('staff_name', 'staff_id')
+            : collect();
+
+        foreach ($products as $row) {
+            $wid = (int) ($row->warehouse_id ?? 0);
+            $sid = (int) ($row->created_by ?: $row->staff_id ?: 0);
+            $out[] = [
+                'domain' => self::DOMAIN_PRODUCT,
+                'domain_label' => 'Produk',
+                'id' => (int) $row->sto_id,
+                'code' => (string) ($row->sto_code ?? ''),
+                'warehouse_id' => $wid,
+                'warehouse_name' => (string) ($whNames[$wid] ?? 'Gudang #'.$wid),
+                'staff_id' => $sid,
+                'staff_name' => (string) ($staffNames[$sid] ?? '—'),
+                'is_draft' => (bool) ($row->is_draft ?? false),
+                'date' => $dateStr,
+                'url' => url('/detailStockOpname/'.$row->sto_id),
+            ];
+        }
+
+        foreach ($supplies as $row) {
+            $wid = (int) ($row->warehouse_id ?? 0);
+            $sid = (int) ($row->created_by ?: $row->staff_id ?: 0);
+            $out[] = [
+                'domain' => self::DOMAIN_SUPPLIES,
+                'domain_label' => 'Bahan Mentah',
+                'id' => (int) $row->stob_id,
+                'code' => (string) ($row->stob_code ?? ''),
+                'warehouse_id' => $wid,
+                'warehouse_name' => (string) ($whNames[$wid] ?? 'Gudang #'.$wid),
+                'staff_id' => $sid,
+                'staff_name' => (string) ($staffNames[$sid] ?? '—'),
+                'is_draft' => (bool) ($row->is_draft ?? false),
+                'date' => $dateStr,
+                'url' => url('/detailStockOpnameBahan/'.$row->stob_id),
+            ];
+        }
+
+        return $out;
     }
 
     private function openQuery(int $warehouseId, string $domain, ?Carbon $date = null): Builder

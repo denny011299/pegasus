@@ -600,6 +600,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/reportSelisihOpname', [ReportController::class, 'reportSelisihOpname'])->name('reportSelisihOpname');
         Route::get('/getReportSelisihOpname', [ReportController::class, 'getReportSelisihOpname'])->name('getReportSelisihOpname');
         Route::get('/generateReportSelisihOpnamePdf', [ReportController::class, 'generateReportSelisihOpnamePdf'])->name('generateReportSelisihOpnamePdf');
+        // Monitor tersembunyi (tidak di sidebar) — tracking siapa lagi Input / dokumen open
+        Route::get('/opnameLiveStatus', [StockController::class, 'stockOpnameLiveStatus'])->name('opnameLiveStatus');
+        Route::get('/getOpnameLiveStatus', [StockController::class, 'getStockOpnameLiveStatus'])->name('getOpnameLiveStatus');
     });
 
     Route::middleware('check.access:Laporan Produksi|view')->group(function () {
