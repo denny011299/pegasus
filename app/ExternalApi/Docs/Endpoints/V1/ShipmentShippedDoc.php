@@ -84,7 +84,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
         return [
             'ref_shipment_id' => 'SHP-7788',
             'shipment_date' => '2026-07-25',
-            'armada_code' => 'L8533N',
+            'armada_code' => 'ARM-JKT-001',
             'status' => 'onprocess',
             'notes' => 'Pengiriman SHP-7788',
             'detail_handler' => 'force',

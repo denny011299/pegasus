@@ -104,7 +104,7 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             // tersinkron di IPM, upsert otomatis. Kirim armada_code SAJA kalau armadanya sudah
             // pasti terdaftar aktif.
             'armada' => [
-                'code' => 'L8533N',
+                'code' => 'ARM-JKT-001',
                 'pic' => 'Budi Santoso',
                 'pic_phone' => '081234567890',
             ],
@@ -131,7 +131,7 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
                 'return_type' => 'mixed',
                 'supply_return_id' => 15,
                 'product_return_id' => 9,
-                'armada_code' => 'L8533N',
+                'armada_code' => 'ARM-JKT-001',
                 'pending_warehouse_items' => 2,
                 'message' => 'Pengembalian berhasil disimpan. 2 baris belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.',
             ],

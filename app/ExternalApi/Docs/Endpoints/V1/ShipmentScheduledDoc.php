@@ -75,7 +75,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
         return [
             'ref_shipment_id' => 'SHP-7788',
             'scheduled_date' => '2026-07-25',
-            'armada_code' => 'L8533N',
+            'armada_code' => 'ARM-JKT-001',
             'auto_create_shortage_doc' => true,
             'items' => [
                 ['sku' => 'AAHK400ML', 'qty' => 24, 'unit_id' => 5, 'ref_nota_id' => 4328012026102327],
