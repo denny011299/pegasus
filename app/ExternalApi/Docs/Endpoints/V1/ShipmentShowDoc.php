@@ -67,7 +67,7 @@ class ShipmentShowDoc extends ApiEndpointDoc
                 'ipm_status' => 2,
                 'ipm_status_label' => 'Berjalan',
                 'shipment_date' => '2026-07-23',
-                'armada_code' => 'L8533N',
+                'armada_code' => 'ARM-JKT-001',
                 'notes' => 'Pengiriman PMO SHP-7788',
                 'photos' => ['https://pegasus.test/issue/photo_64f1a2b3c4d5e.jpg'],
                 'created_at' => '2026-07-23T09:15:00+07:00',

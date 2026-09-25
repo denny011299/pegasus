@@ -771,18 +771,23 @@ class CustomerReturnController extends Controller
      *   Baris utama + destination eceran (ST setelah ACC) tidak tampil di eceran (9ffd3a09).
      * - Gudang utama: warehouse_id = utama — mencakup stay (dest=utama/null) dan
      *   mixed destinasi eceran (dest=eceran). Dokumen tampil jika ada detail di utama.
+     * - warehouse_id NULL (GitHub #203 follow-up, 2026-09-25) — baris produk satuan eceran dari
+     *   PMO yang belum diisi gudangnya sama sekali (SATU-SATUNYA kasus yang masih bisa NULL sejak
+     *   ShipmentReturnController::resolveProductWarehouses() default ke gudang utama untuk baris
+     *   non-eceran). Diperlakukan SEOLAH-OLAH warehouse_id-nya gudang utama UNTUK KEPERLUAN
+     *   TAMPILAN SAJA (tidak menulis apa pun ke kolomnya) — jadi HANYA muncul saat staf sedang
+     *   melihat gudang utama ($activeIsMain), TIDAK muncul di gudang eceran manapun. Keputusan
+     *   pemilik produk 2026-09-25: baris yang belum ditentukan gudangnya dikelola dari gudang
+     *   utama (tempat retur pertama kali "mendarat" secara default), bukan bocor ke semua gudang.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
-        // Kedua cabang: filter warehouse_id saja. Perbedaan perilaku dari data shape:
-        // baris ST-ke-eceran tetap warehouse_id=utama → muncul di utama, tidak di eceran.
-        if (! $activeIsMain) {
-            $query->where("{$alias}.warehouse_id", $warehouseId);
-
-            return;
-        }
-
-        $query->where("{$alias}.warehouse_id", $warehouseId);
+        $query->where(function ($q) use ($alias, $warehouseId, $activeIsMain) {
+            $q->where("{$alias}.warehouse_id", $warehouseId);
+            if ($activeIsMain) {
+                $q->orWhereNull("{$alias}.warehouse_id");
+            }
+        });
     }
 
     private function applyWarehouseScope($query, string $alias, int $warehouseId): void
@@ -832,6 +837,7 @@ class CustomerReturnController extends Controller
                 'csr.return_group',
                 'csr.return_date',
                 'csr.ref_number',
+                'csr.ref_shipment_id',
                 'csr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -844,6 +850,7 @@ class CustomerReturnController extends Controller
                 $query->where('csr.return_number', 'like', $like)
                     ->orWhere('csr.return_group', 'like', $like)
                     ->orWhere('csr.ref_number', 'like', $like)
+                    ->orWhere('csr.ref_shipment_id', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -861,6 +868,7 @@ class CustomerReturnController extends Controller
                 'cpr.return_group',
                 'cpr.return_date',
                 'cpr.ref_number',
+                'cpr.ref_shipment_id',
                 'cpr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -873,6 +881,7 @@ class CustomerReturnController extends Controller
                 $query->where('cpr.return_number', 'like', $like)
                     ->orWhere('cpr.return_group', 'like', $like)
                     ->orWhere('cpr.ref_number', 'like', $like)
+                    ->orWhere('cpr.ref_shipment_id', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -918,6 +927,7 @@ class CustomerReturnController extends Controller
             'return_number' => $row->return_group ?: $row->return_number,
             'return_date' => $row->return_date,
             'ref_number' => $row->ref_number,
+            'ref_shipment_id' => $row->ref_shipment_id,
             'customer_name' => $row->customer_name,
             'status' => (int) $row->status,
             'created_by_name' => $row->created_by_name,
@@ -958,6 +968,9 @@ class CustomerReturnController extends Controller
         }
         if ($row->ref_number) {
             $target['ref_number'] = $row->ref_number;
+        }
+        if ($row->ref_shipment_id) {
+            $target['ref_shipment_id'] = $row->ref_shipment_id;
         }
         if ($row->customer_name) {
             $target['customer_name'] = $row->customer_name;
@@ -1048,7 +1061,12 @@ class CustomerReturnController extends Controller
             $supplyDetails = DB::table('customer_supply_return_details as d')
                 ->join('supplies as s', 's.supplies_id', '=', 'd.supplies_id')
                 ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
-                ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
+                // leftJoin (GitHub #203 follow-up) -- warehouse_id boleh NULL (retur dari PMO yang
+                // belum diisi admin), sebuah INNER JOIN di sini akan DIAM-DIAM MEMBUANG baris itu
+                // dari respons, jadi baris yang justru paling perlu diisi manual tidak pernah
+                // muncul di modal Edit sama sekali. Bug lama, baru kelihatan sekarang karena baris
+                // dengan warehouse_id NULL sebelumnya cuma bisa terjadi pada kasus produk eceran.
+                ->leftJoin('warehouses as w', 'w.id', '=', 'd.warehouse_id')
                 ->where('d.return_id', $supply->return_id)
                 ->where('d.status', 1)
                 ->orderBy('d.return_detail_id')
@@ -1093,7 +1111,8 @@ class CustomerReturnController extends Controller
                 ->join('product_variants as pv', 'pv.product_variant_id', '=', 'd.product_variant_id')
                 ->join('products as p', 'p.product_id', '=', 'pv.product_id')
                 ->join('units as u', 'u.unit_id', '=', 'd.unit_id')
-                ->join('warehouses as w', 'w.id', '=', 'd.warehouse_id')
+                // leftJoin, sama alasan seperti sisi bahan di atas.
+                ->leftJoin('warehouses as w', 'w.id', '=', 'd.warehouse_id')
                 ->where('d.return_id', $product->return_id)
                 ->where('d.status', 1)
                 ->orderBy('d.return_detail_id');
@@ -1140,6 +1159,10 @@ class CustomerReturnController extends Controller
                 'customer_pic_phone' => $customer?->customer_pic_phone,
                 'return_date' => optional($primary->return_date)->format('Y-m-d') ?? (string) $primary->return_date,
                 'ref_number' => $primary->ref_number,
+                // GitHub #203 follow-up: ditampilkan sebagai badge "Dari PMO" di daftar & modal --
+                // hanya terisi untuk dokumen yang dibuat lewat POST /shipments/returns dengan
+                // ref_shipment_id (App\Http\Controllers\ExternalApi\V1\ShipmentReturnController).
+                'ref_shipment_id' => $supply->ref_shipment_id ?? $product->ref_shipment_id ?? null,
                 'notes' => $primary->notes,
                 'proof_path' => $primary->proof_path,
                 'status' => $status,

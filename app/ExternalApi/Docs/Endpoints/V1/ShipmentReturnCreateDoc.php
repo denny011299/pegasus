@@ -5,7 +5,7 @@ namespace App\ExternalApi\Docs\Endpoints\V1;
 use App\ExternalApi\Docs\ApiEndpointDoc;
 
 /**
- * Dokumentasi POST /api/external/v1/shipments/returns (GitHub #58).
+ * Dokumentasi POST /api/external/v1/shipments/returns (GitHub #58, diperluas GitHub #203).
  */
 class ShipmentReturnCreateDoc extends ApiEndpointDoc
 {
@@ -49,16 +49,36 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'return_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal pengembalian, format YYYY-MM-DD.'],
-            ['name' => 'armada_code', 'type' => 'string', 'required' => true,
-                'description' => 'customers.customer_code — id universal Armada, sama field yang dipakai POST /shipments/scheduled dan /shipments/shipped. Harus armada aktif.'],
+            ['name' => 'armada_code', 'type' => 'string', 'required' => false,
+                'description' => 'customers.customer_code — id universal Armada, sama field yang dipakai POST /shipments/scheduled dan /shipments/shipped. Kirim ini KALAU armada sudah pasti terdaftar aktif di IPM — kalau tidak ditemukan, ditolak VALIDATION_FAILED (lihat catatan). Wajib kirim SALAH SATU dari armada_code atau armada.'],
+            ['name' => 'armada', 'type' => 'object', 'required' => false,
+                'description' => 'ALTERNATIF dari armada_code — kirim ini untuk armada yang belum tentu tersinkron di IPM, upsert otomatis (buat kalau belum ada, perbarui kalau sudah ada) tanpa perlu PUT /armada/{code} lebih dulu. Wajib kirim SALAH SATU dari armada_code atau armada. Kalau keduanya dikirim, code-nya harus sama.'],
+            ['name' => 'armada.code', 'type' => 'string', 'required' => true,
+                'description' => 'Wajib kalau objek armada dikirim. customers.customer_code — id universal armada, sama field dengan armada_code.'],
+            ['name' => 'armada.pic', 'type' => 'string', 'required' => false,
+                'description' => 'Nama penanggung jawab/pemilik armada — field & kolom sama persis dengan PUT /api/external/v1/armada/{code} (grup Data Master).'],
+            ['name' => 'armada.pic_phone', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor telepon penanggung jawab.'],
+            ['name' => 'armada.nomor_polisi', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor polisi kendaraan.'],
+            ['name' => 'armada.category', 'type' => 'string', 'required' => false,
+                'description' => 'Kategori armada, teks bebas (mis. "Truk Engkel").'],
+            ['name' => 'armada.merk_model', 'type' => 'string', 'required' => false,
+                'description' => 'Merk/model kendaraan.'],
+            ['name' => 'armada.tahun_kendaraan', 'type' => 'string', 'required' => false,
+                'description' => 'Tahun kendaraan.'],
+            ['name' => 'armada.lokasi', 'type' => 'string', 'required' => false,
+                'description' => 'Lokasi/pool armada, teks bebas.'],
+            ['name' => 'ref_shipment_id', 'type' => 'string', 'required' => false,
+                'description' => 'sales_orders.ref_shipment_id milik shipment asal (dipakai PUT /shipments/scheduled dan POST /shipments/shipped) — hubungkan retur ini ke shipment/SO yang memicunya. Mengirim field ini juga membuat proof/proof_base64 opsional dan permintaan ini idempoten (lihat catatan).'],
             ['name' => 'ref_number', 'type' => 'string', 'required' => false,
-                'description' => 'Nomor referensi bebas, catatan saja — bukan kunci idempotensi (endpoint ini TIDAK idempoten, lihat catatan).'],
+                'description' => 'Nomor referensi bebas, catatan saja — bukan kunci idempotensi.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas.'],
-            ['name' => 'proof', 'type' => 'file', 'required' => true,
-                'description' => 'Bukti foto pengembalian, berkas sungguhan lewat multipart/form-data. WAJIB kirim salah satu dari proof ATAU proof_base64. JPEG/PNG/WebP, maksimal 5MB.'],
-            ['name' => 'proof_base64', 'type' => 'string', 'required' => true,
-                'description' => 'Alternatif proof untuk pemanggil JSON murni: data URI base64 ("data:image/jpeg;base64,..."). WAJIB kirim salah satu dari proof ATAU proof_base64.'],
+            ['name' => 'proof', 'type' => 'file', 'required' => false,
+                'description' => 'Bukti foto pengembalian, berkas sungguhan lewat multipart/form-data. WAJIB kirim salah satu dari proof ATAU proof_base64 KECUALI ref_shipment_id dikirim (lihat catatan). JPEG/PNG/WebP, maksimal 5MB.'],
+            ['name' => 'proof_base64', 'type' => 'string', 'required' => false,
+                'description' => 'Alternatif proof untuk pemanggil JSON murni: data URI base64 ("data:image/jpeg;base64,..."). WAJIB kirim salah satu dari proof ATAU proof_base64 KECUALI ref_shipment_id dikirim (lihat catatan).'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
                 'description' => 'Daftar barang yang dikembalikan, minimal satu.'],
             ['name' => 'items[].type', 'type' => 'integer', 'required' => true,
@@ -70,7 +90,9 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             ['name' => 'items[].satuan_id', 'type' => 'integer', 'required' => true,
                 'description' => 'Rujukan units.ref_unit_id (id satuan pada sistem PMO), BUKAN id internal Pegasus — sama pola dipakai items[].unit_id di seluruh modul Shipment/Stok. Harus satuan aktif YANG TERDAFTAR untuk bahan/produk itu.'],
             ['name' => 'items[].gudang_id', 'type' => 'integer', 'required' => false,
-                'description' => 'Id gudang tujuan — nilai LANGSUNG dari id gudang (bukan kolom rujukan eksternal seperti satuan_id/ref_id, karena gudang tidak disinkronkan sistem PMO), ambil daftarnya dari GET /master/warehouses (grup Data Master). Hanya benar-benar dipakai untuk baris type=2 (produk jadi) yang satuannya adalah satuan eceran produk itu — untuk baris lain field ini diabaikan sama sekali. Belum wajib untuk sekarang, lihat catatan.'],
+                'description' => 'Id gudang tujuan — nilai LANGSUNG dari id gudang (bukan kolom rujukan eksternal seperti satuan_id/ref_id, karena gudang tidak disinkronkan sistem PMO), ambil daftarnya dari GET /master/warehouses (grup Data Master). Dihormati untuk SEMUA tipe baris (bahan maupun produk) kalau dikirim. Kalau TIDAK dikirim: baris bahan mentah dan produk non-eceran otomatis ke gudang utama; baris produk satuan eceran dibiarkan tanpa gudang tujuan, lihat catatan.'],
+            ['name' => 'items[].ref_nota_id', 'type' => 'integer', 'required' => false,
+                'description' => 'Id nota PMO asal baris retur ini — pola sama dengan items[].ref_nota_id pada POST /shipments/shipped, murni untuk penelusuran, tidak divalidasi. Ikut menentukan penggabungan baris: dua baris item+satuan yang sama tapi ref_nota_id berbeda TIDAK digabung.'],
         ];
     }
 
@@ -78,16 +100,25 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             'return_date' => '2026-08-17',
-            'armada_code' => 'L8533N',
+            // Alternatif dari armada_code -- dipakai di sini untuk armada yang belum tentu
+            // tersinkron di IPM, upsert otomatis. Kirim armada_code SAJA kalau armadanya sudah
+            // pasti terdaftar aktif.
+            'armada' => [
+                'code' => 'ARM-JKT-001',
+                'pic' => 'Budi Santoso',
+                'pic_phone' => '081234567890',
+            ],
+            'ref_shipment_id' => 'PMO-SHP-20889',
             'ref_number' => 'RTN-7788',
-            'notes' => 'Sisa muatan setelah rute selesai',
-            'proof_base64' => 'data:image/jpeg;base64,/9j/4AAQSkZJRg...',
+            'notes' => 'Nota dibatalkan ulang admin PMO, foto tidak tersedia dari sisi PMO',
             'items' => [
-                ['type' => 1, 'ref_id' => 12, 'qty' => 5, 'satuan_id' => 2],
-                ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 3, 'satuan_id' => 2],
-                // Baris satuan eceran produk itu -- gudang_id dipakai karena kondisinya cocok
-                // (lihat catatan). Kalau tidak dikirim, warehouse_id baris ini akan kosong.
-                ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 2, 'satuan_id' => 7, 'gudang_id' => 4],
+                // Tidak kirim gudang_id -- baris bahan mentah otomatis ke gudang utama.
+                ['type' => 1, 'ref_id' => 12, 'qty' => 5, 'satuan_id' => 2, 'ref_nota_id' => 55201],
+                // satuan_id 2 di sini BUKAN satuan eceran produk itu -- otomatis ke gudang utama juga.
+                ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 3, 'satuan_id' => 2, 'ref_nota_id' => 55201],
+                // satuan_id 7 ADALAH satuan eceran produk itu, tanpa gudang_id -- baris ini dibiarkan
+                // tanpa gudang tujuan, dihitung ke pending_warehouse_items pada respons.
+                ['type' => 2, 'ref_id' => 'AAHK400ML', 'qty' => 2, 'satuan_id' => 7, 'ref_nota_id' => 55202],
             ],
         ];
     }
@@ -101,9 +132,9 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
                 'return_type' => 'mixed',
                 'supply_return_id' => 15,
                 'product_return_id' => 9,
-                'armada_code' => 'L8533N',
-                'pending_warehouse_items' => 0,
-                'message' => 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah ditentukan otomatis.',
+                'armada_code' => 'ARM-JKT-001',
+                'pending_warehouse_items' => 1,
+                'message' => 'Pengembalian berhasil disimpan. 1 baris produk satuan eceran belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.',
             ],
         ];
     }
@@ -112,7 +143,11 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
-                'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
+                'message' => 'armada_code tidak ditemukan atau tidak aktif. Kirim armada (lihat parameter di atas) untuk membuat/memperbarui armada ini otomatis.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'armada_code atau armada wajib dikirim salah satu.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'armada_code dan armada.code tidak boleh berbeda kalau dikirim bersamaan.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.ref_id (type=1) tidak ditemukan sebagai ref_supplies_id yang aktif — daftarkan/hubungkan dulu lewat POST atau PATCH /bahan/connect.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
@@ -130,14 +165,19 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             'Fiturnya sama dengan menu admin Pengiriman > Pengembalian — endpoint ini cuma jalur masuk baru untuk PMO memicunya langsung, bukan alur baru.',
-            'TIDAK idempoten (beda dengan /shipments/shipped dan /payments/cash) — tidak ada field acuan unik pada kontrak ini. Setiap permintaan yang lolos validasi selalu membuat dokumen pengembalian BARU, sama seperti /shipments/scheduled. Kirim ulang permintaan yang sama akan menghasilkan dua dokumen.',
-            'Gudang tujuan tiap baris DITENTUKAN OTOMATIS mengikuti aturan yang sama dengan halaman admin: baris bahan mentah/kemasan SELALU ke gudang utama; baris produk jadi SELALU ke gudang utama JUGA kecuali satuan yang dipakai adalah satuan eceran produk itu — untuk kasus terakhir ini, items[].gudang_id dipakai kalau dikirim. items[].gudang_id diabaikan sama sekali untuk baris lain di luar kasus itu.',
-            'items[].gudang_id BELUM diwajibkan untuk baris produk jadi satuan eceran — kalau tidak dikirim, warehouse_id baris itu (HANYA baris itu, baris lain tetap terisi otomatis) dibiarkan kosong. Dokumen tetap dibuat berstatus Pending dan tetap terlihat di daftar Pengembalian, tapi baru bisa DITERIMA (ACC, memotong/menambah stok) setelah staf gudang mengisi gudang tujuan baris yang masih kosong itu lewat halaman admin Pengiriman > Pengembalian. Jumlah baris yang masih kosong dilaporkan lewat pending_warehouse_items pada respons. Field ini rencananya akan DIWAJIBKAN untuk kasus ini di rilis mendatang.',
+            'Wajib kirim SALAH SATU dari armada_code atau armada (keduanya boleh dikirim bersamaan asal code-nya sama, tapi tidak perlu). armada_code menolak armada yang tidak ditemukan (VALIDATION_FAILED) — pakai ini kalau armadanya sudah pasti pernah tersinkron. armada meng-upsert (buat kalau belum ada, perbarui kalau sudah ada) memakai field yang SAMA PERSIS dengan PUT /api/external/v1/armada/{code} (pic/pic_phone/nomor_polisi/category/merk_model/tahun_kendaraan/lokasi) — pakai ini kalau tidak yakin armadanya sudah tersinkron, supaya tidak perlu panggil PUT /armada/{code} lebih dulu.',
+            'BEDA PENTING dari PUT /api/external/v1/armada/{code}: field armada di sini TIDAK PERNAH menimpa field yang TIDAK dikirim dengan kosong/null (PUT /armada/{code} menimpa penuh — field yang tidak disebut memang ikut dikosongkan). Kirim armada.pic saja, misalnya, dan armada.lokasi yang sudah tersimpan sebelumnya TETAP UTUH. Kalau perlu mengosongkan/menimpa penuh profil armada, tetap pakai PUT /armada/{code} — bukan endpoint ini.',
+            'GitHub #203: retur per-nota dari PMO. Saat shipment yang sudah "Berjalan" diedit dan sebagian/semua notanya ditandai "Belum dikirim", panggil endpoint ini dengan ref_shipment_id terisi — TERLEPAS dari shipment asal itu sudah di tahap approval mana pun (termasuk yang sudah full-approved dan stoknya sudah terpotong). Endpoint ini TIDAK menyentuh status maupun stok shipment asal sama sekali — ia murni mencatat dokumen pengembalian yang tertaut ke shipment itu lewat ref_shipment_id/items[].ref_nota_id.',
+            'IDEMPOTEN HANYA ketika ref_shipment_id dikirim — key-nya dihitung dari ref_shipment_id + return_date + isi items[] (urutan baris tidak berpengaruh). Permintaan identik yang dikirim ulang (mis. retry PMO setelah timeout jaringan) mengembalikan dokumen yang SUDAH ada (HTTP 200, meta.idempotent_replay: true), TIDAK membuat dokumen kedua. Permintaan TANPA ref_shipment_id (retur manual, bukan dari alur ini) TETAP TIDAK idempoten seperti semula — setiap permintaan yang lolos validasi selalu membuat dokumen BARU.',
+            'proof/proof_base64 jadi OPSIONAL ketika ref_shipment_id dikirim — form edit pengiriman PMO tidak membawa foto untuk kasus retur ini. Kalau ref_shipment_id tidak dikirim, salah satu dari proof/proof_base64 tetap WAJIB seperti semula.',
+            'Gudang tujuan tiap baris DITENTUKAN OTOMATIS mengikuti aturan yang sama dengan halaman admin: baris bahan mentah/kemasan SELALU ke gudang utama; baris produk jadi SELALU ke gudang utama JUGA kecuali satuan yang dipakai adalah satuan eceran produk itu — untuk kasus terakhir ini, items[].gudang_id dipakai kalau dikirim. items[].gudang_id kalau dikirim SELALU dihormati untuk baris apa pun (bahan maupun produk, eceran maupun bukan), bukan cuma baris eceran.',
+            'items[].gudang_id BELUM diwajibkan untuk baris produk jadi satuan eceran — kalau tidak dikirim, warehouse_id baris itu (HANYA baris itu, baris lain tetap terisi otomatis) dibiarkan kosong. Dokumen tetap dibuat berstatus Pending dan tetap terlihat di daftar Pengembalian, tapi baru bisa DITERIMA (ACC, memotong/menambah stok) setelah staf gudang mengisi gudang tujuan baris yang masih kosong itu lewat halaman admin Pengiriman > Pengembalian (modal Edit — dropdown gudang per baris). Jumlah baris yang masih kosong dilaporkan lewat pending_warehouse_items pada respons.',
             'items[] boleh campuran type=1 dan type=2 dalam satu permintaan yang sama — satu dokumen pengembalian bisa berisi bahan mentah dan produk jadi sekaligus (return_type "mixed" pada respons), sama seperti form admin.',
-            'Baris items[] dengan type + ref_id + satuan_id yang sama digabung otomatis (qty dijumlah) sebelum disimpan — mengirim baris duplikat tidak menghasilkan baris tersimpan ganda.',
+            'Baris items[] dengan type + ref_id + satuan_id + ref_nota_id yang sama digabung otomatis (qty dijumlah) sebelum disimpan — mengirim baris duplikat tidak menghasilkan baris tersimpan ganda. Baris yang item+satuannya sama TAPI ref_nota_id berbeda tetap disimpan sebagai baris terpisah, supaya keterlacakan per-nota tidak hilang.',
             'items[].satuan_id divalidasi benar-benar terdaftar untuk bahan/produk pada baris itu (satuan default, satuan tambahan, atau hasil konversi) — mengirim satuan yang valid secara umum tapi tidak pernah didaftarkan untuk bahan/produk itu tetap ditolak VALIDATION_FAILED.',
             'proof/proof_base64 disimpan dengan aturan yang SAMA PERSIS dengan form admin (folder public/customer_returns/, validasi isi berkas benar-benar gambar) — BUKAN mekanisme photos[] milik /shipments/shipped, itu fitur yang berbeda.',
             'return_number pada respons adalah return_group (format PKR####) — nomor gabungan yang sama dipakai sisi bahan (supply_return_id) maupun sisi produk (product_return_id) pada dokumen ini, ditampilkan sebagai satu baris "Campuran" di daftar admin kalau keduanya terisi.',
+            'Perlakuan stok terhadap tahap approval shipment asal (apakah stok dikembalikan, item SO dikurangi, dsb) dan validasi qty retur terhadap qty yang pernah dikirim per nota BELUM ditangani endpoint ini — di luar cakupan GitHub #203, akan menyusul lewat perubahan terpisah.',
         ];
     }
 }

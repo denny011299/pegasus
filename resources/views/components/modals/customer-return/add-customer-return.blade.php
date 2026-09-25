@@ -93,7 +93,9 @@
                         <i class="fe fe-rotate-ccw"></i>
                     </div>
                     <div>
-                        <h5 class="mb-0 fw-bold modal-title">Tambah Pengembalian</h5>
+                        <h5 class="mb-0 fw-bold modal-title d-inline-block">Tambah Pengembalian</h5>
+                        <span id="cr-pmo-badge" class="d-none badge ms-2" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 9px;border-radius:10px;font-weight:600;font-size:11px;vertical-align:middle;"><i class="fe fe-truck me-1"></i>Dari PMO</span>
+                        <br>
                         <small class="text-muted mb-0 mt-1" style="font-size:13px;">Bahan mentah dan/atau produk jadi dari armada</small>
                     </div>
                 </div>
@@ -278,6 +280,12 @@
                     </div>
                 </div>
             </div>
+            <div id="cr-accept-warning" class="d-none px-4 pb-2">
+                <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-0" style="font-size:12px;border-radius:8px;">
+                    <i class="fe fe-alert-triangle"></i>
+                    <span>Masih ada baris yang belum punya gudang tujuan. Buka <strong>Edit</strong> untuk mengisinya sebelum bisa Terima.</span>
+                </div>
+            </div>
             <div class="modal-footer pg-modal-footer">
                 <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
                 <button type="button" class="btn pg-btn-decline d-none" id="cr-decline"><i class="fe fe-x me-1"></i>Tolak</button>
@@ -324,12 +332,15 @@
         border-bottom-color: #2563eb;
         background: transparent;
     }
-    #customer-return-modal .cr-retail-warehouse + .select2-container {
+    #customer-return-modal .cr-retail-warehouse + .select2-container,
+    #customer-return-modal .cr-base-warehouse + .select2-container {
         min-width: 180px;
         width: 100% !important;
     }
     #customer-return-modal .cr-retail-warehouse + .select2-container .select2-selection.is-invalids,
-    #customer-return-modal .cr-retail-warehouse.is-invalid + .select2-container .select2-selection {
+    #customer-return-modal .cr-retail-warehouse.is-invalid + .select2-container .select2-selection,
+    #customer-return-modal .cr-base-warehouse + .select2-container .select2-selection.is-invalids,
+    #customer-return-modal .cr-base-warehouse.is-invalid + .select2-container .select2-selection {
         border-color: #dc3545 !important;
         box-shadow: 0 0 0 0.15rem rgba(220, 53, 69, 0.15) !important;
     }
