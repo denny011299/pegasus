@@ -832,6 +832,7 @@ class CustomerReturnController extends Controller
                 'csr.return_group',
                 'csr.return_date',
                 'csr.ref_number',
+                'csr.ref_shipment_id',
                 'csr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -844,6 +845,7 @@ class CustomerReturnController extends Controller
                 $query->where('csr.return_number', 'like', $like)
                     ->orWhere('csr.return_group', 'like', $like)
                     ->orWhere('csr.ref_number', 'like', $like)
+                    ->orWhere('csr.ref_shipment_id', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -861,6 +863,7 @@ class CustomerReturnController extends Controller
                 'cpr.return_group',
                 'cpr.return_date',
                 'cpr.ref_number',
+                'cpr.ref_shipment_id',
                 'cpr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -873,6 +876,7 @@ class CustomerReturnController extends Controller
                 $query->where('cpr.return_number', 'like', $like)
                     ->orWhere('cpr.return_group', 'like', $like)
                     ->orWhere('cpr.ref_number', 'like', $like)
+                    ->orWhere('cpr.ref_shipment_id', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -918,6 +922,7 @@ class CustomerReturnController extends Controller
             'return_number' => $row->return_group ?: $row->return_number,
             'return_date' => $row->return_date,
             'ref_number' => $row->ref_number,
+            'ref_shipment_id' => $row->ref_shipment_id,
             'customer_name' => $row->customer_name,
             'status' => (int) $row->status,
             'created_by_name' => $row->created_by_name,
@@ -958,6 +963,9 @@ class CustomerReturnController extends Controller
         }
         if ($row->ref_number) {
             $target['ref_number'] = $row->ref_number;
+        }
+        if ($row->ref_shipment_id) {
+            $target['ref_shipment_id'] = $row->ref_shipment_id;
         }
         if ($row->customer_name) {
             $target['customer_name'] = $row->customer_name;
@@ -1146,6 +1154,10 @@ class CustomerReturnController extends Controller
                 'customer_pic_phone' => $customer?->customer_pic_phone,
                 'return_date' => optional($primary->return_date)->format('Y-m-d') ?? (string) $primary->return_date,
                 'ref_number' => $primary->ref_number,
+                // GitHub #203 follow-up: ditampilkan sebagai badge "Dari PMO" di daftar & modal --
+                // hanya terisi untuk dokumen yang dibuat lewat POST /shipments/returns dengan
+                // ref_shipment_id (App\Http\Controllers\ExternalApi\V1\ShipmentReturnController).
+                'ref_shipment_id' => $supply->ref_shipment_id ?? $product->ref_shipment_id ?? null,
                 'notes' => $primary->notes,
                 'proof_path' => $primary->proof_path,
                 'status' => $status,

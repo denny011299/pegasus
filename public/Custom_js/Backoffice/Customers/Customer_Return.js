@@ -91,6 +91,12 @@
         return '<span class="badge" style="background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;padding:6px 10px;border-radius:20px;font-weight:600;">Bahan Mentah</span>';
     }
 
+    /** GitHub #203 follow-up: penanda dokumen yang dibuat lewat POST /shipments/returns (PMO). */
+    function pmoBadge(refShipmentId) {
+        return '<span class="badge" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;padding:2px 8px;border-radius:10px;font-weight:600;font-size:10px;" title="' +
+            esc(refShipmentId) + '"><i class="fe fe-truck me-1"></i>Dari PMO</span>';
+    }
+
     function renderStaff(data, approved) {
         if (!data || data === "-") return '<span class="text-muted">—</span>';
         return '<span class="text-dark" title="' + esc(data) + '">' + esc(data) + "</span>";
@@ -314,10 +320,14 @@
                     defaultContent: "-",
                     width: "130px",
                     className: "text-center align-middle",
-                    render: function (value, type) {
+                    render: function (value, type, row) {
                         if (type !== "display") return value;
                         if (!value || value === "-") return '<span class="text-muted">—</span>';
-                        return '<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">' + esc(value) + "</span>";
+                        var html = '<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">' + esc(value) + "</span>";
+                        if (row && row.ref_shipment_id) {
+                            html += "<br>" + pmoBadge(row.ref_shipment_id);
+                        }
+                        return html;
                     },
                 },
                 {
@@ -1089,6 +1099,7 @@
         productLines = [];
         crContext = null;
         crExistingProofUrl = "";
+        $("#cr-pmo-badge").addClass("d-none");
         $("#cr-doc-key,#cr-ref-number,#cr-notes,#cr-supply-qty,#cr-product-qty").val("");
         // Lokal (WIB), bukan toISOString/UTC — dini hari UTC+7 jangan jadi kemarin.
         $("#cr-date").val(
@@ -1383,6 +1394,8 @@
                     crExistingProofUrl = record.proof_url;
                     refreshProofState();
                 }
+                $("#cr-pmo-badge").toggleClass("d-none", !record.ref_shipment_id)
+                    .attr("title", record.ref_shipment_id ? ("ref_shipment_id: " + record.ref_shipment_id) : "");
 
                 var number = record.return_number || key;
                 if (intent === "edit") {

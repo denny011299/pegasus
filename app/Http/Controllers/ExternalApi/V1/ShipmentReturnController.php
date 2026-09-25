@@ -8,6 +8,7 @@ use App\Models\Customer;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
 use App\Models\Unit;
+use App\Support\ArmadaUpsert;
 use App\Support\CustomerReturnCreation;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
@@ -27,8 +28,12 @@ use Illuminate\Validation\ValidationException;
  * Bentuk permintaan mengikuti chat WhatsApp pada issue #58 (belum ada di
  * "private docs/Open API/API_Integration_Specification_PMO_IPM_v1.md" — modul ini baru):
  *   - return_date (wajib, "tanggal")
- *   - armada_code (wajib, "armada_id" pada chat) — customers.customer_code, SAMA pola dengan
- *     armada_code pada /shipments/scheduled dan /shipments/shipped, bukan konsep baru di sini.
+ *   - armada_code ("armada_id" pada chat) — customers.customer_code, SAMA pola dengan armada_code
+ *     pada /shipments/scheduled dan /shipments/shipped. Sejak revisi GitHub #203 (2026-09-25) TIDAK
+ *     lagi selalu wajib sendirian — lihat resolveArmada() untuk kontrak lengkapnya (armada_code vs
+ *     body.armada, keduanya opsional tapi salah satu WAJIB dikirim).
+ *   - armada (opsional, GitHub #203) — objek profil armada untuk upsert, ALTERNATIF dari
+ *     armada_code (lihat resolveArmada()/App\Support\ArmadaUpsert::upsertProfile()).
  *   - ref_number (opsional, "no_referensi")
  *   - notes (opsional)
  *   - proof / proof_base64 (SALAH SATU wajib, "foto") — file sungguhan (multipart/form-data)
@@ -119,7 +124,7 @@ class ShipmentReturnController extends Controller
     public function store(Request $request): JsonResponse
     {
         $data = $this->validatePayload($request);
-        $customer = Customer::where('customer_code', $data['armada_code'])->where('status', 1)->first();
+        $customer = $this->resolveArmada($data);
 
         [$supplyDetails, $productDetails] = $this->resolveItems($data['items']);
         // Sejak revisi GitHub #203 (2026-09-25), baris APA PUN (bahan maupun produk) bisa lolos
@@ -137,7 +142,7 @@ class ShipmentReturnController extends Controller
         if ($idempotencyKey !== null) {
             $existing = CustomerReturnCreation::findByIdempotencyKey($idempotencyKey);
             if ($existing !== null) {
-                return $this->presentResult($existing, $data['armada_code'], $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
+                return $this->presentResult($existing, $customer->customer_code, $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
             }
         }
 
@@ -176,13 +181,13 @@ class ShipmentReturnController extends Controller
                 throw $e;
             }
 
-            return $this->presentResult($raced, $data['armada_code'], $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
+            return $this->presentResult($raced, $customer->customer_code, $pendingWarehouseCount, 200, ['idempotent_replay' => true]);
         } catch (\Throwable $e) {
             CustomerReturnCreation::deleteProof($newProofPath);
             throw $e;
         }
 
-        return $this->presentResult($result, $data['armada_code'], $pendingWarehouseCount, 201);
+        return $this->presentResult($result, $customer->customer_code, $pendingWarehouseCount, 201);
     }
 
     /**
@@ -238,16 +243,78 @@ class ShipmentReturnController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
+     * Resolusi armada (GitHub #203 follow-up, 2026-09-25) — SEKARANG DUA MODE, beda dari sebelum
+     * revisi ini (armada_code selalu wajib & harus sudah ada):
+     *   - body.armada dikirim (objek profil, lihat App\Support\ArmadaUpsert::upsertProfile()) ->
+     *     UPSERT: armada dibuat otomatis kalau belum ada, atau diperbarui (field yang dikirim saja,
+     *     lihat docblock upsertProfile()) kalau sudah ada — TIDAK PERNAH ditolak karena "tidak
+     *     ditemukan". Pola sama dengan Sinkronisasi Armada/PUT /armada/{code}, cuma ditumpangkan di
+     *     endpoint ini supaya PMO tidak perlu memanggil PUT /armada/{code} lebih dulu sebelum bisa
+     *     membuat retur untuk armada yang belum tersinkron.
+     *   - body.armada TIDAK dikirim (hanya armada_code) -> perilaku LAMA, tidak berubah: armada
+     *     WAJIB sudah ada dan aktif, kalau tidak ditolak VALIDATION_FAILED. Ini tetap jalur utama
+     *     untuk pemanggil yang memang sudah tahu armada itu ada (kirim body.armada cuma untuk
+     *     armada yang BELUM TENTU tersinkron).
+     * Mengirim KEDUA field sekaligus dengan code yang BEDA ditolak (ambigu, bukan galat diam-diam
+     * pakai salah satu). Mengirim keduanya dengan code yang SAMA diizinkan (armada_code jadi
+     * mubazir tapi tidak menyesatkan) -- armada.code yang dipakai.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function resolveArmada(array $data): Customer
+    {
+        $armadaCode = $data['armada_code'] ?? null;
+        $armadaProfile = $data['armada'] ?? null;
+
+        if ($armadaCode === null && $armadaProfile === null) {
+            throw ValidationException::withMessages([
+                'armada_code' => 'armada_code atau armada wajib dikirim salah satu.',
+            ]);
+        }
+
+        if ($armadaCode !== null && $armadaProfile !== null
+            && mb_strtoupper($armadaCode) !== mb_strtoupper((string) $armadaProfile['code'])) {
+            throw ValidationException::withMessages([
+                'armada' => 'armada_code dan armada.code tidak boleh berbeda kalau dikirim bersamaan.',
+            ]);
+        }
+
+        if ($armadaProfile !== null) {
+            return ArmadaUpsert::upsertProfile($armadaProfile);
+        }
+
+        $customer = Customer::where('customer_code', $armadaCode)->where('status', 1)->first();
+        if ($customer === null) {
+            throw ValidationException::withMessages([
+                'armada_code' => 'armada_code tidak ditemukan atau tidak aktif. Kirim body.armada (lihat dokumentasi) untuk membuat/memperbarui armada ini otomatis, tanpa perlu PUT /armada/{code} lebih dulu.',
+            ]);
+        }
+
+        return $customer;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function validatePayload(Request $request): array
     {
-        return $request->validate([
+        $rules = [
             'return_date' => ['required', 'date'],
-            'armada_code' => [
-                'required', 'string',
-                Rule::exists('customers', 'customer_code')->where('status', 1),
-            ],
+            // armada_code TIDAK lagi selalu required -- lihat resolveArmada()/docblock kelas ini
+            // (GitHub #203 follow-up, 2026-09-25). Wajib salah satu dari armada_code ATAU armada
+            // dikirim, ditegakkan manual di resolveArmada() (bukan lewat required_without di sini)
+            // supaya galat armada_code-tidak-ditemukan tetap spesifik menyebut armada_code, bukan
+            // tercampur pesan generik "salah satu wajib diisi".
+            'armada_code' => ['nullable', 'string', 'max:64'],
+            'armada' => ['nullable', 'array'],
+            'armada.code' => ['required_with:armada', 'string', 'max:64'],
+            'armada.pic' => ['nullable', 'string', 'max:255'],
+            'armada.pic_phone' => ['nullable', 'string', 'max:50'],
+            'armada.nomor_polisi' => ['nullable', 'string'],
+            'armada.category' => ['nullable', 'string', 'max:100'],
+            'armada.merk_model' => ['nullable', 'string', 'max:255'],
+            'armada.tahun_kendaraan' => ['nullable', 'string', 'max:20'],
+            'armada.lokasi' => ['nullable', 'string', 'max:255'],
             'ref_shipment_id' => ['nullable', 'string', 'max:100'],
             'ref_number' => ['nullable', 'string', 'max:100'],
             'notes' => ['nullable', 'string', 'max:2000'],
@@ -270,7 +337,9 @@ class ShipmentReturnController extends Controller
                 Rule::exists('warehouses', 'id')->where('status', 1),
             ],
             'items.*.ref_nota_id' => ['nullable', 'integer'],
-        ]);
+        ];
+
+        return $request->validate($rules);
     }
 
     /**

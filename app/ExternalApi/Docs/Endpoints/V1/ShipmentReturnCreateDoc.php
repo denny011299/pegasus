@@ -49,8 +49,26 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'return_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal pengembalian, format YYYY-MM-DD.'],
-            ['name' => 'armada_code', 'type' => 'string', 'required' => true,
-                'description' => 'customers.customer_code — id universal Armada, sama field yang dipakai POST /shipments/scheduled dan /shipments/shipped. Harus armada aktif.'],
+            ['name' => 'armada_code', 'type' => 'string', 'required' => false,
+                'description' => 'customers.customer_code — id universal Armada, sama field yang dipakai POST /shipments/scheduled dan /shipments/shipped. Kirim ini KALAU armada sudah pasti terdaftar aktif di IPM — kalau tidak ditemukan, ditolak VALIDATION_FAILED (lihat catatan). Wajib kirim SALAH SATU dari armada_code atau armada.'],
+            ['name' => 'armada', 'type' => 'object', 'required' => false,
+                'description' => 'ALTERNATIF dari armada_code — kirim ini untuk armada yang belum tentu tersinkron di IPM, upsert otomatis (buat kalau belum ada, perbarui kalau sudah ada) tanpa perlu PUT /armada/{code} lebih dulu. Wajib kirim SALAH SATU dari armada_code atau armada. Kalau keduanya dikirim, code-nya harus sama.'],
+            ['name' => 'armada.code', 'type' => 'string', 'required' => true,
+                'description' => 'Wajib kalau objek armada dikirim. customers.customer_code — id universal armada, sama field dengan armada_code.'],
+            ['name' => 'armada.pic', 'type' => 'string', 'required' => false,
+                'description' => 'Nama penanggung jawab/pemilik armada — field & kolom sama persis dengan PUT /api/external/v1/armada/{code} (grup Data Master).'],
+            ['name' => 'armada.pic_phone', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor telepon penanggung jawab.'],
+            ['name' => 'armada.nomor_polisi', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor polisi kendaraan.'],
+            ['name' => 'armada.category', 'type' => 'string', 'required' => false,
+                'description' => 'Kategori armada, teks bebas (mis. "Truk Engkel").'],
+            ['name' => 'armada.merk_model', 'type' => 'string', 'required' => false,
+                'description' => 'Merk/model kendaraan.'],
+            ['name' => 'armada.tahun_kendaraan', 'type' => 'string', 'required' => false,
+                'description' => 'Tahun kendaraan.'],
+            ['name' => 'armada.lokasi', 'type' => 'string', 'required' => false,
+                'description' => 'Lokasi/pool armada, teks bebas.'],
             ['name' => 'ref_shipment_id', 'type' => 'string', 'required' => false,
                 'description' => 'sales_orders.ref_shipment_id milik shipment asal (dipakai PUT /shipments/scheduled dan POST /shipments/shipped) — hubungkan retur ini ke shipment/SO yang memicunya. Mengirim field ini juga membuat proof/proof_base64 opsional dan permintaan ini idempoten (lihat catatan).'],
             ['name' => 'ref_number', 'type' => 'string', 'required' => false,
@@ -82,7 +100,14 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             'return_date' => '2026-08-17',
-            'armada_code' => 'L8533N',
+            // Alternatif dari armada_code -- dipakai di sini untuk armada yang belum tentu
+            // tersinkron di IPM, upsert otomatis. Kirim armada_code SAJA kalau armadanya sudah
+            // pasti terdaftar aktif.
+            'armada' => [
+                'code' => 'L8533N',
+                'pic' => 'Budi Santoso',
+                'pic_phone' => '081234567890',
+            ],
             'ref_shipment_id' => 'PMO-SHP-20889',
             'ref_number' => 'RTN-7788',
             'notes' => 'Nota dibatalkan ulang admin PMO, foto tidak tersedia dari sisi PMO',
@@ -117,7 +142,11 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
-                'message' => 'armada_code tidak ditemukan atau tidak aktif.'],
+                'message' => 'armada_code tidak ditemukan atau tidak aktif. Kirim armada (lihat parameter di atas) untuk membuat/memperbarui armada ini otomatis.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'armada_code atau armada wajib dikirim salah satu.'],
+            ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
+                'message' => 'armada_code dan armada.code tidak boleh berbeda kalau dikirim bersamaan.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
                 'message' => 'items.0.ref_id (type=1) tidak ditemukan sebagai ref_supplies_id yang aktif — daftarkan/hubungkan dulu lewat POST atau PATCH /bahan/connect.'],
             ['code' => 'VALIDATION_FAILED', 'http_status' => 422,
@@ -135,6 +164,8 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
     {
         return [
             'Fiturnya sama dengan menu admin Pengiriman > Pengembalian — endpoint ini cuma jalur masuk baru untuk PMO memicunya langsung, bukan alur baru.',
+            'Wajib kirim SALAH SATU dari armada_code atau armada (keduanya boleh dikirim bersamaan asal code-nya sama, tapi tidak perlu). armada_code menolak armada yang tidak ditemukan (VALIDATION_FAILED) — pakai ini kalau armadanya sudah pasti pernah tersinkron. armada meng-upsert (buat kalau belum ada, perbarui kalau sudah ada) memakai field yang SAMA PERSIS dengan PUT /api/external/v1/armada/{code} (pic/pic_phone/nomor_polisi/category/merk_model/tahun_kendaraan/lokasi) — pakai ini kalau tidak yakin armadanya sudah tersinkron, supaya tidak perlu panggil PUT /armada/{code} lebih dulu.',
+            'BEDA PENTING dari PUT /api/external/v1/armada/{code}: field armada di sini TIDAK PERNAH menimpa field yang TIDAK dikirim dengan kosong/null (PUT /armada/{code} menimpa penuh — field yang tidak disebut memang ikut dikosongkan). Kirim armada.pic saja, misalnya, dan armada.lokasi yang sudah tersimpan sebelumnya TETAP UTUH. Kalau perlu mengosongkan/menimpa penuh profil armada, tetap pakai PUT /armada/{code} — bukan endpoint ini.',
             'GitHub #203: retur per-nota dari PMO. Saat shipment yang sudah "Berjalan" diedit dan sebagian/semua notanya ditandai "Belum dikirim", panggil endpoint ini dengan ref_shipment_id terisi — TERLEPAS dari shipment asal itu sudah di tahap approval mana pun (termasuk yang sudah full-approved dan stoknya sudah terpotong). Endpoint ini TIDAK menyentuh status maupun stok shipment asal sama sekali — ia murni mencatat dokumen pengembalian yang tertaut ke shipment itu lewat ref_shipment_id/items[].ref_nota_id.',
             'IDEMPOTEN HANYA ketika ref_shipment_id dikirim — key-nya dihitung dari ref_shipment_id + return_date + isi items[] (urutan baris tidak berpengaruh). Permintaan identik yang dikirim ulang (mis. retry PMO setelah timeout jaringan) mengembalikan dokumen yang SUDAH ada (HTTP 200, meta.idempotent_replay: true), TIDAK membuat dokumen kedua. Permintaan TANPA ref_shipment_id (retur manual, bukan dari alur ini) TETAP TIDAK idempoten seperti semula — setiap permintaan yang lolos validasi selalu membuat dokumen BARU.',
             'proof/proof_base64 jadi OPSIONAL ketika ref_shipment_id dikirim — form edit pengiriman PMO tidak membawa foto untuk kasus retur ini. Kalau ref_shipment_id tidak dikirim, salah satu dari proof/proof_base64 tetap WAJIB seperti semula.',

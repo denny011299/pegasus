@@ -398,6 +398,144 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         $this->assertSame($before, \App\Models\CustomerSupplyReturn::count(), 'the rejected request must not create a return');
     }
 
+    /**
+     * GitHub #203 follow-up (2026-09-25): body.armada is an alternative to armada_code that
+     * upserts the Customer row (App\Support\ArmadaUpsert::upsertProfile()) instead of requiring
+     * it to already exist -- mirrors the field vocabulary of PUT /api/external/v1/armada/{code}
+     * (pic/pic_phone/nomor_polisi/category/merk_model/tahun_kendaraan/lokasi).
+     */
+    public function test_store_creates_a_brand_new_armada_via_the_armada_object(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $code = 'NEWARM'.random_int(1000, 9999);
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'proof_base64' => self::PROOF_BASE64,
+            'armada' => [
+                'code' => $code,
+                'pic' => 'Budi',
+                'pic_phone' => '08123456789',
+            ],
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['data' => ['armada_code' => $code]]);
+        $this->assertDatabaseHas('customers', [
+            'customer_code' => $code,
+            'customer_pic' => 'Budi',
+            'customer_pic_phone' => '08123456789',
+            'status' => 1,
+        ]);
+    }
+
+    public function test_store_reactivates_and_updates_an_existing_inactive_armada_via_the_armada_object(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = $this->createArmada();
+        $customer->status = 0;
+        $customer->customer_pic = 'Nama Lama';
+        $customer->save();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'proof_base64' => self::PROOF_BASE64,
+            'armada' => [
+                'code' => $customer->customer_code,
+                'pic' => 'Nama Baru',
+            ],
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('customers', [
+            'customer_id' => $customer->customer_id,
+            'status' => 1,
+            'customer_pic' => 'Nama Baru',
+        ]);
+    }
+
+    public function test_store_upsert_via_armada_object_never_wipes_fields_not_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = $this->createArmada();
+        $customer->customer_pic = 'PIC Lama';
+        $customer->customer_pic_phone = '0800000000';
+        $customer->save();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        // Cuma kirim lokasi -- pic/pic_phone yang sudah ada TIDAK BOLEH ikut ter-null-kan,
+        // beda sengaja dari semantik full-replace PUT /armada/{code}.
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'proof_base64' => self::PROOF_BASE64,
+            'armada' => [
+                'code' => $customer->customer_code,
+                'lokasi' => 'Gudang Cikarang',
+            ],
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201);
+        $this->assertDatabaseHas('customers', [
+            'customer_id' => $customer->customer_id,
+            'customer_pic' => 'PIC Lama',
+            'customer_pic_phone' => '0800000000',
+            'customer_lokasi' => 'Gudang Cikarang',
+        ]);
+    }
+
+    public function test_store_rejects_mismatched_armada_code_and_armada_object(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'armada_code' => 'ARM-A',
+            'armada' => ['code' => 'ARM-B'],
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
+    public function test_store_rejects_when_neither_armada_code_nor_armada_is_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $refUnitId = random_int(900000, 949999);
+        $unit = $this->createUnit($refUnitId);
+        $refSuppliesId = random_int(900000, 949999);
+        $this->createSupplies($refSuppliesId, $unit);
+
+        $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'items' => [
+                ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId],
+            ],
+        ], $headers)->assertStatus(422)->assertJson(['success' => false, 'error' => ['code' => 'VALIDATION_FAILED']]);
+    }
+
     public function test_store_rejects_an_unknown_ref_supplies_id_for_type_1(): void
     {
         $headers = $this->externalApiHeaders();

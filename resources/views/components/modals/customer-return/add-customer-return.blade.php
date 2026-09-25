@@ -93,7 +93,9 @@
                         <i class="fe fe-rotate-ccw"></i>
                     </div>
                     <div>
-                        <h5 class="mb-0 fw-bold modal-title">Tambah Pengembalian</h5>
+                        <h5 class="mb-0 fw-bold modal-title d-inline-block">Tambah Pengembalian</h5>
+                        <span id="cr-pmo-badge" class="d-none badge ms-2" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 9px;border-radius:10px;font-weight:600;font-size:11px;vertical-align:middle;"><i class="fe fe-truck me-1"></i>Dari PMO</span>
+                        <br>
                         <small class="text-muted mb-0 mt-1" style="font-size:13px;">Bahan mentah dan/atau produk jadi dari armada</small>
                     </div>
                 </div>
