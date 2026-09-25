@@ -70,9 +70,9 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             ['name' => 'armada.lokasi', 'type' => 'string', 'required' => false,
                 'description' => 'Lokasi/pool armada, teks bebas.'],
             ['name' => 'ref_shipment_id', 'type' => 'string', 'required' => false,
-                'description' => 'sales_orders.ref_shipment_id milik shipment asal (dipakai PUT /shipments/scheduled dan POST /shipments/shipped) — hubungkan retur ini ke shipment/SO yang memicunya. Mengirim field ini juga membuat proof/proof_base64 opsional dan permintaan ini idempoten (lihat catatan). Badge "Dari PMO" di UI memakai field ini — isi dengan id delivery/shipment PMO, BUKAN pym-{group}.'],
+                'description' => 'sales_orders.ref_shipment_id milik shipment asal (dipakai PUT /shipments/scheduled dan POST /shipments/shipped) — hubungkan retur ini ke shipment/SO yang memicunya. Mengirim field ini juga membuat proof/proof_base64 opsional dan permintaan ini idempoten (lihat catatan).'],
             ['name' => 'ref_number', 'type' => 'string', 'required' => false,
-                'description' => 'Nomor referensi bebas yang tampil di field "Nomor Referensi" modal pengembalian admin. Boleh diisi no pembayaran/group (mis. pym-…), no nota, atau teks lain — bukan kunci idempotensi (idempotensi tetap lewat ref_shipment_id + items).'],
+                'description' => 'Nomor referensi bebas yang tampil di field "Nomor Referensi" modal pengembalian admin. Boleh diisi no pembayaran/group (mis. pym-…), no nota, atau teks lain — bukan kunci idempotensi.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas.'],
             ['name' => 'proof', 'type' => 'file', 'required' => false,
@@ -109,7 +109,7 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
                 'pic_phone' => '081234567890',
             ],
             'ref_shipment_id' => 'PMO-SHP-20889',
-            'ref_number' => 'pym-12345',
+            'ref_number' => 'RTN-7788',
             'notes' => 'Nota dibatalkan ulang admin PMO, foto tidak tersedia dari sisi PMO',
             'items' => [
                 // Tidak kirim gudang_id -- baris bahan mentah otomatis ke gudang utama.
@@ -169,7 +169,6 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             'BEDA PENTING dari PUT /api/external/v1/armada/{code}: field armada di sini TIDAK PERNAH menimpa field yang TIDAK dikirim dengan kosong/null (PUT /armada/{code} menimpa penuh — field yang tidak disebut memang ikut dikosongkan). Kirim armada.pic saja, misalnya, dan armada.lokasi yang sudah tersimpan sebelumnya TETAP UTUH. Kalau perlu mengosongkan/menimpa penuh profil armada, tetap pakai PUT /armada/{code} — bukan endpoint ini.',
             'GitHub #203: retur per-nota dari PMO. Saat shipment yang sudah "Berjalan" diedit dan sebagian/semua notanya ditandai "Belum dikirim", panggil endpoint ini dengan ref_shipment_id terisi — TERLEPAS dari shipment asal itu sudah di tahap approval mana pun (termasuk yang sudah full-approved dan stoknya sudah terpotong). Endpoint ini TIDAK menyentuh status maupun stok shipment asal sama sekali — ia murni mencatat dokumen pengembalian yang tertaut ke shipment itu lewat ref_shipment_id/items[].ref_nota_id.',
             'IDEMPOTEN HANYA ketika ref_shipment_id dikirim — key-nya dihitung dari ref_shipment_id + return_date + isi items[] (urutan baris tidak berpengaruh). Permintaan identik yang dikirim ulang (mis. retry PMO setelah timeout jaringan) mengembalikan dokumen yang SUDAH ada (HTTP 200, meta.idempotent_replay: true), TIDAK membuat dokumen kedua. Permintaan TANPA ref_shipment_id (retur manual, bukan dari alur ini) TETAP TIDAK idempoten seperti semula — setiap permintaan yang lolos validasi selalu membuat dokumen BARU.',
-            'MAPPING UI: badge "Dari PMO" = ref_shipment_id (id delivery/shipment PMO). Field "Nomor Referensi" di modal = ref_number (bebas: pym-…, no nota, teks lain). Jangan tukar — isi pym-{group} ke ref_shipment_id akan membuat badge salah.',
             'proof/proof_base64 jadi OPSIONAL ketika ref_shipment_id dikirim — form edit pengiriman PMO tidak membawa foto untuk kasus retur ini. Kalau ref_shipment_id tidak dikirim, salah satu dari proof/proof_base64 tetap WAJIB seperti semula.',
             'Gudang tujuan tiap baris DITENTUKAN OTOMATIS mengikuti aturan yang sama dengan halaman admin: baris bahan mentah/kemasan SELALU ke gudang utama; baris produk jadi SELALU ke gudang utama JUGA kecuali satuan yang dipakai adalah satuan eceran produk itu — untuk kasus terakhir ini, items[].gudang_id dipakai kalau dikirim. items[].gudang_id kalau dikirim SELALU dihormati untuk baris apa pun (bahan maupun produk, eceran maupun bukan), bukan cuma baris eceran.',
             'items[].gudang_id BELUM diwajibkan untuk baris produk jadi satuan eceran — kalau tidak dikirim, warehouse_id baris itu (HANYA baris itu, baris lain tetap terisi otomatis) dibiarkan kosong. Dokumen tetap dibuat berstatus Pending dan tetap terlihat di daftar Pengembalian, tapi baru bisa DITERIMA (ACC, memotong/menambah stok) setelah staf gudang mengisi gudang tujuan baris yang masih kosong itu lewat halaman admin Pengiriman > Pengembalian (modal Edit — dropdown gudang per baris). Jumlah baris yang masih kosong dilaporkan lewat pending_warehouse_items pada respons.',
