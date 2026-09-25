@@ -704,7 +704,7 @@ class CustomerReturnController extends Controller
 
         $fromSupply = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
+            ->where(fn ($q) => $q->where('d.warehouse_id', $warehouseId)->orWhereNull('d.warehouse_id'))
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
             ->whereNotNull('h.return_group')
@@ -733,7 +733,7 @@ class CustomerReturnController extends Controller
 
         return DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
+            ->where(fn ($q) => $q->where('d.warehouse_id', $warehouseId)->orWhereNull('d.warehouse_id'))
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
             ->whereNull('h.return_group')
@@ -771,18 +771,18 @@ class CustomerReturnController extends Controller
      *   Baris utama + destination eceran (ST setelah ACC) tidak tampil di eceran (9ffd3a09).
      * - Gudang utama: warehouse_id = utama — mencakup stay (dest=utama/null) dan
      *   mixed destinasi eceran (dest=eceran). Dokumen tampil jika ada detail di utama.
+     * - warehouse_id NULL (GitHub #203 follow-up, 2026-09-25) — baris dari PMO yang belum diisi
+     *   gudangnya SAMA SEKALI, TIDAK PERNAH cocok dengan `where warehouse_id = $warehouseId` di
+     *   kedua cabang di atas, jadi TANPA pengecualian ini dokumen itu tidak akan pernah tampil di
+     *   gudang APA PUN sampai staf mengisinya — padahal justru dokumen itu yang paling perlu
+     *   ditemukan supaya bisa diisi. Ditampilkan di SEMUA gudang (both branches) sampai
+     *   warehouse_id-nya benar-benar terisi.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
-        // Kedua cabang: filter warehouse_id saja. Perbedaan perilaku dari data shape:
+        // Kedua cabang sama: filter warehouse_id ATAU NULL. Perbedaan perilaku dari data shape:
         // baris ST-ke-eceran tetap warehouse_id=utama → muncul di utama, tidak di eceran.
-        if (! $activeIsMain) {
-            $query->where("{$alias}.warehouse_id", $warehouseId);
-
-            return;
-        }
-
-        $query->where("{$alias}.warehouse_id", $warehouseId);
+        $query->where(fn ($q) => $q->where("{$alias}.warehouse_id", $warehouseId)->orWhereNull("{$alias}.warehouse_id"));
     }
 
     private function applyWarehouseScope($query, string $alias, int $warehouseId): void

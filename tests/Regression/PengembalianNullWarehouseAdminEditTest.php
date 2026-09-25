@@ -27,6 +27,18 @@ use Tests\TestCase;
  * Also documents that CustomerReturnController::acceptSupply()/validateSupplyDetails() already
  * rejects accept() for ANY detail row with a null warehouse_id (not just produk-eceran ones) --
  * this was already true before GitHub #203, just never exercised for a bahan mentah row.
+ *
+ * A SECOND bug from the same root cause (reported by the user 2026-09-25, real production data:
+ * return "PKR0054" created via the API never appeared in the admin list at all): the LIST query
+ * (buildUnifiedRows() -> applyWarehouseScope() -> returnGroupsForWarehouse()/
+ * standaloneSupplyReturnIdsForWarehouse()/standaloneProductReturnIdsForWarehouse()/
+ * applyProductDetailWarehouseFilter()) filters detail rows by `warehouse_id = <active warehouse>`
+ * — a NULL warehouse_id never equals ANY specific warehouse id, so a document whose every line is
+ * still unassigned (now a normal, expected state post-GitHub #203, not just a rare edge case)
+ * matched NO warehouse's scope and was invisible in the list under every possible active
+ * warehouse — even though GET /customerReturns/{docKey} (fixed above) could still find it directly
+ * by doc_key. Fixed by treating a NULL warehouse_id detail row as visible under every warehouse
+ * scope until it's actually assigned.
  */
 class PengembalianNullWarehouseAdminEditTest extends TestCase
 {
@@ -134,4 +146,19 @@ class PengembalianNullWarehouseAdminEditTest extends TestCase
         $response->assertOk();
         $this->assertSame(2, (int) CustomerSupplyReturn::find($fx['record']->return_id)->status, 'status 2 = accepted');
     }
+
+    public function test_list_still_surfaces_a_document_whose_every_line_has_a_null_warehouse(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $this->withActiveWarehouse($this->mainWarehouseId());
+        $fx = $this->makeSupplyReturnWithNullWarehouse();
+
+        $response = $this->getJson('/customerReturns?search[value]='.$fx['record']->return_group);
+
+        $response->assertOk();
+        $rows = $response->json('data');
+        $this->assertCount(1, $rows, 'BUG WOULD BE: a warehouse_id = <active warehouse> filter never matches a NULL warehouse_id, so the document never shows up under ANY active warehouse');
+        $this->assertSame($fx['record']->return_group, $rows[0]['return_number']);
+    }
+
 }
