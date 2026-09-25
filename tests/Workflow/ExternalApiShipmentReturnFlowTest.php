@@ -24,17 +24,16 @@ use Tests\TestCase;
  * per-line warehouse resolution); it does not re-test CustomerReturnCreation's storage logic in
  * isolation.
  *
- * Warehouse resolution — REVISED GitHub #203 (2026-09-25), reversing the 2026-08-17 rule below.
- * OLD rule (no longer true): bahan mentah lines and produk jadi lines whose unit ISN'T the
- * product's retail unit always resolved to the main warehouse automatically; only a retail-unit
- * produk jadi line consulted items[].gudang_id. NEW rule, same for every line type (bahan AND
- * produk, retail unit or not): items[].gudang_id is used if sent, otherwise warehouse_id is left
- * NULL — there is no more automatic main-warehouse default at all. This endpoint is PMO-only and
- * PMO never actually sends gudang_id for returns, so auto-defaulting silently hid the real
- * put-away decision from warehouse staff; now every unassigned line must be resolved manually via
- * the admin Pengiriman > Pengembalian edit modal before the document can be accepted. gudang_id is
- * the warehouse's own internal id (warehouses.id), NOT an externally-synced ref column — same
- * convention as gudang_id on POST /stock/check.
+ * Warehouse resolution — FINAL decision 2026-09-25 after a same-day back-and-forth (GitHub #203):
+ * back to the rule confirmed by the product owner on 2026-08-17, PLUS one addition kept from the
+ * #203 attempt. Bahan mentah lines and produk jadi lines whose unit ISN'T the product's retail
+ * unit always resolve to the main warehouse automatically when gudang_id isn't sent; only a
+ * retail-unit produk jadi line without gudang_id is left unassigned (warehouse_id NULL), requiring
+ * manual assignment via the admin Pengiriman > Pengembalian edit modal before the document can be
+ * accepted. The addition kept from #203: gudang_id is now honored for EVERY line type when the
+ * caller does send it (bahan mentah and non-eceran produk included), not just retail-unit produk
+ * as before 2026-08-17. gudang_id is the warehouse's own internal id (warehouses.id), NOT an
+ * externally-synced ref column — same convention as gudang_id on POST /stock/check.
  *
  * A 1x1 PNG data URI stands in for "foto" throughout — proof storage itself is
  * CustomerReturnCreation::storeProofFromInput(), already exercised by the admin flow.
@@ -44,6 +43,15 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
     use ActingAsExternalApiClient;
 
     private const PROOF_BASE64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+    private function mainWarehouseId(): int
+    {
+        return (int) Warehouse::query()
+            ->where('warehouses.status', 1)
+            ->whereHas('type', fn ($q) => $q->where('status', 1)->where('is_main_warehouse', 1))
+            ->orderBy('warehouses.id')
+            ->value('id');
+    }
 
     private function retailWarehouseId(): int
     {
@@ -160,7 +168,7 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         $this->postJson('/api/external/v1/shipments/returns', [])->assertStatus(401);
     }
 
-    public function test_store_creates_a_mixed_return_with_no_gudang_id_leaving_both_lines_unassigned(): void
+    public function test_store_creates_a_mixed_return_resolving_bahan_and_non_eceran_produk_to_main_warehouse(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -169,6 +177,8 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         $refSuppliesId = random_int(900000, 949999);
         $supplies = $this->createSupplies($refSuppliesId, $unit);
         $fx = $this->createProductVariant($unit);
+        $mainWarehouseId = $this->mainWarehouseId();
+        $this->assertGreaterThan(0, $mainWarehouseId, 'fixture needs a main warehouse (is_main_warehouse=1) in the seeded data');
 
         $response = $this->postJson('/api/external/v1/shipments/returns', [
             'return_date' => '2026-08-17',
@@ -187,7 +197,7 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             'data' => [
                 'return_type' => 'mixed',
                 'armada_code' => $armada->customer_code,
-                'pending_warehouse_items' => 2,
+                'pending_warehouse_items' => 0,
             ],
         ]);
 
@@ -216,12 +226,12 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         $this->assertSame($supplies->supplies_id, $supplyDetail->supplies_id);
         $this->assertSame($unit->unit_id, $supplyDetail->unit_id, 'satuan_id must resolve to the INTERNAL unit_id, not the ref_unit_id sent');
         $this->assertSame(5, (int) $supplyDetail->qty);
-        $this->assertNull($supplyDetail->warehouse_id, 'GitHub #203: a bahan mentah line without gudang_id must no longer auto-default to the main warehouse');
+        $this->assertSame($mainWarehouseId, (int) $supplyDetail->warehouse_id, 'bahan mentah lines must always resolve to the main warehouse');
 
         $productDetail = CustomerProductReturnDetail::where('return_id', $productReturnId)->firstOrFail();
         $this->assertSame($fx['variant']->product_variant_id, $productDetail->product_variant_id);
         $this->assertSame(3, (int) $productDetail->qty);
-        $this->assertNull($productDetail->warehouse_id, 'GitHub #203: a non-eceran produk line without gudang_id must no longer auto-default to the main warehouse');
+        $this->assertSame($mainWarehouseId, (int) $productDetail->warehouse_id, 'produk jadi lines whose unit is NOT the retail unit must also resolve to the main warehouse');
 
         $proofPath = \App\Models\CustomerSupplyReturn::find($supplyReturnId)->proof_path;
         $this->assertNotNull($proofPath);
@@ -246,7 +256,8 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             'armada_code' => $armada->customer_code,
             'proof_base64' => self::PROOF_BASE64,
             'items' => [
-                // GitHub #203: gudang_id now honored for EVERY line type, not just retail-unit produk.
+                // GitHub #203: gudang_id now honored for EVERY line type, not just retail-unit produk
+                // (a bahan mentah line ignoring gudang_id was the 2026-08-17 behavior; not anymore).
                 ['type' => 1, 'ref_id' => $refSuppliesId, 'qty' => 1, 'satuan_id' => $refUnitId, 'gudang_id' => $retailWarehouseId],
                 ['type' => 2, 'ref_id' => $fx['sku'], 'qty' => 2, 'satuan_id' => $refUnitId, 'gudang_id' => $retailWarehouseId],
             ],
@@ -262,7 +273,7 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         @unlink(public_path($proofPath));
     }
 
-    public function test_store_leaves_warehouse_empty_for_any_line_type_without_gudang_id(): void
+    public function test_store_leaves_warehouse_empty_only_for_a_retail_unit_produk_line_without_gudang_id(): void
     {
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
@@ -277,7 +288,8 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
             'armada_code' => $armada->customer_code,
             'proof_base64' => self::PROOF_BASE64,
             'items' => [
-                // No gudang_id -- not required, must still succeed (201), left unassigned.
+                // No gudang_id -- not required, must still succeed (201), left unassigned since the
+                // unit sent IS the product's retail unit.
                 ['type' => 2, 'ref_id' => $fx['sku'], 'qty' => 2, 'satuan_id' => $refRetailUnitId],
             ],
         ], $headers);
@@ -285,7 +297,38 @@ class ExternalApiShipmentReturnFlowTest extends TestCase
         $response->assertStatus(201)->assertJson(['data' => ['pending_warehouse_items' => 1]]);
         $productReturnId = $response->json('data.product_return_id');
         $productDetail = CustomerProductReturnDetail::where('return_id', $productReturnId)->firstOrFail();
-        $this->assertNull($productDetail->warehouse_id, 'a produk line without gudang_id must still be allowed to pass, unresolved');
+        $this->assertNull($productDetail->warehouse_id, 'a retail-unit produk line without gudang_id must still be allowed to pass, unresolved');
+
+        $proofPath = \App\Models\CustomerProductReturn::find($productReturnId)->proof_path;
+        @unlink(public_path($proofPath));
+    }
+
+    public function test_store_resolves_a_non_eceran_produk_line_to_main_warehouse_even_without_gudang_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $armada = $this->createArmada();
+        $refNormalUnitId = random_int(900000, 924999);
+        $normalUnit = $this->createUnit($refNormalUnitId);
+        $refRetailUnitId = random_int(925000, 949999);
+        $retailUnit = $this->createUnit($refRetailUnitId);
+        $fx = $this->createProductVariantWithRetailUnit($normalUnit, $retailUnit);
+        $mainWarehouseId = $this->mainWarehouseId();
+        $this->assertGreaterThan(0, $mainWarehouseId, 'fixture needs a main warehouse (is_main_warehouse=1) in the seeded data');
+
+        $response = $this->postJson('/api/external/v1/shipments/returns', [
+            'return_date' => '2026-08-17',
+            'armada_code' => $armada->customer_code,
+            'proof_base64' => self::PROOF_BASE64,
+            'items' => [
+                // Same product/variant, but the unit sent is the NORMAL unit, not the retail one.
+                ['type' => 2, 'ref_id' => $fx['sku'], 'qty' => 2, 'satuan_id' => $refNormalUnitId],
+            ],
+        ], $headers);
+
+        $response->assertStatus(201)->assertJson(['data' => ['pending_warehouse_items' => 0]]);
+        $productReturnId = $response->json('data.product_return_id');
+        $productDetail = CustomerProductReturnDetail::where('return_id', $productReturnId)->firstOrFail();
+        $this->assertSame($mainWarehouseId, (int) $productDetail->warehouse_id);
 
         $proofPath = \App\Models\CustomerProductReturn::find($productReturnId)->proof_path;
         @unlink(public_path($proofPath));

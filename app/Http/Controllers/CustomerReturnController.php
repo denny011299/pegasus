@@ -704,7 +704,7 @@ class CustomerReturnController extends Controller
 
         $fromSupply = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where(fn ($q) => $q->where('d.warehouse_id', $warehouseId)->orWhereNull('d.warehouse_id'))
+            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
             ->whereNotNull('h.return_group')
@@ -733,7 +733,7 @@ class CustomerReturnController extends Controller
 
         return DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where(fn ($q) => $q->where('d.warehouse_id', $warehouseId)->orWhereNull('d.warehouse_id'))
+            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
             ->whereNull('h.return_group')
@@ -771,18 +771,23 @@ class CustomerReturnController extends Controller
      *   Baris utama + destination eceran (ST setelah ACC) tidak tampil di eceran (9ffd3a09).
      * - Gudang utama: warehouse_id = utama — mencakup stay (dest=utama/null) dan
      *   mixed destinasi eceran (dest=eceran). Dokumen tampil jika ada detail di utama.
-     * - warehouse_id NULL (GitHub #203 follow-up, 2026-09-25) — baris dari PMO yang belum diisi
-     *   gudangnya SAMA SEKALI, TIDAK PERNAH cocok dengan `where warehouse_id = $warehouseId` di
-     *   kedua cabang di atas, jadi TANPA pengecualian ini dokumen itu tidak akan pernah tampil di
-     *   gudang APA PUN sampai staf mengisinya — padahal justru dokumen itu yang paling perlu
-     *   ditemukan supaya bisa diisi. Ditampilkan di SEMUA gudang (both branches) sampai
-     *   warehouse_id-nya benar-benar terisi.
+     * - warehouse_id NULL (GitHub #203 follow-up, 2026-09-25) — baris produk satuan eceran dari
+     *   PMO yang belum diisi gudangnya sama sekali (SATU-SATUNYA kasus yang masih bisa NULL sejak
+     *   ShipmentReturnController::resolveProductWarehouses() default ke gudang utama untuk baris
+     *   non-eceran). Diperlakukan SEOLAH-OLAH warehouse_id-nya gudang utama UNTUK KEPERLUAN
+     *   TAMPILAN SAJA (tidak menulis apa pun ke kolomnya) — jadi HANYA muncul saat staf sedang
+     *   melihat gudang utama ($activeIsMain), TIDAK muncul di gudang eceran manapun. Keputusan
+     *   pemilik produk 2026-09-25: baris yang belum ditentukan gudangnya dikelola dari gudang
+     *   utama (tempat retur pertama kali "mendarat" secara default), bukan bocor ke semua gudang.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
-        // Kedua cabang sama: filter warehouse_id ATAU NULL. Perbedaan perilaku dari data shape:
-        // baris ST-ke-eceran tetap warehouse_id=utama → muncul di utama, tidak di eceran.
-        $query->where(fn ($q) => $q->where("{$alias}.warehouse_id", $warehouseId)->orWhereNull("{$alias}.warehouse_id"));
+        $query->where(function ($q) use ($alias, $warehouseId, $activeIsMain) {
+            $q->where("{$alias}.warehouse_id", $warehouseId);
+            if ($activeIsMain) {
+                $q->orWhereNull("{$alias}.warehouse_id");
+            }
+        });
     }
 
     private function applyWarehouseScope($query, string $alias, int $warehouseId): void
