@@ -118,12 +118,21 @@
         }
 
         #tableSalesOrder td:last-child,
-        #tableSalesOrder th:last-child,
-        #tableCustomerReturn td:last-child,
-        #tableCustomerReturn th:last-child {
+        #tableSalesOrder th:last-child {
             white-space: nowrap !important;
             width: 110px !important;
             text-align: center;
+        }
+
+        #tableCustomerReturn td:last-child,
+        #tableCustomerReturn th:last-child {
+            white-space: normal !important;
+            width: 130px !important;
+            text-align: center;
+        }
+
+        #tableCustomerReturn td:last-child {
+            padding: 8px !important;
         }
 
         #tableSalesOrder td:last-child a,
