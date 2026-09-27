@@ -244,11 +244,11 @@
     }
 
     function actionButtons(row) {
-        var html = '<div class="d-flex justify-content-center align-items-center gap-2">';
+        var html = '<div class="d-flex flex-wrap justify-content-center align-items-center gap-2" style="min-width:120px;">';
         var status = parseInt(row.status, 10);
         var pending = status === 1;
         var canView = can("view");
-        var canConfirm = pending && can("others");
+        var canConfirm = pending && can("others") && row.can_confirm_qc === true;
         var canEdit = pending && can("edit");
         var canDelete = pending && can("delete");
         var key = esc(row.doc_key);
@@ -392,7 +392,7 @@
                         return type === "display" ? renderStaff(data, true) : data;
                     },
                 },
-                { data: null, orderable: false, searchable: false, className: "text-center align-middle", width: "90px", render: actionButtons },
+                { data: null, orderable: false, searchable: false, className: "text-center align-middle", width: "130px", render: actionButtons },
             ],
             drawCallback: function () {
                 setTableLoading(false);
@@ -1343,7 +1343,7 @@
                 var status = parseInt(record.status, 10);
                 // Confirm hanya untuk pending + akses others; ACC/ditolak selalu read-only view
                 var confirmMode =
-                    intent === "confirm" && status === 1 && can("others");
+                    intent === "confirm" && status === 1 && can("others") && record.can_confirm_qc === true;
                 if (intent === "confirm" && !confirmMode) {
                     intent = "view";
                 }
@@ -1357,7 +1357,14 @@
                 $("#cr-ref-number").val(record.ref_number || "");
                 $("#cr-notes").val(record.notes || "");
                 applyContext(record.context || {});
-                fillQcStaffOptions(record.qc_staff_id, record.qc_staff_name);
+                // GitHub #205: kondisi tetap read only, tapi auto-isi staff QC = user login
+                // saat popup approval dibuka oleh QC gudang aktif / Direksi / Developer.
+                var currentQc = record.context && record.context.current_qc_staff;
+                if (intent === "confirm" && currentQc && currentQc.id) {
+                    fillQcStaffOptions(currentQc.id, currentQc.name);
+                } else {
+                    fillQcStaffOptions(record.qc_staff_id, record.qc_staff_name);
+                }
                 setCustomer(record.customer_id, record.customer_name);
                 supplyLines = (record.supply_details || []).map(function (detail) {
                     return {
