@@ -159,6 +159,7 @@ class CashPaymentController extends Controller
     {
         $data = $request->validate([
             'ref_payment_id' => ['required', 'string', 'max:100'],
+            'ref_nota_id' => ['nullable', 'string', 'max:100'],
             'payment_type' => ['required', 'integer', Rule::in([self::TYPE_ARMADA, self::TYPE_SALES])],
 
             // armada_id menunjuk ke customers (lihat catatan kelas).
@@ -257,6 +258,7 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
+            'ref_nota_id' => $data['ref_nota_id'] ?? null,
             'customer_id' => $data['armada_id'],
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
@@ -301,6 +303,7 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
+            'ref_nota_id' => $data['ref_nota_id'] ?? null,
             'staff_id' => $data['staff_id'],
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
@@ -425,6 +428,7 @@ class CashPaymentController extends Controller
 
         return [
             'ref_payment_id' => $payment->ref_payment_id,
+            'ref_nota_id' => $payment->ref_nota_id,
             'payment_id' => (int) $id,
             'payment_type' => $paymentType,
             'payment_date' => (string) ($isArmada ? $payment->cr_date : $payment->cs_date),

@@ -126,6 +126,7 @@ class CashSales extends Model
         $t = new CashSales();
         // Hanya terisi bila pembayaran datang lewat External API.
         $t->ref_payment_id = $data["ref_payment_id"] ?? null;
+        $t->ref_nota_id = $data["ref_nota_id"] ?? null;
         $t->cash_id = $data["cash_id"] ?? 0;
         $t->staff_id = $data["staff_id"];
         $t->bank_id = $data["bank_id"];

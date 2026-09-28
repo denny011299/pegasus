@@ -46,6 +46,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'ref_payment_id', 'type' => 'string', 'required' => true,
                 'description' => 'Penanda unik milik sistem pemanggil. Dipakai sebagai kunci idempotensi.'],
+            ['name' => 'ref_nota_id', 'type' => 'string', 'required' => false,
+                'description' => 'Id nota/faktur milik sistem pemanggil yang menjadi asal pembayaran ini. Disimpan apa adanya dan ikut dikembalikan di response, tidak divalidasi ke data lain.'],
             ['name' => 'payment_type', 'type' => 'integer', 'required' => true,
                 'description' => '1 = Armada, 2 = Sales.'],
             ['name' => 'armada_id', 'type' => 'integer', 'required' => false,
@@ -75,6 +77,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return [
             'ref_payment_id' => 'PMO-2026-000123',
+            'ref_nota_id' => 'NOTA-2026-000456',
             'payment_type' => 1,
             'armada_id' => 4,
             'payment_date' => '2026-07-29',
@@ -93,6 +96,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 'ref_payment_id' => 'PMO-2026-000123',
+                'ref_nota_id' => 'NOTA-2026-000456',
                 'payment_id' => 512,
                 'payment_type' => 1,
                 'payment_date' => '2026-07-29',
@@ -128,9 +132,12 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
+            'ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal pembayaran tanpa mem-parsing notes.',
             'Idempotensi: bila ref_payment_id sudah pernah dipakai, permintaan dianggap kiriman ulang. Pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — ref_payment_id yang menentukan.',
             'Pembuatan berhasil menjawab 201; kiriman ulang menjawab 200.',
             'Istilah "armada": di Pegasus, armada dicatat sebagai data pelanggan dengan nomor polisi pada keterangannya. Karena itu armada_id divalidasi terhadap daftar pelanggan, bukan tabel armada tersendiri.',
+            'armada_id sama persis dengan field id pada response PUT /armada/{code} (yaitu customers.customer_id), dan staff_id sama persis dengan field id pada response /master/staff (yaitu staffs.staff_id). Keduanya boleh dicache di sisi pemanggil. Bila cache basi atau hilang, gunakan GET /armada?search={code} atau endpoint pencarian staf setara untuk mencari ulang berdasarkan kode — tidak ada endpoint resolusi khusus lain di luar itu.',
+            'Untuk skenario pelunasan faktur, items[].type yang dikirim hanya boleh 1 (Masuk). Validasi endpoint ini tidak mengasumsikan campuran arah maupun arah lain untuk kasus tersebut — lihat catatan di atas soal seluruh item harus bertype sama.',
             'payment_amount wajib sama dengan jumlah seluruh items[].amount. Bila berbeda, permintaan ditolak 422 dan tidak ada yang tersimpan.',
             'Seluruh baris pada items harus bertype sama. Pencatatan kas menurunkan jenis transaksi dari item pertama, sehingga campuran masuk dan keluar dalam satu pembayaran akan tercatat keliru.',
             'Endpoint ini hanya untuk transaksi operasional (pengeluaran atau setoran berbutir). Penambahan saldo tetap dilakukan lewat halaman admin.',
