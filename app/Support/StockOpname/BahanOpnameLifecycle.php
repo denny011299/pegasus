@@ -79,19 +79,47 @@ class BahanOpnameLifecycle
             return;
         }
 
-        // Dipin ke gudang dokumen ini -- lihat OpnameLifecycle::freezeSystemQty()'s doc.
         $warehouseId = $stob->warehouse_id ?: null;
+        $supplyIds = $lines->pluck('supplies_id')->filter()->unique()->map(fn ($id) => (int) $id)->all();
+        $supplies = Supplies::whereIn('supplies_id', $supplyIds)->get()->keyBy('supplies_id');
+
         $stocks = ($warehouseId !== null
                 ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
                 : SuppliesStock::query())
             ->where('status', 1)
-            ->whereIn('supplies_id', $lines->pluck('supplies_id')->filter()->unique()->all())
+            ->whereIn('supplies_id', $supplyIds)
             ->get()
             ->keyBy(fn ($s) => $s->supplies_id.'-'.$s->unit_id);
 
+        $tradingPvIds = $supplies
+            ->filter(fn ($s) => Supplies::isTradingKind($s->supplies_kind ?? null)
+                && (int) ($s->trading_product_variant_id ?? 0) > 0)
+            ->pluck('trading_product_variant_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $productStocks = collect();
+        if ($tradingPvIds !== [] && $warehouseId) {
+            $productStocks = \App\Models\ProductStock::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', (int) $warehouseId)
+                ->where('status', 1)
+                ->whereIn('product_variant_id', $tradingPvIds)
+                ->get()
+                ->keyBy(fn ($s) => $s->product_variant_id.'-'.$s->unit_id);
+        }
+
         foreach ($lines as $line) {
-            $stock = $stocks->get($line->supplies_id.'-'.$line->unit_id);
-            $line->sobl_system_qty_final = $stock ? (int) $stock->ss_stock : null;
+            $supply = $supplies->get((int) $line->supplies_id);
+            if ($supply && Supplies::isTradingKind($supply->supplies_kind ?? null)) {
+                $pvId = (int) ($supply->trading_product_variant_id ?? 0);
+                $ps = $pvId > 0 ? $productStocks->get($pvId.'-'.$line->unit_id) : null;
+                $line->sobl_system_qty_final = $ps ? (int) $ps->ps_stock : null;
+            } else {
+                $stock = $stocks->get($line->supplies_id.'-'.$line->unit_id);
+                $line->sobl_system_qty_final = $stock ? (int) $stock->ss_stock : null;
+            }
             $line->save();
         }
     }
@@ -115,6 +143,12 @@ class BahanOpnameLifecycle
 
         foreach ($lines as $suppliesId => $group) {
             if (! $suppliesId) {
+                continue;
+            }
+
+            // Trading: stok di product_stocks — jangan gulung lewat rantai satuan bahan.
+            $supplyMeta = Supplies::find((int) $suppliesId);
+            if ($supplyMeta && Supplies::isTradingKind($supplyMeta->supplies_kind ?? null)) {
                 continue;
             }
 
@@ -347,6 +381,11 @@ class BahanOpnameLifecycle
 
         foreach ($lines as $suppliesId => $group) {
             if (! $suppliesId) {
+                continue;
+            }
+
+            $supplyMeta = Supplies::find((int) $suppliesId);
+            if ($supplyMeta && Supplies::isTradingKind($supplyMeta->supplies_kind ?? null)) {
                 continue;
             }
 

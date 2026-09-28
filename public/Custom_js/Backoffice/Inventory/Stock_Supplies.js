@@ -161,7 +161,15 @@
                     data: "supplies_name", 
                     width: "55%",
                     render: function (data, type, row) {
-                        return '<span style="font-weight: 600; color: #334155; font-size: 13px;">' + (data || '-') + '</span>';
+                        var name =
+                            '<span style="font-weight: 600; color: #334155; font-size: 13px;">' +
+                            (data || "-") +
+                            "</span>";
+                        if (row && row.is_trading) {
+                            name +=
+                                ' <span class="badge bg-soft-primary text-primary" style="font-size:10px;font-weight:600;">Trading</span>';
+                        }
+                        return name;
                     }
                 },
                 {

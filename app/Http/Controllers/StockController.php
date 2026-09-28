@@ -1706,6 +1706,10 @@ class StockController extends Controller
     {
         $lines = StockOpnameBahanLine::getLines($stob->stob_id);
         $lifecycle = new BahanOpnameLifecycle();
+        $supplyMeta = Supplies::whereIn(
+            'supplies_id',
+            $lines->pluck('supplies_id')->filter()->unique()->all()
+        )->get()->keyBy('supplies_id');
 
         DB::beginTransaction();
         try {
@@ -1714,6 +1718,11 @@ class StockController extends Controller
                     ? SuppliesStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
                     : SuppliesStock::query();
             };
+            $scopeProductStock = function () use ($warehouseId) {
+                return $warehouseId > 0
+                    ? ProductStock::withoutGlobalScope('active_warehouse')->where('warehouse_id', $warehouseId)
+                    : ProductStock::query();
+            };
 
             $scopeStock()
                 ->where('status', 1)
@@ -1721,11 +1730,81 @@ class StockController extends Controller
                 ->lockForUpdate()
                 ->get();
 
+            $tradingPvIds = $supplyMeta
+                ->filter(fn ($s) => Supplies::isTradingKind($s->supplies_kind ?? null)
+                    && (int) ($s->trading_product_variant_id ?? 0) > 0)
+                ->pluck('trading_product_variant_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+            if ($tradingPvIds !== []) {
+                $scopeProductStock()
+                    ->where('status', 1)
+                    ->whereIn('product_variant_id', $tradingPvIds)
+                    ->lockForUpdate()
+                    ->get();
+            }
+
             $lifecycle->freezeSystemQty($stob);
 
             $bahan_gagal = [];
             foreach ($lines as $line) {
                 if ($line->sobl_counted_qty === null) {
+                    continue;
+                }
+
+                $supply = $supplyMeta->get((int) $line->supplies_id);
+                $isTrading = $supply && Supplies::isTradingKind($supply->supplies_kind ?? null);
+                $pvId = $isTrading ? (int) ($supply->trading_product_variant_id ?? 0) : 0;
+
+                if ($isTrading) {
+                    if ($pvId <= 0) {
+                        $nama = $line->sobl_supplies_name ?? "id {$line->supplies_id}";
+                        if (! in_array($nama, $bahan_gagal, true)) {
+                            $bahan_gagal[] = $nama.' (trading tanpa link produk)';
+                        }
+                        continue;
+                    }
+                    $stock = $scopeProductStock()
+                        ->where('product_variant_id', $pvId)
+                        ->where('unit_id', $line->unit_id)
+                        ->first();
+                    if (! $stock) {
+                        $nama = $line->sobl_supplies_name ?? "id {$line->supplies_id}";
+                        if (! in_array($nama, $bahan_gagal, true)) {
+                            $bahan_gagal[] = $nama;
+                        }
+                        continue;
+                    }
+
+                    $beforeStock = (int) $stock->ps_stock;
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode' => $stob->stob_code,
+                        'log_type' => 1,
+                        'log_category' => 2,
+                        'log_item_id' => $pvId,
+                        'log_notes' => 'Stock Opname Bahan Mentah (Trading→Produk)',
+                        'log_jumlah' => $beforeStock,
+                        'unit_id' => $line->unit_id,
+                        'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                        'log_saldo' => 0,
+                    ]);
+                    $stock->ps_stock = (int) $line->sobl_counted_qty;
+                    $stock->save();
+                    (new LogStock())->insertLog([
+                        'log_date' => now(),
+                        'log_kode' => $stob->stob_code,
+                        'log_type' => 1,
+                        'log_category' => 1,
+                        'log_item_id' => $pvId,
+                        'log_notes' => 'Stock Opname Bahan Mentah (Trading→Produk)',
+                        'log_jumlah' => (int) $stock->ps_stock,
+                        'log_saldo' => (float) $stock->ps_stock,
+                        'unit_id' => $line->unit_id,
+                        'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
+                    ]);
                     continue;
                 }
 
@@ -1736,23 +1815,21 @@ class StockController extends Controller
 
                 if (! $stock) {
                     $nama = $line->sobl_supplies_name ?? "id {$line->supplies_id}";
-                    if (! in_array($nama, $bahan_gagal, true)) $bahan_gagal[] = $nama;
+                    if (! in_array($nama, $bahan_gagal, true)) {
+                        $bahan_gagal[] = $nama;
+                    }
                     continue;
                 }
 
                 $beforeStock = (int) $stock->ss_stock;
 
-                // GitHub #194: sama seperti accStockOpnameV2() (Produk) -- log KELUAR ini ditulis
-                // SEBELUM $stock->save() di bawah, jadi log_saldo tidak boleh dibiarkan ke fallback
-                // resolveCurrentSaldo() milik insertLog(). Sisa tepat setelah leg ini = 0 (baris
-                // stok kosong sesaat sebelum diisi ulang oleh log MASUK berikutnya).
                 (new LogStock())->insertLog([
                     'log_date' => now(),
                     'log_kode' => $stob->stob_code,
                     'log_type' => 2,
                     'log_category' => 2,
                     'log_item_id' => $line->supplies_id,
-                    'log_notes' => "Stock Opname Bahan Mentah",
+                    'log_notes' => 'Stock Opname Bahan Mentah',
                     'log_jumlah' => $beforeStock,
                     'unit_id' => $line->unit_id,
                     'warehouse_id' => (int) ($stock->warehouse_id ?: $warehouseId) ?: null,
@@ -1768,7 +1845,7 @@ class StockController extends Controller
                     'log_type' => 2,
                     'log_category' => 1,
                     'log_item_id' => $line->supplies_id,
-                    'log_notes' => "Stock Opname Bahan Mentah",
+                    'log_notes' => 'Stock Opname Bahan Mentah',
                     'log_jumlah' => (int) $stock->ss_stock,
                     'log_saldo' => (float) $stock->ss_stock,
                     'unit_id' => $line->unit_id,
@@ -1780,9 +1857,9 @@ class StockController extends Controller
                 DB::rollBack();
 
                 return response()->json([
-                    "status" => 0,
-                    "header" => "Gagal ACC",
-                    "message" => "Baris stok tidak ditemukan untuk: ".implode(', ', $bahan_gagal),
+                    'status' => 0,
+                    'header' => 'Gagal ACC',
+                    'message' => 'Baris stok tidak ditemukan untuk: '.implode(', ', $bahan_gagal),
                 ]);
             }
 
@@ -3157,14 +3234,25 @@ class StockController extends Controller
 
             $warehouseName = $warehouse->warehouse_name ?? '-';
 
+            $hasKindCol = Supplies::hasKindColumn();
+            $hasTradingPvCol = Schema::hasColumn('supplies', 'trading_product_variant_id');
+
+            $select = [
+                'supplies.supplies_id',
+                'supplies.supplies_name',
+                'supplies.supplies_default_unit',
+                'supplies.supplies_alert',
+                $hasSuppliesMinCol ? 'supplies.supplies_min_stock' : DB::raw('NULL as supplies_min_stock'),
+            ];
+            if ($hasKindCol) {
+                $select[] = 'supplies.supplies_kind';
+            }
+            if ($hasTradingPvCol) {
+                $select[] = 'supplies.trading_product_variant_id';
+            }
+
             $rows = $base
-                ->select([
-                    'supplies.supplies_id',
-                    'supplies.supplies_name',
-                    'supplies.supplies_default_unit',
-                    'supplies.supplies_alert',
-                    $hasSuppliesMinCol ? 'supplies.supplies_min_stock' : DB::raw('NULL as supplies_min_stock'),
-                ])
+                ->select($select)
                 ->orderBy($orderCol, $orderDir)
                 ->orderBy('supplies.supplies_id', 'asc')
                 ->skip($start)
@@ -3175,17 +3263,49 @@ class StockController extends Controller
             $stocksBySupply = [];
             $relationsBySupply = collect();
             $units = collect();
+            $tradingSnapByPv = [];
 
-            if ($suppliesIds !== []) {
+            // Trading → stok dari product_variant yang di-link (bukan supplies_stocks).
+            $tradingPvIds = $hasTradingPvCol
+                ? $rows
+                    ->filter(fn ($r) => Supplies::isTradingKind($r->supplies_kind ?? null)
+                        && (int) ($r->trading_product_variant_id ?? 0) > 0)
+                    ->pluck('trading_product_variant_id')
+                    ->map(fn ($id) => (int) $id)
+                    ->unique()
+                    ->values()
+                    ->all()
+                : [];
+            foreach ($tradingPvIds as $pvId) {
+                $tradingSnapByPv[$pvId] = ProductUnitStock::snapshot($warehouseId, $pvId);
+            }
+
+            $normalSupplyIds = $rows
+                ->filter(fn ($r) => ! Supplies::isTradingKind($r->supplies_kind ?? null)
+                    || (int) ($r->trading_product_variant_id ?? 0) <= 0)
+                ->pluck('supplies_id')
+                ->all();
+
+            if ($normalSupplyIds !== []) {
                 $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
                     ->where('status', 1)
                     ->where('warehouse_id', $warehouseId)
-                    ->whereIn('supplies_id', $suppliesIds)
+                    ->whereIn('supplies_id', $normalSupplyIds)
                     ->get(['ss_id', 'supplies_id', 'unit_id', 'ss_stock', 'warehouse_id']);
 
                 $unitIds = $stockRows->pluck('unit_id')->unique()->filter()->values()->all();
                 $defaultUnitIds = $rows->pluck('supplies_default_unit')->filter()->unique()->values()->all();
-                $allUnitIds = array_values(array_unique(array_merge($unitIds, $defaultUnitIds)));
+                $snapUnitIds = [];
+                foreach ($tradingSnapByPv as $snap) {
+                    foreach ($snap['units'] ?? [] as $u) {
+                        $snapUnitIds[] = (int) ($u['unit_id'] ?? 0);
+                    }
+                }
+                $allUnitIds = array_values(array_unique(array_filter(array_merge(
+                    $unitIds,
+                    $defaultUnitIds,
+                    $snapUnitIds
+                ))));
                 $units = $allUnitIds !== []
                     ? Unit::whereIn('unit_id', $allUnitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
                     : collect();
@@ -3199,14 +3319,63 @@ class StockController extends Controller
 
                 $relationsBySupply = \App\Models\SuppliesRelation::query()
                     ->where('status', 1)
-                    ->whereIn('supplies_id', $suppliesIds)
+                    ->whereIn('supplies_id', $normalSupplyIds)
                     ->get(['supplies_id', 'su_id_1', 'su_id_2', 'sr_value_2'])
                     ->groupBy('supplies_id');
+            } elseif ($tradingSnapByPv !== []) {
+                $snapUnitIds = [];
+                foreach ($tradingSnapByPv as $snap) {
+                    foreach ($snap['units'] ?? [] as $u) {
+                        $snapUnitIds[] = (int) ($u['unit_id'] ?? 0);
+                    }
+                }
+                $defaultUnitIds = $rows->pluck('supplies_default_unit')->filter()->unique()->values()->all();
+                $allUnitIds = array_values(array_unique(array_filter(array_merge($snapUnitIds, $defaultUnitIds))));
+                $units = $allUnitIds !== []
+                    ? Unit::whereIn('unit_id', $allUnitIds)->get(['unit_id', 'unit_name', 'unit_short_name'])->keyBy('unit_id')
+                    : collect();
             }
 
             $data = [];
             $isEceranWarehouse = ! $isMain;
             foreach ($rows as $row) {
+                $isTrading = Supplies::isTradingKind($row->supplies_kind ?? null);
+                $pvId = (int) ($row->trading_product_variant_id ?? 0);
+
+                if ($isTrading && $pvId > 0) {
+                    $snap = $tradingSnapByPv[$pvId] ?? ['stock_text' => '0', 'units' => []];
+                    $stocks = [];
+                    foreach ($snap['units'] ?? [] as $u) {
+                        $stocks[] = (object) [
+                            'unit_id' => (int) ($u['unit_id'] ?? 0),
+                            'ss_stock' => (float) ($u['ps_stock'] ?? 0),
+                            'unit_name' => $u['unit_name'] ?? '-',
+                            'unit_short_name' => $u['unit_short_name'] ?? ($u['unit_name'] ?? '-'),
+                        ];
+                    }
+                    $stockText = ($snap['stock_text'] ?? '0') === '0' || ($snap['stock_text'] ?? '') === ''
+                        ? '-'
+                        : $snap['stock_text'];
+                    $meta = $this->buildSuppliesMinOrderMeta(
+                        $row,
+                        $stocks,
+                        collect(),
+                        $isEceranWarehouse,
+                        $units
+                    );
+                    $data[] = array_merge([
+                        'supplies_id' => $row->supplies_id,
+                        'supplies_name' => $row->supplies_name,
+                        'supplies_kind' => Supplies::KIND_TRADING,
+                        'is_trading' => true,
+                        'trading_product_variant_id' => $pvId,
+                        'warehouse_id' => $warehouseId,
+                        'warehouse_name' => $warehouseName,
+                        'supplies_variant_stock_text' => $stockText,
+                    ], $meta);
+                    continue;
+                }
+
                 $stocks = $stocksBySupply[$row->supplies_id] ?? [];
                 $relations = $relationsBySupply->get($row->supplies_id, collect());
 
@@ -3224,6 +3393,8 @@ class StockController extends Controller
                 $data[] = array_merge([
                     'supplies_id' => $row->supplies_id,
                     'supplies_name' => $row->supplies_name,
+                    'supplies_kind' => Supplies::KIND_SUPPLY,
+                    'is_trading' => false,
                     'warehouse_id' => $warehouseId,
                     'warehouse_name' => $warehouseName,
                     'supplies_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',
