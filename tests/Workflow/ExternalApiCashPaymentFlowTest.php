@@ -3,6 +3,7 @@
 namespace Tests\Workflow;
 
 use App\Models\Customer;
+use App\Models\Staff;
 use Tests\Support\ActingAsExternalApiClient;
 use Tests\TestCase;
 
@@ -28,7 +29,7 @@ class ExternalApiCashPaymentFlowTest extends TestCase
             'ref_payment_id' => 'TEST-REF-'.uniqid(),
             'ref_nota_id' => 'NOTA-TEST-001',
             'payment_type' => 1,
-            'armada_id' => $customer->customer_id,
+            'armada_code' => $customer->customer_code,
             'payment_date' => now()->toDateString(),
             'payment_amount' => 50000,
             'items' => [
@@ -64,7 +65,7 @@ class ExternalApiCashPaymentFlowTest extends TestCase
         $payload = [
             'ref_payment_id' => 'TEST-REF-'.uniqid(),
             'payment_type' => 1,
-            'armada_id' => $customer->customer_id,
+            'armada_code' => $customer->customer_code,
             'payment_date' => now()->toDateString(),
             'payment_amount' => 50000,
             'items' => [
@@ -76,5 +77,71 @@ class ExternalApiCashPaymentFlowTest extends TestCase
 
         $storeResponse->assertStatus(201);
         $storeResponse->assertJsonPath('data.ref_nota_id', null);
+    }
+
+    public function test_armada_and_sales_are_resolved_by_external_reference_not_internal_id(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = Customer::query()->orderBy('customer_id')->firstOrFail();
+
+        $armadaPayload = [
+            'ref_payment_id' => 'TEST-REF-'.uniqid(),
+            'payment_type' => 1,
+            'armada_code' => $customer->customer_code,
+            'payment_date' => now()->toDateString(),
+            'payment_amount' => 20000,
+            'items' => [
+                ['amount' => 20000, 'type' => 1],
+            ],
+        ];
+
+        $armadaResponse = $this->postJson('/api/external/v1/payments/cash', $armadaPayload, $headers);
+
+        $armadaResponse->assertStatus(201);
+        $armadaResponse->assertJsonPath('data.armada_code', $customer->customer_code);
+        $armadaResponse->assertJsonMissingPath('data.armada_id');
+
+        $unknownArmadaPayload = $armadaPayload;
+        $unknownArmadaPayload['ref_payment_id'] = 'TEST-REF-'.uniqid();
+        $unknownArmadaPayload['armada_code'] = 'DOES-NOT-EXIST';
+
+        $this->postJson('/api/external/v1/payments/cash', $unknownArmadaPayload, $headers)
+            ->assertStatus(422)
+            ->assertJsonPath('error.details.armada_code.0', 'Armada dengan code DOES-NOT-EXIST tidak ditemukan.');
+
+        $staff = Staff::query()->whereNotNull('external_ref_id')->first();
+
+        if ($staff) {
+            $salesPayload = [
+                'ref_payment_id' => 'TEST-REF-'.uniqid(),
+                'payment_type' => 2,
+                'staff_id' => $staff->external_ref_id,
+                'payment_date' => now()->toDateString(),
+                'payment_amount' => 15000,
+                'items' => [
+                    ['amount' => 15000, 'type' => 1],
+                ],
+            ];
+
+            $salesResponse = $this->postJson('/api/external/v1/payments/cash', $salesPayload, $headers);
+
+            $salesResponse->assertStatus(201);
+            $salesResponse->assertJsonPath('data.staff_id', $staff->external_ref_id);
+        }
+
+        $unknownSalesPayload = [
+            'ref_payment_id' => 'TEST-REF-'.uniqid(),
+            'payment_type' => 2,
+            'staff_id' => 'DOES-NOT-EXIST',
+            'payment_date' => now()->toDateString(),
+            'payment_amount' => 15000,
+            'items' => [
+                ['amount' => 15000, 'type' => 1],
+            ],
+        ];
+
+        $this->postJson('/api/external/v1/payments/cash', $unknownSalesPayload, $headers)
+            ->assertStatus(422)
+            ->assertJsonPath('error.details.staff_id.0', 'Sales dengan staff_id DOES-NOT-EXIST tidak ditemukan.');
     }
 }

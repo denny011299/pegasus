@@ -25,12 +25,24 @@ use Illuminate\Validation\Rule;
  *   payment_type 1 = Armada  -> cash_armadas  + cash_armada_details
  *   payment_type 2 = Sales   -> cash_sales    + cash_sales_details
  *
- * CATATAN PENTING soal istilah: spesifikasi menyebut "armada_id", padahal di
- * basis data tidak ada entitas armada sama sekali. Kas armada tercatat atas
- * nama CUSTOMER (cash_armadas.customer_id) — kendaraan disimpan sebagai
- * pelanggan dengan nomor polisi pada customer_notes, misalnya
- * "W 9518 PG (Agus)". Jadi armada_id di kontrak API diterjemahkan ke
- * customers.customer_id, dan divalidasi ke tabel customers.
+ * CATATAN PENTING soal istilah: di basis data tidak ada entitas armada sama
+ * sekali. Kas armada tercatat atas nama CUSTOMER (cash_armadas.customer_id)
+ * — kendaraan disimpan sebagai pelanggan dengan nomor polisi pada
+ * customer_notes, misalnya "W 9518 PG (Agus)".
+ *
+ * RESOLUSI ARMADA/SALES (GitHub #207, revisi setelah #207 disetujui):
+ * semula endpoint ini menerima armada_id (customers.customer_id, integer
+ * internal Pegasus) dan staff_id (staffs.staff_id, integer internal
+ * Pegasus) — tidak konsisten dengan cara PMO mereferensikan kedua entitas
+ * itu di endpoint lain. Diperbaiki supaya sama persis:
+ *   - armada_code : customers.customer_code, sama seperti path parameter
+ *                   {code} pada MasterArmadaController — bukan id numerik.
+ *   - staff_id     : staffs.external_ref_id, sama seperti field "staff_id"
+ *                   pada body/path MasterSalesController & MasterStaffController
+ *                   — BUKAN staffs.staff_id internal. Lihat catatan "DUA id
+ *                   yang berbeda" di MasterSalesController.
+ * Response payments/cash mengikuti nama field yang sama (armada_code,
+ * staff_id sebagai external_ref_id), bukan id internal Pegasus.
  *
  * Yang dipakai ulang dari implementasi yang sudah ada, bukan ditulis ulang:
  *   - urutan pembuatan kas operasional (ReportController::insertCashArmada /
@@ -162,9 +174,10 @@ class CashPaymentController extends Controller
             'ref_nota_id' => ['nullable', 'string', 'max:100'],
             'payment_type' => ['required', 'integer', Rule::in([self::TYPE_ARMADA, self::TYPE_SALES])],
 
-            // armada_id menunjuk ke customers (lihat catatan kelas).
-            'armada_id' => ['required_if:payment_type,'.self::TYPE_ARMADA, 'integer'],
-            'staff_id' => ['required_if:payment_type,'.self::TYPE_SALES, 'integer'],
+            // armada_code menunjuk ke customers.customer_code, staff_id menunjuk ke
+            // staffs.external_ref_id (lihat catatan kelas).
+            'armada_code' => ['required_if:payment_type,'.self::TYPE_ARMADA, 'string', 'max:191'],
+            'staff_id' => ['required_if:payment_type,'.self::TYPE_SALES, 'string', 'max:191'],
 
             'payment_date' => ['required', 'date'],
             'payment_amount' => ['required', 'integer'],
@@ -179,31 +192,44 @@ class CashPaymentController extends Controller
             'photos.*' => ['string'],
         ]);
 
-        $this->assertReferencedRecordExists($data);
+        $data = $this->resolveReferencedRecord($data);
         $this->assertItemsShareOneDirection($data['items']);
         $this->assertAmountMatchesItems($data);
 
         return $data;
     }
 
-    /** Armada dicari di customers, sales dicari di staff. */
-    private function assertReferencedRecordExists(array $data): void
+    /**
+     * Armada dicari via customers.customer_code, sales via staffs.external_ref_id — bukan id
+     * internal Pegasus (lihat catatan kelas). Id internal yang ditemukan disisipkan ke
+     * '_armada_customer_id' / '_sales_staff_id' untuk dipakai createArmada()/createSales(),
+     * supaya sisa alur tetap bekerja dengan FK integer seperti sebelumnya.
+     *
+     * @return array<string, mixed>
+     */
+    private function resolveReferencedRecord(array $data): array
     {
         if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
-            $exists = Customer::where('customer_id', '=', $data['armada_id'])->exists();
+            $customer = Customer::where('customer_code', '=', $data['armada_code'])->first();
 
-            if (! $exists) {
-                $this->fail('armada_id', 'Armada dengan id '.$data['armada_id'].' tidak ditemukan.');
+            if (! $customer) {
+                $this->fail('armada_code', 'Armada dengan code '.$data['armada_code'].' tidak ditemukan.');
             }
 
-            return;
+            $data['_armada_customer_id'] = $customer->customer_id;
+
+            return $data;
         }
 
-        $exists = Staff::where('staff_id', '=', $data['staff_id'])->exists();
+        $staff = Staff::where('external_ref_id', '=', $data['staff_id'])->first();
 
-        if (! $exists) {
+        if (! $staff) {
             $this->fail('staff_id', 'Sales dengan staff_id '.$data['staff_id'].' tidak ditemukan.');
         }
+
+        $data['_sales_staff_id'] = $staff->staff_id;
+
+        return $data;
     }
 
     /**
@@ -253,13 +279,13 @@ class CashPaymentController extends Controller
      */
     private function createArmada(array $data, PaymentPhotoStore $photos): CashArmada
     {
-        $customer = Customer::find($data['armada_id']);
+        $customer = Customer::find($data['_armada_customer_id']);
         $isMasuk = (int) $data['items'][0]['type'] === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_nota_id' => $data['ref_nota_id'] ?? null,
-            'customer_id' => $data['armada_id'],
+            'customer_id' => $data['_armada_customer_id'],
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
             'cr_nominal' => (int) $data['payment_amount'],
@@ -297,14 +323,14 @@ class CashPaymentController extends Controller
      */
     private function createSales(array $data, PaymentPhotoStore $photos): CashSales
     {
-        $staff = Staff::find($data['staff_id']);
+        $staff = Staff::find($data['_sales_staff_id']);
         $direction = (int) $data['items'][0]['type'];
         $isMasuk = $direction === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_nota_id' => $data['ref_nota_id'] ?? null,
-            'staff_id' => $data['staff_id'],
+            'staff_id' => $data['_sales_staff_id'],
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
             // transaksi operasional; kolomnya sendiri berdefault 0.
@@ -434,8 +460,12 @@ class CashPaymentController extends Controller
             'payment_date' => (string) ($isArmada ? $payment->cr_date : $payment->cs_date),
             'payment_amount' => (int) ($isArmada ? $payment->cr_nominal : $payment->cs_nominal),
             'notes' => (string) ($isArmada ? $payment->cr_notes : $payment->cs_notes),
-            'armada_id' => $isArmada ? (int) $payment->customer_id : null,
-            'staff_id' => $isArmada ? null : (int) $payment->staff_id,
+            'armada_code' => $isArmada
+                ? Customer::where('customer_id', '=', $payment->customer_id)->value('customer_code')
+                : null,
+            'staff_id' => $isArmada
+                ? null
+                : Staff::where('staff_id', '=', $payment->staff_id)->value('external_ref_id'),
             'status' => $this->statusLabel((int) $payment->status),
             'items' => $details->map(static fn ($detail) => [
                 'amount' => (int) ($isArmada ? $detail->crd_nominal : $detail->csd_nominal),
