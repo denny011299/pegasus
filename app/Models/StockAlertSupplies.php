@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\ProductUnitStock;
 use App\Support\UnitStockSorter;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -82,6 +83,33 @@ class StockAlertSupplies extends Model
             ->get()
             ->groupBy('supplies_id');
 
+        // Trading → snapshot stok product_variant link (bukan supplies_stocks kosong).
+        $tradingSnapByPv = [];
+        $hasTradingPvCol = Schema::hasColumn('supplies', 'trading_product_variant_id');
+        if (Supplies::hasKindColumn() && $hasTradingPvCol) {
+            $tradingPvIds = $result
+                ->filter(fn ($r) => Supplies::isTradingKind($r->supplies_kind ?? null)
+                    && (int) ($r->trading_product_variant_id ?? 0) > 0)
+                ->pluck('trading_product_variant_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+            foreach ($tradingPvIds as $pvId) {
+                $tradingSnapByPv[$pvId] = ProductUnitStock::snapshot($warehouseId, $pvId);
+                foreach ($tradingSnapByPv[$pvId]['units'] ?? [] as $u) {
+                    $uid = (int) ($u['unit_id'] ?? 0);
+                    if ($uid > 0 && ! $unitsMap->has($uid)) {
+                        $unitIdSet[$uid] = true;
+                    }
+                }
+            }
+            if ($tradingPvIds !== [] && $unitIdSet !== []) {
+                $extraUnits = Unit::whereIn('unit_id', array_keys($unitIdSet))->get()->keyBy('unit_id');
+                $unitsMap = $unitsMap->union($extraUnits);
+            }
+        }
+
         $variants = SuppliesVariant::where('supplies_variants.status', 1)
             ->whereIn('supplies_variants.supplies_id', $suppliesIds)
             ->leftJoin('suppliers as sp', 'sp.supplier_id', '=', 'supplies_variants.supplier_id')
@@ -143,21 +171,40 @@ class StockAlertSupplies extends Model
                 ->values();
             $value->relation = ($relationsBySupplies->get($value->supplies_id) ?? collect())->values();
 
-            $stockRows = ($stocks->get($value->supplies_id) ?? collect())->map(function ($stockRow) use ($value, $unitsMap) {
-                $stockRow->supplies_name = $value->supplies_name;
-                $unit = $unitsMap->get((int) $stockRow->unit_id);
-                $stockRow->unit_name = $unit->unit_name ?? '';
-                $stockRow->unit_short_name = $unit->unit_short_name ?? '';
-                return $stockRow;
-            });
+            $isTrading = Supplies::isTradingKind($value->supplies_kind ?? null);
+            $tradingPvId = $hasTradingPvCol ? (int) ($value->trading_product_variant_id ?? 0) : 0;
+            $value->is_trading = $isTrading ? 1 : 0;
 
-            if ($value->relation->isNotEmpty()) {
-                $stockRows = UnitStockSorter::sort($stockRows, $value->relation);
+            if ($isTrading && $tradingPvId > 0) {
+                $snap = $tradingSnapByPv[$tradingPvId] ?? ['units' => []];
+                $stockRows = collect($snap['units'] ?? [])->map(function ($u) use ($value) {
+                    return (object) [
+                        'supplies_name' => $value->supplies_name,
+                        'unit_id' => (int) ($u['unit_id'] ?? 0),
+                        'ss_stock' => (float) ($u['ps_stock'] ?? 0),
+                        'unit_name' => $u['unit_name'] ?? '',
+                        'unit_short_name' => $u['unit_short_name'] ?? ($u['unit_name'] ?? ''),
+                    ];
+                });
+                $value->relation = collect();
+                $relationRows = collect();
+            } else {
+                $stockRows = ($stocks->get($value->supplies_id) ?? collect())->map(function ($stockRow) use ($value, $unitsMap) {
+                    $stockRow->supplies_name = $value->supplies_name;
+                    $unit = $unitsMap->get((int) $stockRow->unit_id);
+                    $stockRow->unit_name = $unit->unit_name ?? '';
+                    $stockRow->unit_short_name = $unit->unit_short_name ?? '';
+                    return $stockRow;
+                });
+
+                if ($value->relation->isNotEmpty()) {
+                    $stockRows = UnitStockSorter::sort($stockRows, $value->relation);
+                }
+                $relationRows = $value->relation;
             }
 
             $value->stock = $stockRows->values();
             $defaultUnitId = (int) $value->supplies_default_unit;
-            $relationRows = $value->relation;
 
             // Satuan eceran = leaf terkecil di relasi; fallback ke default unit.
             // Alert/safety/min_order di DB diangap dalam supplies_default_unit → dikonversi ke eceran.
@@ -165,6 +212,10 @@ class StockAlertSupplies extends Model
             $displayUnitId = ($isEceranWarehouse && $eceranUnitId > 0)
                 ? $eceranUnitId
                 : ($defaultUnitId > 0 ? $defaultUnitId : $eceranUnitId);
+            // Trading tanpa supplies_relation: pakai unit stok produk pertama / default.
+            if ($isTrading && $tradingPvId > 0 && $displayUnitId <= 0 && $stockRows->isNotEmpty()) {
+                $displayUnitId = (int) $stockRows->first()->unit_id;
+            }
             $displayUnit = $unitsMap->get($displayUnitId) ?: $unitsMap->get($defaultUnitId);
             $value->default_unit = $displayUnit
                 ? ($displayUnit->unit_name ?? $displayUnit->unit_short_name ?? '-')
@@ -185,9 +236,19 @@ class StockAlertSupplies extends Model
             $avgDaily = max(0, $netUsage) / 30;
 
             $currentStock = 0.0;
-            foreach ($stockRows as $stockRow) {
-                if ((int) $stockRow->unit_id === $displayUnitId) {
-                    $currentStock += (float) ($stockRow->ss_stock ?? 0);
+            if ($isTrading && $tradingPvId > 0 && $displayUnitId > 0) {
+                $currentStock = ProductUnitStock::totalAvailable(
+                    $warehouseId,
+                    $tradingPvId,
+                    $displayUnitId,
+                    false,
+                    true
+                );
+            } else {
+                foreach ($stockRows as $stockRow) {
+                    if ((int) $stockRow->unit_id === $displayUnitId) {
+                        $currentStock += (float) ($stockRow->ss_stock ?? 0);
+                    }
                 }
             }
 

@@ -37,6 +37,11 @@ class OpenOpnameGuard
             return true;
         }
 
+        // SO Bahan berisi Trading → freeze mutasi produk juga (stok trading = produk).
+        if ($domain === self::DOMAIN_PRODUCT && $this->openSuppliesOpnameHasTrading($warehouseId, $date)) {
+            return true;
+        }
+
         return OpnamePageLock::isLive($warehouseId, $domain);
     }
 
@@ -70,6 +75,17 @@ class OpenOpnameGuard
                 'id' => (int) $row->sto_id,
                 'code' => (string) ($row->sto_code ?? ''),
             ];
+        }
+
+        if ($domain === self::DOMAIN_PRODUCT) {
+            $bahan = $this->firstOpenSuppliesOpnameWithTrading($warehouseId);
+            if ($bahan) {
+                return [
+                    'type' => 'bahan',
+                    'id' => (int) $bahan->stob_id,
+                    'code' => (string) ($bahan->stob_code ?? ''),
+                ];
+            }
         }
 
         $lock = OpnamePageLock::liveRow($warehouseId, $domain);
@@ -238,5 +254,46 @@ class OpenOpnameGuard
         }
 
         return $q->orderBy('sto_id');
+    }
+
+    /** SO Bahan open yang memuat baris Trading (freeze domain produk). */
+    public function openSuppliesOpnameHasTrading(int $warehouseId, ?Carbon $date = null): bool
+    {
+        return $this->firstOpenSuppliesOpnameWithTrading($warehouseId, $date) !== null;
+    }
+
+    public function firstOpenSuppliesOpnameWithTrading(int $warehouseId, ?Carbon $date = null): ?StockOpnameBahan
+    {
+        if ($warehouseId <= 0 || ! \App\Models\Supplies::hasKindColumn()) {
+            return null;
+        }
+
+        $open = $this->openQuery($warehouseId, self::DOMAIN_SUPPLIES, $date)->get();
+        if ($open->isEmpty()) {
+            return null;
+        }
+
+        $stobIds = $open->pluck('stob_id')->map(fn ($id) => (int) $id)->all();
+        $tradingSupplyIds = \App\Models\Supplies::query()
+            ->where('supplies_kind', \App\Models\Supplies::KIND_TRADING)
+            ->where('status', 1)
+            ->pluck('supplies_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+        if ($tradingSupplyIds === []) {
+            return null;
+        }
+
+        $hitStobId = \App\Models\StockOpnameBahanLine::query()
+            ->whereIn('stob_id', $stobIds)
+            ->where('status', 1)
+            ->whereIn('supplies_id', $tradingSupplyIds)
+            ->value('stob_id');
+
+        if (! $hitStobId) {
+            return null;
+        }
+
+        return $open->firstWhere('stob_id', (int) $hitStobId);
     }
 }

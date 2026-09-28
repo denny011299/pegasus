@@ -288,8 +288,9 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 22% 22% 14% 18% 12% 12%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 20% 10% 18% 12% 16% 12% 12%;">
                                         <span style="width:70%"></span>
+                                        <span style="width:55%"></span>
                                         <span style="width:65%"></span>
                                         <span style="width:55%"></span>
                                         <span style="width:70%"></span>
@@ -298,9 +299,9 @@
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            {{-- Kolom Jenis (Trading) di-hide — skeleton 6 kolom --}}
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 22% 22% 14% 18% 12% 12%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 20% 10% 18% 12% 16% 12% 12%;">
                                                 <span class="skel-text" style="width:75%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-text" style="width:70%"></span>
@@ -320,7 +321,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Nama Bahan Mentah</th>
-                                            <th class="d-none">Jenis</th>
+                                            <th id="th-supplies-kind">Jenis</th>
                                             <th>Variasi</th>
                                             <th>Satuan</th>
                                             <th>Deskripsi</th>

@@ -57,6 +57,58 @@ class Supplies extends Model
     }
 
     /**
+     * Soft-block ACC/tolak PO: trading → domain produk; bahan biasa → domain supplies.
+     *
+     * @param  iterable<int>  $suppliesIds
+     * @return array{0: bool, 1: bool} [hasSupply, hasTrading]
+     */
+    public static function classifyKindsForSoftBlock(iterable $suppliesIds): array
+    {
+        $ids = collect($suppliesIds)->map(fn ($id) => (int) $id)->filter(fn ($id) => $id > 0)->unique()->values();
+        if ($ids->isEmpty() || ! self::hasKindColumn()) {
+            return [true, false];
+        }
+
+        $kinds = self::whereIn('supplies_id', $ids->all())
+            ->pluck('supplies_kind', 'supplies_id');
+
+        $hasSupply = false;
+        $hasTrading = false;
+        foreach ($ids as $id) {
+            if (self::isTradingKind($kinds->get($id))) {
+                $hasTrading = true;
+            } else {
+                $hasSupply = true;
+            }
+        }
+
+        return [$hasSupply, $hasTrading];
+    }
+
+    /** Tolak supplies_id trading di konteks BOM / resep produksi (bukan SO Bahan). */
+    public static function rejectTradingSuppliesIds(iterable $suppliesIds): ?string
+    {
+        if (! self::hasKindColumn()) {
+            return null;
+        }
+        $ids = collect($suppliesIds)->map(fn ($id) => (int) $id)->filter(fn ($id) => $id > 0)->unique()->values()->all();
+        if ($ids === []) {
+            return null;
+        }
+        $trading = self::whereIn('supplies_id', $ids)
+            ->where('supplies_kind', self::KIND_TRADING)
+            ->pluck('supplies_name')
+            ->all();
+        if ($trading === []) {
+            return null;
+        }
+
+        return 'Bahan Trading tidak boleh di resep/BOM (stok ada di produk). Hapus: '
+            .implode(', ', array_slice($trading, 0, 5))
+            .(count($trading) > 5 ? '…' : '');
+    }
+
+    /**
      * Query dasar untuk Data Bahan External API (App\Http\Controllers\ExternalApi\V1\
      * MasterSuppliesController) — sama pola dengan Product::getProductForExternalApi().
      */
@@ -117,6 +169,16 @@ class Supplies extends Model
 
         $query = self::query()
             ->where('status', 1);
+
+        // Default: sembunyikan Trading di autocomplete BOM/produksi (stok = produk).
+        // Kirim include_trading=1 kalau caller butuh Trading (jarang).
+        if (self::hasKindColumn() && empty($data['include_trading'])) {
+            $query->where(function ($q) {
+                $q->where('supplies_kind', self::KIND_SUPPLY)
+                    ->orWhereNull('supplies_kind')
+                    ->orWhere('supplies_kind', '');
+            });
+        }
 
         $search = trim((string) ($data['search'] ?? ''));
         if ($search !== '') {
@@ -424,6 +486,45 @@ class Supplies extends Model
                 $value->trading_product_variant_label = $tpid > 0
                     ? ($tradingLabels[$tpid] ?? ('PV #' . $tpid))
                     : null;
+            }
+
+            // Trading: stok yang ditampilkan/dihitung = stok produk (bukan supplies_stocks).
+            $whPin = $warehouseId !== null
+                ? (int) $warehouseId
+                : (int) (SuppliesStock::resolveWarehouseId() ?: 0);
+            foreach ($result as $value) {
+                if (! self::isTradingKind($value->supplies_kind ?? null)) {
+                    continue;
+                }
+                $pvId = (int) ($value->trading_product_variant_id ?? 0);
+                if ($pvId <= 0 || $whPin <= 0) {
+                    $value->stock = collect();
+                    continue;
+                }
+                $psRows = ProductStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $whPin)
+                    ->where('product_variant_id', $pvId)
+                    ->where('status', 1)
+                    ->get();
+                $mapped = $psRows->map(function ($ps) use ($unitsMap, $value) {
+                    $u = $unitsMap->get((int) $ps->unit_id);
+                    $row = (object) [
+                        'supplies_id' => $value->supplies_id,
+                        'unit_id' => (int) $ps->unit_id,
+                        'ss_stock' => (int) $ps->ps_stock,
+                        'warehouse_id' => (int) $ps->warehouse_id,
+                        'unit_name' => $u ? $u->unit_name : '-',
+                        'unit_short_name' => $u ? $u->unit_short_name : '-',
+                        'supplies_name' => $value->supplies_name,
+                        'is_trading_stock' => 1,
+                    ];
+
+                    return $row;
+                })->values();
+                $value->stock = UnitStockSorter::sort(
+                    $mapped,
+                    $relationsBySupply->get($value->supplies_id, collect())
+                );
             }
         }
 

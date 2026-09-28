@@ -1,21 +1,27 @@
     var mode=1;
     var table;
     var idUnits = [];
-    // false = Trading belum rilis (UI Jenis/filter di-hide). Data trading di DB tetap utuh.
-    var SUPPLIES_TRADING_UI = false;
+    // true = Jenis Trading + filter + relasi produk tampil di master Bahan.
+    var SUPPLIES_TRADING_UI = true;
     $(document).ready(function(){
         inisialisasi();
         autocompleteUnit("#supplies_unit","#add_supplies .modal-content");
         autocompleteVariant("#supplies_variant","#add_supplies .modal-content");
+        if (SUPPLIES_TRADING_UI) {
+            $("#supplies-kind-filter").removeClass("d-none");
+            $("#th-supplies-kind").removeClass("d-none");
+        } else {
+            $("#th-supplies-kind").addClass("d-none");
+        }
         syncTradingProductRow();
     });
 
     function syncTradingProductRow() {
-        // Saat UI Trading off: jangan pernah tampilkan row relasi produk
         if (!SUPPLIES_TRADING_UI) {
             $("#row-supplies-kind, #row-trading-product").addClass("d-none");
             return;
         }
+        $("#row-supplies-kind").removeClass("d-none");
         var kind = $("#supplies_kind").val() || "supply";
         if (kind === "trading") {
             $("#row-trading-product").removeClass("d-none");

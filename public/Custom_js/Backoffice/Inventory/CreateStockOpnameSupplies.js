@@ -195,10 +195,10 @@ function refreshStockOpname(callback) {
             console.log(e);
 
             $("#tbStock").html("");
-            e.forEach((item, indexProduct) => {
+            (e || []).forEach((item, indexProduct) => {
                 var rl_stock = "";
 
-                item.stock.forEach((element) => {
+                (item.stock || []).forEach((element) => {
                     let createPlaceholder =
                         mode == 2 && !data.is_draft
                             ? String(element.ss_stock)
