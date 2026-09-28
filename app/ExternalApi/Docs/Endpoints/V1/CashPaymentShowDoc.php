@@ -54,6 +54,7 @@ class CashPaymentShowDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 'ref_payment_id' => 'PMO-2026-000123',
+                'ref_nota_id' => 'NOTA-2026-000456',
                 'payment_id' => 512,
                 'payment_type' => 1,
                 'payment_date' => '2026-07-29',
