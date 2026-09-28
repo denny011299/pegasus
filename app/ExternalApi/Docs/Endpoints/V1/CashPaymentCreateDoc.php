@@ -46,6 +46,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'ref_payment_id', 'type' => 'string', 'required' => true,
                 'description' => 'Penanda unik milik sistem pemanggil. Dipakai sebagai kunci idempotensi.'],
+            ['name' => 'ref_nota_id', 'type' => 'string', 'required' => false,
+                'description' => 'Id nota/faktur milik sistem pemanggil yang menjadi asal pembayaran ini. Disimpan apa adanya dan ikut dikembalikan di response, tidak divalidasi ke data lain.'],
             ['name' => 'payment_type', 'type' => 'integer', 'required' => true,
                 'description' => '1 = Armada, 2 = Sales.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => false,
@@ -77,6 +79,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return [
             'ref_payment_id' => 'PMO-2026-000123',
+            'ref_nota_id' => 'NOTA-2026-000456',
             'payment_type' => 1,
             'armada_code' => 'ARM-JKT-001',
             'payment_date' => '2026-07-29',
@@ -95,6 +98,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 'ref_payment_id' => 'PMO-2026-000123',
+                'ref_nota_id' => 'NOTA-2026-000456',
                 'payment_id' => 512,
                 'payment_type' => 1,
                 'payment_date' => '2026-07-29',
@@ -131,6 +135,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
+            'ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal pembayaran tanpa mem-parsing notes.',
             'Idempotensi: bila ref_payment_id sudah pernah dipakai, permintaan dianggap kiriman ulang. Pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — ref_payment_id yang menentukan.',
             'staff_id (payment_type=2) adalah external_ref_id sales milik PMO — SAMA nilai staff_id di /master/sales. Bukan PK internal staffs.staff_id. Sales harus sudah terdaftar/tersinkron (status aktif) sebelum POST /payments/cash.',
             'payment_type=1: utamakan armada_code (= customers.customer_code, sama field di /shipments/*). armada_id (PK customer) masih diterima sebagai legacy. Armada harus aktif.',
