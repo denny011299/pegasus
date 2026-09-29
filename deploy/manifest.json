@@ -1,14 +1,16 @@
 {
-    "generated_at": "2026-09-29T13:06:52+07:00",
-    "commit": "1507c488822d68a1d1b5a5ce9d88d55111d60a80",
+    "generated_at": "2026-09-29T13:17:51+07:00",
+    "commit": "745c3a5f093324bed46218d5bc0f7e01ad27408f",
     "branch": "fase2/main",
     "file_count": 3590,
-    "previous_commit": "5c1f979e18ee242c9bba154551a7bb44ca8492d8",
-    "previous_generated_at": "2026-09-29T13:01:44+07:00",
+    "previous_commit": "1507c488822d68a1d1b5a5ce9d88d55111d60a80",
+    "previous_generated_at": "2026-09-29T13:06:52+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/SupplierController.php"
+        "app/Http/Controllers/StockController.php",
+        "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js",
+        "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -122,7 +124,7 @@
         "app/Http/Controllers/ProductionController.php": "241f584baedaf68c020315efefc548c7092241b6",
         "app/Http/Controllers/ReportController.php": "837d641b09be755ea46a452b07a227042571c671",
         "app/Http/Controllers/SettingController.php": "d8136ec412df6f24a741df8c64e0b44f40220279",
-        "app/Http/Controllers/StockController.php": "485488370445e8d1c1f96363b635385b05c2d10a",
+        "app/Http/Controllers/StockController.php": "87250e1e64c51f42b0f0253463bbf54a689bce31",
         "app/Http/Controllers/StockTransferController.php": "3def879e6bb14428b9672ae3379287689bae8b37",
         "app/Http/Controllers/SupplierController.php": "b98cf2e00a4dea1f510f0726696072e073a06b45",
         "app/Http/Controllers/SynchronizationController.php": "f96f4d39f0a9e5f3ab3a7bc95a0ecc41e4cc6993",
@@ -1146,7 +1148,7 @@
         "public/Custom_js/Backoffice/Inventory/Stock_Opname_Bahan.js": "378e31ca3a29442c373a9519871c0b2a79c60381",
         "public/Custom_js/Backoffice/Inventory/Stock_Product copy.js": "1c37e215e36773841ae4cebd4d63e55ecf8e85b8",
         "public/Custom_js/Backoffice/Inventory/Stock_Product.js": "79d869b70e93650f75c537f735d5919700c6ad9b",
-        "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js": "0cd29c3da9688243e1cb80912a75e593ab825821",
+        "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js": "4c5064cc08a10cf2c0513c8638469249475b552d",
         "public/Custom_js/Backoffice/Inventory/Stock_Transfer.js": "e3006f77b082e509f4e23510c4b7e625387c52f7",
         "public/Custom_js/Backoffice/Login.js": "9ab1e0d89b222ebaf644ac7bc65a3da418759011",
         "public/Custom_js/Backoffice/Product/Barcode.js": "f14c6d6ec7c0303324d61e2d5d42d57a2375898b",
@@ -3362,7 +3364,7 @@
         "resources/views/Backoffice/Inventory/Stock_Opname_Bahan.blade.php": "f11c06ba743556c8c0e3f616e37b001f268bb52f",
         "resources/views/Backoffice/Inventory/Stock_Opname_Live.blade.php": "bcb33c8b4a1b5ef945892ba5b3cd22c6eb22a019",
         "resources/views/Backoffice/Inventory/Stock_Product.blade.php": "996939ba66248fefa2300be05851d79a91681ee0",
-        "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "ad78ece5ed2ba0f7959cce7fb90718408f08e301",
+        "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "887d10d9acf1c4961d41f71ac7b49d2d9d559c98",
         "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "a96294d9ef38456507cc7d05f7abee5279b159db",
         "resources/views/Backoffice/Order/WorkOrder.blade.php": "57596e54f1848538347b8409c5a27aea92c240bd",
         "resources/views/Backoffice/Order/bestSeller.blade.php": "0c42983b39094530e9902f7da799e214eb61cf09",
