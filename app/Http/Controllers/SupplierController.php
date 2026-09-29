@@ -609,15 +609,33 @@ class SupplierController extends Controller
             ]);
         }
 
-        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $poWh = $po->resolveWarehouseId();
         $staffId = (int) (Session::get('user')->staff_id ?? 0);
 
-        // Soft-block: ACC ditolak saat opname bahan open.
-        if ($activeWh > 0) {
-            $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
-                $activeWh,
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
-            );
+        // Soft-block di gudang dokumen PO (bukan session / tab lain).
+        if ($poWh > 0) {
+            $suppliesIds = [];
+            foreach (($data['items'] ?? []) as $row) {
+                $sv = SuppliesVariant::find($row['supplies_variant_id'] ?? null);
+                if ($sv) {
+                    $suppliesIds[] = (int) $sv->supplies_id;
+                }
+            }
+            [$hasSupply, $hasTrading] = Supplies::classifyKindsForSoftBlock($suppliesIds);
+            $softBlock = null;
+            if ($hasSupply && $hasTrading) {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyDomainBlocked($poWh);
+            } elseif ($hasTrading) {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                    $poWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+                );
+            } else {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                    $poWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+                );
+            }
             if ($softBlock !== null) {
                 return response()->json([
                     'status' => -1,
@@ -644,6 +662,7 @@ class SupplierController extends Controller
             $value["statusPO"] = 2;
             $value["status"] = 2;
             $value["po_number"] = $po->po_number;
+            $value["warehouse_id"] = $poWh;
 
             // Catat Log "masuk" DULU untuk bahan mentah, baru insertPoDeliveryDetail()
             // (UnitRollUp bisa menulis log konversi) — GitHub #167. Trading: credit stok
@@ -666,7 +685,9 @@ class SupplierController extends Controller
                 // sekali. Histori jadi menampilkan Sisa yang tidak berubah untuk baris "masuk" ini
                 // (kolom Sisa terlihat "tidak update"). Dihitung eksplisit di sini: stok lama di
                 // satuan yang dibeli + qty yang diterima, sebelum roll-up ikut melipatnya.
-                $stockRow = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                $stockRow = SuppliesStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $poWh)
+                    ->where("supplies_id", "=", $sv->supplies_id)
                     ->where("unit_id", "=", $value['unit_id'])
                     ->where("status", "=", 1)
                     ->first();
@@ -682,6 +703,7 @@ class SupplierController extends Controller
                     'log_jumlah' => $value["pdod_qty"],
                     'unit_id'    => $value['unit_id'],
                     'log_saldo'  => $saldoAfterMasuk,
+                    'warehouse_id' => $poWh,
                 ]);
             }
 
@@ -708,7 +730,7 @@ class SupplierController extends Controller
      * Dipakai tolakPO() sebagai pengganti "cek stok di satuan yang dipesan saja" — sejak
      * penerimaan PO menaikkan satuan (UnitRollUp), stok bisa berada di satuan yang lebih besar.
      */
-    private function suppliesLadderHasEnough(int $suppliesId, int $unitId, int $qty): bool
+    private function suppliesLadderHasEnough(int $suppliesId, int $unitId, int $qty, ?int $warehouseId = null): bool
     {
         $chain = UnitRollUp::suppliesChain($suppliesId);
 
@@ -728,7 +750,14 @@ class SupplierController extends Controller
         }
 
         $total = 0;
-        $rows = SuppliesStock::where('supplies_id', $suppliesId)->where('status', 1)->get();
+        $wh = (int) ($warehouseId ?: 0);
+        $q = SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where('supplies_id', $suppliesId)
+            ->where('status', 1);
+        if ($wh > 0) {
+            $q->where('warehouse_id', $wh);
+        }
+        $rows = $q->get();
         foreach ($rows as $row) {
             $u = (int) $row->unit_id;
             if (isset($faktor[$u])) {
@@ -747,7 +776,7 @@ class SupplierController extends Controller
      * Unit atas dicari lewat RELASI (su_id_1), bukan posisi array — pelajaran dari
      * ReturnSuppliesBongkarFailsOnStockRowInsertionOrderTest.
      */
-    private function bongkarSuppliesUntilEnough(int $suppliesId, int $unitId, int $qty, $sv, &$p, int $safety = 0): void
+    private function bongkarSuppliesUntilEnough(int $suppliesId, int $unitId, int $qty, $sv, &$p, int $safety = 0, ?int $warehouseId = null): void
     {
         // Diperbaiki (2026-09-08, GitHub #165): dulu ini bongkar 1 unit atas per iterasi lewat
         // while-loop, tiap iterasi menulis 2 baris log -- kalau selisihnya besar (mis. butuh 100
@@ -756,7 +785,14 @@ class SupplierController extends Controller
         // dalam SATU langkah per level satuan.
         if ($safety > 20) return; // guard kedalaman rantai satuan (bukan jumlah unit)
 
-        $target = SuppliesStock::where('supplies_id', $suppliesId)
+        $wh = (int) ($warehouseId ?: ($p instanceof PurchaseOrder ? $p->resolveWarehouseId() : 0));
+        if ($wh <= 0) {
+            $wh = (int) SuppliesStock::resolveWarehouseId();
+        }
+
+        $target = SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $wh)
+            ->where('supplies_id', $suppliesId)
             ->where('unit_id', $unitId)->where('status', 1)->first();
         if (! $target || $target->ss_stock >= $qty) {
             return; // sudah cukup (atau tidak ada baris sama sekali — biarkan guard di atas yang bicara)
@@ -773,13 +809,15 @@ class SupplierController extends Controller
         $deficit = $qty - $target->ss_stock;
         $needAtas = (int) ceil($deficit / $rel['ratio']);
 
-        $atas = SuppliesStock::where('supplies_id', $suppliesId)
+        $atas = SuppliesStock::withoutGlobalScope('active_warehouse')
+            ->where('warehouse_id', $wh)
+            ->where('supplies_id', $suppliesId)
             ->where('unit_id', $rel['big'])->where('status', 1)->first();
         if (! $atas) return;
 
         // Satuan atas tidak cukup → coba isi dulu dari satuan di atasnya lagi (rekursif).
         if ($atas->ss_stock < $needAtas) {
-            $this->bongkarSuppliesUntilEnough($suppliesId, (int) $rel['big'], $needAtas, $sv, $p, $safety + 1);
+            $this->bongkarSuppliesUntilEnough($suppliesId, (int) $rel['big'], $needAtas, $sv, $p, $safety + 1, $wh);
             $atas->refresh();
         }
 
@@ -796,11 +834,13 @@ class SupplierController extends Controller
             'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
             'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Bongkar) pembatalan PO',
             'log_jumlah' => $take, 'unit_id' => (int) $rel['big'],
+            'warehouse_id' => $wh,
         ]);
         (new LogStock())->insertLog([
             'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
             'log_item_id' => $suppliesId, 'log_notes' => 'Konversi unit (Hasil) pembatalan PO',
             'log_jumlah' => $hasil, 'unit_id' => $unitId,
+            'warehouse_id' => $wh,
         ]);
     }
 
@@ -832,12 +872,31 @@ class SupplierController extends Controller
         }
 
         // Soft-block retur hanya saat menyentuh stok; ACC menunggu tetap boleh ditolak tanpa mutasi.
-        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $poWh = $p->resolveWarehouseId();
         if ((int) $p->status === 2) {
-            $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
-                $activeWh,
-                \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
-            );
+            $suppliesIds = PurchaseOrderDetail::where('po_id', $data['po_id'])
+                ->get()
+                ->map(function ($d) {
+                    $sv = SuppliesVariant::find($d->supplies_variant_id);
+                    return $sv ? (int) $sv->supplies_id : 0;
+                })
+                ->filter()
+                ->all();
+            [$hasSupply, $hasTrading] = Supplies::classifyKindsForSoftBlock($suppliesIds);
+            $softBlock = null;
+            if ($hasSupply && $hasTrading) {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyDomainBlocked($poWh);
+            } elseif ($hasTrading) {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                    $poWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
+                );
+            } else {
+                $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
+                    $poWh,
+                    \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
+                );
+            }
             if ($softBlock !== null) {
                 return response()->json([
                     'status' => -1,
@@ -888,10 +947,9 @@ class SupplierController extends Controller
                     $supplies = Supplies::find($sv->supplies_id);
                     if ($supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null)) {
                         $pvId = (int) ($supplies->trading_product_variant_id ?? 0);
-                        $warehouseId = SuppliesStock::resolveWarehouseId();
                         $avail = $pvId > 0
                             ? ProductUnitStock::totalAvailable(
-                                $warehouseId,
+                                $poWh,
                                 $pvId,
                                 (int) $value->unit_id,
                                 false,
@@ -908,7 +966,7 @@ class SupplierController extends Controller
                         continue;
                     }
 
-                    if (!$this->suppliesLadderHasEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty)) {
+                    if (!$this->suppliesLadderHasEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty, $poWh)) {
                         $name = trim(($value->pod_nama ?? '') . ' ' . ($value->pod_variant ?? ''));
                         if ($name === '' && $sv) {
                             $name = $sv->supplies_variant_name ?? 'Bahan';
@@ -933,9 +991,8 @@ class SupplierController extends Controller
 
                     if ($supplies && Supplies::isTradingKind($supplies->supplies_kind ?? null)) {
                         $pvId = (int) ($supplies->trading_product_variant_id ?? 0);
-                        $warehouseId = SuppliesStock::resolveWarehouseId();
                         $deduct = ProductUnitStock::deductQty(
-                            $warehouseId,
+                            $poWh,
                             $pvId,
                             (int) $value->unit_id,
                             (float) $value->pod_qty,
@@ -954,9 +1011,11 @@ class SupplierController extends Controller
 
                     // Bongkar satuan besar dulu kalau satuan yang dipesan tidak cukup sendirian
                     // (lihat komentar di blok validasi di atas). Kalau sudah cukup, ini no-op.
-                    $this->bongkarSuppliesUntilEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty, $sv, $p);
+                    $this->bongkarSuppliesUntilEnough((int) $sv->supplies_id, (int) $value->unit_id, (int) $value->pod_qty, $sv, $p, 0, $poWh);
 
-                    $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                    $s = SuppliesStock::withoutGlobalScope('active_warehouse')
+                        ->where('warehouse_id', $poWh)
+                        ->where("supplies_id", "=", $sv->supplies_id)
                         ->where("unit_id", "=", $value->unit_id)
                         ->where("status", "=", 1)
                         ->first();
@@ -973,6 +1032,7 @@ class SupplierController extends Controller
                         'log_notes'  => "Pembatalan pembelian bahan mentah " . $supplierName . " " . LogStock::actorSuffix(),
                         'log_jumlah' => $value->pod_qty,
                         'unit_id'    => $value->unit_id,
+                        'warehouse_id' => $poWh,
                     ]);
                 }
             }
@@ -1013,9 +1073,9 @@ class SupplierController extends Controller
             ];
         }
 
-        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
+        $poWh = $po->resolveWarehouseId();
         $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
-            $activeWh,
+            $poWh,
             \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
         );
         if ($softBlock !== null) {
@@ -1036,7 +1096,9 @@ class SupplierController extends Controller
                 array_push($bermasalah, $value['supplies_variant_name']);
             }
 
-            $ss = SuppliesStock::where('supplies_id', $value["supplies_id"])
+            $ss = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $poWh)
+                ->where('supplies_id', $value["supplies_id"])
                 ->where('unit_id', $value['unit_id'])
                 ->where('status', 1)
                 ->first();
@@ -1101,7 +1163,12 @@ class SupplierController extends Controller
             $value['po_id'] = $po->po_id;
             $pid_id = (new ProductIssuesDetail())->insertProductIssuesDetail($value);
 
-            $s = SuppliesStock::where('supplies_id','=',$value['supplies_id'])->where('unit_id','=',$value["unit_id"])->where('status', 1)->first();
+            $s = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $poWh)
+                ->where('supplies_id','=',$value['supplies_id'])
+                ->where('unit_id','=',$value["unit_id"])
+                ->where('status', 1)
+                ->first();
 
             // pengurangan qty stok
             // Ditambahkan (2026-08-24): null-check eksplisit untuk $s -- dulu `$s->ss_stock ?? 0`
@@ -1129,6 +1196,7 @@ class SupplierController extends Controller
                 'log_notes'  => 'Retur pembelian dari pembelian ' . $po->po_number . ' ' . LogStock::actorSuffix(),
                 'log_jumlah' => $value['pid_qty'],
                 'unit_id'    => $value['unit_id'],
+                'warehouse_id' => $poWh,
             ]);
 
             $value['rs_id'] = $rs_id;
@@ -1157,11 +1225,12 @@ class SupplierController extends Controller
         $rs = ReturnSupplies::find($data['rs_id']);
         $returs = ReturnSuppliesDetail::where('rs_id', $data['rs_id'])->where('status', 1)->get();
         $pi = ProductIssues::find($rs->pi_id);
+        $po = PurchaseOrder::find($data['po_id']);
+        $poWh = $po ? $po->resolveWarehouseId() : 0;
 
         // Soft-block: hapus retur mengembalikan stok bahan — dilarang saat opname bahan open.
-        $activeWh = (int) (Session::get('active_warehouse_id') ?? \App\Models\ProductStock::resolveWarehouseId(null));
         $softBlock = \App\Support\PendingStockSoftBlock::messageIfBlocked(
-            $activeWh,
+            $poWh,
             \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
         );
         if ($softBlock !== null) {
@@ -1179,7 +1248,6 @@ class SupplierController extends Controller
         // bertambah tapi stok baru sebagian yang dikembalikan, atau sebaliknya.
         DB::beginTransaction();
         try {
-        $po = PurchaseOrder::find($data['po_id']);
 
         // Return value intentionally not checked here — see ProductIssues::deleteProductIssues()'s
         // dead-code comment. Currently harmless (its ref_num guard never actually triggers today),
@@ -1210,7 +1278,9 @@ class SupplierController extends Controller
             // jadi fallback resolveCurrentSaldo() milik insertLog() masih membaca stok SEBELUM
             // retur dibatalkan. Dihitung eksplisit: stok lama di satuan retur + qty yang
             // dikembalikan, sebelum roll-up ikut melipatnya.
-            $stockRow = SuppliesStock::where('supplies_id', $sup->supplies_id)
+            $stockRow = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $poWh)
+                ->where('supplies_id', $sup->supplies_id)
                 ->where('unit_id', $value['unit_id'])
                 ->where('status', 1)
                 ->first();
@@ -1226,6 +1296,7 @@ class SupplierController extends Controller
                 'log_jumlah' => $value['rsd_qty'],
                 'unit_id'    => $value['unit_id'],
                 'log_saldo'  => $saldoAfterMasuk,
+                'warehouse_id' => $poWh,
             ]);
 
             (new ProductIssuesDetail())->deleteProductIssuesDetail($value);

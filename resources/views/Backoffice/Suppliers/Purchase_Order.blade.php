@@ -1,5 +1,16 @@
 <?php $page = 'purchase_order'; ?>
 @extends('layout.mainlayout')
+@section('custom_css')
+    <link rel="stylesheet" href="{{ asset('assets/plugins/daterangepicker/daterangepicker.css') }}">
+    <style>
+        .daterangepicker {
+            z-index: 1060 !important;
+        }
+        .purchase-order-filter .cal-icon:after {
+            pointer-events: none;
+        }
+    </style>
+@endsection
 @section('content')
 <style>
     .badgeStatus{
@@ -25,8 +36,8 @@
     #tablePurchaseOrder td:nth-child(1), /* Tanggal */
     #tablePurchaseOrder td:nth-child(2), /* No. PO */
     #tablePurchaseOrder td:nth-child(3), /* No. Invoice */
-    #tablePurchaseOrder td:nth-child(6), /* Total */
-    #tablePurchaseOrder td:nth-child(7), /* Status */
+    #tablePurchaseOrder td:nth-child(7), /* Total */
+    #tablePurchaseOrder td:nth-child(8), /* Status */
     #tablePurchaseOrder td:last-child {  /* Aksi */
         white-space: nowrap !important;
     }
@@ -158,10 +169,11 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 8% 8% 8% 18% 25% 8% 7% 7% 7% 4%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 7% 7% 7% 14% 12% 18% 7% 7% 7% 7% 7%;">
                                         <span style="width:60%"></span>
                                         <span style="width:50%"></span>
                                         <span style="width:50%"></span>
+                                        <span style="width:55%"></span>
                                         <span style="width:55%"></span>
                                         <span style="width:40%"></span>
                                         <span style="width:50%"></span>
@@ -172,11 +184,12 @@
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 8% 8% 8% 18% 25% 8% 7% 7% 7% 4%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 7% 7% 7% 14% 12% 18% 7% 7% 7% 7% 7%;">
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:55%"></span>
                                                 <span class="skel-text" style="width:55%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:85%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-badge" style="width:55%;justify-self:center"></span>
@@ -194,6 +207,7 @@
                                             <th>No. PO</th>
                                             <th>No. Invoice</th>
                                             <th>Nama Pemasok</th>
+                                            <th>Gudang</th>
                                             <th>Keterangan</th>
                                             <th>Total</th>
                                             <th>Status</th>
