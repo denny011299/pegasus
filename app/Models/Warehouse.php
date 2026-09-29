@@ -70,6 +70,20 @@ class Warehouse extends Model
     }
 
     /**
+     * Gudang utama pertama (aktif) — default PP dari External API / shortage.
+     */
+    public static function firstMainId(): ?int
+    {
+        $id = self::query()
+            ->active()
+            ->whereHas('type', fn ($q) => $q->where('is_main_warehouse', 1)->where('status', 1))
+            ->orderBy('id')
+            ->value('id');
+
+        return $id ? (int) $id : null;
+    }
+
+    /**
      * Gudang untuk dropdown navbar / share view.
      * Hanya status aktif (1) + assign di pivot staff_warehouses (tanpa bypass role).
      * Eager-load type; urut: tipe utama → nama tipe → nama gudang (siap di-groupBy).
@@ -373,6 +387,74 @@ class Warehouse extends Model
         $pivot->save();
 
         return 1;
+    }
+
+    /**
+     * Nama kepala cabang gudang (staff_warehouses.is_kepala_cabang = 1).
+     * Sama sumber data dengan getWarehouse()->kepala_staff_name.
+     *
+     * @param  bool  $fallbackAny  jika gudang ini belum punya kepala, ambil dari gudang aktif lain
+     */
+    public static function kepalaCabangName(?int $warehouseId, bool $fallbackAny = false): ?string
+    {
+        $staff = self::kepalaCabangStaff($warehouseId);
+        if ($staff) {
+            $name = trim((string) ($staff->staff_name ?? ''));
+            if ($name !== '') {
+                return $name;
+            }
+        }
+
+        if (! $fallbackAny) {
+            return null;
+        }
+
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('staff_warehouses', 'is_kepala_cabang')) {
+            return null;
+        }
+
+        $otherId = (int) StaffWarehouse::query()
+            ->where('is_kepala_cabang', 1)
+            ->when($warehouseId && (int) $warehouseId > 0, fn ($q) => $q->where('warehouse_id', '!=', (int) $warehouseId))
+            ->whereHas('warehouse', fn ($q) => $q->where('status', 1))
+            ->orderBy('warehouse_id')
+            ->value('warehouse_id');
+
+        if ($otherId <= 0) {
+            return null;
+        }
+
+        return self::kepalaCabangName($otherId, false);
+    }
+
+    /**
+     * Staff kepala cabang aktif untuk satu gudang, atau null.
+     */
+    public static function kepalaCabangStaff(?int $warehouseId): ?Staff
+    {
+        $wid = (int) ($warehouseId ?? 0);
+        if ($wid <= 0) {
+            return null;
+        }
+        if (! \Illuminate\Support\Facades\Schema::hasColumn('staff_warehouses', 'is_kepala_cabang')) {
+            return null;
+        }
+
+        $staffId = (int) StaffWarehouse::query()
+            ->where('warehouse_id', $wid)
+            ->where('is_kepala_cabang', 1)
+            ->value('staff_id');
+
+        if ($staffId <= 0) {
+            return null;
+        }
+
+        $staff = Staff::query()
+            ->where('staff_id', $staffId)
+            ->where('status', 1)
+            ->first(['staff_id', 'staff_name']);
+
+        return $staff ?: null;
     }
 
     private function resolveActiveStaffId($raw): ?int

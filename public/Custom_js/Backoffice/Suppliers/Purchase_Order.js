@@ -336,16 +336,17 @@
                 },
             },
             columns: [
-                { data: "date",             width: "8%" },
-                { data: "po_number",        width: "8%" },
-                { data: "poi_code",         width: "8%" },
-                { data: "po_supplier_name", width: "18%" },
-                { data: "po_desc",          width: "25%", defaultContent: "-" },
-                { data: "total",            width: "8%" },
+                { data: "date",             width: "7%" },
+                { data: "po_number",        width: "7%" },
+                { data: "poi_code",         width: "7%" },
+                { data: "po_supplier_name", width: "14%" },
+                { data: "warehouse_name",   width: "12%", defaultContent: "-" },
+                { data: "po_desc",          width: "18%", defaultContent: "-" },
+                { data: "total",            width: "7%" },
                 { data: "status_po",        width: "7%" },
                 { data: "created_by_name",  width: "7%",  defaultContent: "-" , render: function(data) { return typeof renderCreatedByName === "function" ? renderCreatedByName(data) : data; } },
                 { data: "acc_by_name",      width: "7%",  defaultContent: "-" },
-                { data: "action",           width: "4%",  class: "text-center align-middle" },
+                { data: "action",           width: "7%",  class: "text-center align-middle" },
             ],
             columnDefs: [
                 {
@@ -457,27 +458,72 @@
         refreshPurchaseOrder();
     })
 
-    $(document).on('change', '#start_date', function(){
-        dates = [];
-        var start = $('#start_date').val();
-        var end = $('#end_date').val();
-        dates.push(start);
-        dates.push(end);
-        refreshPurchaseOrder();
-    })
-    $(document).on('change', '#end_date', function(){
-        dates = [];
-        var start = $('#start_date').val();
-        var end = $('#end_date').val();
-        dates.push(start);
-        dates.push(end);
-        refreshPurchaseOrder();
-    })
+    function initPurchaseOrderDateFilter() {
+        var $date = $("#po_filter_date");
+        if (!$date.length) return;
+        if (typeof $date.daterangepicker !== "function" || typeof moment !== "function") return;
+
+        $date.daterangepicker(
+            {
+                autoUpdateInput: false,
+                alwaysShowCalendars: true,
+                showDropdowns: true,
+                locale: {
+                    format: "DD-MM-YYYY",
+                    separator: " — ",
+                    applyLabel: "Terapkan",
+                    cancelLabel: "Hapus",
+                    fromLabel: "Dari",
+                    toLabel: "Sampai",
+                    customRangeLabel: "Kustom",
+                    daysOfWeek: ["Mg", "Sn", "Sl", "Rb", "Km", "Jm", "Sb"],
+                    monthNames: [
+                        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+                        "Juli", "Agustus", "September", "Oktober", "November", "Desember",
+                    ],
+                    firstDay: 1,
+                },
+                ranges: {
+                    "Hari Ini": [moment(), moment()],
+                    Kemarin: [moment().subtract(1, "days"), moment().subtract(1, "days")],
+                    "7 Hari Terakhir": [moment().subtract(6, "days"), moment()],
+                    "30 Hari Terakhir": [moment().subtract(29, "days"), moment()],
+                    "Bulan Ini": [moment().startOf("month"), moment().endOf("month")],
+                    "Bulan Lalu": [
+                        moment().subtract(1, "month").startOf("month"),
+                        moment().subtract(1, "month").endOf("month"),
+                    ],
+                },
+            },
+            function (startDate, endDate) {
+                dates = [startDate.format("YYYY-MM-DD"), endDate.format("YYYY-MM-DD")];
+            }
+        );
+        $date.on("apply.daterangepicker", function (ev, picker) {
+            dates = [
+                picker.startDate.format("YYYY-MM-DD"),
+                picker.endDate.format("YYYY-MM-DD"),
+            ];
+            $(this).val(
+                picker.startDate.format("DD-MM-YYYY") +
+                    " — " +
+                    picker.endDate.format("DD-MM-YYYY")
+            );
+            refreshPurchaseOrder();
+        });
+        $date.on("cancel.daterangepicker", function () {
+            dates = null;
+            $(this).val("");
+            refreshPurchaseOrder();
+        });
+        $date.val("");
+    }
+
+    initPurchaseOrderDateFilter();
 
     $(document).on('click', '.btn-clear', function(){
         dates = null;
-        $('#start_date').val("");
-        $('#end_date').val("");
+        $('#po_filter_date').val("");
         $('#status').val("");
         refreshPurchaseOrder();
     })

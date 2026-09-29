@@ -140,6 +140,12 @@
                                                 </div>
                                             </div>
                                             <div class="col-12 col-sm-6 col-md-4">
+                                                <div class="input-block">
+                                                    <label>Gudang</label>
+                                                    <input type="text" class="form-control fill" value="{{ $data['warehouse_name'] ?? '-' }}" disabled>
+                                                </div>
+                                            </div>
+                                            <div class="col-12 col-sm-6 col-md-4">
                                                 <div class="input-block mb-3">
                                                     <label>Tanggal PO</label>
                                                     <input type="text" class="form-control fill" id="po_date" disabled>

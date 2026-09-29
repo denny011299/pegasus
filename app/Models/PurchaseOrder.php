@@ -14,6 +14,20 @@ class PurchaseOrder extends Model
     public $timestamps = true;
     public $incrementing = true;
 
+    /**
+     * Gudang dokumen PO — ACC/tolak/retur wajib pakai ini, bukan session.
+     * Fallback gudang utama kalau kolom kosong (sebelum migrate / data partial).
+     */
+    public function resolveWarehouseId(): int
+    {
+        $wid = (int) ($this->warehouse_id ?? 0);
+        if ($wid > 0) {
+            return $wid;
+        }
+
+        return (int) (Warehouse::firstMainId() ?? 0);
+    }
+
     function getPurchaseOrder($data = [])
     {
         $data = array_merge([
@@ -32,6 +46,18 @@ class PurchaseOrder extends Model
         $data['with_items'] = filter_var($data['with_items'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
         $result = PurchaseOrder::where("purchase_orders.status", ">=", -1)->where("purchase_orders.status", '!=', 0);
+
+        // List per-cabang: filter gudang aktif. Detail by po_id / ids tidak difilter.
+        if (
+            ! $data['po_id']
+            && ! ($data['ids'] && is_array($data['ids']))
+            && Schema::hasColumn('purchase_orders', 'warehouse_id')
+        ) {
+            $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+            if ($activeWh > 0) {
+                $result->where('purchase_orders.warehouse_id', $activeWh);
+            }
+        }
 
         if ($data["po_supplier"]) $result->where("po_supplier", "=", $data["po_supplier"]);
         if ($data["po_number"]) $result->where("po_number", "like", "%" . $data["po_number"] . "%");
@@ -121,6 +147,14 @@ class PurchaseOrder extends Model
                 ->groupBy('po_id');
         }
 
+        $warehouseNames = collect();
+        if (Schema::hasColumn('purchase_orders', 'warehouse_id')) {
+            $whIds = $result->pluck('warehouse_id')->filter()->unique()->values()->all();
+            if ($whIds !== []) {
+                $warehouseNames = Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id');
+            }
+        }
+
         foreach ($result as $value) {
             $value->po_supplier_name = $suppliers->get($value->po_supplier)?->supplier_name ?? null;
             $inv = $invoices->get($value->po_id);
@@ -135,6 +169,10 @@ class PurchaseOrder extends Model
                 : '-';
             $value->acc_by_name = $value->acc_by
                 ? ($staffNames->get((int) $value->acc_by) ?? '-')
+                : '-';
+            $whId = (int) ($value->warehouse_id ?? 0);
+            $value->warehouse_name = $whId > 0
+                ? ($warehouseNames->get($whId) ?? '-')
                 : '-';
         }
 
@@ -156,6 +194,11 @@ class PurchaseOrder extends Model
         $t->po_img      = $data["po_img"] ?? null;
         $t->status      = 1;
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
+        // Sementara semua PO baru → gudang utama; nanti UI pilih gudang per cabang.
+        if (Schema::hasColumn('purchase_orders', 'warehouse_id')) {
+            $wid = (int) ($data['warehouse_id'] ?? 0);
+            $t->warehouse_id = $wid > 0 ? $wid : Warehouse::firstMainId();
+        }
         $t->save();
 
         return $t->po_id;

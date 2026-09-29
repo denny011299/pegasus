@@ -658,46 +658,37 @@
 
 @if(Route::is(['purchaseOrder']))
 <!-- Filter Pencarian -->
-<div class="container mt-3 ps-0">
-    <div class="row">
-        <div class="col-12 col-md-12 mb-4">
-            <div class="card p-3">
-                <div class="row g-2 align-items-center">
-                    <div class="col-md-3">
-                        <div class="input-block">
-                            <label>Dari</label>
-                            <div>
-                                <input type="date" class="form-control" id="start_date">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="input-block">
-                            <label>Sampai</label>
-                            <div>
-                                <input type="date" class="form-control" id="end_date">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="input-block">
-                            <label>Status</label>
-                            <select class="form-select fill" id="status">
-                                <option value="">Semua</option>
-                                <option value="4">Menunggu Approval</option>
-                                <option value="1">Belum Terbayar</option>
-                                <option value="3">Menunggu Tanda Terima</option>
-                                <option value="2">Terbayar</option>
-                                <option value="5">Ditolak</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-3 col-sm-12 pt-4 text-end">
-                        <a class="btn btn-outline-secondary btn-clear">
-                            Clear
-                        </a>
-                    </div>
+<div class="profit-menu card purchase-order-filter">
+    <div class="row card-body pb-0 g-3 align-items-end">
+        <div class="col-xl-5 col-lg-5 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Tanggal</label>
+                <div class="cal-icon cal-icon-info">
+                    <input type="text" class="form-control" id="po_filter_date"
+                        placeholder="Pilih rentang / hari" readonly>
                 </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-lg-4 col-md-6 col-sm-12">
+            <div class="input-block mb-3">
+                <label>Status</label>
+                <select class="form-select fill" id="status">
+                    <option value="">Semua</option>
+                    <option value="4">Menunggu Approval</option>
+                    <option value="1">Belum Terbayar</option>
+                    <option value="3">Menunggu Tanda Terima</option>
+                    <option value="2">Terbayar</option>
+                    <option value="5">Ditolak</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12">
+            <div class="input-block mb-3">
+                <a href="javascript:void(0);" class="btn btn-outline-secondary w-100 btn-clear d-flex align-items-center justify-content-center gap-1.5"
+                    style="height: 42px; border-radius: 8px; font-size: 13px; font-weight: 600;" title="Reset Filter">
+                    <i class="fe fe-rotate-ccw" style="font-size: 13px;"></i>
+                    <span>Clear</span>
+                </a>
             </div>
         </div>
     </div>
@@ -1033,7 +1024,7 @@
 @endif
 
 @if(Route::is(['supplies']))
-{{-- Filter Jenis/Trading di-hide sampai fitur Trading di-rilis --}}
+{{-- Filter Jenis: tampil saat SUPPLIES_TRADING_UI di Supplies.js --}}
 <div class="profit-menu card d-none" id="supplies-kind-filter">
     <div class="row card-body pb-0 g-3 align-items-end">
         <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
