@@ -70,7 +70,7 @@
         stopHeartbeat();
         window.opnameLockToken = null;
         showLockError(
-            "Sesi Input Stock Opname diambil alih atau berakhir. Anda akan dikembalikan ke daftar."
+            "Sesi Input Stock Opname berakhir atau tidak lagi aktif. Anda akan dikembalikan ke daftar."
         );
         var domain = window.opnameLockDomain || "product";
         var list =
@@ -145,7 +145,9 @@
                             ? Number(window.sessionUser.staff_id)
                             : 0;
                     if (res.staff_id && me && Number(res.staff_id) === me) {
-                        window.location.href = href;
+                        showLockError(
+                            "Di tab lain sudah ada yang membuka Input Stock Opname. Tutup tab itu dulu, atau tunggu sesi berakhir (~35 detik)."
+                        );
                         return;
                     }
                     showLockError(
