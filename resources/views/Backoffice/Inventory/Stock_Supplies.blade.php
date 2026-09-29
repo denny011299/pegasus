@@ -78,15 +78,19 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 75% 25%;">
-                                        <span style="width:40%"></span>
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 40% 18% 18% 24%;">
+                                        <span style="width:70%"></span>
+                                        <span style="width:55%"></span>
                                         <span style="width:60%"></span>
+                                        <span style="width:65%"></span>
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 75% 25%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 40% 18% 18% 24%;">
+                                                <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
                                                 <span class="skel-badge" style="width:60%;justify-self:center"></span>
+                                                <span class="skel-text" style="width:55%"></span>
                                             </div>
                                         @endfor
                                     </div>
@@ -95,6 +99,7 @@
                                     <thead class="thead-light">
                                         <tr>
                                             <th>Nama Bahan Mentah</th>
+                                            <th>SKU</th>
                                             <th>Stok</th>
                                             <th class="col-min-order">Dasar Pemesanan Min.</th>
                                         </tr>
