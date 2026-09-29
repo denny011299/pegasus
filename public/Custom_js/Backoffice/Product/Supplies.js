@@ -132,7 +132,7 @@
             language: {
                 search: " ",
                 sLengthMenu: "_MENU_",
-                searchPlaceholder: "Cari Bahan Mentah",
+                searchPlaceholder: "Cari Bahan Mentah / SKU",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 paginate: {
                     next: ' <i class=" fa fa-angle-right"></i>',
@@ -152,10 +152,10 @@
                 },
             },
             columns: [
-                { data: "supplies_name", width: "22%" },
+                { data: "supplies_name", width: "18%" },
                 {
                     data: "kind_badge",
-                    width: "10%",
+                    width: "9%",
                     className: "text-center align-middle",
                     // Trading belum rilis — kolom tetap ada di data (edit preserve kind) tapi disembunyikan
                     visible: SUPPLIES_TRADING_UI,
@@ -172,13 +172,30 @@
                         return '<span class="badge rounded-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Bahan Mentah</span>';
                     },
                 },
-                { data: "variant_values", width: "22%", orderable: false },
-                { data: "unit_values", width: "14%", orderable: false },
-                { data: "desc", width: "18%" },
+                {
+                    data: "sku_list",
+                    width: "14%",
+                    orderable: false,
+                    render: function (data) {
+                        if (!Array.isArray(data) || !data.length) return "-";
+                        return data
+                            .map(function (sku) {
+                                return (
+                                    '<div class="font-monospace small text-dark">' +
+                                    $("<div>").text(sku).html() +
+                                    "</div>"
+                                );
+                            })
+                            .join("");
+                    },
+                },
+                { data: "variant_values", width: "18%", orderable: false },
+                { data: "unit_values", width: "12%", orderable: false },
+                { data: "desc", width: "14%" },
                 {
                     data: "created_by_name",
                     defaultContent: "-",
-                    width: "12%",
+                    width: "10%",
                     render: function (data) {
                         return typeof renderCreatedByName === "function"
                             ? renderCreatedByName(data)
@@ -188,7 +205,7 @@
                 {
                     data: "action",
                     className: "text-center align-middle",
-                    width: "12%",
+                    width: "10%",
                     orderable: false,
                     searchable: false,
                 },
