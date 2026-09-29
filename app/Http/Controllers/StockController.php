@@ -3235,7 +3235,19 @@ class StockController extends Controller
 
             if ($search !== '') {
                 $like = '%' . $search . '%';
-                $base->where('supplies.supplies_name', 'like', $like);
+                $base->where(function ($q) use ($like) {
+                    $q->where('supplies.supplies_name', 'like', $like)
+                        ->orWhereExists(function ($sq) use ($like) {
+                            $sq->select(DB::raw(1))
+                                ->from('supplies_variants')
+                                ->whereColumn('supplies_variants.supplies_id', 'supplies.supplies_id')
+                                ->where('supplies_variants.status', 1)
+                                ->where(function ($vq) use ($like) {
+                                    $vq->where('supplies_variants.supplies_variant_sku', 'like', $like)
+                                        ->orWhere('supplies_variants.supplies_variant_name', 'like', $like);
+                                });
+                        });
+                });
                 $recordsFiltered = (clone $base)->count('supplies.supplies_id');
             } else {
                 $recordsFiltered = $recordsTotal;
