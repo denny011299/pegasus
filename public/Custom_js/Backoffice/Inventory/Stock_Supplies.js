@@ -142,7 +142,7 @@
             language: {
                 search: " ",
                 sLengthMenu: "_MENU_",
-                searchPlaceholder: "Cari Bahan Mentah",
+                searchPlaceholder: "Cari Bahan Mentah / SKU",
                 info: "_START_ - _END_ of _TOTAL_ items",
                 emptyTable: "Tidak ada data stok untuk gudang ini",
                 zeroRecords: "Bahan mentah tidak ditemukan",
