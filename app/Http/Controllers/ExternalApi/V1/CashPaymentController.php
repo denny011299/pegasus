@@ -15,6 +15,7 @@ use App\Models\Customer;
 use App\Models\Staff;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
@@ -43,6 +44,19 @@ use Illuminate\Validation\Rule;
  *                   yang berbeda" di MasterSalesController.
  * Response payments/cash mengikuti nama field yang sama (armada_code,
  * staff_id sebagai external_ref_id), bukan id internal Pegasus.
+ *
+ * REVISI GitHub #208 (belum pernah dijalankan di staging/production, jadi migration-nya
+ * ditulis ulang, bukan ditambah — lihat migration ref_nota_id):
+ *   - ref_nota_id pindah dari level pembayaran ke items[].ref_nota_id: nota adalah atribut
+ *     TIAP ITEM tunai, bukan satu transaksi (satu pembayaran bisa menggabungkan beberapa nota).
+ *   - ref_payment_id BUKAN lagi kunci idempotensi sendirian. PMO mengirim satu group pembayaran
+ *     Sales sebagai beberapa POST dengan ref_payment_id yang SAMA — satu call per sales
+ *     (staff_id) penerima, karena satu baris cash_sales hanya menampung satu staff_id. Kunci
+ *     idempotensi sekarang ref_payment_id + customer_id (armada) / ref_payment_id + staff_id
+ *     (sales) — lihat migration 2026_09_30_030000_change_ref_payment_id_unique_to_composite.
+ *   - Karena itu GET /payments/cash/{ref_payment_id} bisa mencocokkan LEBIH dari satu baris.
+ *     data selalu berbentuk array (bukan lagi objek tunggal), dan bisa disaring dengan query
+ *     ?armada_code= atau ?staff_id= untuk kembali ke satu baris.
  *
  * Yang dipakai ulang dari implementasi yang sudah ada, bukan ditulis ulang:
  *   - urutan pembuatan kas operasional (ReportController::insertCashArmada /
@@ -73,12 +87,11 @@ class CashPaymentController extends Controller
         $data = $this->validatePayload($request);
 
         // --- Idempotensi -------------------------------------------------
-        // Referensi yang sama tidak pernah melahirkan transaksi kedua. Kalau
-        // referensinya sudah pernah dipakai, permintaan ini diperlakukan
-        // sebagai pengiriman ulang dan pembayaran yang lama dikembalikan apa
-        // adanya — termasuk bila jenisnya berbeda, karena satu referensi hanya
-        // boleh menunjuk satu transaksi.
-        $existing = $this->findByRef($data['ref_payment_id']);
+        // Kunci idempotensi BUKAN ref_payment_id sendirian (lihat catatan kelas soal #208):
+        // ref_payment_id + customer_id (armada) atau ref_payment_id + staff_id (sales). Kalau
+        // pasangan itu sudah pernah dipakai, permintaan ini diperlakukan sebagai pengiriman
+        // ulang dan pembayaran yang lama dikembalikan apa adanya.
+        $existing = $this->findExisting($data);
 
         if ($existing !== null) {
             return ApiResponse::success(
@@ -107,11 +120,11 @@ class CashPaymentController extends Controller
         } catch (\Illuminate\Database\QueryException $e) {
             $photos->cleanup();
 
-            // Dua permintaan dengan referensi sama yang tiba nyaris bersamaan:
+            // Dua permintaan dengan pasangan referensi sama yang tiba nyaris bersamaan:
             // pemeriksaan di awal sama-sama belum melihat baris apa pun, lalu
             // unique index menolak yang kalah cepat. Perlakukan sebagai kiriman
             // ulang biasa — yang penting kasnya hanya satu, bukan dua.
-            $raced = $this->findByRef($data['ref_payment_id']);
+            $raced = $this->findExisting($data);
 
             if ($raced !== null) {
                 return ApiResponse::success(
@@ -144,12 +157,16 @@ class CashPaymentController extends Controller
 
     /**
      * GET /api/external/v1/payments/cash/{ref_payment_id}
+     *
+     * data selalu array: satu ref_payment_id bisa mencocokkan beberapa pembayaran (lihat catatan
+     * kelas soal #208). ?armada_code= / ?staff_id= menyaring ke penerima tertentu; tanpa filter,
+     * seluruh pembayaran armada MAUPUN sales dengan ref itu dikembalikan sekaligus.
      */
-    public function show(string $refPaymentId): JsonResponse
+    public function show(Request $request, string $refPaymentId): JsonResponse
     {
-        $found = $this->findByRef($refPaymentId);
+        $found = $this->findAllByRef($refPaymentId, $request->query('armada_code'), $request->query('staff_id'));
 
-        if ($found === null) {
+        if ($found->isEmpty()) {
             return ApiResponse::error(
                 ErrorCatalog::NOT_FOUND,
                 'Pembayaran dengan ref_payment_id "'.$refPaymentId.'" tidak ditemukan.',
@@ -157,7 +174,9 @@ class CashPaymentController extends Controller
             );
         }
 
-        return ApiResponse::success($this->present($found['payment'], $found['type']));
+        return ApiResponse::success(
+            $found->map(fn (array $row) => $this->present($row['payment'], $row['type']))->all(),
+        );
     }
 
     /* ------------------------------------------------------------------ */
@@ -171,7 +190,6 @@ class CashPaymentController extends Controller
     {
         $data = $request->validate([
             'ref_payment_id' => ['required', 'string', 'max:100'],
-            'ref_nota_id' => ['nullable', 'string', 'max:100'],
             'payment_type' => ['required', 'integer', Rule::in([self::TYPE_ARMADA, self::TYPE_SALES])],
 
             // armada_code menunjuk ke customers.customer_code, staff_id menunjuk ke
@@ -187,6 +205,7 @@ class CashPaymentController extends Controller
             'items.*.amount' => ['required', 'integer'],
             'items.*.notes' => ['nullable', 'string', 'max:255'],
             'items.*.type' => ['required', 'integer', Rule::in([1, 2, 3])],
+            'items.*.ref_nota_id' => ['nullable', 'string', 'max:100'],
 
             'photos' => ['nullable', 'array'],
             'photos.*' => ['string'],
@@ -284,7 +303,6 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
-            'ref_nota_id' => $data['ref_nota_id'] ?? null,
             'customer_id' => $data['_armada_customer_id'],
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
@@ -310,6 +328,7 @@ class CashPaymentController extends Controller
                 'crd_nominal' => (int) $item['amount'],
                 'crd_notes' => $item['notes'] ?? null,
                 'crd_type' => (int) $item['type'],
+                'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
 
@@ -329,7 +348,6 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
-            'ref_nota_id' => $data['ref_nota_id'] ?? null,
             'staff_id' => $data['_sales_staff_id'],
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
@@ -355,6 +373,7 @@ class CashPaymentController extends Controller
                 'csd_nominal' => (int) $item['amount'],
                 'csd_notes' => $item['notes'] ?? null,
                 'csd_type' => (int) $item['type'],
+                'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
 
@@ -403,25 +422,65 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * Cari pembayaran berdasarkan referensi eksternal di kedua jenis kas.
+     * Cari SATU pembayaran memakai kunci idempotensi lengkap (ref_payment_id + penerima yang
+     * sudah diresolusi validatePayload()) — dipakai store() untuk memutuskan replay atau baru.
      *
      * @return array{payment:mixed, type:int}|null
      */
-    private function findByRef(string $refPaymentId): ?array
+    private function findExisting(array $data): ?array
     {
-        $armada = (new CashArmada())->findByRefPaymentId($refPaymentId);
+        if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
+            $armada = CashArmada::where('ref_payment_id', '=', $data['ref_payment_id'])
+                ->where('customer_id', '=', $data['_armada_customer_id'])
+                ->first();
 
-        if ($armada) {
-            return ['payment' => $armada, 'type' => self::TYPE_ARMADA];
+            return $armada ? ['payment' => $armada, 'type' => self::TYPE_ARMADA] : null;
         }
 
-        $sales = (new CashSales())->findByRefPaymentId($refPaymentId);
+        $sales = CashSales::where('ref_payment_id', '=', $data['ref_payment_id'])
+            ->where('staff_id', '=', $data['_sales_staff_id'])
+            ->first();
 
-        if ($sales) {
-            return ['payment' => $sales, 'type' => self::TYPE_SALES];
+        return $sales ? ['payment' => $sales, 'type' => self::TYPE_SALES] : null;
+    }
+
+    /**
+     * Cari SELURUH pembayaran (armada dan/atau sales) dengan ref_payment_id ini — dipakai
+     * show(), karena satu ref sekarang bisa mencocokkan lebih dari satu baris (GitHub #208).
+     * $armadaCode / $staffId menyaring hasil ke satu penerima tertentu bila diisi.
+     *
+     * @return Collection<int, array{payment:mixed, type:int}>
+     */
+    private function findAllByRef(string $refPaymentId, ?string $armadaCode, ?string $staffId): Collection
+    {
+        $armadas = collect();
+        $salesRows = collect();
+
+        if ($staffId === null) {
+            $armadaQuery = CashArmada::where('ref_payment_id', '=', $refPaymentId);
+
+            if ($armadaCode !== null) {
+                $customerId = Customer::where('customer_code', '=', $armadaCode)->value('customer_id');
+                $armadaQuery->where('customer_id', '=', $customerId ?? 0);
+            }
+
+            $armadas = $armadaQuery->orderBy('cr_id')->get()
+                ->map(fn ($payment) => ['payment' => $payment, 'type' => self::TYPE_ARMADA]);
         }
 
-        return null;
+        if ($armadaCode === null) {
+            $salesQuery = CashSales::where('ref_payment_id', '=', $refPaymentId);
+
+            if ($staffId !== null) {
+                $staffPk = Staff::where('external_ref_id', '=', $staffId)->value('staff_id');
+                $salesQuery->where('staff_id', '=', $staffPk ?? 0);
+            }
+
+            $salesRows = $salesQuery->orderBy('cs_id')->get()
+                ->map(fn ($payment) => ['payment' => $payment, 'type' => self::TYPE_SALES]);
+        }
+
+        return $armadas->concat($salesRows);
     }
 
     private function reload($payment, int $paymentType)
@@ -454,7 +513,6 @@ class CashPaymentController extends Controller
 
         return [
             'ref_payment_id' => $payment->ref_payment_id,
-            'ref_nota_id' => $payment->ref_nota_id,
             'payment_id' => (int) $id,
             'payment_type' => $paymentType,
             'payment_date' => (string) ($isArmada ? $payment->cr_date : $payment->cs_date),
@@ -471,6 +529,7 @@ class CashPaymentController extends Controller
                 'amount' => (int) ($isArmada ? $detail->crd_nominal : $detail->csd_nominal),
                 'notes' => $isArmada ? $detail->crd_notes : $detail->csd_notes,
                 'type' => (int) ($isArmada ? $detail->crd_type : $detail->csd_type),
+                'ref_nota_id' => $detail->ref_nota_id,
             ])->all(),
             'photos' => array_map(
                 static fn ($name) => PaymentPhotoStore::url($name, $isArmada ? 'armada' : 'sales'),
