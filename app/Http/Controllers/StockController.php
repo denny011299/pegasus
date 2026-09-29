@@ -3142,8 +3142,9 @@ class StockController extends Controller
             $orderDir = strtolower((string) data_get($req->input('order'), '0.dir', 'asc')) === 'desc' ? 'desc' : 'asc';
             $columns = [
                 0 => 'supplies.supplies_name',
-                1 => 'supplies.supplies_name',
+                1 => 'supplies.supplies_name', // sku_list (derived)
                 2 => 'supplies.supplies_name',
+                3 => 'supplies.supplies_name',
             ];
             $orderCol = $columns[$orderColIdx] ?? 'supplies.supplies_name';
             $hasSuppliesMinCol = Schema::hasColumn('supplies', 'supplies_min_stock');
@@ -3196,6 +3197,29 @@ class StockController extends Controller
             $stocksBySupply = [];
             $relationsBySupply = collect();
             $units = collect();
+            $skuBySupply = [];
+            if ($suppliesIds !== []) {
+                $skuRows = SuppliesVariant::query()
+                    ->where('status', 1)
+                    ->whereIn('supplies_id', $suppliesIds)
+                    ->whereNotNull('supplies_variant_sku')
+                    ->where('supplies_variant_sku', '!=', '')
+                    ->orderBy('supplies_variant_id')
+                    ->get(['supplies_id', 'supplies_variant_sku']);
+                foreach ($skuRows as $sv) {
+                    $sid = (int) $sv->supplies_id;
+                    $sku = trim((string) $sv->supplies_variant_sku);
+                    if ($sku === '') {
+                        continue;
+                    }
+                    if (! isset($skuBySupply[$sid])) {
+                        $skuBySupply[$sid] = [];
+                    }
+                    if (! in_array($sku, $skuBySupply[$sid], true)) {
+                        $skuBySupply[$sid][] = $sku;
+                    }
+                }
+            }
 
             if ($suppliesIds !== []) {
                 $stockRows = SuppliesStock::withoutGlobalScope('active_warehouse')
@@ -3228,6 +3252,7 @@ class StockController extends Controller
             $data = [];
             $isEceranWarehouse = ! $isMain;
             foreach ($rows as $row) {
+
                 $stocks = $stocksBySupply[$row->supplies_id] ?? [];
                 $relations = $relationsBySupply->get($row->supplies_id, collect());
 
@@ -3245,6 +3270,7 @@ class StockController extends Controller
                 $data[] = array_merge([
                     'supplies_id' => $row->supplies_id,
                     'supplies_name' => $row->supplies_name,
+                    'sku_list' => $skuBySupply[(int) $row->supplies_id] ?? [],
                     'warehouse_id' => $warehouseId,
                     'warehouse_name' => $warehouseName,
                     'supplies_variant_stock_text' => $parts !== [] ? implode(', ', $parts) : '-',

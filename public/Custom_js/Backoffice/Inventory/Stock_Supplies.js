@@ -159,14 +159,31 @@
             columns: [
                 { 
                     data: "supplies_name", 
-                    width: "55%",
+                    width: "40%",
                     render: function (data, type, row) {
                         return '<span style="font-weight: 600; color: #334155; font-size: 13px;">' + (data || '-') + '</span>';
                     }
                 },
                 {
+                    data: "sku_list",
+                    width: "18%",
+                    orderable: false,
+                    render: function (data) {
+                        if (!Array.isArray(data) || !data.length) return "-";
+                        return data
+                            .map(function (sku) {
+                                return (
+                                    '<div class="font-monospace small text-dark">' +
+                                    $("<div>").text(sku).html() +
+                                    "</div>"
+                                );
+                            })
+                            .join("");
+                    },
+                },
+                {
                     data: "supplies_variant_stock_text",
-                    width: "20%",
+                    width: "18%",
                     orderable: false,
                     searchable: false,
                     render: function (data, type, row) {
@@ -176,7 +193,7 @@
                 {
                     data: "min_order",
                     className: "cell-min-order",
-                    width: "25%",
+                    width: "24%",
                     orderable: false,
                     searchable: false,
                     defaultContent: "—",
