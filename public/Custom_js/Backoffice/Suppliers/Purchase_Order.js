@@ -31,6 +31,7 @@
     
     $(document).ready(function(){
         inisialisasi();
+        initPurchaseOrderDateFilter();
         refreshPurchaseOrder();
     });
  
@@ -518,8 +519,6 @@
         });
         $date.val("");
     }
-
-    initPurchaseOrderDateFilter();
 
     $(document).on('click', '.btn-clear', function(){
         dates = null;
