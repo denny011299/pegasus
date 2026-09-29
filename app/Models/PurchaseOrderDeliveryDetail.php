@@ -58,6 +58,15 @@ class PurchaseOrderDeliveryDetail extends Model
                 return $t->pdod_id;
             }
 
+            // Gudang dokumen PO (bukan session) — caller accPO wajib kirim warehouse_id.
+            $warehouseId = (int) ($data['warehouse_id'] ?? 0);
+            if ($warehouseId <= 0) {
+                $warehouseId = (int) SuppliesStock::resolveWarehouseId();
+            }
+            if ($warehouseId <= 0) {
+                throw new \RuntimeException('Gudang PO tidak valid untuk penerimaan bahan');
+            }
+
             // Ditambahkan (2026-08-25): penerimaan barang PO dulu flat (`ss_stock += pdod_qty`)
             // tanpa konversi satuan -- 24 Piece yang dibeli tetap 24 Piece walaupun 1 DOS = 12 Piece,
             // padahal 24 Piece hasil PRODUKSI sudah naik jadi 2 DOS sejak GitHub #19. Barang fisik
@@ -78,7 +87,8 @@ class PurchaseOrderDeliveryDetail extends Model
             $rollUp = UnitRollUp::planSuppliesFolded(
                 (int) $sv->supplies_id,
                 (int) $data["unit_id"],
-                (int) $data["pdod_qty"]
+                (int) $data["pdod_qty"],
+                $warehouseId
             );
 
             // Entry ke-0 selalu satuan asal -- qty-nya sekarang DELTA (bisa negatif kalau stok lama
@@ -89,7 +99,9 @@ class PurchaseOrderDeliveryDetail extends Model
             // tidak pernah bertambah" tanpa ada yang tahu (antipattern yang sudah pernah diperbaiki
             // di accProduction()).
             $base = array_shift($rollUp);
-            $s = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+            $s = SuppliesStock::withoutGlobalScope('active_warehouse')
+                ->where('warehouse_id', $warehouseId)
+                ->where("supplies_id", "=", $sv->supplies_id)
                 ->where("unit_id", "=", $base['unit_id'])
                 ->where("status", "=", 1)
                 ->first();
@@ -101,7 +113,9 @@ class PurchaseOrderDeliveryDetail extends Model
             foreach ($rollUp as $credit) {
                 if ($credit['qty'] <= 0) continue;
 
-                $row = SuppliesStock::where("supplies_id", "=", $sv->supplies_id)
+                $row = SuppliesStock::withoutGlobalScope('active_warehouse')
+                    ->where('warehouse_id', $warehouseId)
+                    ->where("supplies_id", "=", $sv->supplies_id)
                     ->where("unit_id", "=", $credit['unit_id'])
                     ->where("status", "=", 1)
                     ->first();
@@ -124,6 +138,7 @@ class PurchaseOrderDeliveryDetail extends Model
                         'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 2,
                         'log_item_id' => $sv->supplies_id, 'log_notes' => 'Konversi unit (Naik satuan)',
                         'log_jumlah' => $naik, 'unit_id' => (int) $data["unit_id"],
+                        'warehouse_id' => $warehouseId,
                     ]);
                 }
                 foreach ($rollUp as $credit) {
@@ -132,6 +147,7 @@ class PurchaseOrderDeliveryDetail extends Model
                         'log_date' => now(), 'log_kode' => '-', 'log_type' => 2, 'log_category' => 1,
                         'log_item_id' => $sv->supplies_id, 'log_notes' => 'Konversi unit (Hasil naik satuan)',
                         'log_jumlah' => $credit['qty'], 'unit_id' => $credit['unit_id'],
+                        'warehouse_id' => $warehouseId,
                     ]);
                 }
             }
@@ -157,9 +173,12 @@ class PurchaseOrderDeliveryDetail extends Model
             throw new \RuntimeException('Varian produk relasi Trading tidak ditemukan / tidak aktif');
         }
 
-        $warehouseId = SuppliesStock::resolveWarehouseId();
+        $warehouseId = (int) ($data['warehouse_id'] ?? 0);
         if ($warehouseId <= 0) {
-            throw new \RuntimeException('Gudang aktif tidak valid untuk penerimaan Trading');
+            $warehouseId = (int) SuppliesStock::resolveWarehouseId();
+        }
+        if ($warehouseId <= 0) {
+            throw new \RuntimeException('Gudang PO tidak valid untuk penerimaan Trading');
         }
 
         $unitId = (int) ($data['unit_id'] ?? 0);
