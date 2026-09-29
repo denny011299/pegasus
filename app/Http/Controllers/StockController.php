@@ -191,9 +191,12 @@ class StockController extends Controller
 
         if (empty($result['ok'])) {
             $name = (string) ($result['held_by'] ?? 'User lain');
+            $msg = ! empty($result['same_staff'])
+                ? 'Di tab lain sudah ada yang membuka Input Stock Opname. Tutup tab itu dulu, atau tunggu sesi berakhir (~35 detik).'
+                : 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.';
 
             return redirect()->route($listRoute)
-                ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+                ->with('error', $msg);
         }
 
         return ['token' => (string) $result['token'], 'warehouse_id' => $wh];
@@ -496,9 +499,12 @@ class StockController extends Controller
             );
             if (empty($lock['ok'])) {
                 $name = (string) ($lock['held_by'] ?? 'User lain');
+                $msg = ! empty($lock['same_staff'])
+                    ? 'Di tab lain sudah ada yang membuka Input Stock Opname. Tutup tab itu dulu, atau tunggu sesi berakhir (~35 detik).'
+                    : 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.';
 
                 return redirect()->route('stockOpname')
-                    ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+                    ->with('error', $msg);
             }
 
             return view('Backoffice.Inventory.CreateStockOpname', [
@@ -1489,9 +1495,12 @@ class StockController extends Controller
             );
             if (empty($lock['ok'])) {
                 $name = (string) ($lock['held_by'] ?? 'User lain');
+                $msg = ! empty($lock['same_staff'])
+                    ? 'Di tab lain sudah ada yang membuka Input Stock Opname. Tutup tab itu dulu, atau tunggu sesi berakhir (~35 detik).'
+                    : 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.';
 
                 return redirect()->route('stockOpnameBahan')
-                    ->with('error', 'Ada user '.$name.' yang sedang membuka halaman Stock Opname.');
+                    ->with('error', $msg);
             }
             $param['data'] = [];
             $param['mode'] = 1;
