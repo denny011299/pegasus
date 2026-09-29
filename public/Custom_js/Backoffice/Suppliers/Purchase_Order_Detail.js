@@ -1463,22 +1463,22 @@ function submitAccPO(confirmWarehouseMismatch) {
         },
         method: "post",
         success: function (e) {
-            $('#modalDelete .modal-body').html('');
-            $(".modal").modal("hide");
             ResetLoadingButton("#btn-acc-po", "Terima");
             ResetLoadingButton("#btn-confirm-po-warehouse", "Lanjutkan");
             if (e && typeof e === "object") {
                 if (e.status == -2){
+                    $(".modal").modal("hide");
                     notifikasi('error', e.header, e.message);
                     window.open('/purchaseOrder', '_self');
                     return false;
                 }
                 if (e.status == -1) {
+                    $(".modal").modal("hide");
                     notifikasi('error', e.header || 'Stock Opname', e.message || 'Gagal approve pembelian');
                     return false;
                 }
                 if (e.status == -3) {
-                    // Session gudang ≠ dokumen PO (aman vs 2-tab / navbar DOM palsu)
+                    // Jangan $(".modal").modal("hide") dulu — nanti modal konfirmasi ikut hilang.
                     showModalKonfirmasi(
                         e.message || "Gudang aktif berbeda dengan gudang dokumen PO. Lanjutkan?",
                         "btn-confirm-po-warehouse"
@@ -1487,6 +1487,8 @@ function submitAccPO(confirmWarehouseMismatch) {
                     return false;
                 }
             }
+            $('#modalDelete .modal-body').html('');
+            $(".modal").modal("hide");
             $('#po_status').val(2).trigger('change');
             notifikasi(
                 "success",
