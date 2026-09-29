@@ -1,16 +1,14 @@
 {
-    "generated_at": "2026-09-29T13:17:20+07:00",
-    "commit": "5094cc29770f45fb5be8a736196e08ae1e3823d6",
+    "generated_at": "2026-09-29T13:58:41+07:00",
+    "commit": "6cbdf72176ca66163c16dc9422a8b2a08aa01557",
     "branch": "fase2/live",
     "file_count": 3583,
-    "previous_commit": "a5fc2c87f6e5e73685fc1b66323d3ad263991ff3",
-    "previous_generated_at": "2026-09-29T13:06:43+07:00",
+    "previous_commit": "5094cc29770f45fb5be8a736196e08ae1e3823d6",
+    "previous_generated_at": "2026-09-29T13:17:20+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/StockController.php",
-        "public/Custom_js/Backoffice/Inventory/Stock_Supplies.js",
-        "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php"
+        "app/Models/Supplies.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -214,7 +212,7 @@
         "app/Models/StockTransfer.php": "fcfbeb04ff45ac436a74212983d90788859c04b4",
         "app/Models/StockTransferDetail.php": "d44a13f84911a7e402a50dd4bbe8b39283d72518",
         "app/Models/Supplier.php": "75c8ca3aee46a67d8136de5d6c2bb85a4e292c61",
-        "app/Models/Supplies.php": "0307000a6e71b7b17b19630013287b1813d7d489",
+        "app/Models/Supplies.php": "69784f023db54bdbd1b366b24383f6d54d591347",
         "app/Models/SuppliesRelation.php": "d05ba326d9d2a1651ab887e54c6f4f65ff950792",
         "app/Models/SuppliesStock.php": "4b38162c061b7a0604c3b971af1f3c477bd4a5cd",
         "app/Models/SuppliesSupplier.php": "15a191630d4fe98b7e0f4589110d7d9d8b494720",
