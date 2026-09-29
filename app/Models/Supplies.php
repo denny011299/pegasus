@@ -57,6 +57,35 @@ class Supplies extends Model
     }
 
     /**
+     * Soft-block ACC/tolak PO: trading → domain produk; bahan biasa → domain supplies.
+     *
+     * @param  iterable<int>  $suppliesIds
+     * @return array{0: bool, 1: bool} [hasSupply, hasTrading]
+     */
+    public static function classifyKindsForSoftBlock(iterable $suppliesIds): array
+    {
+        $ids = collect($suppliesIds)->map(fn ($id) => (int) $id)->filter(fn ($id) => $id > 0)->unique()->values();
+        if ($ids->isEmpty() || ! self::hasKindColumn()) {
+            return [true, false];
+        }
+
+        $kinds = self::whereIn('supplies_id', $ids->all())
+            ->pluck('supplies_kind', 'supplies_id');
+
+        $hasSupply = false;
+        $hasTrading = false;
+        foreach ($ids as $id) {
+            if (self::isTradingKind($kinds->get($id))) {
+                $hasTrading = true;
+            } else {
+                $hasSupply = true;
+            }
+        }
+
+        return [$hasSupply, $hasTrading];
+    }
+
+    /**
      * Query dasar untuk Data Bahan External API (App\Http\Controllers\ExternalApi\V1\
      * MasterSuppliesController) — sama pola dengan Product::getProductForExternalApi().
      */
