@@ -288,9 +288,10 @@
                                     <div style="padding: 16px 25px;">
                                         <span class="skel-text" style="width: 250px; height: 38px; border-radius: 20px;"></span>
                                     </div>
-                                    <div class="dt-skeleton-head" style="grid-template-columns: 20% 10% 18% 12% 16% 12% 12%;">
+                                    <div class="dt-skeleton-head" style="grid-template-columns: 18% 9% 14% 18% 12% 14% 10% 10%;">
                                         <span style="width:70%"></span>
                                         <span style="width:55%"></span>
+                                        <span style="width:60%"></span>
                                         <span style="width:65%"></span>
                                         <span style="width:55%"></span>
                                         <span style="width:70%"></span>
@@ -299,8 +300,9 @@
                                     </div>
                                     <div class="dt-skeleton-body">
                                         @for ($i = 0; $i < 5; $i++)
-                                            <div class="dt-skeleton-row" style="grid-template-columns: 20% 10% 18% 12% 16% 12% 12%;">
+                                            <div class="dt-skeleton-row" style="grid-template-columns: 18% 9% 14% 18% 12% 14% 10% 10%;">
                                                 <span class="skel-text" style="width:75%"></span>
+                                                <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:70%"></span>
                                                 <span class="skel-text" style="width:80%"></span>
                                                 <span class="skel-text" style="width:60%"></span>
@@ -322,6 +324,7 @@
                                         <tr>
                                             <th>Nama Bahan Mentah</th>
                                             <th id="th-supplies-kind">Jenis</th>
+                                            <th>SKU</th>
                                             <th>Variasi</th>
                                             <th>Satuan</th>
                                             <th>Deskripsi</th>

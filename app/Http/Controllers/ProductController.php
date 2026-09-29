@@ -915,15 +915,16 @@ class ProductController extends Controller
             ? 'desc'
             : 'asc';
 
-        $columns = [
-            0 => 'supplies.supplies_name',
-            1 => 'supplies.supplies_kind',
-            2 => 'supplies.supplies_name',
-            3 => 'supplies.supplies_name',
-            4 => 'supplies.supplies_desc',
-            5 => 'st.staff_name',
-            6 => 'supplies.supplies_id',
-        ];
+            $columns = [
+                0 => 'supplies.supplies_name',
+                1 => 'supplies.supplies_kind',
+                2 => 'supplies.supplies_name', // sku_list (derived)
+                3 => 'supplies.supplies_name', // variant_values
+                4 => 'supplies.supplies_name', // unit_values
+                5 => 'supplies.supplies_desc',
+                6 => 'st.staff_name',
+                7 => 'supplies.supplies_id',
+            ];
         $orderCol = $columns[$orderColIdx] ?? 'supplies.supplies_name';
         if ($orderCol === 'supplies.supplies_kind' && ! Supplies::hasKindColumn()) {
             $orderCol = 'supplies.supplies_name';
@@ -1024,6 +1025,13 @@ class ProductController extends Controller
                     $variants
                 ))
                 : '-';
+
+            $item['sku_list'] = $variants !== []
+                ? array_values(array_unique(array_filter(array_map(
+                    fn ($v) => trim((string) ($v['supplies_variant_sku'] ?? '')),
+                    $variants
+                ))))
+                : [];
 
             $units = $item['units'] ?? [];
             $item['unit_values'] = $units !== []
