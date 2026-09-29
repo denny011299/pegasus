@@ -72,7 +72,7 @@ class OpnamePageLockWorkflowTest extends TestCase
         $this->assertTrue($r2['ok']);
     }
 
-    public function test_same_staff_takeover_replaces_token(): void
+    public function test_same_staff_cannot_takeover_from_another_tab(): void
     {
         [$a] = $this->twoStaff();
 
@@ -80,12 +80,33 @@ class OpnamePageLockWorkflowTest extends TestCase
         $this->assertTrue($r1['ok']);
         $oldToken = $r1['token'];
 
+        // Tab baru = token baru → ditolak (tidak boleh ambil alih).
         $r2 = OpnamePageLock::acquire(self::WH_A, OpnamePageLock::DOMAIN_PRODUCT, (int) $a->staff_id, (string) $a->staff_name);
-        $this->assertTrue($r2['ok']);
-        $this->assertNotSame($oldToken, $r2['token']);
+        $this->assertFalse($r2['ok']);
+        $this->assertTrue(! empty($r2['same_staff']));
 
         $beat = OpnamePageLock::heartbeat($oldToken);
-        $this->assertFalse($beat['ok']);
+        $this->assertTrue($beat['ok'], 'token tab lama harus tetap hidup');
+    }
+
+    public function test_same_token_reacquire_refreshes_without_kick(): void
+    {
+        [$a] = $this->twoStaff();
+
+        $r1 = OpnamePageLock::acquire(self::WH_A, OpnamePageLock::DOMAIN_PRODUCT, (int) $a->staff_id, (string) $a->staff_name);
+        $this->assertTrue($r1['ok']);
+        $token = $r1['token'];
+
+        $r2 = OpnamePageLock::acquire(
+            self::WH_A,
+            OpnamePageLock::DOMAIN_PRODUCT,
+            (int) $a->staff_id,
+            (string) $a->staff_name,
+            $token
+        );
+        $this->assertTrue($r2['ok']);
+        $this->assertSame($token, $r2['token']);
+        $this->assertTrue(OpnamePageLock::heartbeat($token)['ok']);
     }
 
     public function test_page_lock_triggers_soft_block_without_document(): void

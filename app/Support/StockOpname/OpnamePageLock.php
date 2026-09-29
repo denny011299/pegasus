@@ -59,22 +59,23 @@ class OpnamePageLock
             }
 
             if ($row) {
-                // Holder yang sama (refresh / tab baru) → takeover token
-                if ((int) $row->staff_id === $staffId) {
-                    $row->token = $token;
+                // Token yang sama = sesi tab yang sama (re-acquire aman, tanpa kick).
+                if ((int) $row->staff_id === $staffId && $token !== '' && (string) $row->token === $token) {
                     $row->staff_name = $staffName !== '' ? $staffName : $row->staff_name;
                     $row->locked_at = $now;
                     $row->last_seen_at = $now;
                     $row->save();
-                    OpenOpnameStatusSignal::bump($warehouseId);
 
-                    return ['ok' => true, 'token' => $token, 'taken_over' => true];
+                    return ['ok' => true, 'token' => $token];
                 }
 
+                // Tab/sesi lain — termasuk staff yang sama di tab baru — tidak boleh ambil alih.
+                // Tutup tab lama / tunggu TTL habis, baru buka lagi.
                 return [
                     'ok' => false,
                     'held_by' => (string) ($row->staff_name ?: 'User lain'),
                     'staff_id' => (int) $row->staff_id,
+                    'same_staff' => (int) $row->staff_id === $staffId,
                 ];
             }
 
@@ -94,19 +95,19 @@ class OpnamePageLock
                     ->where('warehouse_id', $warehouseId)
                     ->where('domain', $domain)
                     ->first();
-                if ($again && self::rowIsLive($again) && (int) $again->staff_id === $staffId) {
-                    $again->token = $token;
+                if ($again && self::rowIsLive($again) && (int) $again->staff_id === $staffId
+                    && $token !== '' && (string) $again->token === $token) {
                     $again->last_seen_at = $now;
                     $again->save();
-                    OpenOpnameStatusSignal::bump($warehouseId);
 
-                    return ['ok' => true, 'token' => $token, 'taken_over' => true];
+                    return ['ok' => true, 'token' => $token];
                 }
 
                 return [
                     'ok' => false,
                     'held_by' => (string) ($again->staff_name ?? 'User lain'),
                     'staff_id' => (int) ($again->staff_id ?? 0),
+                    'same_staff' => $again && (int) $again->staff_id === $staffId,
                 ];
             }
 
