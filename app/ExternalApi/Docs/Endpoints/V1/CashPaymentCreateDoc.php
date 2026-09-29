@@ -37,17 +37,15 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function description(): string
     {
         return 'Mencatat satu transaksi kas operasional atas nama armada atau sales, '
-            .'beserta rinciannya. Bersifat idempoten: mengirim ulang permintaan dengan '
-            .'ref_payment_id yang sama tidak membuat transaksi kedua.';
+            .'beserta rinciannya. Bersifat idempoten per pasangan ref_payment_id dan penerima '
+            .'(armada_code atau staff_id) — bukan per ref_payment_id sendirian.';
     }
 
     public function bodyParameters(): array
     {
         return [
             ['name' => 'ref_payment_id', 'type' => 'string', 'required' => true,
-                'description' => 'Penanda unik milik sistem pemanggil. Dipakai sebagai kunci idempotensi.'],
-            ['name' => 'ref_nota_id', 'type' => 'string', 'required' => false,
-                'description' => 'Id nota/faktur milik sistem pemanggil yang menjadi asal pembayaran ini. Disimpan apa adanya dan ikut dikembalikan di response, tidak divalidasi ke data lain.'],
+                'description' => 'Penanda group pembayaran milik sistem pemanggil. Boleh dipakai berulang untuk penerima (armada_code/staff_id) yang berbeda dalam group yang sama — lihat catatan idempotensi.'],
             ['name' => 'payment_type', 'type' => 'integer', 'required' => true,
                 'description' => '1 = Armada, 2 = Sales.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => false,
@@ -68,6 +66,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
                 'description' => '1 = Masuk (setoran), 2 = Keluar, 3 = Keluar 1. Seluruh item harus bertype sama.'],
             ['name' => 'items[].notes', 'type' => 'string', 'required' => false,
                 'description' => 'Keterangan rincian, maksimal 255 karakter.'],
+            ['name' => 'items[].ref_nota_id', 'type' => 'string', 'required' => false,
+                'description' => 'Id nota/faktur milik sistem pemanggil yang menjadi asal item ini, maksimal 100 karakter. Disimpan apa adanya dan ikut dikembalikan per item di response, tidak divalidasi ke data lain. Satu pembayaran boleh menggabungkan item dari beberapa nota berbeda.'],
             ['name' => 'photos', 'type' => 'array', 'required' => false,
                 'description' => 'Bukti transaksi sebagai data URI base64. Hanya PNG dan JPEG.'],
             ['name' => 'auto_accept', 'type' => 'boolean', 'required' => false,
@@ -78,16 +78,15 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function requestExample(): ?array
     {
         return [
-            'ref_payment_id' => 'PMO-2026-000123',
-            'ref_nota_id' => 'NOTA-2026-000456',
-            'payment_type' => 1,
-            'armada_code' => 'ARM-JKT-001',
+            'ref_payment_id' => 'PMO-GROUP-000123',
+            'payment_type' => 2,
+            'staff_id' => 'SLS-0007',
             'payment_date' => '2026-07-29',
             'payment_amount' => 150000,
             'auto_accept' => false,
             'items' => [
-                ['amount' => 100000, 'type' => 2, 'notes' => 'BBM'],
-                ['amount' => 50000, 'type' => 2, 'notes' => 'Uang makan'],
+                ['amount' => 100000, 'type' => 1, 'notes' => 'Pelunasan nota A', 'ref_nota_id' => 'NOTA-2026-000456'],
+                ['amount' => 50000, 'type' => 1, 'notes' => 'Pelunasan nota B', 'ref_nota_id' => 'NOTA-2026-000457'],
             ],
         ];
     }
@@ -97,20 +96,18 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
         return [
             'success' => true,
             'data' => [
-                'ref_payment_id' => 'PMO-2026-000123',
-                'ref_nota_id' => 'NOTA-2026-000456',
+                'ref_payment_id' => 'PMO-GROUP-000123',
                 'payment_id' => 512,
-                'payment_type' => 1,
+                'payment_type' => 2,
                 'payment_date' => '2026-07-29',
                 'payment_amount' => 150000,
-                'notes' => 'Pengeluaran armada W 9518 PG (Agus)',
-                'armada_code' => 'ARM-JKT-001',
-                'armada_id' => 4,
-                'staff_id' => null,
+                'notes' => 'Setoran sales Budi',
+                'armada_code' => null,
+                'staff_id' => 'SLS-0007',
                 'status' => 'pending',
                 'items' => [
-                    ['amount' => 100000, 'notes' => 'BBM', 'type' => 2],
-                    ['amount' => 50000, 'notes' => 'Uang makan', 'type' => 2],
+                    ['amount' => 100000, 'notes' => 'Pelunasan nota A', 'type' => 1, 'ref_nota_id' => 'NOTA-2026-000456'],
+                    ['amount' => 50000, 'notes' => 'Pelunasan nota B', 'type' => 1, 'ref_nota_id' => 'NOTA-2026-000457'],
                 ],
                 'photos' => [],
                 'created_at' => '2026-07-29T03:15:00+07:00',
@@ -135,8 +132,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     public function notes(): array
     {
         return [
-            'ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal pembayaran tanpa mem-parsing notes.',
-            'Idempotensi: bila ref_payment_id sudah pernah dipakai, permintaan dianggap kiriman ulang. Pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — ref_payment_id yang menentukan.',
+            'items[].ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya per item, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal tiap item tanpa mem-parsing notes. Satu pembayaran boleh berisi item dari beberapa nota berbeda.',
+            'Idempotensi memakai pasangan ref_payment_id + armada_code (payment_type 1) atau ref_payment_id + staff_id (payment_type 2) — BUKAN ref_payment_id sendirian. Ini sengaja: satu group pembayaran Sales bisa mencakup beberapa sales penerima sekaligus, dan PMO mengirimnya sebagai beberapa POST dengan ref_payment_id yang SAMA, satu call per penerima. Mengirim ulang pasangan yang sama dianggap kiriman ulang: pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — hanya pasangan itu yang menentukan.',
             'staff_id (payment_type=2) adalah external_ref_id sales milik PMO — SAMA nilai staff_id di /master/sales. Bukan PK internal staffs.staff_id. Sales harus sudah terdaftar/tersinkron (status aktif) sebelum POST /payments/cash.',
             'payment_type=1: utamakan armada_code (= customers.customer_code, sama field di /shipments/*). armada_id (PK customer) masih diterima sebagai legacy. Armada harus aktif.',
             'Pembuatan berhasil menjawab 201; kiriman ulang menjawab 200.',
