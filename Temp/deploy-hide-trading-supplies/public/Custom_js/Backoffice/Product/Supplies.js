@@ -1,0 +1,603 @@
+    var mode=1;
+    var table;
+    var idUnits = [];
+    // false = Trading belum rilis (UI Jenis/filter di-hide). Data trading di DB tetap utuh.
+    var SUPPLIES_TRADING_UI = false;
+    $(document).ready(function(){
+        inisialisasi();
+        autocompleteUnit("#supplies_unit","#add_supplies .modal-content");
+        autocompleteVariant("#supplies_variant","#add_supplies .modal-content");
+        syncTradingProductRow();
+    });
+
+    function syncTradingProductRow() {
+        // Saat UI Trading off: jangan pernah tampilkan row relasi produk
+        if (!SUPPLIES_TRADING_UI) {
+            $("#row-supplies-kind, #row-trading-product").addClass("d-none");
+            return;
+        }
+        var kind = $("#supplies_kind").val() || "supply";
+        if (kind === "trading") {
+            $("#row-trading-product").removeClass("d-none");
+            // Init ulang setelah visible — Select2 di d-none sering rusak scroll/ukuran
+            autocompleteProductVariantOnly("#trading_product_variant_id", "body");
+        } else {
+            $("#row-trading-product").addClass("d-none");
+            if ($("#trading_product_variant_id").hasClass("select2-hidden-accessible")) {
+                $("#trading_product_variant_id").select2("destroy");
+            }
+            $("#trading_product_variant_id").removeClass("is-invalid").empty().val(null);
+        }
+    }
+
+    $(document).on("change", "#supplies_kind", function () {
+        syncTradingProductRow();
+    });
+    
+    $(document).on('click','.btnAdd',function(){
+        mode=1;
+        idUnits = [];
+        $('#add_supplies .modal-title').html("Tambah Bahan Mentah");
+        $('#add_supplies input').val("");
+        $('#supplies_desc').val("");
+        $('.is-invalid').removeClass('is-invalid');
+        $('#supplies_unit').val(null);
+        $('#supplies_variant').empty();
+        $('#unit_id').html("-");
+        $('#alert').val(0);
+        $('#lead_time_days, #safety_stock').val(0);
+        $('#supplies_kind').val('supply');
+        $('#trading_product_variant_id').empty().val(null).trigger('change');
+        syncTradingProductRow();
+        $('#tbVariant').html("")
+        addRow();
+        $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
+        $('#add_supplies').modal("show");
+        $('#supplies_unit').trigger('change');
+    });
+
+    $(document).on('click','.btnAddRow',function(){
+        if($('#supplies_variant').val()!=""&&$('#supplies_variant').val()!=null) {
+            var data = $('#supplies_variant').select2('data')[0];
+            data.name = JSON.parse(data.variant_attribute);
+            data.name.forEach(element => {
+                addRow(element);    
+            });
+            console.log(data);
+            $('#supplies_variant').empty();
+        }
+        else addRow();
+    });
+    
+    function addRow(names="") {
+        
+        $('#tbVariant').append(`
+            <tr class="row-variant align-middle" style="border-bottom: 1px solid #f1f5f9; transition: all 0.2s ease;">
+                <td style="width:23%; padding: 12px 16px;" class="td-supplier">
+                    <div class="input-block mb-0" id="row-supplier">
+                        <select class="form-select supplier_id select2 fill" style="width:100%;"></select>
+                    </div>
+                </td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_name" value="${names}" placeholder="Masukkan Nama"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_sku" placeholder="Masukkan SKU"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control fill variant_price nominal_only" placeholder="Masukkan Harga"></td>
+                <td style="padding: 12px 16px;"><input type="text" class="form-control variant_barcode" placeholder="Masukkan Barcode"><input type="hidden" class="form-control variant_id"></td>
+                <td class="text-center" style="padding: 12px 16px;">
+                    <a class="btn_delete_row d-inline-flex align-items-center justify-content-center mx-auto" href="javascript:void(0);" style="width: 32px; height: 32px; background: #fee2e2; color: #ef4444; border-radius: 8px; transition: all 0.2s ease;" title="Hapus Variasi">
+                        <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                    </a>
+                </td>
+            </tr>    
+        `);
+        feather.replace();
+
+        var $newRow = $('#tbVariant tr.row-variant:last');
+        var $newSelect = $newRow.find('.supplier_id');
+        autocompleteSupplier($newSelect, '#add_supplies .modal-content');
+    }
+    
+    function setSuppliesTableLoading(isLoading) {
+        var $wrap = $("#tableSupplies-wrap");
+        if (!$wrap.length) return;
+        $wrap.toggleClass("is-loading", !!isLoading);
+    }
+
+    function inisialisasi() {
+        var $suppliesTable = $("#tableSupplies");
+
+        $suppliesTable
+            .on("preXhr.dt", function () {
+                setSuppliesTableLoading(true);
+            })
+            .on("xhr.dt", function () {
+                setTimeout(function () {
+                    setSuppliesTableLoading(false);
+                }, 0);
+            });
+
+        table = $suppliesTable.DataTable({
+            processing: true,
+            serverSide: true,
+            deferRender: true,
+            responsive: false,
+            autoWidth: false,
+            scrollX: false,
+            bFilter: true,
+            sDom: "fBtlpi",
+            lengthMenu: [10, 25, 50, 100],
+            pageLength: 10,
+            ordering: true,
+            order: [[0, "asc"]],
+            searchDelay: 400,
+            language: {
+                search: " ",
+                sLengthMenu: "_MENU_",
+                searchPlaceholder: "Cari Bahan Mentah",
+                info: "_START_ - _END_ of _TOTAL_ items",
+                paginate: {
+                    next: ' <i class=" fa fa-angle-right"></i>',
+                    previous: '<i class="fa fa-angle-left"></i> ',
+                },
+            },
+            ajax: {
+                url: "/getSupplies",
+                type: "GET",
+                data: function (d) {
+                    d.supplies_kind = $("#filter_supplies_kind").val() || "";
+                },
+                error: function (err) {
+                    setSuppliesTableLoading(false);
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    console.error("Gagal load:", err);
+                },
+            },
+            columns: [
+                { data: "supplies_name", width: "22%" },
+                {
+                    data: "kind_badge",
+                    width: "10%",
+                    className: "text-center align-middle",
+                    // Trading belum rilis — kolom tetap ada di data (edit preserve kind) tapi disembunyikan
+                    visible: SUPPLIES_TRADING_UI,
+                    orderable: true,
+                    render: function (data, type, row) {
+                        var kind = (row && row.supplies_kind ? row.supplies_kind : "").toLowerCase();
+                        var isTrading = kind === "trading" || (typeof data === "string" && data.indexOf("Trading") !== -1);
+                        if (type === "sort" || type === "filter") {
+                            return isTrading ? "Trading" : "Bahan Mentah";
+                        }
+                        if (isTrading) {
+                            return '<span class="badge rounded-pill" style="background:#e0f2fe; color:#0369a1; border:1px solid #bae6fd; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Trading</span>';
+                        }
+                        return '<span class="badge rounded-pill" style="background:#f1f5f9; color:#475569; border:1px solid #cbd5e1; font-weight:600; font-size:11.5px; padding:5px 12px; letter-spacing:0.3px;">Bahan Mentah</span>';
+                    },
+                },
+                { data: "variant_values", width: "22%", orderable: false },
+                { data: "unit_values", width: "14%", orderable: false },
+                { data: "desc", width: "18%" },
+                {
+                    data: "created_by_name",
+                    defaultContent: "-",
+                    width: "12%",
+                    render: function (data) {
+                        return typeof renderCreatedByName === "function"
+                            ? renderCreatedByName(data)
+                            : data;
+                    },
+                },
+                {
+                    data: "action",
+                    className: "text-center align-middle",
+                    width: "12%",
+                    orderable: false,
+                    searchable: false,
+                },
+            ],
+            initComplete: function () {
+                var $filter = $(".dataTables_filter");
+                $filter.appendTo(".search-input");
+                $filter.find("label").prepend('<i class="fa fa-search"></i> ');
+                this.api().columns.adjust();
+                $("#tableSupplies-wrap")
+                    .removeClass("dt-pending")
+                    .addClass("dt-ready");
+                setSuppliesTableLoading(false);
+            },
+            drawCallback: function () {
+                this.api().columns.adjust();
+                setSuppliesTableLoading(false);
+                if (typeof feather !== "undefined") feather.replace();
+            },
+        });
+    }
+
+    function refreshSupplies() {
+        if (table) table.ajax.reload(null, false);
+    }
+
+    $(document).on("click", ".btn-filter-supplies-kind", function () {
+        refreshSupplies();
+    });
+    $(document).on("click", ".btn-clear-supplies-kind", function () {
+        $("#filter_supplies_kind").val("");
+        refreshSupplies();
+    });
+    $(document).on("change", "#filter_supplies_kind", function () {
+        refreshSupplies();
+    });
+
+    $(document).on("click",".btn-save",function(){
+       LoadingButton(this);
+        $('.is-invalid').removeClass('is-invalid');
+        $('.is-invalids').removeClass('is-invalids');
+        var url ="/insertSupplies";
+        var valid=1;
+
+        $("#add_supplies .fill").each(function(){
+            if($(this).val()==null||$(this).val()=="null"||$(this).val()==""){
+                valid=-1;
+                $(this).addClass('is-invalid');
+            }
+        });
+        if($('.supplier_id').val()==null||$('.supplier_id').val()=="null"||$('.supplier_id').val()==""){
+            valid=-1;
+            $('#row-supplier .select2-selection--single').addClass('is-invalids');
+        }
+        if($('#supplies_unit').val()==null||$('#supplies_unit').val()=="null"||$('#supplies_unit').val()==""){
+            valid=-1;
+            $('#row-satuan .select2-selection--single').addClass('is-invalids');
+        }
+        // UI Trading off: create selalu supply. Update: kind dari field hidden (hasil load edit) — jangan overwrite Trading existing.
+        var kindToSave = "supply";
+        var tradingPvToSave = "";
+        if (SUPPLIES_TRADING_UI) {
+            kindToSave = $("#supplies_kind").val() || "supply";
+            tradingPvToSave = kindToSave === "trading" ? ($("#trading_product_variant_id").val() || "") : "";
+            if (kindToSave === "trading" && !tradingPvToSave) {
+                valid = -1;
+                $("#trading_product_variant_id").addClass("is-invalid");
+                $("#row-trading-product .select2-selection--single").addClass("is-invalids");
+            }
+        } else if (mode === 2) {
+            kindToSave = $("#supplies_kind").val() || "supply";
+            tradingPvToSave = kindToSave === "trading"
+                ? ($("#trading_product_variant_id").val() || "")
+                : "";
+        }
+
+        if(valid==-1){
+            notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
+            ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah"); 
+            return false;
+        };
+
+        param = {
+            supplies_name:$('#supplies_name').val(),
+            supplies_desc:$('#supplies_desc').val(),
+            supplies_alert:$('#alert').val(),
+            supplies_default_unit:$('#unit_id').val(),
+            lead_time_days:Math.max(0, parseInt($('#lead_time_days').val(), 10) || 0),
+            safety_stock:Math.max(0, parseInt($('#safety_stock').val(), 10) || 0),
+            supplies_kind: kindToSave,
+            trading_product_variant_id: tradingPvToSave,
+            supplies_supplier:JSON.stringify($('#supplies_supplier').val()),
+            supplies_unit:JSON.stringify($('#supplies_unit').val()),
+             _token:token
+        };
+
+        var temp=[];
+        $('.row-variant').each(function(){
+            var variant = {
+                supplier_id: $(this).find('.supplier_id').val(),
+                supplies_variant_name: $(this).find('.variant_name').val(),
+                supplies_variant_sku: $(this).find('.variant_sku').val(),
+                supplies_variant_price: convertToAngka($(this).find('.variant_price').val()),
+                supplies_variant_barcode: $(this).find('.variant_barcode').val(),
+                supplies_variant_id: $(this).find('.variant_id').val(),
+            };
+            temp.push(variant);
+        });
+
+        var relasi = [];
+        $('.row-relasi').each(function(){
+            relasi.push({
+                unit_value_2 : $(this).find('.unit2').val(),
+                sr_unit_id_1 : $(this).attr('left'),
+                sr_unit_id_2 : $(this).attr('right'),
+                sr_unit_name_1 : $(this).find('.unit_text_1').text().trim(),
+                sr_unit_name_2 : $(this).find('.unit_text_2').text().trim(),
+                sr_id: $(this).find('.sr_id').val(),
+            });
+        });
+        
+        param.supplies_variant = JSON.stringify(temp);
+        param.supplies_relasi = JSON.stringify(relasi);
+
+        if(mode==2){
+            url="/updateSupplies";
+            param.supplies_id = $('#add_supplies').attr("supplies_id");
+        }
+
+        LoadingButton($(this));
+        $.ajax({
+            url:url,
+            data: param,
+            method:"post",
+            headers: {
+                'X-CSRF-TOKEN': token
+            },
+            success:function(e){   
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
+                if (e == 1){
+                    afterInsert();
+                }
+                else {
+                    notifikasi('error', "Gagal Insert", e.message);
+                    $('#supplies_name').addClass('is-invalid');
+                }
+            },
+            error:function(e){
+                ResetLoadingButton('.btn-save', mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
+                if (handlePermissionError(e)) return;
+                console.log(e);
+            }
+        });
+    });
+
+    function afterInsert() {
+        $(".modal").modal("hide");
+        if(mode==1)notifikasi('success', "Berhasil Insert", "Berhasil Tambah Bahan Mentah");
+        else if(mode==2)notifikasi('success', "Berhasil Update", "Berhasil Update Bahan Mentah");
+        refreshSupplies();
+    }
+
+    // function getUnit(unitName, callback) {
+    //     $.ajax({
+    //         url: "/getUnit",
+    //         method: "get",
+    //         headers: { "X-CSRF-TOKEN": token },
+    //         data: { unit_name: unitName },
+    //         success: function(resp) {
+    //             console.log(unitName)
+    //             console.log(resp)
+    //             callback(resp[0].unit_id);
+    //         }
+    //     });
+    // }
+
+    // $('#supplies_unit').on('click', function() {
+    //    $('.select2-search__field').remove();
+    // });
+    // $('#supplies_unit').on('change', function() {
+    //    $('.select2-search__field').remove();
+    // });
+
+    $(document).on("click",".btn_delete_row",function(){
+        if($('.row-variant').length<2) {
+            notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
+            return false;
+        }
+        $(this).closest("tr").remove();
+    });
+
+    // $(document).on("keyup","#filter_supplies_name",function(){
+    //     refreshSupplies();
+    // });
+
+    //edit
+    $(document).on("click",".btn_edit",function(){
+        var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        console.log(data);
+        mode=2;
+        idUnits = [];
+        $('#add_supplies .modal-title').html("Update Bahan Mentah");
+        $('#add_supplies input').empty().val("");
+        $('.is-invalid').removeClass('is-invalid');
+        $('#supplies_name').val(data.supplies_name);
+        $('#supplies_desc').val(data.supplies_desc);
+        $('#supplies_supplier').empty();
+        $('#supplies_unit').empty();
+        $('#unit_id').empty();
+        $('#unit_id').append(`<option value="${data.supplies_unit}" selected>${data.unit_values}</option>`);
+        $('#unit_id').val(data.supplies_unit).trigger('change');
+        $('#alert').val(data.supplies_alert);
+        $('#lead_time_days').val(Math.max(0, parseInt(data.lead_time_days, 10) || 0));
+        $('#safety_stock').val(Math.max(0, parseInt(data.safety_stock, 10) || 0));
+        $('#supplies_kind').val(data.supplies_kind || 'supply');
+        syncTradingProductRow();
+        if (data.trading_product_variant_id) {
+            var tLabel = data.trading_product_variant_label || ('PV #' + data.trading_product_variant_id);
+            $('#trading_product_variant_id').append(
+                new Option(tLabel, data.trading_product_variant_id, true, true)
+            ).trigger('change');
+        }
+        $('#tbVariant').html("");
+        $('#tbRelasi').html("");
+
+        data.sup_variant.forEach(element => {
+            addRow(element.supplies_variant_name);
+            $('.row-variant').last().find('.variant_sku').val(element.supplies_variant_sku);
+            $('.row-variant').last().find('.variant_price').val(formatRupiah(element.supplies_variant_price));
+            $('.row-variant').last().find('.variant_barcode').val(element.supplies_variant_barcode);
+            $('.row-variant').last().find('.variant_id').val(element.supplies_variant_id);
+            if(element.supplier_id)$('.row-variant').last().find('.supplier_id').append(`<option value="${element.supplier_id}" selected>${element.supplier_name}</option>`);
+        });
+
+        data.units.forEach(u => {
+            $('#supplies_unit').append(
+                `<option value="${u.unit_id}">${u.unit_short_name}</option>`
+            );
+        });
+        console.log(data);
+        
+        data.supplies_relasi.forEach((item) => {
+            addRowRelasi(item,item); 
+        });
+        
+        if(data.supplier){
+            data.supplier.forEach(u => {
+                console.log(u);
+                var newOption = new Option(u.supplier_name, u.supplier_id, true, true);
+                $('#supplies_supplier').append(newOption).trigger("change");
+            });
+        }
+        let unitIds = data.units.map(u => u.unit_id);
+        $('#supplies_unit').val(unitIds).trigger('change');
+        
+        $('#unit_id').val(data.supplies_default_unit).trigger('change');
+        console.log(data);
+        
+        $('.btn-save').html(mode == 1?"Tambah Bahan Mentah" : "Update Bahan Mentah");
+        $('#add_supplies').modal("show");
+        $('#add_supplies').attr("supplies_id", data.supplies_id);
+    });
+
+    //delete
+    $(document).on("click",".btn_delete",function(){
+        var data = $('#tableSupplies').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        showModalDelete("Apakah yakin ingin menghapus bahan mentah ini?","btn-delete-supplies");
+        $('#btn-delete-supplies').attr("supplies_id", data.supplies_id);
+    });
+
+
+    $(document).on("click","#btn-delete-supplies",function(){
+        $.ajax({
+            url:"/deleteSupplies",
+            data:{
+                supplies_id:$('#btn-delete-supplies').attr('supplies_id'),
+                _token:token
+            },
+            method:"post",
+            success:function(e){
+                $('.modal').modal("hide");
+                refreshSupplies();
+                notifikasi('success', "Berhasil Delete", "Berhasil delete bahan mentah");
+                
+            },
+            error:function(e){
+                if (handlePermissionError(e)) return;
+                console.log(e);
+            }
+        });
+    });
+
+    
+$(document).on("change","#unit_id",function(){
+    $('#satuan_alert').text($('#unit_id option:selected').text().trim());
+});
+
+$(document).on("change","#supplies_unit",function(){
+    dataRelasi = $(this).select2("data");
+    // Pengecekan apakah sudah selected atau belum
+    var select = dataRelasi.length==1?1:$('#unit_id').val();
+
+    $('#unit_id,#relasi1,#relasi2').html("");
+    dataRelasi.forEach(item => {
+        $('#unit_id').append(`<option value="${item.id}">${item.text}</option>`);
+        $('#relasi1,#relasi2').append(`<option value="${item.id}">${item.text}</option>`);
+    });
+
+    if(dataRelasi.length>1)$('#unit_id').val(select);
+    else $('#unit_id').eq(select).prop('selected', true);
+
+    $('#unit_id').trigger("change");
+    
+    
+    if (dataRelasi.length == 1) {
+        $('#tbRelasi').html("");
+    }
+
+    else if (dataRelasi.length < 1) {
+        $('#tbRelasi').html("");
+        $('#unit_id').val("");
+    }
+});
+
+
+
+function addRowRelasi(element1,element2) {
+    console.log(element2);
+    
+    $('#tbRelasi').append(`
+        <tr class="row-relasi" left="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element2.id}" right="${ element2.pr_unit_id_2}">
+            <td>
+                <div class="input-group">
+                    <input type="text" class="form-control nominal-only unit1 fill" value="1"
+                    data-unit_id="${element1.pr_unit_id_1 ? element1.pr_unit_id_1 : element1.id}" disabled>
+                    <span class="input-group-text unit_text_1">
+                        ${element1.pr_unit_name_1 ? element1.pr_unit_name_1 : element1.text}
+                    </span>
+                    <input type="hidden" class="form-control sr_id" value="${element1.sr_id??''}">
+                </div>
+            </td>
+            <td>
+                <div class="input-group">
+                    <input type="text" class="form-control nominal-only unit2 fill" placeholder="Masukan Nilai"
+                    data-unit_id="${element2.pr_unit_id_2 ? element2.pr_unit_id_2 : element2.id}" value="${element2.sr_value_2 ? element2.sr_value_2 : element2.sr_value_2??0}">
+                    <span class="input-group-text unit_text_2">
+                        ${element2.pr_unit_name_2 ? element2.pr_unit_name_2 : element2.text}
+                    </span>
+                </div>
+            </td>
+            <td class="text-center">
+                <a class="p-2 btn-action-icon btn_delete_relasi" href="javascript:void(0);">
+                    <i class="fe fe-trash-2"></i>
+                </a>
+            </td>
+        </tr>    
+    `);      
+    // feather.replace();
+}
+
+$(document).on('click', '.btn_delete_relasi', function() {
+    $(this).closest('tr').remove();
+});
+
+function cekKembar() {
+    relasi.forEach(element => {
+        element.forEach((item,index) => {
+            if(item.unit_id_1==item.unit_id_2) element.splice(index,1);
+        });
+    });
+}
+$(document).on("click",".btn_delete_row",function(){
+    if($('.row-variant').length<2) {
+        notifikasi('error', "Gagal Hapus", "Minimal 1 varian harus ada");
+        return false;
+    }
+    var index = $(this).closest("tr").index();
+    relasi.splice(index,1);
+    $(this).closest("tr").remove();
+      if(mode==2){
+
+         modeRelasi=1;
+        $(".btn-save").trigger("click");
+    }
+});
+
+function reset() {
+    $('#tbRelasi').html(`
+        <tr>
+             <td class="text-center" colspan="2">
+                 Pilih Minimal 2 unit untuk mengatur relasi unit
+             </td>
+        </tr>
+    `);
+}
+
+$(document).on("click","#btnAddRowRelasi",function(){
+    var r1 = $('#relasi1').val();
+    var r2 = $('#relasi2').val();
+    if(!r1 || !r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh kosong");
+        return false;
+    }
+    if(r1==r2){
+        notifikasi('error', "Gagal Tambah", "Relasi unit tidak boleh sama");
+        return false;
+    }
+    console.log(r1+" - "+r2);
+    
+    addRowRelasi({pr_unit_id_1: r1, pr_unit_name_1: $('#relasi1 option:selected').text().trim()},{pr_unit_id_2: r2, pr_unit_name_2: $('#relasi2 option:selected').text().trim()});
+});
+

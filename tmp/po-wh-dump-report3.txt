@@ -1,0 +1,171 @@
+﻿=== Latest 30 POs by updated_at ===
+2026-08-11 23:46:56 PO0005 date=2026-02-02 status=2 tt=299 acc=
+2026-08-11 23:46:02 PO0035 date=2026-02-03 status=2 tt=300 acc=
+2026-08-11 23:45:13 PO0046 date=2026-02-03 status=2 tt=301 acc=
+2026-08-11 23:44:05 PO0290 date=2026-05-06 status=2 tt=304 acc=15
+2026-08-11 23:43:26 PO0266 date=2026-04-29 status=2 tt=303 acc=9
+2026-08-11 23:43:26 PO0268 date=2026-04-29 status=2 tt=303 acc=9
+2026-08-11 23:41:09 PO0029 date=2026-02-02 status=2 tt=302 acc=
+2026-06-26 03:34:35 PO0271 date=2026-04-17 status=2 tt=202 acc=9
+2026-06-14 03:33:30 PO0287 date=2026-05-05 status=2 tt=146 acc=15
+2026-06-14 03:32:57 PO0286 date=2026-05-05 status=2 tt=128 acc=15
+2026-06-14 03:31:58 PO0296 date=2026-05-09 status=2 tt=142 acc=15
+2026-06-14 03:31:29 PO0289 date=2026-05-06 status=2 tt=144 acc=15
+2026-06-14 03:30:46 PO0293 date=2026-05-07 status=2 tt=137 acc=15
+2026-06-14 03:30:09 PO0294 date=2026-05-08 status=2 tt=126 acc=15
+2026-06-06 19:09:48 PO0262 date=2026-04-29 status=2 tt=125 acc=15
+2026-06-06 19:09:48 PO0282 date=2026-04-30 status=2 tt=125 acc=15
+2026-06-06 19:08:54 PO0284 date=2026-05-02 status=2 tt=143 acc=15
+2026-06-06 19:06:25 PO0280 date=2026-05-04 status=2 tt=119 acc=15
+2026-06-06 19:05:36 PO0264 date=2026-04-29 status=2 tt=112 acc=15
+2026-06-06 19:03:01 PO0270 date=2026-04-30 status=2 tt=118 acc=9
+2026-06-06 19:02:18 PO0278 date=2026-05-04 status=2 tt=127 acc=15
+2026-06-06 19:02:18 PO0279 date=2026-05-04 status=2 tt=127 acc=9
+2026-06-06 19:02:18 PO0295 date=2026-05-08 status=2 tt=127 acc=15
+2026-06-06 19:01:27 PO0283 date=2026-05-02 status=2 tt=111 acc=9
+2026-06-06 19:01:03 PO0269 date=2026-04-30 status=2 tt=110 acc=9
+2026-06-06 19:01:03 PO0277 date=2026-04-30 status=2 tt=110 acc=9
+2026-06-06 19:00:32 PO0292 date=2026-05-07 status=2 tt=134 acc=15
+2026-05-31 19:35:51 PO0261 date=2026-04-27 status=2 tt=106 acc=15
+2026-05-31 19:35:05 PO0252 date=2026-04-23 status=2 tt=120 acc=15
+2026-05-31 19:34:27 PO0173 date=2026-04-01 status=2 tt=58 acc=
+
+=== Latest 20 POs by po_date ===
+2026-05-09 PO0296 status=2 upd=2026-06-14 03:31:58
+2026-05-08 PO0294 status=2 upd=2026-06-14 03:30:09
+2026-05-08 PO0295 status=2 upd=2026-06-06 19:02:18
+2026-05-07 PO0293 status=2 upd=2026-06-14 03:30:46
+2026-05-07 PO0292 status=2 upd=2026-06-06 19:00:32
+2026-05-06 PO0290 status=2 upd=2026-08-11 23:44:05
+2026-05-06 PO0289 status=2 upd=2026-06-14 03:31:29
+2026-05-06 PO0285 status=-1 upd=2026-05-05 21:18:29
+2026-05-05 PO0287 status=2 upd=2026-06-14 03:33:30
+2026-05-05 PO0286 status=2 upd=2026-06-14 03:32:57
+2026-05-05 PO0291 status=2 upd=2026-05-15 23:27:02
+2026-05-04 PO0280 status=2 upd=2026-06-06 19:06:25
+2026-05-04 PO0278 status=2 upd=2026-06-06 19:02:18
+2026-05-04 PO0279 status=2 upd=2026-06-06 19:02:18
+2026-05-04 PO0276 status=2 upd=2026-05-03 19:06:23
+2026-05-02 PO0284 status=2 upd=2026-06-06 19:08:54
+2026-05-02 PO0283 status=2 upd=2026-06-06 19:01:27
+2026-04-30 PO0282 status=2 upd=2026-06-06 19:09:48
+2026-04-30 PO0270 status=2 upd=2026-06-06 19:03:01
+2026-04-30 PO0269 status=2 upd=2026-06-06 19:01:03
+
+=== Latest 40 log_stocks ===
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=1 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=1 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=2 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=2 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=3 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=3 qty=3024 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=4 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=4 qty=19896 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=5 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=5 qty=12265 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=6 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=6 qty=17200 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=7 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=7 qty=17200 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=8 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=8 qty=2 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=9 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=9 qty=14970 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=10 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=10 qty=3299 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=11 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=11 qty=2020 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=12 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=12 qty=8461 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=13 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=13 qty=50000 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=14 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=14 qty=10000 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=15 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=15 qty=3000 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=16 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=16 qty=140 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=17 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=17 qty=1000 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=18 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=18 qty=40000 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=19 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=19 qty=4210 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=2 item=20 qty=0 wh=1 | Stock Opname Bahan Mentah
+2026-02-20 11:37:44 SB0003 type=2 cat=1 item=20 qty=4 wh=1 | Stock Opname Bahan Mentah
+
+=== WH2 supplies_stocks created_at distribution ===
+2026-08-31 => 256
+2026-09-02 => 1
+2026-09-05 => 2
+2026-09-18 => 1
+2026-09-21 => 2
+2026-09-22 => 4
+2026-09-24 => 10
+2026-09-28 => 1
+
+=== WH2 positive stock updated_at distribution ===
+2026-09-23 => 5
+2026-09-24 => 1
+2026-09-25 => 7
+2026-09-26 => 4
+2026-09-28 => 9
+
+=== WH2 positive stock updated recently (Sep 20+) ===
+ss=343 supplies=1 unit=9 stock=6634 upd=2026-09-25 14:06:16 created=2026-08-31 16:52:36
+ss=346 supplies=4 unit=9 stock=12054 upd=2026-09-26 14:30:19 created=2026-08-31 16:52:36
+ss=350 supplies=8 unit=5 stock=1 upd=2026-09-25 14:51:32 created=2026-08-31 16:52:36
+ss=351 supplies=9 unit=1 stock=6000 upd=2026-09-23 14:14:31 created=2026-08-31 16:52:36
+ss=352 supplies=12 unit=9 stock=10000 upd=2026-09-26 14:32:37 created=2026-08-31 16:52:36
+ss=353 supplies=13 unit=9 stock=50000 upd=2026-09-25 14:10:31 created=2026-08-31 16:52:36
+ss=356 supplies=16 unit=9 stock=80 upd=2026-09-23 14:02:47 created=2026-08-31 16:52:36
+ss=362 supplies=22 unit=9 stock=10000 upd=2026-09-26 14:32:37 created=2026-08-31 16:52:36
+ss=363 supplies=23 unit=9 stock=9000 upd=2026-09-26 14:32:37 created=2026-08-31 16:52:36
+ss=364 supplies=24 unit=9 stock=80 upd=2026-09-23 14:02:47 created=2026-08-31 16:52:36
+ss=365 supplies=25 unit=9 stock=80 upd=2026-09-23 14:02:47 created=2026-08-31 16:52:36
+ss=366 supplies=38 unit=9 stock=5124 upd=2026-09-25 14:06:16 created=2026-08-31 16:52:36
+ss=370 supplies=42 unit=9 stock=6634 upd=2026-09-25 14:06:16 created=2026-08-31 16:52:36
+ss=371 supplies=43 unit=9 stock=1500 upd=2026-09-25 14:06:16 created=2026-08-31 16:52:36
+ss=395 supplies=72 unit=9 stock=25675 upd=2026-09-28 15:22:24 created=2026-08-31 16:52:36
+ss=396 supplies=73 unit=9 stock=28075 upd=2026-09-28 15:23:11 created=2026-08-31 16:52:36
+ss=397 supplies=74 unit=9 stock=1500 upd=2026-09-28 15:23:11 created=2026-08-31 16:52:36
+ss=398 supplies=75 unit=9 stock=26575 upd=2026-09-28 15:23:11 created=2026-08-31 16:52:36
+ss=410 supplies=91 unit=9 stock=1000 upd=2026-09-23 14:16:42 created=2026-08-31 16:52:36
+ss=420 supplies=107 unit=5 stock=1 upd=2026-09-28 15:19:28 created=2026-08-31 16:52:36
+ss=449 supplies=139 unit=9 stock=2400 upd=2026-09-28 15:23:11 created=2026-08-31 16:52:36
+ss=511 supplies=36 unit=7 stock=3287 upd=2026-09-25 14:52:28 created=2026-08-31 16:52:36
+ss=554 supplies=221 unit=7 stock=1 upd=2026-09-24 10:47:23 created=2026-08-31 16:52:36
+ss=589 supplies=248 unit=7 stock=10 upd=2026-09-28 15:17:42 created=2026-08-31 16:52:36
+ss=591 supplies=249 unit=7 stock=15 upd=2026-09-28 15:17:42 created=2026-08-31 16:52:36
+ss=889 supplies=260 unit=9 stock=2 upd=2026-09-28 17:27:11 created=2026-09-28 17:15:07
+
+=== Positive on BOTH WH1 and WH2 ===
+1|9 wh1=6128 wh2=6634
+4|9 wh1=3342 wh2=12054
+8|5 wh1=2 wh2=1
+9|1 wh1=375680 wh2=6000
+12|9 wh1=12287 wh2=10000
+13|9 wh1=35370 wh2=50000
+16|9 wh1=10240 wh2=80
+22|9 wh1=20152 wh2=10000
+23|9 wh1=13766 wh2=9000
+24|9 wh1=10262 wh2=80
+25|9 wh1=10262 wh2=80
+38|9 wh1=150 wh2=5124
+42|9 wh1=3338 wh2=6634
+43|9 wh1=8328 wh2=1500
+72|9 wh1=10413 wh2=25675
+73|9 wh1=8536 wh2=28075
+74|9 wh1=5404 wh2=1500
+75|9 wh1=7188 wh2=26575
+91|9 wh1=9986 wh2=1000
+107|5 wh1=2 wh2=1
+139|9 wh1=271 wh2=2400
+36|7 wh1=1149 wh2=3287
+248|7 wh1=10 wh2=10
+249|7 wh1=15 wh2=15
+total both-positive: 24
+
+=== product_stocks WH2 positive (if table exists) ===
+product_stocks rows: 560
+WH2 positive: 0

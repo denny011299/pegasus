@@ -1,0 +1,28 @@
+﻿=== SAM OIL GEAR stocks ===
+--- 248 SAM OIL GEAR 90 20 X 1 LITER ---
+  ss=333 unit=7 wh=1 stock=10 status=1 upd=2026-09-29 11:57:51
+  ss=334 unit=9 wh=1 stock=0 status=1 upd=2026-08-31 16:52:24
+  ss=589 unit=7 wh=2 stock=10 status=1 upd=2026-09-28 15:17:42
+  ss=590 unit=9 wh=2 stock=0 status=1 upd=2026-08-31 16:52:36
+--- 249 SAM OIL GEAR 140 20 X 1 LITER ---
+  ss=335 unit=7 wh=1 stock=15 status=1 upd=2026-09-29 11:57:51
+  ss=336 unit=9 wh=1 stock=0 status=1 upd=2026-08-31 16:52:24
+  ss=591 unit=7 wh=2 stock=15 status=1 upd=2026-09-28 15:17:42
+  ss=592 unit=9 wh=2 stock=0 status=1 upd=2026-08-31 16:52:36
+--- 252 SAM OIL GEAR 140 18 LITER ---
+  ss=854 unit=21 wh=1 stock=0 status=1 upd=2026-09-02 11:30:05
+  ss=855 unit=21 wh=2 stock=0 status=1 upd=2026-09-02 08:34:11
+
+=== WH2 positive updated Sep 28 ===
+supplies=72 [BOTOL MINYAK REM 50 ML] unit=9 stock=25675 upd=2026-09-28 15:22:24
+supplies=73 [SUMPEL MINYAK REM 50 ML/1 LITER] unit=9 stock=28075 upd=2026-09-28 15:23:11
+supplies=74 [TUTUP BIRU BOTOL 50 ML] unit=9 stock=1500 upd=2026-09-28 15:23:11
+supplies=75 [TUTUP MERAH BOTOL 50 ML] unit=9 stock=26575 upd=2026-09-28 15:23:11
+supplies=107 [SILICONE OIL 1000 CST 200KG] unit=5 stock=1 upd=2026-09-28 15:19:28
+supplies=139 [BOTOL MINYAK REM 1 LITER] unit=9 stock=2400 upd=2026-09-28 15:23:11
+supplies=248 [SAM OIL GEAR 90 20 X 1 LITER] unit=7 stock=10 upd=2026-09-28 15:17:42
+supplies=249 [SAM OIL GEAR 140 20 X 1 LITER] unit=7 stock=15 upd=2026-09-28 15:17:42
+supplies=260 [MINYAK GORENG] unit=9 stock=2 upd=2026-09-28 17:27:11
+
+PO total=832 (no warehouse_id column in dump)
+PO status2=727

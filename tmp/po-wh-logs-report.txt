@@ -1,0 +1,98 @@
+﻿=== log_stocks stream ===
+max log_date: 2026-09-29 12:00:23
+log_rows: 93019
+pembelian: 1703
+pembelian_wh1: 1660
+pembelian_wh2: 43
+pembelian_other: 0
+pembelian_wh2_sam: 2
+pembelian_wh2_fix: 41
+trading_wh2: 0
+supply_wh2: 43
+
+=== Sep26-29 wrong-WH pembelian ===
+count: 15
+2026-09-26 14:30:19 PO0825 type=2 item=4 qty=12054 wh=2 unit=9 | Pembelian bahan mentah PT Surya Sukses Inti Makmur oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=12 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=23 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=22 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-28 15:19:28 PO0828 type=2 item=107 qty=1 wh=2 unit=5 | Pembelian bahan mentah PT MATA PELANGI CHEMINDO oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=72 qty=25675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=73 qty=25675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=75 qty=24675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=74 qty=1000 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=139 qty=2400 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=73 qty=2400 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=75 qty=1900 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=74 qty=500 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 17:27:11 PO0831 type=2 item=260 qty=1 wh=2 unit=9 | Pembelian bahan mentah INDOMARET oleh Retno Rahayu
+2026-09-28 17:27:11 PO0831 type=2 item=260 qty=1 wh=2 unit=9 | Pembelian bahan mentah INDOMARET oleh Retno Rahayu
+
+=== Aggregate move WH!=1 masuk (excl SAM 248/249) ===
+groups: 24
+SUPPLY item=13 unit=9 qty=50000 logs=1 wh=2 POs=PO0821
+SUPPLY item=73 unit=9 qty=28075 logs=2 wh=2 POs=PO0826,PO0827
+SUPPLY item=75 unit=9 qty=26575 logs=2 wh=2 POs=PO0826,PO0827
+SUPPLY item=72 unit=9 qty=25675 logs=1 wh=2 POs=PO0826
+SUPPLY item=4 unit=9 qty=12054 logs=1 wh=2 POs=PO0825
+SUPPLY item=12 unit=9 qty=10000 logs=2 wh=2 POs=PO0809,PO0824
+SUPPLY item=22 unit=9 qty=10000 logs=2 wh=2 POs=PO0809,PO0824
+SUPPLY item=23 unit=9 qty=9000 logs=2 wh=2 POs=PO0809,PO0824
+SUPPLY item=1 unit=9 qty=6634 logs=4 wh=2 POs=PO0811,PO0807,PO0806,PO0820
+SUPPLY item=42 unit=9 qty=6634 logs=4 wh=2 POs=PO0811,PO0806,PO0808,PO0820
+SUPPLY item=9 unit=1 qty=6000 logs=1 wh=2 POs=PO0812
+SUPPLY item=38 unit=9 qty=5124 logs=4 wh=2 POs=PO0811,PO0806,PO0808,PO0820
+SUPPLY item=36 unit=7 qty=3287 logs=1 wh=2 POs=PO0822
+SUPPLY item=139 unit=9 qty=2400 logs=1 wh=2 POs=PO0827
+SUPPLY item=43 unit=9 qty=1500 logs=2 wh=2 POs=PO0811,PO0820
+SUPPLY item=74 unit=9 qty=1500 logs=2 wh=2 POs=PO0826,PO0827
+SUPPLY item=91 unit=9 qty=1000 logs=1 wh=2 POs=PO0809
+SUPPLY item=16 unit=9 qty=80 logs=1 wh=2 POs=PO0810
+SUPPLY item=24 unit=9 qty=80 logs=1 wh=2 POs=PO0810
+SUPPLY item=25 unit=9 qty=80 logs=1 wh=2 POs=PO0810
+SUPPLY item=260 unit=9 qty=2 logs=2 wh=2 POs=PO0831
+SUPPLY item=221 unit=7 qty=1 logs=1 wh=2 POs=PO0814
+SUPPLY item=8 unit=5 qty=1 logs=1 wh=2 POs=PO0823
+SUPPLY item=107 unit=5 qty=1 logs=1 wh=2 POs=PO0828
+
+=== Sample wrong-WH pembelian (first 40 captured) ===
+2026-09-23 14:02:47 PO0810 type=2 item=16 qty=80 wh=2 unit=9 | Pembelian bahan mentah PT DIANSARI PURI PLASTINDO F oleh Retno Rahayu
+2026-09-23 14:02:47 PO0810 type=2 item=24 qty=80 wh=2 unit=9 | Pembelian bahan mentah PT DIANSARI PURI PLASTINDO F oleh Retno Rahayu
+2026-09-23 14:02:47 PO0810 type=2 item=25 qty=80 wh=2 unit=9 | Pembelian bahan mentah PT DIANSARI PURI PLASTINDO F oleh Retno Rahayu
+2026-09-23 14:05:06 PO0811 type=2 item=1 qty=3000 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-23 14:05:06 PO0811 type=2 item=42 qty=3000 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-23 14:05:06 PO0811 type=2 item=38 qty=2000 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-23 14:05:06 PO0811 type=2 item=43 qty=1000 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-23 14:09:00 PO0807 type=2 item=1 qty=20 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:09:56 PO0806 type=2 item=1 qty=14 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:09:56 PO0806 type=2 item=42 qty=14 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:09:56 PO0806 type=2 item=38 qty=14 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:11:32 PO0808 type=2 item=38 qty=10 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:11:32 PO0808 type=2 item=42 qty=20 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:14:31 PO0812 type=2 item=9 qty=6000 wh=2 unit=1 | Pembelian bahan mentah PT LIKU TELAGA oleh Retno Rahayu
+2026-09-23 14:16:42 PO0809 type=2 item=12 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:16:42 PO0809 type=2 item=23 qty=4000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:16:42 PO0809 type=2 item=91 qty=1000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-23 14:16:42 PO0809 type=2 item=22 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-24 10:47:23 PO0814 type=2 item=221 qty=1 wh=2 unit=7 | Pembelian bahan mentah CV SUMBER LANCAR OLIE oleh Retno Rahayu
+2026-09-25 14:06:16 PO0820 type=2 item=1 qty=3600 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-25 14:06:16 PO0820 type=2 item=42 qty=3600 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-25 14:06:16 PO0820 type=2 item=38 qty=3100 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-25 14:06:16 PO0820 type=2 item=43 qty=500 wh=2 unit=9 | Pembelian bahan mentah PT Diansari Puri Plastindo BSJ oleh Retno Rahayu
+2026-09-25 14:10:31 PO0821 type=2 item=13 qty=50000 wh=2 unit=9 | Pembelian bahan mentah PT DIANSARI PURI PLASTINDO F oleh Retno Rahayu
+2026-09-25 14:51:32 PO0823 type=2 item=8 qty=1 wh=2 unit=5 | Pembelian bahan mentah PT Wika Intinusa Niaga Tama oleh Retno Rahayu
+2026-09-25 14:52:28 PO0822 type=2 item=36 qty=3287 wh=2 unit=7 | Pembelian bahan mentah PT Golden Box Indonesia oleh Retno Rahayu
+2026-09-26 14:30:19 PO0825 type=2 item=4 qty=12054 wh=2 unit=9 | Pembelian bahan mentah PT Surya Sukses Inti Makmur oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=12 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=23 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-26 14:32:37 PO0824 type=2 item=22 qty=5000 wh=2 unit=9 | Pembelian bahan mentah PT ASTERINDO oleh Retno Rahayu
+2026-09-28 15:19:28 PO0828 type=2 item=107 qty=1 wh=2 unit=5 | Pembelian bahan mentah PT MATA PELANGI CHEMINDO oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=72 qty=25675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=73 qty=25675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=75 qty=24675 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:22:24 PO0826 type=2 item=74 qty=1000 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=139 qty=2400 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=73 qty=2400 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=75 qty=1900 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 15:23:11 PO0827 type=2 item=74 qty=500 wh=2 unit=9 | Pembelian bahan mentah CV SUMBER UNTUNG JAYA SEJAHTERA oleh Retno Rahayu
+2026-09-28 17:27:11 PO0831 type=2 item=260 qty=1 wh=2 unit=9 | Pembelian bahan mentah INDOMARET oleh Retno Rahayu

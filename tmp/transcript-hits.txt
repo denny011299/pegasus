@@ -1,0 +1,192 @@
+﻿1 [warehouse_id] Kolom tabel bilang "WO / SPKP" tapi API belum kirim SPKP ΓÇö saya lengkapi.
+
+2 [warehouse_id] Job Order diganti ke list WO per PIC (nyambung ke PP/SPKP), bukan baris PP.
+
+3 [mutasi] 70:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"contents":"{{-- Modal eksekusi WO per PIC ΓÇö dipakai dari Production Planning (bukan halaman terpisah). --}}\n<style>\n .wo-touch .btn, .wo-touch input, .wo-touch select { min-height:44px; }\n .wo-touch td { vertical-align:middle; padding:12px; }\n #modalWoExe
+
+4 [warehouse_id] 89:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $counts = [\n 'draft' => (int) ($countRows['draft'] ?? 0),\n 'released' => (int) ($countRows['released'] ?? 0),\n 'work_order' => (int) ($countRows['work_order'] ?? 0),\n 'inprod' => (int) ($countRows['inprod'] ?? 0),\n 'done' => (int) ($coun
+
+5 [active_warehouse,warehouse_id] 148:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" <div class=\"dt-skeleton-head\" style=\"grid-template-columns: 38% 34% 28%;\">\n <span style=\"width:60%\"></span><span style=\"width:50%\"></span><span style=\"width:40%\"></span>\n </div>\n <div class=\"dt-skeleton-body\">\n @for ($i = 0; 
+
+6 [active_warehouse] 171:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"limit":100,"offset":2611,"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\app\\Http\\Controllers\\ProductionController.php"}},{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\resources\
+
+7 [warehouse_id] 176:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":"function renderPpFormItems() {\n var $body = $(\"#pp-form-items-body\");\n $(\"#pp-form-item-count\").text(ppFormItems.length + \" item\");\n\n if (!ppFormItems.length) {\n $body.html(\n '<tr class=\"pg-popup-table-empty\"><td colspan=\"5\" c
+
+8 [warehouse_id] 205:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" self::event($wo, 'output_confirmed', null, ['report_id' => $report->id]);\n $totals = self::totals($woId);\n // Sync hasil ke item SPK/PP (kolom Hasil di cetak SPKP)\n foreach ($items as $item) {\n $item->actual_qty = round((float) ($totals[
+
+9 [warehouse_id] 216:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" var res = await $.ajax({\n url: \"/productionExecution/\" + id + \"/\" + action,\n type: \"POST\",\n data: Object.assign({ _token: token }, payload),\n });\n notifikasi(\n \"success\",\n \"Tersimpan\",\n res && res.wo_done\n ? \"WO DONE ΓÇö 
+
+10 [warehouse_id] 218:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\app\\Support\\UnitRollUp.php","pattern":"function ladderUnitIds"}},{"type":"tool_use","name":"StrReplace","input":{"new_string":" $result = ProductUnitStock::addQty(\n $warehouseId,\n $leg['produc
+
+11 [warehouse_id] Backend sudah cek `isOps` (Kepala Ops gudang + Developer). Tombol UI masih pakai `Produksi|edit` ΓÇö itu yang diluruskan.
+
+12 [warehouse_id] 326:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $retailWhNames = collect();\n if ($hasRetailWh) {\n $whIds = $rows->pluck('retail_warehouse_id')->filter()->unique()->values()->all();\n if ($whIds !== []) {\n $retailWhNames = Warehouse::whereIn('id', $whIds)->pluck('warehouse_name', 'id');
+
+13 [active_warehouse,warehouse_id,backfill] 330:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" if (SalesOrder::where('ref_shipment_id', $ref)->exists()) {\n $skipped++;\n $so = SalesOrder::where('ref_shipment_id', $ref)->first();\n // Refresh tanggal + penanda supaya muncul di filter Minggu Ini / cari DEMO\n if ($so) {\n $so->so_date 
+
+14 [eceran,active_warehouse,warehouse_id] Resolving the three stash conflicts by keeping both main's approval flow and ruben's shortage print.
+
+15 [mutasi,warehouse_id] 426:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" function approveProductionPlanning(Request $req)\n {\n // Read-only: cek resep (satuan/relasi) + stok bahan ΓÇö sama validateProductionItems produksi lama.\n // Tidak mutasi stok di release (hanya status PP).\n $ppId = (int) $req->input('pro
+
+16 [warehouse_id] 429:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $whId = (int) (ProductionPlanning::activeWarehouseId() ?: 0);\n if ($ppId <= 0 || $whId <= 0) {\n return [\n 'error' => [\n 'status' => -1,\n 'message' => 'Planning tidak ditemukan di gudang aktif',\n ],\n ];\n }\n\n $pp = ProductionPlanning
+
+17 [warehouse_id] Mengubah `ProductionExecution.php`: terbitkan Form Gudang di `report()`, stok/close di QC.
+
+18 [warehouse_id] 499:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" if ($stage === 'ops') {\n $doc->ops_approved_by = self::actor()->staff_id;\n $doc->ops_approved_at = $now;\n $doc->document_status = 'awaiting_qc';\n } else {\n $block = PendingStockSoftBlock::messageIfAnyDomainBlocked((int) $wo->warehouse_i
+
+19 [warehouse_id] 503:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"contents":"<?php\n\nnamespace Tests\\Workflow;\n\nuse App\\Models\\{\n Product,\n ProductVariant,\n ProductRelation,\n ProductStock,\n Staff,\n ProductionPlanning,\n ProductionPlanningItem,\n ProductionWorkOrder,\n ProductionOutputReport,\n ProductionExecution
+
+20 [eceran] Tambah search by SKU + kolom SKU (multi-variant) di daftar produk.
+
+21 [eceran] Itu **kolom bergeser** di DEV ΓÇö bukan data kategori beneran isinya semua satuan. **Penyebab:** header sudah ada kolom **SKU** (blade baru), tapi `Product.js` di DEV masih lama (belum kolom `sku_list`). Jadi isi bergeser: | Header | Yang tampil (salah) | |--------|---------------------| | SKU | kategori (`Radiator coolant`) | | Kategori | satuan (
+
+22 [warehouse_id] 593:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" /**\n * Snapshot semua lock halaman yang masih hidup (+ TTL) untuk monitor.\n *\n * @return array<int, array<string, mixed>>\n */\n public static function liveLocksSnapshot(): array\n {\n if (! self::tableReady()) {\n return [];\n }\n\n $cut
+
+23 [warehouse_id] Melanjutkan: tambah import Warehouse, endpoint + halaman monitor fullscreen.
+
+24 [warehouse_id] 759:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":"function ppHandleStockCheckError(res, bomIdFallback) {\n if (!res) {\n if (typeof showPgErrorModal === \"function\") {\n showPgErrorModal(\"Gagal\", \"Terjadi kesalahan yang tidak diketahui.\");\n }\n return;\n }\n if (res.status == -1) {\n i
+
+25 [warehouse_id] Implementasi endpoint cek stok + UI modal draft (flat + kolom stok + disable Release).
+
+26 [gudang besar] SOP singkat untuk bug approve pengembalian tadi: ### 1. Kerja di branch develop Tetap di **`fase2/ruben`**. Jangan checkout `fase2/main` kecuali cuma baca/banding. ### 2. Isolasi dulu: bug kode vs data Error: *butuh 10, tersedia 0* di Gudang BesarΓÇª - Cek di UI **Stok Produk** gudang itu: SKU `AIR AKI HIKARI 12├ù1500` satuan Dus ΓÇö stok berapa? -
+
+27 [gudang besar] Cek di worktree **`pegasus-fase2-main`** (`fase2/main`) ΓÇö **`fase2/ruben` tidak disentuh**. ### Temuan Pesan itu **bukan ACC Pengembalian**. Itu dari **approve Pengiriman** tahap Ops: `approveShipment` ΓåÆ potong stok ΓåÆ `SalesOrderStock` Judul UI: **"Gagal Approve"** (ada di `Sales_Order.js`). Artinya: saat Ops approve, sistem cek stok **AIR AK
+
+28 [purchase_orders,warehouse_id] Migrasi ini sensitif (stok bisa bentrok unique key). Kita buat skrip SQL bertahap: mapping ΓåÆ dry-run ΓåÆ merge stok ΓåÆ update FK ΓåÆ nonaktifkan unit lama.
+
+29 [purchase_orders,warehouse_id] 835:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"contents":"-- =============================================================================\n-- MIGRATE IPM units ΓåÆ PMO-synced units (SAFE) + STOCK SAFE MERGE\n-- Generated: 2026-09-26\n-- Source of truth: PMO oms_product_unit\n--\n-- Mapping (inti):\n-- 7 D
+
+30 [purchase_orders,mutasi,warehouse_id] 845:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"contents":"# Migrasi satuan IPM ΓåÆ PMO (per step)\n\n**Mapping:** `7 DOS ΓåÆ 126 Dus` ┬╖ `9 Piece ΓåÆ 127 Pcs` \n**Wajib:** jalankan semua step di **satu session** MySQL/phpMyAdmin yang sama (`TEMPORARY TABLE` hilang kalau disconnect).\n\n## Urutan jalan\n\n|
+
+31 [purchase_orders,warehouse_id] 873:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\database\\scripts\\migrate-units-ipm-to-pmo\\ALL_IN_ONE_phpmyadmin.sql","contents":"-- =============================================================================\n-- ALL_IN_ONE_phpmyadmin.sql\
+
+32 [warehouse_id] 896:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Write","input":{"contents":"<?php\n\n$path = 'c:/Users/Ruben/Downloads/u906028329_dev (5).sql';\n\nfunction extractInsert(string $path, string $table): string\n{\n $out = '';\n $fh = fopen($path, 'r');\n $capturing = false;\n while (($line = fgets($fh)) !== false) {\n if (preg
+
+33 [gudang besar] **Bukan bug migrate satuan.** Stok Dus sudah di unit `126`; yang kosong memang **SKU pengiriman PMO**. | | | |--|--| | SO PMO | variant **`603`** `AIR AKI HIKARI 12 X 1500 ml` ┬╖ unit **Dus (126)** ┬╖ butuh **10** ┬╖ gudang **1** | | Stok variant **603** gudang 1 | **semua 0** (termasuk Dus) | | Stok lama variant **33** `DOS AIR AKIΓÇª` | masih ada
+
+34 [purchase_orders,warehouse_id] Bikin script sinkron: keep varian lokal (stok), pindah ke produk PMO yang punya `ref`, nonaktifkan duplikat, remap SO.
+
+35 [purchase_orders] 917:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\app\\Models\\Bom.php","pattern":"product_id"}},{"type":"tool_use","name":"StrReplace","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\tmp\\gen-sku-sync-sql.php","old_str
+
+36 [purchase_orders] Kolom `purchase_orders_details` salah ΓÇö cek schema asli lalu perbaiki SQL.
+
+37 [purchase_orders] 960:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":"-- Remap dokumen drop ΓåÆ keep\n-- (PO pakai supplies_variant_id ΓÇö dilewati; bom_details = supplies; log_stocks = log_item_id)\nUPDATE `sales_order_details` t\nJOIN tmp_variant_remap m ON m.drop_variant_id = t.product_variant_id\nSET t.prod
+
+38 [purchase_orders] 961:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"Copy-Item \"database\\scripts\\sync-sku-duplicates\\ALL_IN_ONE_phpmyadmin.sql\" \"c:\\Users\\Ruben\\Downloads\\sku-sync-ALL_IN_ONE.sql\" -Force","description":"Copy fixed SQL to Downloads"}},{"type":"tool_use","name":"StrReplace","input":{"path":"d:\
+
+39 [purchase_orders] Error karena `purchase_orders_details` **tidak punya** `product_variant_id` (itu bahan: `supplies_variant_id`). SQL sudah diperbaiki. ### Sekarang 1. Di phpMyAdmin ketik dulu: ```sql ROLLBACK; ``` 2. Paste ulang file yang sudah diperbaiki: `database/scripts/sync-sku-duplicates/ALL_IN_ONE_phpmyadmin.sql` (atau `Downloads\sku-sync-ALL_IN_ONE.sql`) 3.
+
+40 [pembelian] Cek implementasi trading bahan mentah ΓåÆ product: pembelian, stok gudang, dan apakah stok masuk ke product (bukan supplies).
+
+41 [pembelian] **Sebagian benar** ΓÇö inti pembelian sudah sesuai niatmu; tampilan stok gudang & beberapa jalur lain belum. ### Yang sudah benar - Bahan mentah bisa jenis **Trading** + dihubungkan ke **varian produk**. - Saat **ACC PO** pembelian trading ΓåÆ stok masuk ke **`product_stocks`** varian itu (bukan `supplies_stocks`). - Batal ACC ΓåÆ potong stok **pro
+
+43 [eceran,active_warehouse,warehouse_id] 1055:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $hasKindCol = Supplies::hasKindColumn();\n $hasTradingPvCol = Schema::hasColumn('supplies', 'trading_product_variant_id');\n\n $select = [\n 'supplies.supplies_id',\n 'supplies.supplies_name',\n 'supplies.supplies_default_unit',\n 'supplies
+
+44 [warehouse_id] 1060:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"limit":40,"offset":50,"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\tests\\Regression\\SuppliesTradingPurchaseReceiptTest.php"}},{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\app
+
+45 [warehouse_id] 1061:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $this->actingAsSuperAdminStaff();\n $whId = 1;\n $this->withActiveWarehouse($whId);\n\n $unitId = (int) (\\App\\Models\\Unit::where('status', 1)->value('unit_id') ?: 0);\n $this->assertGreaterThan(0, $unitId);","old_string":" $this->actingA
+
+46 [pembelian] Selesai untuk **UI + stok gudang**. ### Yang berubah 1. **Master Bahan** ΓÇö Jenis Trading + filter + relasi varian produk tampil (`SUPPLIES_TRADING_UI = true`). 2. **Stok Bahan Mentah (per gudang)** ΓÇö baris trading baca stok **product variant** yang di-link (badge ΓÇ£TradingΓÇ¥), bukan `supplies_stocks` kosong. 3. Test regresi: `SuppliesTradingW
+
+48 [mutasi,active_warehouse,warehouse_id] Menerapkan soft-block domain-aware, hide trading di opname bahan, alert ΓåÆ stok produk, dan exclude trading dari autocomplete BOM.
+
+50 [eceran,active_warehouse,warehouse_id] Implementasi alert + BOM/produksi trading ΓåÆ stok produk.
+
+51 [eceran] 1090:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\app\\Models\\StockAlertSupplies.php","pattern":"function convertQty|function resolveEceranUnitId","-A":25}}]}} 
+
+52 [mutasi] 1093:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" // PRE-CHECK: validasi SEMUA kebutuhan bahan dulu (tanpa mutasi stok).\n // Supaya gagal cepat sebelum masuk transaction potong bahan.\n $bahan_kurang = [];\n foreach ($aggregatedRequirements as $suppliesId => $butuh) {\n $butuhTersedia = (
+
+53 [active_warehouse,warehouse_id] Alert stok bahan trading ΓåÆ stok produk
+
+54 [warehouse_id] 1097:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Read","input":{"limit":80,"offset":140,"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\tests\\Workflow\\PendingStockQueueWorkflowTest.php"}},{"type":"tool_use","name":"Grep","input":{"path":"d:\\Ruben Data\\Kerja Git\\OKEJOB\\PEGASUS\\PMI\\pegasus\\tests","p
+
+56 [active_warehouse,warehouse_id] 1121:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":"use App\\Models\\{Bom, BomDetail, LogStock, Product, ProductVariant, ProductionExecutionDocument, ProductionOutputReport,\n ProductionPlanning, ProductionPlanningItem, ProductionWorkOrder, Staff, Supplies, SuppliesStock, Unit};","old_string"
+
+57 [warehouse_id] 1122:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $taken = [];\n foreach (ProductionExecutionDocument::where('production_work_order_id', $woId)\n ->where('document_status', 'approved')\n ->whereIn('type', ['material_issue', 'material_return'])\n ->get() as $doc) {\n foreach ($doc->items as
+
+58 [warehouse_id] 1144:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" 'tabs' => ['planning' => 0, 'job' => 0, 'histori' => 0, 'bahan' => 0],\n 'stamp' => '0',\n ];\n }","old_string":" 'tabs' => ['planning' => 0, 'job' => 0, 'histori' => 0],\n 'stamp' => '0',\n ];\n }","path":"d:\\Ruben Data\\Kerja Git\\OKEJOB
+
+59 [warehouse_id] KPI ikut filter tanggal/produk/PIC; stage cards 1 endpoint + ikut filter; poll live tidak menimpa angka terfilter.
+
+60 [warehouse_id] 1191:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" $allowed = ['draft', 'released', 'work_order', 'inprod', 'done'];\n\n // Scope KPI = tanggal/produk/PIC (status dropdown tidak mengecilkan kartu ringkasan).\n $scope = self::where('status', 1)->where('warehouse_id', $whId);\n $dateFrom = nu
+
+61 [fase2/live] <timestamp>Thursday, Sep 24, 2026, 3:13 PM (UTC+7)</timestamp> <user_query> tolon bikinkan branch dong, fase2/live gitu yaa. biar aman gituu </user_query>
+
+62 [fase2/live] 672:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"git fetch origin; git status; git log -1 --oneline; git branch -a | Select-String -Pattern \"fase2/live|live\"","description":"Check current main and if live branch exists","working_directory":"D:/Ruben Data/Kerja Git/OKEJOB/PEGASUS/PMI/pegasus-fase2
+
+63 [fase2/live] 673:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"git checkout -b fase2/live; git push -u origin fase2/live; git branch -vv | Select-String -Pattern \"fase2/live|fase2/main\"; git log -1 --oneline","description":"Create and push fase2/live from main","working_directory":"D:/Ruben Data/Kerja Git/OKEJ
+
+64 [fase2/live] Branch `fase2/live` sudah dibuat dari `fase2/main` sekarang (`5143cb8f`) dan di-push ke origin. Pakai sebagai snapshot aman sebelum eksperimen di `fase2/main` / `fase2/ruben`.
+
+65 [fase2/live] <timestamp>Thursday, Sep 24, 2026, 3:29 PM (UTC+7)</timestamp> <user_query> wah coba dong di fase2/live tolong bikin commit yang pengerimannya belum di ubah dong </user_query>
+
+66 [fase2/live] Mengembalikan pengiriman di `fase2/live` ke sebelum perubahan Ariel (#199ΓÇô#201), tanpa menyentuh SKU/opname.
+
+67 [fase2/live] SKU tetap. Di `fase2/live` tinggal revert commit pengiriman Ariel saja.
+
+68 [fase2/live] 682:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Grep","input":{"path":"D:/Ruben Data/Kerja Git/OKEJOB/PEGASUS/PMI/pegasus-fase2-main/resources/views/components/page-header.blade.php","pattern":"Tambah.*Pengiriman|btn-container-pengiriman|shipment_internal"}},{"type":"tool_use","name":"Shell","input":{"command":"php artisan 
+
+69 [fase2/live] Bisa ΓÇö **SKU tetap ada**. Di `fase2/live` (`582b538e`) sudah di-revert hanya pengiriman Ariel (#199/#200/#201). Fitur SKU daftar produk tetap. `fase2/main` tidak disentuh (masih ada alur Ariel). Deploy aman pakai `fase2/live`.
+
+70 [fase2/live] Checkout `fase2/live` tadi sukses; revert pengiriman Ariel + push juga sudah selesai ΓÇö SKU tetap di branch itu.
+
+71 [fase2/live] Memverifikasi `fase2/live`: SKU utuh, pengiriman Ariel sudah revert, tidak ada file kritis hilang.
+
+72 [fase2/live] Aman untuk `fase2/live` (`582b538e`): | Cek | Status | |-----|--------| | SKU daftar produk | Ada | | Tombol **Tambah Pengiriman** | Tampil lagi (tanpa flag Ariel) | | Approval QC/Ops Ariel (#199ΓÇô#201) | Sudah di-revert | | `/opnameLiveStatus` | Masih ada | | `fase2/main` | Tidak diubah (masih alur Ariel) | Deploy produksi dari **`fase2/live`**, 
+
+73 [fase2/live] <timestamp>Thursday, Sep 24, 2026, 3:36 PM (UTC+7)</timestamp> <user_query> yang work tree fase2/main itu lagiii pakai branch yang fase2/live kan </user_query>
+
+74 [fase2/live] 690:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"git worktree list; git branch --show-current; git status --short; git checkout fase2/live; git pull origin fase2/live; git branch --show-current; git log -1 --oneline; git status","description":"Switch fase2-main worktree to fase2/live","working_dire
+
+75 [fase2/live] Worktree `pegasus-fase2-main` sekarang di **`fase2/live`** (`582b538e`), sync dengan origin.
+
+76 [fase2/live] Ini gejala kolom DataTables bergeser (blade vs JS tidak sync). Cek mapping kolom Produk di `fase2/live`.
+
+77 [fase2/live] Kode di `fase2/live` sudah benar ΓÇö gejala ini = blade punya kolom SKU, JS di server masih versi lama (atau cache). Verifikasi cepat:
+
+78 [fase2/live] Bukan bug di `fase2/live`. Kode branch sudah sync: blade + JS sama-sama 7 kolom (`Nama ΓåÆ SKU ΓåÆ Kategori ΓåÆ Satuan ΓåÆ ΓÇª`). Yang di screenshot = **deploy DEV tidak lengkap / cache JS lama**: - Header sudah ada **SKU** (blade baru) - `Product.js` di browser/server masih **tanpa** kolom SKU ΓåÆ data bergeser (Kategori kebaca isi Satuan, dll.) U
+
+79 [fase2/live] Masalahnya **bukan di branch `fase2/live`**, tapi di **file yang jalan di server DEV** (atau cache browser). **Kenapa:** 1. Blade tabel sudah punya kolom **SKU** (header baru). 2. `Product.js` yang kebaca masih versi lama **tanpa** kolom SKU di `columns: [...]`. 3. DataTables cocokin data per **urutan kolom**, bukan nama header ΓåÆ isi bergeser: sa
+
+80 [fase2/live] Lebih rapi **iya**, kalau tim setuju pengiriman Ariel tetap di-rollback. **Opsi terbaik (kalau keputusan final: Ariel rollback):** - Merge `fase2/live` ΓåÆ `fase2/main` (bukan force reset). - Hasil: `main` = isi `live` sekarang (SKU + opname tetap, pengiriman Ariel revert). - Setelah itu deploy dari `fase2/main` lagi; `fase2/live` boleh dihapus ata
+
+81 [fase2/live] <timestamp>Monday, Sep 28, 2026, 9:16 AM (UTC+7)</timestamp> <user_query> ini kan beberapa mungkin adaa peruabhan sambil update dev, bisa gk kalau semisal aku ilang fase2/main sudah up ke dev / live, km bikinkan clone kya ke branch fase2/live supaya kalau semisal ada bug yang di live, yang di dev masih aman karena fitur yang sudah ada di dev tapi b
+
+82 [fase2/live] 1274:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"git log --oneline origin/fase2/live..origin/fase2/main | Measure-Object -Line; git log -3 --oneline origin/fase2/live; Write-Host \"---\"; git log -3 --oneline origin/fase2/main; Write-Host \"--- ahead of live (sample):\"; git log --oneline origin/f
+
+83 [fase2/live] **Sudah ada** `fase2/live` (`582b538e`) ΓÇö mirror kode live. `fase2/main` sekarang hanya ~3 commit di depan live (bukan penuh fitur WIP kamu di `fase2/ruben`). ### SOP yang dipakai | Branch | Arti | |--------|------| | `fase2/live` | = yang ada di **production** | | `fase2/main` | = **DEV** / kandidat rilis | | `fase2/ruben` / fitur | kerja harian
+
+84 [pembelian,fase2/live] <timestamp>Tuesday, Sep 29, 2026, 9:21 AM (UTC+7)</timestamp> <user_query> di branch livee, fase2/live ini, ada permasalahan dengan pembelian, kenapa tiba tiba ketika acc pebelian, stocmnya tidak masuk, ini akuuu kasih database server yaaa@c:\Users\Ruben\Downloads\u906028329_pegasus-29-09.sql </user_query>
+
+85 [warehouse_id,pembelian,fase2/live] Investigasi ACC pembelian di `fase2/live` ΓÇö stok tidak masuk. Cek dump DB + alur ACC di kode.
+
+86 [eceran,gudang besar,active_warehouse,warehouse_id,pembelian,fase2/live] **Bukan stok gagal masuk** ΓÇö ACC tetap nulis stok, tapi ke **gudang aktif di session**, bukan selalu Gudang Besar. ### Bukti dari dump live - Semua PO ACC (PO0802ΓÇôPO0831) punya log ΓÇ£Pembelian bahan mentahΓÇ¥. - Akhir Sept: **43** ACC ke **Gudang Eceran (wh=2)**, hanya **26** ke **Gudang Besar (wh=1)**. - Mayoritas wh=2 = user **Retno** (`last
+
+87 [purchase_orders,eceran,active_warehouse,2026_09_29,warehouse_id,pembelian] 1420:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"StrReplace","input":{"new_string":" #tablePurchaseOrder td:nth-child(1), /* Tanggal */\n #tablePurchaseOrder td:nth-child(2), /* No. PO */\n #tablePurchaseOrder td:nth-child(3), /* No. Invoice */\n #tablePurchaseOrder td:nth-child(7), /* Total */\n #tablePurchaseOrder td:nth-
+
+88 [fase2/live] [Image] <image_files> The following images were provided by the user and saved to disk for future use: 1. C:\Users\Ruben\.cursor\projects\d-Ruben-Data-Kerja-Git-OKEJOB-PEGASUS-PMI-pegasus/assets/c__Users_Ruben_AppData_Roaming_Cursor_User_workspaceStorage_3039597b614c5efcd89b7ffbf7be3a40_images_image-93190e13-c4f7-44c0-aafd-fd6f82f25f9d.png These fi
+
+89 [fase2/live] <timestamp>Tuesday, Sep 29, 2026, 11:56 AM (UTC+7)</timestamp> <user_query> okee aku coba ke server staging berarti yaa, bisa bantuu push ke fase2/live ? buat yang bahan mentah ini kan kayaknya entrok sama fase2/main, itu gimana ya bagusnya ? bisa kamu masukin saerch skunya aja tidak ke fase2/main ? </user_query>
+
+90 [fase2/live] Saya cek dulu isi branch `fase2/live` vs perubahan lokal, lalu push yang aman: SKU search ke `fase2/main`, sisanya ke `fase2/live` sesuai yang kamu minta.
+
+91 [fase2/live] 1466:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"cd \"D:/Ruben Data/Kerja Git/OKEJOB/PEGASUS/PMI/pegasus\"; git show origin/fase2/live:public/Custom_js/Backoffice/Product/Supplies.js 2>$null | Select-Object -First 20; Write-Host \"====\"; git show origin/fase2/main:public/Custom_js/Backoffice/Prod
+
+92 [fase2/live] SKU search belum ada di UI ΓÇö saya kerjakan terpisah: commit SKU saja ke `fase2/main`, lalu PO warehouse + lock Opname ke `fase2/live` untuk staging.
+
+93 [fase2/live] SKU sudah di `fase2/main` + manifest. Saya cek dulu filter tanggal PO di lokal lengkap belum, lalu siapkan commit bersih buat `fase2/live`.
+
+94 [fase2/live] <timestamp>Tuesday, Sep 29, 2026, 11:56 AM (UTC+7)</timestamp> <user_query> okee aku coba ke server staging berarti yaa, bisa bantuu push ke fase2/live ? buat yang bahan mentah ini kan kayaknya entrok sama fase2/main, itu gimana ya bagusnya ? bisa kamu masukin saerch skunya aja tidak ke fase2/main ? </user_query>
+
+95 [fase2/live] Filter tanggal di JS masih setengah ΓÇö saya selesaikan, lalu commit bersih buat push ke `fase2/live`.
+
+96 [fase2/live] Commit warehouse + opname di `fase2/ruben`, lalu cherry-pick ke `fase2/live`.
+
+97 [fase2/live] Selesaikan PO date range JS (#po_filter_date)
+
+98 [fase2/live] `PurchaseOrder` butuh `Warehouse::firstMainId()` ΓÇö saya cek apakah itu aman ikut ke live, lalu commit terpisah.
+
+99 [active_warehouse,warehouse_id,fase2/live] Live dan ruben bisa beda jauh di file yang sama ΓÇö saya cek dulu seberapa aman cherry-pick.
+
+100 [fase2/live] 1484:{"role":"assistant","message":{"content":[{"type":"tool_use","name":"Shell","input":{"command":"cd \"D:/Ruben Data/Kerja Git/OKEJOB/PEGASUS/PMI/pegasus\"; git show HEAD:app/Http/Controllers/SupplierController.php > \"$env:TEMP/sc-ruben.php\"; git show origin/fase2/live:app/Http/Controllers/SupplierController.php > \"$env:TEMP/sc-live.php\"; gi
+

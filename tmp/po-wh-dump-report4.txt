@@ -1,0 +1,11 @@
+﻿log_stocks: 93019 rows
+php : PHP Fatal error:  Allowed memory size of 134217728 bytes exhausted (tried to allocate 2097160 bytes) in D:\Ruben 
+Data\Kerja Git\OKEJOB\PEGASUS\PMI\pegasus\tmp\analyze-po-wh-dump4.php on line 79
+At C:\Users\Ruben\AppData\Local\Temp\ps-script-9673cbc6-5194-4baf-aab6-906034127203.ps1:76 char:1
++ php "D:\Ruben Data\Kerja Git\OKEJOB\PEGASUS\PMI\pegasus\tmp\analyze-p ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (PHP Fatal error....php on line 79:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Stack trace:
+#0 {main}

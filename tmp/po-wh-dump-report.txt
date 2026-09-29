@@ -1,0 +1,89 @@
+﻿=== SAM OIL stocks ===
+ss_id=333 supplies=248 unit=7 wh=1 stock=10 status=1 upd=2026-09-29 11:57:51
+ss_id=334 supplies=248 unit=9 wh=1 stock=0 status=1 upd=2026-08-31 16:52:24
+ss_id=335 supplies=249 unit=7 wh=1 stock=15 status=1 upd=2026-09-29 11:57:51
+ss_id=336 supplies=249 unit=9 wh=1 stock=0 status=1 upd=2026-08-31 16:52:24
+ss_id=589 supplies=248 unit=7 wh=2 stock=10 status=1 upd=2026-09-28 15:17:42
+ss_id=590 supplies=248 unit=9 wh=2 stock=0 status=1 upd=2026-08-31 16:52:36
+ss_id=591 supplies=249 unit=7 wh=2 stock=15 status=1 upd=2026-09-28 15:17:42
+ss_id=592 supplies=249 unit=9 wh=2 stock=0 status=1 upd=2026-08-31 16:52:36
+ss_id=854 supplies=252 unit=21 wh=1 stock=0 status=1 upd=2026-09-02 11:30:05
+ss_id=855 supplies=252 unit=21 wh=2 stock=0 status=1 upd=2026-09-02 08:34:11
+
+=== supplies_stocks on warehouse 2 (eceran) ΓÇö top ===
+count active eceran rows: 275
+ss=353 supplies=13 unit=9 stock=50000
+ss=396 supplies=73 unit=9 stock=28075
+ss=398 supplies=75 unit=9 stock=26575
+ss=395 supplies=72 unit=9 stock=25675
+ss=346 supplies=4 unit=9 stock=12054
+ss=352 supplies=12 unit=9 stock=10000
+ss=362 supplies=22 unit=9 stock=10000
+ss=363 supplies=23 unit=9 stock=9000
+ss=343 supplies=1 unit=9 stock=6634
+ss=370 supplies=42 unit=9 stock=6634
+ss=351 supplies=9 unit=1 stock=6000
+ss=366 supplies=38 unit=9 stock=5124
+ss=511 supplies=36 unit=7 stock=3287
+ss=449 supplies=139 unit=9 stock=2400
+ss=371 supplies=43 unit=9 stock=1500
+ss=397 supplies=74 unit=9 stock=1500
+ss=410 supplies=91 unit=9 stock=1000
+ss=356 supplies=16 unit=9 stock=80
+ss=364 supplies=24 unit=9 stock=80
+ss=365 supplies=25 unit=9 stock=80
+ss=591 supplies=249 unit=7 stock=15
+ss=589 supplies=248 unit=7 stock=10
+ss=889 supplies=260 unit=9 stock=2
+ss=350 supplies=8 unit=5 stock=1
+ss=420 supplies=107 unit=5 stock=1
+ss=554 supplies=221 unit=7 stock=1
+ss=344 supplies=2 unit=9 stock=0
+ss=345 supplies=3 unit=9 stock=0
+ss=347 supplies=5 unit=9 stock=0
+ss=348 supplies=6 unit=9 stock=0
+ss=349 supplies=7 unit=9 stock=0
+ss=354 supplies=14 unit=9 stock=0
+ss=355 supplies=15 unit=9 stock=0
+ss=357 supplies=17 unit=9 stock=0
+ss=358 supplies=18 unit=9 stock=0
+ss=359 supplies=20 unit=5 stock=0
+ss=360 supplies=21 unit=9 stock=0
+ss=361 supplies=19 unit=1 stock=0
+ss=367 supplies=39 unit=9 stock=0
+ss=368 supplies=40 unit=9 stock=0
+
+=== purchase_orders stats ===
+total PO rows: 296
+by status: -1=>40 0=>6 2=>250 
+POs touching Sep 26-29 (date or updated): 0
+
+=== log_stocks pembelian analysis ===
+total logs: 335
+pembelian-like logs: 59
+pembelian logs NOT on WH1: 0
+of which product (type1): 0
+wrong WH breakdown: 
+wrong WH logs Sep26-29: 0
+wrong WH SAM exclude (248/249): 0
+wrong WH to fix (excl SAM 248/249): 0
+
+--- Recent wrong-WH pembelian (last 50 by date) ---
+
+=== Aggregated supplies qty to move WH2->WH1 (excl 248,249) ===
+distinct supplies/unit: 0
+
+=== Product pembelian wrong WH ===
+distinct product/unit: 0
+
+=== Current WH2 stock vs qty to move (supplies) ===
+
+=== SAM exclude wrong logs detail ===
+
+=== PO warehouse_id fix count ===
+All POs need warehouse_id column + backfill to 1: 296
+status=2 (confirmed/completed-ish): 250
+status=3: 0
+status=-1: 40
+status=0: 6
+status=1: 0
