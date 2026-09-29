@@ -628,9 +628,10 @@ class SupplierController extends Controller
             return response()->json([
                 'status' => -3,
                 'header' => 'Konfirmasi Gudang',
-                'message' => 'Gudang aktif di session ('.$sessionWhName.') berbeda dengan gudang dokumen PO ('
-                    .$poWhName.'). Stok bahan mentah akan masuk ke '.$poWhName
-                    .', bukan gudang aktif. Lanjutkan Approve?',
+                'message' => 'PO dilakukan di gudang '.$poWhName
+                    .'. Gudang aktif sekarang adalah '.$sessionWhName
+                    .'. Apakah ingin tetap melanjutkan? Stok akan masuk ke gudang dokumen PO ('
+                    .$poWhName.').',
                 'po_warehouse_id' => $poWh,
                 'session_warehouse_id' => $sessionWh,
             ]);
