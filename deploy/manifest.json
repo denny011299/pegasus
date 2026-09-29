@@ -1,16 +1,14 @@
 {
-    "generated_at": "2026-09-29T13:01:35+07:00",
-    "commit": "f05d61e0a0b413d781d7c2486c3ff56148309b85",
+    "generated_at": "2026-09-29T13:06:43+07:00",
+    "commit": "a5fc2c87f6e5e73685fc1b66323d3ad263991ff3",
     "branch": "fase2/live",
     "file_count": 3583,
-    "previous_commit": "6640a961e0797f13038ac5239d53d12af20e0616",
-    "previous_generated_at": "2026-09-29T12:45:51+07:00",
+    "previous_commit": "f05d61e0a0b413d781d7c2486c3ff56148309b85",
+    "previous_generated_at": "2026-09-29T13:01:35+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "public/Custom_js/Backoffice/Suppliers/Purchase_Order.js",
-        "public/Custom_js/Backoffice/Suppliers/Purchase_Order_Detail.js",
-        "resources/views/layout/partials/footer-scripts.blade.php"
+        "app/Http/Controllers/SupplierController.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -126,7 +124,7 @@
         "app/Http/Controllers/SettingController.php": "d8136ec412df6f24a741df8c64e0b44f40220279",
         "app/Http/Controllers/StockController.php": "a21c67c086b6befa23cba32f57697f80a6b4d98a",
         "app/Http/Controllers/StockTransferController.php": "3def879e6bb14428b9672ae3379287689bae8b37",
-        "app/Http/Controllers/SupplierController.php": "59187f0777692d364af56b746e4014850734476a",
+        "app/Http/Controllers/SupplierController.php": "b98cf2e00a4dea1f510f0726696072e073a06b45",
         "app/Http/Controllers/SynchronizationController.php": "f96f4d39f0a9e5f3ab3a7bc95a0ecc41e4cc6993",
         "app/Http/Controllers/UserController.php": "a55127ac2ee2b7c571df2ee52d435441e1c1b33d",
         "app/Http/Controllers/WarehouseController.php": "69fa8e6d38bac553b3f9e5841f71b628d2c0cc7f",
