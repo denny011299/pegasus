@@ -20,6 +20,7 @@ use App\Models\Supplier;
 use App\Models\Supplies;
 use App\Models\SuppliesStock;
 use App\Models\SuppliesVariant;
+use App\Models\Warehouse;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Support\HutangDataTable;
 use App\Support\ProductUnitStock;
@@ -611,6 +612,29 @@ class SupplierController extends Controller
 
         $poWh = $po->resolveWarehouseId();
         $staffId = (int) (Session::get('user')->staff_id ?? 0);
+        $sessionWh = (int) (Session::get('active_warehouse_id') ?? 0);
+
+        // 2-tab: session navbar bisa beda dari gudang dokumen PO — minta konfirmasi eksplisit.
+        // Stok tetap masuk $poWh; flag hanya acknowledgment, bukan pindah target.
+        if (
+            $poWh > 0
+            && $sessionWh > 0
+            && $poWh !== $sessionWh
+            && ! $req->boolean('confirm_warehouse_mismatch')
+        ) {
+            $poWhName = Warehouse::query()->where('id', $poWh)->value('warehouse_name') ?: ('Gudang #'.$poWh);
+            $sessionWhName = Warehouse::query()->where('id', $sessionWh)->value('warehouse_name') ?: ('Gudang #'.$sessionWh);
+
+            return response()->json([
+                'status' => -3,
+                'header' => 'Konfirmasi Gudang',
+                'message' => 'Gudang aktif di session ('.$sessionWhName.') berbeda dengan gudang dokumen PO ('
+                    .$poWhName.'). Stok bahan mentah akan masuk ke '.$poWhName
+                    .', bukan gudang aktif. Lanjutkan Approve?',
+                'po_warehouse_id' => $poWh,
+                'session_warehouse_id' => $sessionWh,
+            ]);
+        }
 
         // Soft-block di gudang dokumen PO (bukan session / tab lain).
         if ($poWh > 0) {

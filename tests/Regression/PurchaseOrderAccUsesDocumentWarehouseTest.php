@@ -91,7 +91,7 @@ class PurchaseOrderAccUsesDocumentWarehouseTest extends TestCase
         }
         $this->withActiveWarehouse($eceranId);
 
-        $this->post('/accPO', [
+        $payload = [
             'data' => [
                 'po_id' => $poId,
                 'po_supplier' => $supplier->supplier_id,
@@ -102,7 +102,20 @@ class PurchaseOrderAccUsesDocumentWarehouseTest extends TestCase
                     'pod_qty' => $qty,
                 ]],
             ],
-        ])->assertStatus(200);
+        ];
+
+        // Tanpa flag: backend wajib minta konfirmasi (session ≠ dokumen).
+        $needConfirm = $this->post('/accPO', $payload)->assertStatus(200)->json();
+        $this->assertSame(-3, (int) ($needConfirm['status'] ?? 0));
+        $this->assertSame($mainId, (int) ($needConfirm['po_warehouse_id'] ?? 0));
+        $this->assertSame($eceranId, (int) ($needConfirm['session_warehouse_id'] ?? 0));
+
+        $stockMain->refresh();
+        $this->assertSame($beforeMain, (int) $stockMain->ss_stock, 'belum ACC sebelum konfirmasi gudang');
+
+        $this->post('/accPO', array_merge($payload, [
+            'confirm_warehouse_mismatch' => 1,
+        ]))->assertStatus(200);
 
         $stockMain->refresh();
         $this->assertSame($beforeMain + $qty, (int) $stockMain->ss_stock, 'stok masuk ke gudang PO (utama)');

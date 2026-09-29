@@ -1439,13 +1439,8 @@
     });
 
 
-    //konfirmasi acc
+    //konfirmasi acc — mismatch gudang dicek di backend (session), bukan DOM navbar
 $(document).on("click", ".save-terima", function () {
-    var tbId = $(this).closest("table").attr("id");
-    var data = $("#" + tbId)
-        .DataTable()
-        .row($(this).parents("tr"))
-        .data(); //ambil data dari table
     showModalKonfirmasi(
         "Apakah yakin ingin Approve pembelian ini?",
         "btn-acc-po"
@@ -1453,12 +1448,17 @@ $(document).on("click", ".save-terima", function () {
     $(".btn-konfirmasi").html("Terima");
 });
 
-$(document).on("click", "#btn-acc-po", function () {
-    LoadingButton(this);
+function submitAccPO(confirmWarehouseMismatch) {
+    var $btn = $("#btn-acc-po");
+    if (!$btn.length) {
+        $btn = $("#btn-confirm-po-warehouse");
+    }
+    LoadingButton($btn.length ? $btn : "#btn-acc-po");
     $.ajax({
         url: "/accPO",
         data: {
-            data:data,
+            data: data,
+            confirm_warehouse_mismatch: confirmWarehouseMismatch ? 1 : 0,
             _token: token,
         },
         method: "post",
@@ -1466,6 +1466,7 @@ $(document).on("click", "#btn-acc-po", function () {
             $('#modalDelete .modal-body').html('');
             $(".modal").modal("hide");
             ResetLoadingButton("#btn-acc-po", "Terima");
+            ResetLoadingButton("#btn-confirm-po-warehouse", "Lanjutkan");
             if (e && typeof e === "object") {
                 if (e.status == -2){
                     notifikasi('error', e.header, e.message);
@@ -1474,6 +1475,15 @@ $(document).on("click", "#btn-acc-po", function () {
                 }
                 if (e.status == -1) {
                     notifikasi('error', e.header || 'Stock Opname', e.message || 'Gagal approve pembelian');
+                    return false;
+                }
+                if (e.status == -3) {
+                    // Session gudang ≠ dokumen PO (aman vs 2-tab / navbar DOM palsu)
+                    showModalKonfirmasi(
+                        e.message || "Gudang aktif berbeda dengan gudang dokumen PO. Lanjutkan?",
+                        "btn-confirm-po-warehouse"
+                    );
+                    $(".btn-konfirmasi").html("Lanjutkan");
                     return false;
                 }
             }
@@ -1487,12 +1497,20 @@ $(document).on("click", "#btn-acc-po", function () {
         },
         error: function (e) {
             ResetLoadingButton("#btn-acc-po", "Terima");
+            ResetLoadingButton("#btn-confirm-po-warehouse", "Lanjutkan");
             if (handlePermissionError(e)) return;
             console.log(e);
         },
     });
+}
+
+$(document).on("click", "#btn-acc-po", function () {
+    submitAccPO(false);
 });
 
+$(document).on("click", "#btn-confirm-po-warehouse", function () {
+    submitAccPO(true);
+});
 
 
     $(document).on('click', '.save-tolak', function(){
