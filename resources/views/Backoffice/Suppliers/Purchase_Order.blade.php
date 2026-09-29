@@ -26,20 +26,11 @@
         overflow-x: auto;
     }
 
+    /* Jangan wrap, scroll horizontal saja */
+    #tablePurchaseOrder th,
     #tablePurchaseOrder td {
-        white-space: normal !important;
-        word-wrap: break-word;
-        vertical-align: middle;
-    }
-
-    /* Kolom yang tidak perlu wrap */
-    #tablePurchaseOrder td:nth-child(1), /* Tanggal */
-    #tablePurchaseOrder td:nth-child(2), /* No. PO */
-    #tablePurchaseOrder td:nth-child(3), /* No. Invoice */
-    #tablePurchaseOrder td:nth-child(7), /* Total */
-    #tablePurchaseOrder td:nth-child(8), /* Status */
-    #tablePurchaseOrder td:last-child {  /* Aksi */
         white-space: nowrap !important;
+        vertical-align: middle;
     }
 
     #tablePurchaseOrder td:last-child a {
