@@ -22,6 +22,7 @@ description: >-
 - Exclusive 1 orang per `(warehouse_id, domain)` saat buka `/-1`.
 - Lihat detail existing tetap boleh; ACC/submit/tolak/insert oleh non-holder ditolak.
 - Heartbeat 10s, TTL 35s; release via beacon.
+- **Tidak boleh takeover**: tab baru (meski staff sama) ditolak selama lock live; hanya token sesi yang sama yang boleh re-acquire.
 - File: `app/Support/StockOpname/OpnamePageLock.php`, `public/Custom_js/Shared/opname-page-lock.js`.
 
 ### Matrix

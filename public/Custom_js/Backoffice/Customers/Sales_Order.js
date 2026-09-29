@@ -1361,6 +1361,25 @@ function salesOrderAjax(data, callback) {
     });
 }
 
+function renderSoShortageHint(row) {
+    if (!row || !row.has_shortage_doc) return "";
+    // Compact warning — dokumen BG aktif (sudah auto-jadi draft PP)
+    return (
+        '<span class="badge" style="background-color:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:4px 8px;border-radius:20px;font-weight:600;font-size:11px;white-space:nowrap;">' +
+        '<i class="fe fe-alert-triangle me-1"></i>Kekurangan</span>'
+    );
+}
+
+function wrapSoStatusCell(mainHtml, row) {
+    var shortage = renderSoShortageHint(row);
+    return (
+        '<div class="d-flex flex-wrap justify-content-center align-items-center gap-1">' +
+        mainHtml +
+        shortage +
+        "</div>"
+    );
+}
+
 function renderSoStatus(status, row) {
     status = parseInt(status, 10);
     if (status === 1) {
@@ -1368,39 +1387,54 @@ function renderSoStatus(status, row) {
         // (StockTransferController's pseudo-status filter), derived from
         // qc_approved_by_name/ops_approved_by_name instead of a real status value.
         if (row && row.ops_approved_by_name) {
-            return (
+            return wrapSoStatusCell(
                 '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Pending</span>' +
-                '<div class="small text-muted mt-1">Menunggu potong stok</div>'
+                '<div class="small text-muted mt-1">Menunggu potong stok</div>',
+                row
             );
         }
         if (row && row.qc_approved_by_name) {
-            return (
+            return wrapSoStatusCell(
                 '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>' +
-                '<div class="small text-muted mt-1">Menunggu Kepala Operasional</div>'
+                '<div class="small text-muted mt-1">Menunggu Kepala Operasional</div>',
+                row
             );
         }
-        return (
+        return wrapSoStatusCell(
             '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Requested</span>' +
-            '<div class="small text-muted mt-1">Menunggu Staf QC &amp; Gudang</div>'
+            '<div class="small text-muted mt-1">Menunggu Staf QC &amp; Gudang</div>',
+            row
         );
     }
     if (status === 2) {
-        return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Diterima</span>';
+        return wrapSoStatusCell(
+            '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Diterima</span>',
+            row
+        );
     }
     if (status === 3) {
         return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Ditolak</span>';
     }
     if (status === 4) {
         // Dijadwalkan lewat External API (POST /shipments/scheduled) — belum di-ACC, stok belum dipotong.
-        return '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-calendar me-1"></i> Dijadwalkan</span>';
+        return wrapSoStatusCell(
+            '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-calendar me-1"></i> Dijadwalkan</span>',
+            row
+        );
     }
     if (status === 5) {
         // Belum Terkirim, dipaksa lewat External API (PATCH /shipments/{ref}/change-status).
-        return '<span class="badge" style="background-color: #fef9c3; color: #854d0e; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Belum Terkirim</span>';
+        return wrapSoStatusCell(
+            '<span class="badge" style="background-color: #fef9c3; color: #854d0e; border: 1px solid #fde68a; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-truck me-1"></i> Belum Terkirim</span>',
+            row
+        );
     }
     if (status === 6) {
         // Sudah Terkirim, dipaksa lewat External API (PATCH /shipments/{ref}/change-status).
-        return '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-square me-1"></i> Sudah Terkirim</span>';
+        return wrapSoStatusCell(
+            '<span class="badge" style="background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-square me-1"></i> Sudah Terkirim</span>',
+            row
+        );
     }
     if (status === 7) {
         // Dibatalkan lewat External API (PUT /shipments/{ref}/cancel) — stok sudah dikembalikan kalau sebelumnya Berjalan.
@@ -1426,6 +1460,11 @@ function renderSoAction(row) {
     // reject sama-sama gerbang lewat modal detail yang sama.
     var canApprove = canApproveQc || canApproveOps;
     var canDelete = pending && soHasAccess("Pengiriman", "delete");
+    // Dijadwalkan + dokumen BG → cetak Form Kekurangan Barang
+    var canPrintShortage =
+        canView &&
+        !!row.has_shortage_doc &&
+        (status === 4 || status === 5 || status === 6);
     if (canApprove) {
         var approveLabel = canApproveQc ? "Konfirmasi (Staf QC & Gudang)" : "Konfirmasi (Kepala Operasional)";
         // .btn-action-approve — kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
@@ -1446,6 +1485,13 @@ function renderSoAction(row) {
             row.so_id +
             '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
+    if (canPrintShortage) {
+        // Warna warning supaya beda dari Lihat — sinyal ada Form Kekurangan
+        soa +=
+            '<a class="btn-action-icon btn_print_shortage" href="/shipmentShortage/' +
+            row.so_id +
+            '/print" target="_blank" rel="noopener" data-bs-toggle="tooltip" title="Cetak Form Kekurangan Barang" style="background:#fef3c7;border-color:#fde68a;color:#b45309;"><i class="fe fe-printer" style="font-size:14px;"></i></a>';
+    }
     if (canDelete) {
         // btn_delete sudah punya warna sendiri dari .btn-action-icon.btn_delete di
         // header.blade.php — tidak diubah, sudah sesuai sebelum perubahan ini.
@@ -1455,7 +1501,7 @@ function renderSoAction(row) {
             '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
-    if (!canApprove && !canView && !canDelete) {
+    if (!canApprove && !canView && !canDelete && !canPrintShortage) {
         return '<span class="text-muted small">—</span>';
     }
     return soa;

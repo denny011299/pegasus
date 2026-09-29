@@ -416,7 +416,7 @@
         }
 
         showCashSkeleton();
-        inisialisasi();
+            inisialisasi();
     });
 
     $(document).on('change', '#jenis_input', function(){
@@ -711,8 +711,8 @@
                     },
                     error: function () {
                         // fallback ke data lama daripada mengosongkan field kalau request gagal
-                        var temp = $('#customer_id_armada').select2("data")[0];
-                        $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
+                var temp = $('#customer_id_armada').select2("data")[0];
+                $('#oc_nominal_armada').val(formatRupiahMinus(temp.customer_saldo)).attr('disabled', false);
                     }
                 });
             } else {
@@ -907,7 +907,7 @@
             var $btn = $('#tableCash tbody ' + target.btn + '[data-id="' + target.id + '"]').first();
             if ($btn.length) {
                 $btn.trigger('click');
-                stripParamFromUrl();
+                    stripParamFromUrl();
             }
         } catch (err) {
             console.warn("openCashFromDashboardLink", err);
@@ -1117,26 +1117,26 @@
             return;
         }
 
-        let detail = row.data().detail ?? null;
+                let detail = row.data().detail ?? null;
         if (!detail || !detail.length) return;
 
         if (type == "admin") {
             detail.ca_date = row.data().ca_date;
-            row.child(format(detail)).show();
-        }
-        else if (type == "gudang") {
+                row.child(format(detail)).show();
+            }
+            else if (type == "gudang") {
             detail.cg_date = row.data().cg_date;
-            row.child(formatGudang(detail)).show();
-        }
-        else if (type == "armada") {
+                row.child(formatGudang(detail)).show();
+            }
+            else if (type == "armada") {
             detail.cr_date = row.data().cr_date;
-            row.child(formatArmada(detail)).show();
-        }
-        else if (type == "sales") {
+                row.child(formatArmada(detail)).show();
+            }
+            else if (type == "sales") {
             detail.cs_date = row.data().cs_date;
-            row.child(formatSales(detail)).show();
-        }
-        tr.addClass('shown');
+                row.child(formatSales(detail)).show();
+            }
+            tr.addClass('shown');
         $icon.removeClass('fe-plus-circle').addClass('fe-minus-circle');
     });
 
@@ -1194,9 +1194,9 @@
                                 <i class="fe fe-trash-2"></i>
                         </a>`}
                     </td>
-                </tr>
+                </tr>    
             `);
-        });
+        }); 
         // Jangan .toggle() seluruh kolom — menyembunyikan <th> tapi tidak <td> (atau sebaliknya)
         // bikin header/body tidak sejajar lagi. Kolomnya tetap ada, cuma judulnya dikosongkan;
         // isi selnya sendiri sudah otomatis kosong di mode view lewat ternary di atas.
@@ -1411,9 +1411,9 @@
                                 <i class="fe fe-trash-2"></i>
                         </a>`}
                     </td>
-                </tr>
+                </tr>    
             `);
-        });
+        }); 
         // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
         $('#tableDetailGudang thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
@@ -1590,7 +1590,7 @@
             else {
                 $('#oc_transaksi_armada').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                ResetLoadingButton('.btn-save-armada', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
                 return false;
             }
         }
@@ -1636,7 +1636,7 @@
                     </td>
                 </tr>
             `);
-        });
+        }); 
         // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
         $('#tableDetailArmada thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
@@ -1807,7 +1807,7 @@
             else {
                 $('#oc_transaksi_sales').addClass('is-invalid');
                 notifikasi('error', "Gagal Insert", 'Tipe yang diinputkan wajib satu kategori');
-                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas");
+                ResetLoadingButton('.btn-save-sales', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
                 return false;
             }
         }
@@ -1851,7 +1851,7 @@
                     </td>
                 </tr>
             `);
-        });
+        }); 
         // Lihat catatan di addRow() (Kas Admin) di atas — jangan .toggle() seluruh kolom.
         $('#tableDetailSales thead .col-aksi').text(mode === 3 ? '' : 'Aksi');
     }
@@ -2326,14 +2326,14 @@
             var img = parseCashPhotoList(data.cr_img);
             list_photo = img;
             console.log(list_photo);
-
+    
             if (img.length) {
-                $('#modalViewPhoto .modal-footer').show();
-                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-                $('#fotoProduksiImage').attr('index', 0);
-                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-                $('#check_foto_armada').show();
-                $('#jumlahFoto').html(list_photo.length);
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+            $('#check_foto_armada').show();
+            $('#jumlahFoto').html(list_photo.length);
             } else {
                 $('#check_foto_armada').hide();
             }
@@ -2392,14 +2392,14 @@
             var img = parseCashPhotoList(data.cr_img);
             list_photo = img;
             console.log(list_photo);
-
+    
             if (img.length) {
-                $('#modalViewPhoto .modal-footer').show();
-                $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
-                $('#fotoProduksiImage').attr('index', 0);
-                $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
-                $('#check_foto_armada').show();
-                $('#jumlahFoto').html(list_photo.length);
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/armada/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/armada/"+img[0]);
+            $('#check_foto_armada').show();
+            $('#jumlahFoto').html(list_photo.length);
             } else {
                 $('#check_foto_armada').hide();
             }
@@ -2492,14 +2492,14 @@
             var img = parseCashPhotoList(data.cs_img);
             list_photo = img;
             console.log(list_photo);
-
+    
             if (img.length) {
-                $('#modalViewPhoto .modal-footer').show();
-                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-                $('#fotoProduksiImage').attr('index', 0);
-                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-                $('#check_foto_sales').show();
-                $('#jumlahFoto').html(list_photo.length);
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+            $('#check_foto_sales').show();
+            $('#jumlahFoto').html(list_photo.length);
             } else {
                 $('#check_foto_sales').hide();
             }
@@ -2557,14 +2557,14 @@
             var img = parseCashPhotoList(data.cs_img);
             list_photo = img;
             console.log(list_photo);
-
+    
             if (img.length) {
-                $('#modalViewPhoto .modal-footer').show();
-                $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
-                $('#fotoProduksiImage').attr('index', 0);
-                $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
-                $('#check_foto_sales').show();
-                $('#jumlahFoto').html(list_photo.length);
+            $('#modalViewPhoto .modal-footer').show();
+            $('#fotoProduksiImage').attr('src', public+"kas_admin/sales/"+img[0]);
+            $('#fotoProduksiImage').attr('index', 0);
+            $('#btn_download_photo').attr('href', public+"kas_admin/sales/"+img[0]);
+            $('#check_foto_sales').show();
+            $('#jumlahFoto').html(list_photo.length);
             } else {
                 $('#check_foto_sales').hide();
             }

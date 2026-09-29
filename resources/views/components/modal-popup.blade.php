@@ -65,8 +65,8 @@
   @include('components.modals.unit.add-unit')
 @endif
 
-@if (Route::is(['productionMuat']))
-  @include('components.modals.muat.add-muat')
+@if (Route::is(['productionSkala']))
+  @include('components.modals.skala.add-skala')
 @endif
 
 @if (Route::is(['variant']))

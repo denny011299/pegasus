@@ -6,13 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\QueryException;
 
 /**
- * Dokumen kekurangan stok - dibuat opsional oleh POST /api/external/v1/shipments/scheduled
- * (App\Http\Controllers\ExternalApi\V1\ShipmentController::scheduled()) saat pemanggil mengirim
- * auto_create_shortage_doc: true DAN ada item yang shortage-nya > 0.
+ * Dokumen kekurangan stok — dibuat otomatis oleh POST /api/external/v1/shipments/scheduled
+ * bila ada item shortage > 0 (flag auto_create_shortage_doc di body hanya kompatibilitas PMO).
  *
- * Murni catatan untuk staf gudang/pembelian - satu dokumen per shipment yang kekurangan
- * (so_id), berisi snapshot item yang short saat itu. Tidak dikonsumsi modul lain, tidak ada
- * halaman admin untuk ini saat ini.
+ * Dipakai list Pengiriman (warning kuning + print Form Kekurangan) dan PDF
+ * GET /shipmentShortage/{soId}/print. Satu dokumen aktif per so_id; items = snapshot JSON.
  */
 class ShipmentShortageDocument extends Model
 {
@@ -51,6 +49,14 @@ class ShipmentShortageDocument extends Model
 
             try {
                 $doc->save();
+
+                // 1 shortage doc = 1 draft Production Planning (fase 1)
+                try {
+                    ProductionPlanning::createDraftFromShortage($doc);
+                } catch (\Throwable $e) {
+                    // Jangan gagalkan shortage doc kalau PP gagal
+                    report($e);
+                }
 
                 return $doc;
             } catch (QueryException $e) {

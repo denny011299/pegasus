@@ -25,6 +25,19 @@ alwaysApply: true
 - Untuk deploy manual user — **bukan** langkah agent rutin.
 - Agent hanya merge/push lewat worktree itu jika user minta eksplisit.
 
+### Setelah push `fase2/main` (wajib)
+
+Setiap kali agent **sudah** push commit fitur/QC ke `origin/fase2/main`, **langsung** di worktree yang sama:
+
+```
+php artisan deploy:manifest
+git add deploy/manifest.json
+git commit -m "chore(deploy): regenerate manifest for <sha singkat>"
+git push origin fase2/main
+```
+
+Jangan selesai push fitur tanpa manifest ikut ke remote. Manifest `commit` menunjuk SHA fitur terakhir (bukan SHA commit manifest sendiri).
+
 ### Merge besar (stok/modal)
 
 Sebelum merge ke `fase2/main` yang menyentuh stok/modal (saat user sudah minta): ikuti `.cursor/rules/fase2-merge-inventory.mdc`.

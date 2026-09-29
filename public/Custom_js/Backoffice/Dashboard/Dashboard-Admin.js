@@ -203,22 +203,23 @@
             var bEsc = bkt.replace(/"/g, "&quot;");
             var sEsc = st.replace(/"/g, "&quot;");
             $tb.append(
-                "<tr><td>" +
+                "<tr><td class=\"fw-medium\">" +
                     escHtml(r.bucket) +
                     "</td><td>" +
                     escHtml(r.status) +
-                    '</td><td class="text-end">' +
+                    '</td><td class="text-end text-nowrap">' +
                     fmtNum(r.qty) +
-                    '</td><td class="text-end">' +
+                    '</td><td class="text-end text-nowrap">' +
                     fmtRp(r.value) +
-                    '</td><td class="dash-aging-actions">' +
-                    '<button type="button" class="btn btn-sm btn-outline-secondary dash-aging-detail-btn" data-aging-bucket="' +
+                    '</td><td class="text-center dash-aging-actions">' +
+                    '<button type="button" class="btn-action-icon dash-aging-detail-btn" title="Lihat detail" data-aging-bucket="' +
                     bEsc +
                     '" data-aging-status="' +
                     sEsc +
-                    '">Lihat</button></td></tr>'
+                    '"><i class="fe fe-eye"></i></button></td></tr>'
             );
         }
+        if (typeof feather !== "undefined") feather.replace();
     }
 
     function renderApprovalTable(tbodySelector, rows, emptyMsg) {
@@ -256,7 +257,7 @@
             var extraCols = isChangelog
                 ? "<td>" +
                   staffCell +
-                  "</td><td>" +
+                  "</td><td class=\"text-nowrap\">" +
                   escHtml(r.opened_at || "-") +
                   (r.duration_label
                       ? " · " + escHtml(r.duration_label)
@@ -264,22 +265,22 @@
                   "</td>"
                 : "";
             $tb.append(
-                "<tr><td>" +
+                "<tr><td class=\"fw-medium\">" +
                     escHtml(r.module_label || "-") +
-                    "</td><td>" +
+                    "</td><td class=\"text-nowrap\"><span class=\"fw-semibold text-primary\">" +
                     escHtml(r.reference || "-") +
-                    '</td><td><span class="d-inline-block" title="' +
+                    '</span></td><td><span class="d-inline-block" title="' +
                     escHtml(r.what_changed || r.summary || "") +
                     '">' +
                     escHtml(r.what_changed || r.summary || "-") +
                     "</span></td>" +
                     extraCols +
-                    '<td class="dash-col-actions">' +
-                    '<div class="d-inline-flex gap-1 align-items-center">' +
-                    '<a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
+                    '<td class="dash-col-actions text-center">' +
+                    '<div class="d-inline-flex gap-1 align-items-center justify-content-center">' +
+                    '<a class="btn-action-icon" title="Buka" href="' +
                     url.replace(/"/g, "&quot;") +
                     '"><i class="fe fe-eye"></i></a>' +
-                    '<button type="button" class="btn btn-sm dash-log-btn px-2 dash-queue-dismiss-btn" title="Hapus dari log" data-queue-section="' +
+                    '<button type="button" class="btn-action-icon btn_delete dash-queue-dismiss-btn" title="Hapus dari log" data-queue-section="' +
                     escHtml(section) +
                     '" data-queue-key="' +
                     escHtml(queueKey) +
@@ -287,6 +288,7 @@
                     "</div></td></tr>"
             );
         }
+        if (typeof feather !== "undefined") feather.replace();
     }
 
     function renderPayablesDueTable(rows) {
@@ -310,19 +312,20 @@
             $tb.append(
                 "<tr><td>" +
                     dueText +
-                    "</td><td>" +
+                    "</td><td class=\"text-nowrap\"><span class=\"fw-semibold text-primary\">" +
                     escHtml(r.invoice || "-") +
-                    '</td><td><span class="d-inline-block dash-payable-customer" title="' +
+                    '</span></td><td><span class="d-inline-block dash-payable-customer" title="' +
                     escHtml(r.customer || "-") +
                     '">' +
                     escHtml(r.customer || "-") +
                     '</span></td><td class="text-end text-nowrap dash-payable-amount">' +
                     fmtRp(r.amount || 0) +
-                    '</td><td class="text-end"><a class="btn btn-sm dash-log-btn px-2" title="Buka" href="' +
+                    '</td><td class="text-center"><a class="btn-action-icon" title="Buka" href="' +
                     String(r.url || "#").replace(/"/g, "&quot;") +
                     '"><i class="fe fe-eye"></i></a></td></tr>'
             );
         }
+        if (typeof feather !== "undefined") feather.replace();
     }
 
     function dismissQueueItem(section, key, done) {

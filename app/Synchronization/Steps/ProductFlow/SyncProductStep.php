@@ -125,6 +125,17 @@ class SyncProductStep extends ProductFlowStep
                     continue;
                 }
 
+                // Belum ketemu ref/nama → coba induk IPM lewat SKU varian (hindari shell 1-SKU).
+                if (! $match->found()) {
+                    $skuHit = $this->findProductIdByVariantSku($product);
+                    if ($skuHit !== null) {
+                        $match = MatchResult::adopted($skuHit);
+                        $result->addNotice(
+                            $label.': diadopsi ke produk IPM '.$skuHit.' lewat SKU varian (bukan nama PMO).'
+                        );
+                    }
+                }
+
                 $attributes = [
                     'ref_product_id' => $refProductId,
                     'product_name' => mb_substr($name, 0, 250),
@@ -138,6 +149,28 @@ class SyncProductStep extends ProductFlowStep
                 ];
 
                 if ($match->found()) {
+                    // Induk multi-varian: jangan timpa nama IPM dengan judul 1-SKU PMO.
+                    $activeVariants = (int) DB::table('product_variants')
+                        ->where('product_id', $match->localId)
+                        ->where('status', 1)
+                        ->count();
+                    if ($activeVariants > 1) {
+                        unset($attributes['product_name']);
+                    }
+
+                    // UNIQUE ref: kalau produk sudah pegang ref lain, jangan overwrite —
+                    // cukup remember di matcher supaya langkah varian tetap jalan.
+                    $existingRef = DB::table('products')
+                        ->where('product_id', $match->localId)
+                        ->value('ref_product_id');
+                    if ($existingRef !== null && $existingRef !== '' && (string) $existingRef !== (string) $refProductId) {
+                        unset($attributes['ref_product_id']);
+                        $result->addNotice(
+                            $label.': produk '.$match->localId.' sudah punya ref lain; '
+                            .'ref '.$refProductId.' tidak ditulis (link lewat SKU).'
+                        );
+                    }
+
                     DB::table('products')->where('product_id', $match->localId)->update($attributes);
                     $result->updated++;
 
@@ -169,6 +202,43 @@ class SyncProductStep extends ProductFlowStep
 
             $result->finish('Sinkronisasi produk selesai.');
         });
+    }
+
+    /**
+     * Cari product_id IPM dari SKU varian di payload (case-insensitive).
+     * Hanya dipakai bila tepat satu produk kandidat.
+     *
+     * @param  array<string, mixed>  $product
+     */
+    private function findProductIdByVariantSku(array $product): ?int
+    {
+        $skuNorms = [];
+        foreach ($this->pickList($product, ['variant', 'variants']) as $variant) {
+            $sku = ReferenceMatcher::normalise($this->pickString($variant, ['variant_sku', 'sku']));
+            if ($sku !== '') {
+                $skuNorms[$sku] = true;
+            }
+        }
+        if ($skuNorms === []) {
+            return null;
+        }
+
+        $hits = [];
+        foreach (DB::table('product_variants')
+            ->select('product_variant_id', 'product_id', 'product_variant_sku', 'status')
+            ->where('status', 1)
+            ->get() as $row) {
+            $norm = ReferenceMatcher::normalise((string) $row->product_variant_sku);
+            if ($norm !== '' && isset($skuNorms[$norm])) {
+                $hits[(int) $row->product_id] = true;
+            }
+        }
+
+        if (count($hits) !== 1) {
+            return null;
+        }
+
+        return (int) array_key_first($hits);
     }
 
     /**

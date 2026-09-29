@@ -168,8 +168,9 @@
         min-width: 100%;
         box-sizing: border-box;
         border-radius: 8px;
-        border: 1px solid var(--dash-border);
-        overflow: visible;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+        background: #ffffff;
     }
 
     .dash-scroll {
@@ -196,37 +197,42 @@
         border-collapse: separate;
         border-spacing: 0;
         margin-bottom: 0;
+        background: #ffffff;
     }
 
-    /* Header/body sama seperti .card-table (mis. /product): gradient thead-light,
-       ukuran font & padding baris yang sama — dash-scroll/dash-table-wrap tetap
-       dipertahankan untuk perilaku scroll & max-height panel dashboard. */
+    /* Header & body mengikuti tema resmi Pegasus (sama seperti card-table / DataTables di header.blade.php) */
     .dash-table thead th {
-        background: linear-gradient(320deg, #ddeeff 0%, #dbecff 100%) !important;
-        font-size: 13px;
-        font-weight: 500;
-        text-transform: none;
-        letter-spacing: normal;
-        color: #28084b !important;
-        border-bottom: 1px solid #dee2e6 !important;
-        padding: 10px 16px !important;
-        white-space: nowrap;
+        background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%) !important;
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        color: #1e40af !important;
+        border-bottom: 2px solid #bfdbfe !important;
+        border-top: none !important;
+        padding: 10px 14px !important;
+        white-space: nowrap !important;
+        vertical-align: middle !important;
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
     }
 
     .dash-table tbody td {
-        font-size: 14px;
-        color: #1f0066;
-        padding: 10px 16px !important;
-        border-bottom: 1px solid #f5f5f5;
-        vertical-align: middle;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        color: #334155 !important;
+        padding: 9px 14px !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        border-top: none !important;
+        vertical-align: middle !important;
+        background: #ffffff;
     }
 
     .dash-table tbody tr:last-child td {
-        border-bottom: none;
+        border-bottom: none !important;
     }
 
     .dash-table-hover tbody tr:hover td {
-        background-color: #f6f6f7;
+        background-color: #f8fafc !important;
     }
 
     /* Skeleton shimmer (dt-pending/dt-ready/dt-skeleton) di-load global lewat
@@ -255,12 +261,14 @@
         overflow-wrap: anywhere;
     }
 
+    .dash-approval-table th.dash-col-actions,
     .dash-approval-table td.dash-col-actions {
-        width: 1%;
-        min-width: 7.25rem;
+        width: 85px;
+        min-width: 85px;
+        max-width: 85px;
         white-space: nowrap;
         vertical-align: middle;
-        text-align: right;
+        text-align: center;
     }
 
     .dash-approval-table td.dash-col-actions .btn {
@@ -275,7 +283,7 @@
         position: sticky;
         top: 0;
         z-index: 5;
-        background: linear-gradient(320deg, #ddeeff 0%, #dbecff 100%) !important;
+        background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%) !important;
     }
 
     .dash-payable-customer {
@@ -287,22 +295,30 @@
 
     .dash-payable-amount {
         font-weight: 600;
+        color: #0f172a;
     }
 
     .dash-log-btn {
-        border-radius: 8px;
-        font-size: 0.72rem;
-        font-weight: 600;
-        padding: 0.28rem 0.62rem;
-        border: 1px solid #cbd5e1;
-        color: #1e3a8a;
-        background: #f8fafc;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 34px !important;
+        height: 34px !important;
+        border-radius: 8px !important;
+        font-size: 14px !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #64748b !important;
+        background: #ffffff !important;
+        transition: all 0.18s ease !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
     }
 
     .dash-log-btn:hover {
-        background: #e2e8f0;
-        border-color: #94a3b8;
-        color: #1e3a8a;
+        background: #eff6ff !important;
+        border-color: #bfdbfe !important;
+        color: #2563eb !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.15) !important;
     }
 
     /* Top 5: nama produk boleh wrap; qty tetap rapat kanan */
@@ -423,8 +439,8 @@
     .dash-modal-table {
         border-collapse: separate;
         border-spacing: 0;
-        border: 1px solid rgba(15, 23, 42, 0.08);
-        border-radius: 10px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
         overflow: hidden;
         background: #fff;
     }
@@ -433,34 +449,32 @@
         position: sticky;
         top: 0;
         z-index: 2;
-        background: #f8fafc;
-        color: #475569;
-        font-size: 0.6875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        font-weight: 700;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.1);
-        padding: 0.62rem 0.72rem;
-        white-space: nowrap;
+        background: linear-gradient(90deg, #eff6ff 0%, #e0f2fe 100%) !important;
+        color: #1e40af !important;
+        font-size: 11.5px !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        font-weight: 800 !important;
+        border-bottom: 2px solid #bfdbfe !important;
+        padding: 9px 12px !important;
+        white-space: nowrap !important;
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
     }
 
     .dash-modal-table tbody td {
-        padding: 0.56rem 0.72rem;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-        color: #1e293b;
-        vertical-align: middle;
-    }
-
-    .dash-modal-table tbody tr:nth-child(even) td {
-        background: #fcfdff;
+        padding: 8px 12px !important;
+        border-bottom: 1px solid #f1f5f9 !important;
+        color: #334155 !important;
+        vertical-align: middle !important;
+        font-size: 13px !important;
     }
 
     .dash-modal-table tbody tr:hover td {
-        background: #eef6ff;
+        background: #f8fafc !important;
     }
 
     .dash-modal-table tbody tr:last-child td {
-        border-bottom: none;
+        border-bottom: none !important;
     }
 
     .dash-aging-item-cell {
@@ -728,7 +742,7 @@
                                     <th>Perubahan / status</th>
                                     <th class="text-nowrap">User</th>
                                     <th class="text-nowrap">Jam / Durasi</th>
-                                    <th class="text-end text-nowrap">Aksi</th>
+                                    <th class="text-center text-nowrap" style="width: 85px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="dash_changelog_body">
@@ -750,7 +764,7 @@
                 </div>
                 <div class="dt-pending" id="dash_confirmation_wrap">
                     <div class="dt-skeleton" aria-hidden="true">
-                        {!! $dashSkeletonRows(['15%', '12%', '55%', '18%']) !!}
+                        {!! $dashSkeletonRows(['18%', '14%', '54%', '14%']) !!}
                     </div>
                     <div class="dash-scroll">
                         <div class="dash-table-wrap">
@@ -760,7 +774,7 @@
                                     <th class="text-nowrap">Modul</th>
                                     <th class="text-nowrap">Ref</th>
                                     <th>Perlu ACC</th>
-                                    <th class="text-end text-nowrap">Buka</th>
+                                    <th class="text-center text-nowrap" style="width: 85px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="dash_confirmation_body">
@@ -782,7 +796,7 @@
                 </div>
                 <div class="dt-pending" id="dash_revision_wrap">
                     <div class="dt-skeleton" aria-hidden="true">
-                        {!! $dashSkeletonRows(['15%', '12%', '55%', '18%']) !!}
+                        {!! $dashSkeletonRows(['18%', '14%', '54%', '14%']) !!}
                     </div>
                     <div class="dash-scroll">
                         <div class="dash-table-wrap">
@@ -792,7 +806,7 @@
                                     <th class="text-nowrap">Modul</th>
                                     <th class="text-nowrap">Ref</th>
                                     <th>Alasan</th>
-                                    <th class="text-end text-nowrap">Buka</th>
+                                    <th class="text-center text-nowrap" style="width: 85px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="dash_revision_body">
@@ -810,7 +824,7 @@
                 {{-- <p class="dash-muted-note mb-2">Menampilkan invoice belum dibayar dengan status: Akan jatuh tempo dalam 1-2 hari, Hari ini, atau sudah lewat jatuh tempo.</p> --}}
                 <div class="dt-pending" id="dash_payables_wrap">
                     <div class="dt-skeleton" aria-hidden="true">
-                        {!! $dashSkeletonRows(['16%', '16%', '34%', '20%', '14%']) !!}
+                        {!! $dashSkeletonRows(['18%', '18%', '34%', '20%', '10%']) !!}
                     </div>
                     <div class="dash-scroll">
                         <div class="dash-table-wrap">
@@ -821,7 +835,7 @@
                                     <th class="text-nowrap">Invoice</th>
                                     <th>Customer</th>
                                     <th class="text-end text-nowrap">Total Hutang</th>
-                                    <th class="text-end text-nowrap">Buka</th>
+                                    <th class="text-center text-nowrap" style="width: 60px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="dash_payables_due_body">
@@ -937,7 +951,7 @@
                                     <th>Status</th>
                                     <th class="text-end text-nowrap">Qty</th>
                                     <th class="text-end text-nowrap">Nilai</th>
-                                    <th class="text-nowrap">Rincian</th>
+                                    <th class="text-center text-nowrap" style="width: 70px;">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="dash_stock_aging_body">

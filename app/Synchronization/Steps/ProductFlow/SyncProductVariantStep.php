@@ -11,14 +11,15 @@ use Illuminate\Support\Facades\DB;
 /**
  * Langkah 4 — Sinkronisasi Varian Produk (tabel `product_variants`).
  *
- * Identitas dua fase, sesuai keputusan D5:
- *   fase mapan  — (product_id, variant_sku)
- *   fase adopsi — nama varian di dalam produk yang sama, lalu SKU dari PMO
- *                 ditulis ke baris itu (kotak "Ganti SKU Variant product" pada
- *                 flowchart)
+ * Kunci utama = **SKU, tidak case-sensitive** (`ReferenceMatcher::normalise` = lower+trim).
  *
- * SKU yang berubah dianggap varian baru; varian lama dilaporkan langkah 7
- * sebagai kejanggalan, tidak pernah dihapus otomatis.
+ *   fase 1 — SKU global lintas produk; utamakan varian di produk tanpa `ref_product_id`
+ *            (IPM lokal). Varian **tetap di produk IPM** (jangan pindah ke shell PMO).
+ *            Ref PMO dipasang ke produk IPM bila masih NULL; shell PMO kosong dimatikan.
+ *   fase 2 — nama varian di dalam produk target yang sama (fallback), SKU PMO ditulis.
+ *
+ * Model benar: 1 produk IPM banyak varian. Sync PMO 1-SKU/produk tidak boleh
+ * memecah induk IPM jadi banyak produk sejenis.
  *
  * `product_variant_price` dan `product_variant_stock` tidak pernah ditulis —
  * PMO tidak mengirimkannya dan keduanya milik Pegasus.
@@ -34,6 +35,8 @@ class SyncProductVariantStep extends ProductFlowStep
             $productByRef = $this->productMap();
             $unitByRef = $this->unitMap();
             $localVariants = $this->localVariantsByProduct();
+            $globalBySku = $this->globalVariantsBySku();
+            $productsHaveRef = $this->productsWithRef();
             $now = Carbon::now();
 
             foreach ($snapshot->rows as $product) {
@@ -46,17 +49,26 @@ class SyncProductVariantStep extends ProductFlowStep
                 }
 
                 if (! isset($productByRef[$refProductId])) {
-                    $result->processed += count($variants);
-                    $result->failed += count($variants);
-                    $result->addError(
-                        $label.': produk belum ada di Pegasus, '.count($variants)
-                        .' varian dilewati. Jalankan ulang langkah Sinkronisasi Produk.'
+                    // Ref belum di products (induk IPM sudah pegang ref lain) → cari lewat SKU.
+                    $viaSku = $this->resolveProductIdViaPayloadSku($variants, $globalBySku, $productsHaveRef);
+                    if ($viaSku === null) {
+                        $result->processed += count($variants);
+                        $result->failed += count($variants);
+                        $result->addError(
+                            $label.': produk belum ada di Pegasus, '.count($variants)
+                            .' varian dilewati. Jalankan ulang langkah Sinkronisasi Produk.'
+                        );
+
+                        continue;
+                    }
+                    $localProductId = $viaSku;
+                    $result->addNotice(
+                        $label.': produk disambung lewat SKU ke product_id '.$localProductId
+                        .' (ref '.$refProductId.' tidak unik di induk).'
                     );
-
-                    continue;
+                } else {
+                    $localProductId = $productByRef[$refProductId];
                 }
-
-                $localProductId = $productByRef[$refProductId];
                 $refDefaultUnit = $this->pickInt($product, ['default_unit_id', 'unit_id']);
                 $localUnitId = $unitByRef[$refDefaultUnit] ?? 0;
 
@@ -65,26 +77,44 @@ class SyncProductVariantStep extends ProductFlowStep
                 $assignment = [];
                 $blocked = [];
 
-                // Fase 1 — cocokkan lewat SKU (kunci mapan).
+                // Fase 1 — SKU global case-insensitive (utamakan IPM lokal tanpa ref).
+                // Harus sebelum match in-product supaya twin sync-PMO (stok 0) tidak menang
+                // atas baris lokal berstok dengan SKU sama beda huruf.
                 foreach ($variants as $i => $variant) {
-                    $sku = ReferenceMatcher::normalise($this->pickString($variant, ['variant_sku', 'sku']));
+                    $skuRaw = $this->pickString($variant, ['variant_sku', 'sku']);
+                    $sku = ReferenceMatcher::normalise($skuRaw);
                     if ($sku === '') {
                         continue;
                     }
 
-                    $hits = $this->candidates($pool, 'sku', $sku, $claimed);
+                    $hits = $this->globalSkuCandidates($globalBySku, $sku, $claimed, $productsHaveRef);
 
                     if (count($hits) === 1) {
                         $assignment[$i] = $hits[0];
                         $claimed[$hits[0]] = true;
+                        // Notice hanya jika varian datang dari produk lain / SKU beda ejaan.
+                        $fromOther = true;
+                        foreach ($pool as $row) {
+                            if ((int) $row->id === (int) $hits[0]) {
+                                $fromOther = false;
+                                break;
+                            }
+                        }
+                        if ($fromOther) {
+                            $result->addNotice(
+                                $label.': varian diadopsi lewat SKU (abaikan huruf besar/kecil) ke '
+                                .'product_variant_id '.$hits[0].' (tetap di produk IPM), SKU menjadi "'
+                                .$skuRaw.'".'
+                            );
+                        }
                     } elseif (count($hits) > 1) {
-                        $blocked[$i] = 'SKU "'.$this->pickString($variant, ['variant_sku', 'sku'])
-                            .'" cocok dengan '.count($hits).' varian Pegasus pada produk yang sama '
+                        $blocked[$i] = 'SKU "'.$skuRaw.'" (case-insensitive) cocok dengan '
+                            .count($hits).' varian Pegasus '
                             .'(product_variant_id '.implode(', ', $hits).'). Rapikan duplikatnya lebih dulu.';
                     }
                 }
 
-                // Fase 2 — adopsi lewat nama untuk varian yang belum terpetakan.
+                // Fase 2 — adopsi lewat nama di produk yang sama (belum ketemu SKU).
                 foreach ($variants as $i => $variant) {
                     if (isset($assignment[$i]) || isset($blocked[$i])) {
                         continue;
@@ -144,8 +174,25 @@ class SyncProductVariantStep extends ProductFlowStep
                         );
                     }
 
+                    // Default: tulis ke produk hasil SyncProductStep (punya ref).
+                    // Kalau adopsi varian IPM lokal (produk tanpa ref) → JANGAN pindah induk.
+                    $targetProductId = $localProductId;
+                    $adoptedLocal = false;
+                    if (isset($assignment[$i])) {
+                        $existing = DB::table('product_variants')
+                            ->where('product_variant_id', $assignment[$i])
+                            ->first(['product_id']);
+                        if ($existing !== null) {
+                            $existingPid = (int) $existing->product_id;
+                            if ($existingPid !== $localProductId && ! isset($productsHaveRef[$existingPid])) {
+                                $targetProductId = $existingPid;
+                                $adoptedLocal = true;
+                            }
+                        }
+                    }
+
                     $attributes = [
-                        'product_id' => $localProductId,
+                        'product_id' => $targetProductId,
                         'product_variant_name' => mb_substr($name, 0, 100),
                         'product_variant_sku' => mb_substr($sku, 0, 100),
                         'unit_id' => $localUnitId,
@@ -168,6 +215,25 @@ class SyncProductVariantStep extends ProductFlowStep
                             ->update($attributes);
                         $result->updated++;
 
+                        if ($adoptedLocal) {
+                            $this->attachRefToIpmProduct($targetProductId, $localProductId, $refProductId, $result, $label);
+                            $productsHaveRef[$targetProductId] = true;
+                            unset($productsHaveRef[$localProductId]);
+                        }
+
+                        // Pool produk yang menerima varian harus kenal SKU ini.
+                        $poolTarget = $localVariants[$targetProductId] ?? [];
+                        $poolTarget[] = (object) [
+                            'id' => $assignment[$i],
+                            'sku' => ReferenceMatcher::normalise($sku),
+                            'name' => ReferenceMatcher::normalise($name),
+                        ];
+                        $localVariants[$targetProductId] = $poolTarget;
+                        if ($targetProductId === $localProductId) {
+                            $pool = $poolTarget;
+                        }
+                        $this->rememberGlobalSku($globalBySku, $sku, $assignment[$i], $targetProductId);
+
                         continue;
                     }
 
@@ -183,7 +249,9 @@ class SyncProductVariantStep extends ProductFlowStep
                     );
 
                     $pool[] = (object) ['id' => $localId, 'sku' => ReferenceMatcher::normalise($sku), 'name' => ReferenceMatcher::normalise($name)];
+                    $localVariants[$localProductId] = $pool;
                     $claimed[$localId] = true;
+                    $this->rememberGlobalSku($globalBySku, ReferenceMatcher::normalise($sku), $localId, $localProductId);
                     $result->inserted++;
                 }
             }
@@ -196,6 +264,53 @@ class SyncProductVariantStep extends ProductFlowStep
 
             $result->finish('Sinkronisasi varian produk selesai.');
         });
+    }
+
+    /**
+     * Pindahkan ref dari shell produk PMO ke induk IPM (jika IPM masih NULL),
+     * lalu matikan shell bila tidak punya varian aktif.
+     */
+    private function attachRefToIpmProduct(
+        int $ipmProductId,
+        int $pmoShellProductId,
+        int $refProductId,
+        SyncStepResult $result,
+        string $label
+    ): void {
+        $ipm = DB::table('products')->where('product_id', $ipmProductId)->first(['ref_product_id']);
+        if ($ipm === null) {
+            return;
+        }
+
+        if ($ipm->ref_product_id === null || $ipm->ref_product_id === '') {
+            // UNIQUE: lepas dulu dari shell PMO
+            DB::table('products')
+                ->where('product_id', $pmoShellProductId)
+                ->update(['ref_product_id' => null, 'updated_at' => now()]);
+
+            DB::table('products')
+                ->where('product_id', $ipmProductId)
+                ->update([
+                    'ref_product_id' => $refProductId,
+                    'status' => 1,
+                    'updated_at' => now(),
+                ]);
+
+            $result->addNotice(
+                $label.': ref_product_id '.$refProductId.' dipasang ke produk IPM '.$ipmProductId.'.'
+            );
+        }
+
+        $activeLeft = (int) DB::table('product_variants')
+            ->where('product_id', $pmoShellProductId)
+            ->where('status', 1)
+            ->count();
+
+        if ($activeLeft === 0 && $pmoShellProductId !== $ipmProductId) {
+            DB::table('products')
+                ->where('product_id', $pmoShellProductId)
+                ->update(['status' => 0, 'updated_at' => now()]);
+        }
     }
 
     /**
@@ -246,6 +361,47 @@ class SyncProductVariantStep extends ProductFlowStep
     }
 
     /**
+     * Bila ref PMO belum tertulis di products (induk sudah punya ref lain),
+     * temukan product_id dari SKU payload yang sudah ada di DB.
+     *
+     * @param  array<int, array<string, mixed>>  $variants
+     * @param  array<string, array<int, object>>  $globalBySku
+     * @param  array<int, bool>  $productsHaveRef
+     */
+    private function resolveProductIdViaPayloadSku(
+        array $variants,
+        array $globalBySku,
+        array $productsHaveRef
+    ): ?int {
+        $productHits = [];
+
+        foreach ($variants as $variant) {
+            $sku = ReferenceMatcher::normalise($this->pickString($variant, ['variant_sku', 'sku']));
+            if ($sku === '') {
+                continue;
+            }
+            foreach ($globalBySku[$sku] ?? [] as $row) {
+                if ((int) ($row->status ?? 1) !== 1) {
+                    continue;
+                }
+                $pid = (int) $row->product_id;
+                // Utamakan induk tanpa ref; kalau semua sudah ber-ref, tetap terima.
+                $productHits[$pid] = ! isset($productsHaveRef[$pid]) ? 2 : 1;
+            }
+        }
+
+        if ($productHits === []) {
+            return null;
+        }
+
+        arsort($productHits);
+        $topScore = reset($productHits);
+        $top = array_keys(array_filter($productHits, static fn ($s) => $s === $topScore));
+
+        return count($top) === 1 ? (int) $top[0] : null;
+    }
+
+    /**
      * @param  array<int, object>  $pool
      * @param  array<int, bool>  $claimed
      * @return array<int, int>
@@ -261,6 +417,53 @@ class SyncProductVariantStep extends ProductFlowStep
         }
 
         return $hits;
+    }
+
+    /**
+     * Cari varian di seluruh DB by SKU ternormalisasi (lowercase).
+     * Kalau lebih dari satu: utamakan yang produknya belum punya ref_product_id
+     * (IPM lokal). Kalau masih >1 → ambiguous.
+     *
+     * @param  array<string, array<int, object>>  $globalBySku
+     * @param  array<int, bool>  $claimed
+     * @param  array<int, bool>  $productsHaveRef  product_id => true bila sudah ber-ref
+     * @return array<int, int>
+     */
+    private function globalSkuCandidates(
+        array $globalBySku,
+        string $skuNorm,
+        array $claimed,
+        array $productsHaveRef
+    ): array {
+        $rows = $globalBySku[$skuNorm] ?? [];
+        $hits = [];
+
+        foreach ($rows as $row) {
+            if (isset($claimed[$row->id])) {
+                continue;
+            }
+            $hits[] = $row;
+        }
+
+        if (count($hits) <= 1) {
+            return array_map(static fn ($r) => (int) $r->id, $hits);
+        }
+
+        // Utamakan lokal (produk tanpa ref PMO) supaya twin sync-PMO kosong tidak menang.
+        $localOnly = array_values(array_filter(
+            $hits,
+            static fn ($r) => ! isset($productsHaveRef[(int) $r->product_id])
+        ));
+
+        if (count($localOnly) === 1) {
+            return [(int) $localOnly[0]->id];
+        }
+
+        if (count($localOnly) > 1) {
+            return array_map(static fn ($r) => (int) $r->id, $localOnly);
+        }
+
+        return array_map(static fn ($r) => (int) $r->id, $hits);
     }
 
     /**
@@ -280,6 +483,75 @@ class SyncProductVariantStep extends ProductFlowStep
                 'sku' => ReferenceMatcher::normalise((string) $row->product_variant_sku),
                 'name' => ReferenceMatcher::normalise((string) $row->product_variant_name),
             ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * SKU ternormalisasi => daftar varian (lintas produk).
+     *
+     * @return array<string, array<int, object>>
+     */
+    private function globalVariantsBySku(): array
+    {
+        $out = [];
+
+        $rows = DB::table('product_variants')
+            ->select('product_variant_id', 'product_id', 'product_variant_sku', 'status')
+            ->get();
+
+        foreach ($rows as $row) {
+            $sku = ReferenceMatcher::normalise((string) $row->product_variant_sku);
+            if ($sku === '') {
+                continue;
+            }
+
+            $out[$sku][] = (object) [
+                'id' => (int) $row->product_variant_id,
+                'product_id' => (int) $row->product_id,
+                'status' => (int) $row->status,
+            ];
+        }
+
+        return $out;
+    }
+
+    /**
+     * @param  array<string, array<int, object>>  $globalBySku
+     */
+    private function rememberGlobalSku(array &$globalBySku, string $skuNorm, int $variantId, int $productId): void
+    {
+        if ($skuNorm === '') {
+            return;
+        }
+
+        // Lepas entri lama untuk id yang sama (pindah produk).
+        foreach ($globalBySku as $key => $rows) {
+            $globalBySku[$key] = array_values(array_filter(
+                $rows,
+                static fn ($r) => (int) $r->id !== $variantId
+            ));
+            if ($globalBySku[$key] === []) {
+                unset($globalBySku[$key]);
+            }
+        }
+
+        $globalBySku[$skuNorm][] = (object) [
+            'id' => $variantId,
+            'product_id' => $productId,
+            'status' => 1,
+        ];
+    }
+
+    /**
+     * @return array<int, bool>
+     */
+    private function productsWithRef(): array
+    {
+        $out = [];
+        foreach (DB::table('products')->whereNotNull('ref_product_id')->pluck('product_id') as $id) {
+            $out[(int) $id] = true;
         }
 
         return $out;

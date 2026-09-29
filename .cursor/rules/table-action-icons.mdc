@@ -1,0 +1,28 @@
+---
+description: Urutan tombol aksi di kolom tabel DataTables — delete selalu paling kanan
+alwaysApply: true
+---
+
+# Table Row Action Icons
+
+Kolom **Aksi** di DataTables: ikon dalam satu grup (`d-flex … gap-1`).
+
+## Urutan (kiri → kanan)
+
+1. Lihat / Detail (eye)
+2. Edit / proses lain (edit, ACC, print, …)
+3. **Delete / Hapus — selalu paling kanan**
+
+Kalau delete disabled (bukan hide), tetap di posisi kanan supaya alignment rata.
+
+Kolom Aksi: `text-align: center` + `justify-content-center` pada wrapper ikon.
+
+## Class delete (hover merah global)
+
+Pakai class **`btn_delete`** (selain class handler lokal) agar hover merah dari `header.blade.php` aktif:
+
+```js
+roleIconDelete("Modul", "btn-action-icon btn_delete btn_delete_xxx", '…')
+```
+
+Tanpa `btn_delete`, hover tetap biru (rule `.btn-action-icon:hover` umum).

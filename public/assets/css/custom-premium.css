@@ -576,3 +576,46 @@ a.btn-action-icon i {
     box-sizing: border-box !important;
 }
 
+/* ==============================================================
+   Fix .btn-outline-primary — avoid dark #082a58 / illegible text
+   ============================================================== */
+.btn-outline-primary {
+    color: #2563eb !important;
+    border-color: #2563eb !important;
+    background-color: transparent !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+.table tbody td a.btn-outline-primary,
+.table tbody td button.btn-outline-primary {
+    color: #2563eb !important;
+    border-color: #2563eb !important;
+    background-color: #ffffff !important;
+    transition: all 0.15s ease-in-out !important;
+}
+
+.table tbody td a.btn-outline-primary:hover,
+.table tbody td a.btn-outline-primary:focus,
+.table tbody td a.btn-outline-primary:active,
+.table tbody td button.btn-outline-primary:hover,
+.table tbody td button.btn-outline-primary:focus,
+.table tbody td button.btn-outline-primary:active,
+.btn-outline-primary:hover,
+.btn-outline-primary:focus,
+.btn-outline-primary:active,
+.btn-check:checked + .btn-outline-primary {
+    color: #ffffff !important;
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
+}
+
+.table tbody td a.btn-outline-primary:hover i,
+.table tbody td a.btn-outline-primary:hover span,
+.table tbody td button.btn-outline-primary:hover i,
+.table tbody td button.btn-outline-primary:hover span,
+.btn-outline-primary:hover i,
+.btn-outline-primary:hover span {
+    color: #ffffff !important;
+}
+

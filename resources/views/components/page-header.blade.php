@@ -40,11 +40,11 @@
                     </li>
                     @endroleCan
                 @endif
-                @if (Route::is(['productionMuat']))
+                @if (Route::is(['productionSkala']))
                     @roleCan('Satuan', 'create')
                     <li>
                         <a class="btn btn-primary btnAdd"><i class="fa fa-plus-circle me-2" aria-hidden="true"></i>Tambah
-                            Muat</a>
+                            Skala</a>
                     </li>
                     @endroleCan
                 @endif
@@ -329,7 +329,7 @@
                 @endif
                 @if (Route::is(['productionPlanning.view']))
                     <li>
-                        <a class="btn btn-outline-secondary" href="{{ route('productionPlanning') }}">
+                        <a class="btn btn-outline-secondary" href="{{ route('productionPlanning', request('tab') ? ['tab' => request('tab')] : []) }}">
                             <i class="fa fa-chevron-left me-2" aria-hidden="true"></i>Kembali
                         </a>
                     </li>

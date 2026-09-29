@@ -339,6 +339,18 @@ class SalesOrder extends Model
         }
         $approverNames = $approverIdSet !== [] ? BatchLookup::staffNames(array_keys($approverIdSet)) : collect();
 
+        // SO dengan dokumen BG aktif → icon print Form Kekurangan di list
+        $shortageSoIds = [];
+        if (Schema::hasTable('shipment_shortage_documents') && $rows->isNotEmpty()) {
+            $shortageSoIds = ShipmentShortageDocument::query()
+                ->whereIn('so_id', $rows->pluck('so_id')->all())
+                ->where('status', 1)
+                ->pluck('so_id')
+                ->map(fn ($id) => (int) $id)
+                ->flip()
+                ->all();
+        }
+
         $dataOut = [];
         foreach ($rows as $row) {
             $item = [
@@ -357,6 +369,7 @@ class SalesOrder extends Model
                 // atau /shipments/shipped SELALU punya ref_shipment_id (lihat
                 // ShipmentController), baris buatan admin biasa selalu null.
                 'ref_shipment_id' => $row->ref_shipment_id,
+                'has_shortage_doc' => isset($shortageSoIds[(int) $row->so_id]),
             ];
             if ($hasRetailWh) {
                 $rid = (int) ($row->retail_warehouse_id ?? 0);
