@@ -889,6 +889,11 @@
                                         <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
+
+                                    @if ($canShow('Satuan'))
+                                        <li><a href="{{ url('productionSkala') }}"
+                                            class="{{ Request::is('productionSkala') ? 'active' : '' }}">Skala</a></li>
+                                    @endif
                                 </ul>
                             </li>
                         @endif
@@ -1071,6 +1076,10 @@
                             @endif
 
                             @if ($canShow('Produksi'))
+                                <li>
+                                    <a class="{{ Request::is('productionPlanning*') || Request::is('productionWorkOrders*') ? 'active' : '' }}" href="/productionPlanning?tab=planning">
+                                        <i class="fe fe-calendar"></i> <span>Production Planning</span></a>
+                                </li>
                                 <li>
                                     <a class="{{ Request::is('production') ? 'active' : '' }}" href="/production">
                                         <i class="fa-solid fa-gear"></i> <span>Produksi</span></a>

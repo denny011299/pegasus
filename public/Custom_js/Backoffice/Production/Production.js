@@ -552,6 +552,10 @@ function handleProductionValidationError(e, bomIdFallback) {
         return;
     }
     if (e.status == -1) {
+        if (Array.isArray(e.shortages) && e.shortages.length) {
+            showPgStockShortageModal(e.header || "Stock Tidak Mencukupi", e.shortages, e.message);
+            return;
+        }
         showPgErrorModal("Stock Tidak Mencukupi", e.message);
         return;
     }

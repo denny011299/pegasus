@@ -13,6 +13,7 @@ use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
+use App\Http\Controllers\ProductionExecutionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
@@ -137,17 +138,22 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Satuan|view')->group(function () {
         Route::get('/unit', [ProductController::class, 'Unit'])->name('unit');
         Route::get('/getUnit', [ProductController::class, 'getUnit'])->name('getUnit');
+        // Master Skala (referensi SPK) — ACL sama Satuan agar langsung terlihat tanpa modul ACL baru
+        Route::get('/productionSkala', [ProductionController::class, 'productionSkala'])->name('productionSkala');
+        Route::get('/getProductionSkala', [ProductionController::class, 'getProductionSkala'])->name('getProductionSkala');
     });
     Route::middleware('check.access:Satuan|create')->group(function () {
         Route::post('/insertUnit', [ProductController::class, 'insertUnit'])->name('insertUnit');
+        Route::post('/insertProductionSkala', [ProductionController::class, 'insertProductionSkala'])->name('insertProductionSkala');
     });
     Route::middleware('check.access:Satuan|edit')->group(function () {
         Route::post('/updateUnit', [ProductController::class, 'updateUnit'])->name('updateUnit');
+        Route::post('/updateProductionSkala', [ProductionController::class, 'updateProductionSkala'])->name('updateProductionSkala');
     });
     Route::middleware('check.access:Satuan|delete')->group(function () {
         Route::post('/deleteUnit', [ProductController::class, 'deleteUnit'])->name('deleteUnit');
+        Route::post('/deleteProductionSkala', [ProductionController::class, 'deleteProductionSkala'])->name('deleteProductionSkala');
     });
-
     Route::middleware('check.access:Variasi|view')->group(function () {
         Route::get('/variant', [ProductController::class, 'Variant'])->name('variant');
         Route::get('/getVariant', [ProductController::class, 'getVariant'])->name('getVariant');
@@ -356,6 +362,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/salesOrderDetail/{id}', [CustomerController::class, 'SalesOrderDetail'])->name('salesOrderDetail');
         Route::get('/getSoDelivery', [CustomerController::class, 'getSoDelivery'])->name('getSoDelivery');
         Route::get('/getSoInvoice', [CustomerController::class, 'getSoInvoice'])->name('getSoInvoice');
+        Route::get('/shipmentShortage/{soId}/print', [CustomerController::class, 'printShipmentShortage'])
+            ->whereNumber('soId')
+            ->name('shipmentShortage.print');
         Route::get('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'index'])->name('customerSupplyReturns.index');
         Route::get('/customerSupplyReturns/context', [CustomerSupplyReturnController::class, 'context'])->name('customerSupplyReturns.context');
         Route::get('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'show'])->name('customerSupplyReturns.show');
@@ -744,23 +753,63 @@ Route::middleware(checkLogin::class)->group(function () {
 
     Route::middleware('check.access:Produksi|view')->group(function () {
         Route::get('/production', [ProductionController::class, 'production'])->name('production');
+        Route::get('/productionPlanning', [ProductionController::class, 'productionPlanning'])->name('productionPlanning');
+        Route::get('/productionPlanning/view', [ProductionController::class, 'productionPlanningView'])->name('productionPlanning.view');
+        Route::get('/getPpShortageDocs', [ProductionController::class, 'shortageDocsForPlanning'])->name('getPpShortageDocs');
+        Route::get('/getProductionPlanning', [ProductionController::class, 'getProductionPlanning'])->name('getProductionPlanning');
+        Route::get('/getProductionPlanningLive', [ProductionController::class, 'getProductionPlanningLive'])->name('getProductionPlanningLive');
+        Route::get('/getProductionPlanningStageCards', [ProductionController::class, 'getProductionPlanningStageCards'])->name('getProductionPlanningStageCards');
+        Route::get('/getProductionPlanningDetail', [ProductionController::class, 'getProductionPlanningDetail'])->name('getProductionPlanningDetail');
+        Route::get('/checkProductionPlanningRelease', [ProductionController::class, 'checkProductionPlanningRelease'])->name('checkProductionPlanningRelease');
+        Route::get('/printProductionWorkOrder/{id}', [ProductionController::class, 'printProductionWorkOrder'])
+            ->whereNumber('id')
+            ->name('printProductionWorkOrder');
+        Route::get('/printProductionPlanning/{id}', [ProductionController::class, 'printProductionPlanning'])
+            ->whereNumber('id')
+            ->name('printProductionPlanning');
         Route::get('/getProduction', [ProductionController::class, 'getProduction'])->name('getProduction');
         Route::get('/getPemakaian', [ProductionController::class, 'getPemakaian'])->name('getPemakaian');
         Route::get('/getFotoProduksi', [ProductionController::class, 'getFotoProduksi'])->name('getFotoProduksi');
         // Production-scoped BOM read/update (users may lack Resep Bahan Mentah access)
         Route::get('/getProductionBom', [ProductionController::class, 'getBom'])->name('getProductionBom');
         Route::post('/updateProductionBom', [ProductionController::class, 'updateBom'])->name('updateProductionBom');
+
+        // Work Order execution (list, detail, print FG/Tally, monitor ?monitor=1)
+        Route::get('/productionWorkOrders', [ProductionExecutionController::class, 'index'])->name('productionWorkOrders');
+        Route::get('/getProductionWorkOrders', [ProductionExecutionController::class, 'listing'])->name('getProductionWorkOrders');
+        Route::get('/productionWorkOrders/{id}', [ProductionExecutionController::class, 'detail'])
+            ->whereNumber('id')
+            ->name('productionWorkOrders.detail');
+        Route::get('/productionWorkOrders/{id}/materialRecipe', [ProductionExecutionController::class, 'materialRecipe'])
+            ->whereNumber('id')
+            ->name('productionWorkOrders.materialRecipe');
+        Route::get('/getProductionPendingMaterials', [ProductionExecutionController::class, 'pendingMaterials'])
+            ->name('getProductionPendingMaterials');
+        Route::get('/productionMaterialOptions', [ProductionExecutionController::class, 'materials'])->name('productionMaterialOptions');
+        Route::get('/printProductionDocument/{id}/{kind?}', [ProductionExecutionController::class, 'printDocument'])
+            ->whereNumber('id')
+            ->where('kind', 'form|tally')
+            ->name('printProductionDocument');
     });
     Route::middleware('check.access:Produksi|create')->group(function () {
         Route::post('/insertProduction', [ProductionController::class, 'insertProduction'])->name('insertProduction');
+        Route::post('/insertProductionPlanning', [ProductionController::class, 'insertProductionPlanning'])->name('insertProductionPlanning');
         Route::post('/checkProductionStock', [ProductionController::class, 'checkProductionStock'])->name('checkProductionStock');
     });
     Route::middleware('check.access:Produksi|edit')->group(function () {
         Route::post('/updateProduction', [ProductionController::class, 'updateProduction'])->name('updateProduction');
+        Route::post('/approveProductionPlanning', [ProductionController::class, 'approveProductionPlanning'])->name('approveProductionPlanning');
+        Route::post('/assignProductionPlanningWorkOrder', [ProductionController::class, 'assignProductionPlanningWorkOrder'])->name('assignProductionPlanningWorkOrder');
         Route::post('/uploadPhotoProduksi', [ProductionController::class, 'uploadPhotoProduksi'])->name('uploadPhotoProduksi');
+        // PIC report / materials — ops|qc|close tetap di |others (dicek di controller)
+        Route::post('/productionExecution/{id}/{action}', [ProductionExecutionController::class, 'mutate'])
+            ->whereNumber('id')
+            ->where('action', 'report|material_issue|material_return|no_materials|cancel_material|ops|qc|hand_pallet|palletized|close')
+            ->name('productionExecution.mutate');
     });
     Route::middleware('check.access:Produksi|delete')->group(function () {
         Route::post('/deleteProduction', [ProductionController::class, 'deleteProduction'])->name('deleteProduction');
+        Route::post('/deleteProductionPlanning', [ProductionController::class, 'deleteProductionPlanning'])->name('deleteProductionPlanning');
     });
     Route::middleware('check.access:Produksi|others')->group(function () {
         Route::post('/accProduction', [ProductionController::class, 'accProduction'])->name('accProduction');

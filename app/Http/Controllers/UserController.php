@@ -91,12 +91,24 @@ class UserController extends Controller
 
     function insertStaff(Request $req){
         $data = $req->all();
+        unset($data['signature_data_uri']);
+        try {
+            $data = array_merge($data, \App\Support\StaffSignature::fromRequest($req));
+        } catch (\InvalidArgumentException $e) {
+            return ['status' => -1, 'message' => $e->getMessage()];
+        }
         if(isset($req->image)&&$req->image!="undefined")$data["staff_image"] = (new HelperController)->insertFile($req->image, "staff");
         return (new Staff())->insertStaff($data);
     }
 
     function updateStaff(Request $req){
         $data = $req->all();
+        unset($data['signature_data_uri']);
+        try {
+            $data = array_merge($data, \App\Support\StaffSignature::fromRequest($req));
+        } catch (\InvalidArgumentException $e) {
+            return ['status' => -1, 'message' => $e->getMessage()];
+        }
         if(isset($req->image)&&$req->image!="undefined")$data["staff_image"] = (new HelperController)->insertFile($req->image, "staff");
         return (new Staff())->updateStaff($data);
     }
@@ -272,4 +284,3 @@ class UserController extends Controller
     }
 
 }
-

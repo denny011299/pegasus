@@ -14,6 +14,7 @@ class Staff extends Model
 {
     protected $table = "staffs";
     protected $primaryKey = "staff_id";
+    protected $hidden = ['signature_data_uri'];
     public $timestamps = true;
     public $incrementing = true;
 
@@ -198,6 +199,7 @@ class Staff extends Model
             'staff_email' => (string) ($staff->staff_email ?? ''),
             'staff_phone' => (string) ($staff->staff_phone ?? ''),
             'staff_address' => (string) ($staff->staff_address ?? ''),
+            'signature_data_uri' => $staff->signature_data_uri,
             'staff_username' => (string) ($staff->staff_username ?? ''),
             'role_id' => $staff->role_id !== null ? (int) $staff->role_id : null,
             'role_name' => (string) ($staff->role_name ?? ''),
@@ -217,6 +219,9 @@ class Staff extends Model
         $t->staff_address = $data["staff_address"];
         $t->staff_username = $data["staff_username"];
         $t->staff_password = Hash::make($data["staff_password"]);
+        if (array_key_exists('signature_data_uri', $data)) {
+            $t->signature_data_uri = $data['signature_data_uri'];
+        }
         // $t->staff_notes = $data["staff_notes"];
         $t->created_by = Session::get('user') ? Session::get('user')->staff_id : null;
         $t->save();
@@ -235,6 +240,9 @@ class Staff extends Model
         }
 
         $t = self::find($staffId);
+        if (array_key_exists('signature_data_uri', $data)) {
+            $t->signature_data_uri = $data['signature_data_uri'];
+        }
         $t->staff_name = $data["staff_first_name"] . " " . $data["staff_last_name"];
         $t->staff_email = $data["staff_email"];
         $t->staff_phone = $data["staff_phone"];

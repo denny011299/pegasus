@@ -6,6 +6,26 @@
       border: 1px solid red !important;
     }
 
+    .staff-esign-preview-wrap {
+      width: 160px;
+      height: 90px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .staff-esign-preview {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+    #modalStaffEsign .pg-esign {
+      max-width: min(560px, 92vw);
+      margin: 0 auto;
+    }
+
     .is-invalids {
       border: 1px solid red !important;
       border-radius: 4px;
@@ -289,6 +309,24 @@
                           placeholder="Masukkan Ulang Kata Sandi">
                       </div>
                     </div>
+                    <div class="col-12">
+                      <div class="input-block mb-3">
+                        <label>Tanda tangan dokumen produksi</label>
+                        <div class="d-flex flex-wrap align-items-start gap-3">
+                          <div id="staff_esign_preview_wrap" class="staff-esign-preview-wrap" style="display:none;">
+                            <img id="staff_esign_preview" alt="Tanda tangan" class="staff-esign-preview">
+                          </div>
+                          <div>
+                            <button type="button" class="btn btn-outline-primary" id="btn_staff_esign_open">
+                              <i class="fe fe-edit-3 me-1"></i><span id="btn_staff_esign_label">Tambah tanda tangan</span>
+                            </button>
+                            <small class="text-muted d-block mt-2" style="max-width:320px;">
+                              E-sign dipakai saat menyetujui dokumen produksi. Gambar baru mengganti yang lama.
+                            </small>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 {{-- <div class="form-group-item">
@@ -367,6 +405,57 @@
     </div>
   </div>
   <!-- /Page Wrapper -->
+
+{{-- Modal e-sign 16:9 (luas) — di luar form --}}
+<div class="modal custom-modal fade pg-modal--form" id="modalStaffEsign" tabindex="-1"
+    aria-labelledby="modalStaffEsignLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-focus="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="pg-modal-icon"><i class="fe fe-edit-3"></i></div>
+                    <div>
+                        <h5 class="mb-0 fw-bold text-white modal-title" id="modalStaffEsignLabel" style="font-size:16px;">
+                            Tanda Tangan</h5>
+                        <small class="d-block text-white-50 modal-subtitle">Gambar tangan atau upload gambar — simpan untuk mengganti e-sign</small>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-white">
+                <div class="btn-group w-100 mb-3" role="group" aria-label="Mode tanda tangan">
+                    <input type="radio" class="btn-check" name="staff_esign_mode" id="staff_esign_mode_draw" value="draw" autocomplete="off" checked>
+                    <label class="btn btn-outline-primary" for="staff_esign_mode_draw">
+                        <i class="fe fe-edit-3 me-1"></i> Gambar tangan
+                    </label>
+                    <input type="radio" class="btn-check" name="staff_esign_mode" id="staff_esign_mode_upload" value="upload" autocomplete="off">
+                    <label class="btn btn-outline-primary" for="staff_esign_mode_upload">
+                        <i class="fe fe-image me-1"></i> Upload gambar
+                    </label>
+                </div>
+                <div id="staff_esign_panel_draw">
+                    <div id="staff_esign_modal_pad" class="mx-auto"></div>
+                </div>
+                <div id="staff_esign_panel_upload" style="display:none;">
+                    <label class="form-label fw-semibold">Pilih file gambar (PNG/JPG)</label>
+                    <input type="file" class="form-control" id="staff_esign_upload_file" accept="image/png,image/jpeg,image/webp">
+                    <div class="mt-3 text-center">
+                        <div id="staff_esign_upload_preview_wrap" class="staff-esign-preview-wrap mx-auto" style="display:none;max-width:360px;">
+                            <img id="staff_esign_upload_preview" alt="Preview upload" class="staff-esign-preview" style="max-width:100%;height:auto;">
+                        </div>
+                        <small class="text-muted d-block mt-2">Gambar dipotong/diskalakan ke rasio 16:9 saat disimpan.</small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-end gap-2 pg-modal-footer">
+                <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn pg-btn-save" id="btn_staff_esign_apply">
+                    <i class="fe fe-check me-1"></i> Simpan Tanda Tangan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('custom_js')

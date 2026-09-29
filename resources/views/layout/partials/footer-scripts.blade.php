@@ -173,6 +173,7 @@
 <!-- PG Popup Table: konstanta + perilaku standar tabel input di dalam modal -->
 <script src="{{ URL::asset('/Custom_js/Shared/popup-table.js') }}"></script>
 <script src="{{ URL::asset('/Custom_js/Shared/stock-opname-unit-input.js') }}"></script>
+<script src="{{ URL::asset('/Custom_js/Shared/esign-pad.js') }}"></script>
 
 @if (Route::is(['lightbox', 'template-invoice']))
   <!-- lightbox JS -->
@@ -458,6 +459,62 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;">' +
         $("<div>").text(message || "").html() +
         "</p>",
+      confirmButtonText: "Tutup",
+      customClass: {
+        confirmButton: "pg-btn-confirm pg-btn-confirm--danger",
+        title: "fw-bold fs-4 text-dark",
+        popup: "rounded-4",
+      },
+      buttonsStyling: false,
+    });
+  }
+
+  /** Alert stok bahan kurang — daftar lengkap butuh / stok / kurang (checkProductionStock). */
+  function showPgStockShortageModal(header, shortages, fallbackMessage) {
+    var rows = Array.isArray(shortages) ? shortages : [];
+    var bodyHtml = "";
+    if (rows.length) {
+      bodyHtml =
+        '<div class="text-start" style="max-height:320px;overflow:auto;">' +
+        '<table class="table table-sm table-bordered mb-0" style="font-size:13px;">' +
+        "<thead><tr>" +
+        "<th>Bahan Mentah</th><th class=\"text-end\">Butuh</th>" +
+        "<th class=\"text-end\">Stok</th><th class=\"text-end\">Kurang</th>" +
+        "</tr></thead><tbody>";
+      rows.forEach(function (sh) {
+        var unit = sh.unit_name ? " " + $("<div>").text(sh.unit_name).html() : "";
+        bodyHtml +=
+          "<tr>" +
+          "<td>" +
+          $("<div>").text(sh.supplies_name || "-").html() +
+          "</td>" +
+          '<td class="text-end">' +
+          $("<div>").text(String(sh.needed ?? "-")).html() +
+          unit +
+          "</td>" +
+          '<td class="text-end">' +
+          $("<div>").text(String(sh.available ?? "-")).html() +
+          unit +
+          "</td>" +
+          '<td class="text-end fw-bold text-danger">' +
+          $("<div>").text(String(sh.shortage ?? "-")).html() +
+          unit +
+          "</td>" +
+          "</tr>";
+      });
+      bodyHtml += "</tbody></table></div>";
+    } else {
+      bodyHtml =
+        '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;">' +
+        $("<div>").text(fallbackMessage || "").html() +
+        "</p>";
+    }
+    Swal.fire({
+      icon: "error",
+      iconColor: "#ef4444",
+      title: header || "Stock Tidak Mencukupi",
+      html: bodyHtml,
+      width: rows.length > 0 ? "640px" : undefined,
       confirmButtonText: "Tutup",
       customClass: {
         confirmButton: "pg-btn-confirm pg-btn-confirm--danger",

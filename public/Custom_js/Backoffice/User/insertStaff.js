@@ -81,6 +81,9 @@ $(document).ready(function () {
         $("#staff_phone").val(staffData.staff_phone || "");
         $("#staff_username").val(staffData.staff_username || "");
         $("#staff_address").val(staffData.staff_address || "");
+        setStaffEsignPreview(staffData.signature_data_uri || null);
+        staffEsignSaved = staffData.signature_data_uri || null;
+        staffEsignPending = null;
 
         if (staffData.role_id) {
             $("#staff_position")
@@ -108,6 +111,128 @@ $(document).ready(function () {
                 .attr("data-kepala", "1");
         });
     }
+});
+
+/** E-sign: preview tersimpan + pending dari modal (replace saat Update Staff). */
+var staffEsignSaved = null;
+var staffEsignPending = null;
+var staffEsignModalPad = null;
+var staffEsignUploadUri = null;
+
+function setStaffEsignPreview(uri) {
+    if (uri) {
+        $("#staff_esign_preview").attr("src", uri);
+        $("#staff_esign_preview_wrap").show();
+        $("#btn_staff_esign_label").text("Ubah tanda tangan");
+    } else {
+        $("#staff_esign_preview").removeAttr("src");
+        $("#staff_esign_preview_wrap").hide();
+        $("#btn_staff_esign_label").text("Tambah tanda tangan");
+    }
+}
+
+function staffEsignMode() {
+    return $('input[name="staff_esign_mode"]:checked').val() || "draw";
+}
+
+function staffEsignShowMode(mode) {
+    var draw = mode === "draw";
+    $("#staff_esign_panel_draw").toggle(draw);
+    $("#staff_esign_panel_upload").toggle(!draw);
+}
+
+function staffEsignNormalizeToDataUri(file, done) {
+    if (!file || !file.type || file.type.indexOf("image/") !== 0) {
+        notifikasi("error", "File", "Pilih file gambar (PNG/JPG/WebP).");
+        return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+        notifikasi("error", "Terlalu besar", "Maksimal 2 MB.");
+        return;
+    }
+    var reader = new FileReader();
+    reader.onload = function () {
+        var img = new Image();
+        img.onload = function () {
+            var w = 560;
+            var h = Math.round(w * (9 / 16));
+            var canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            var ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, w, h);
+            var scale = Math.min(w / img.width, h / img.height);
+            var dw = img.width * scale;
+            var dh = img.height * scale;
+            ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+            done(canvas.toDataURL("image/png"));
+        };
+        img.onerror = function () {
+            notifikasi("error", "Gambar", "Tidak bisa membaca file gambar.");
+        };
+        img.src = reader.result;
+    };
+    reader.onerror = function () {
+        notifikasi("error", "Gambar", "Gagal membaca file.");
+    };
+    reader.readAsDataURL(file);
+}
+
+$(document).on("change", 'input[name="staff_esign_mode"]', function () {
+    staffEsignShowMode(staffEsignMode());
+});
+
+$(document).on("change", "#staff_esign_upload_file", function () {
+    var file = this.files && this.files[0] ? this.files[0] : null;
+    staffEsignUploadUri = null;
+    $("#staff_esign_upload_preview_wrap").hide();
+    if (!file) return;
+    staffEsignNormalizeToDataUri(file, function (uri) {
+        staffEsignUploadUri = uri;
+        $("#staff_esign_upload_preview").attr("src", uri);
+        $("#staff_esign_upload_preview_wrap").show();
+    });
+});
+
+$(document).on("click", "#btn_staff_esign_open", function () {
+    if (typeof EsignPad === "undefined") {
+        notifikasi("error", "E-sign", "Komponen tanda tangan belum termuat.");
+        return;
+    }
+    staffEsignUploadUri = null;
+    $("#staff_esign_upload_file").val("");
+    $("#staff_esign_upload_preview_wrap").hide();
+    $("#staff_esign_mode_draw").prop("checked", true);
+    staffEsignShowMode("draw");
+    staffEsignModalPad = EsignPad.mount("#staff_esign_modal_pad", {
+        large: true,
+        value: null,
+        hint: "Gambar tanda tangan baru (rasio 16:9). Atau ganti mode Upload gambar.",
+    });
+    $("#modalStaffEsign").modal("show");
+});
+
+$(document).on("click", "#btn_staff_esign_apply", function () {
+    var mode = staffEsignMode();
+    if (mode === "upload") {
+        if (!staffEsignUploadUri) {
+            notifikasi("error", "Kosong", "Pilih gambar tanda tangan dulu sebelum simpan.");
+            return;
+        }
+        staffEsignPending = staffEsignUploadUri;
+        setStaffEsignPreview(staffEsignPending);
+        $("#modalStaffEsign").modal("hide");
+        return;
+    }
+    var pad = staffEsignModalPad || EsignPad.get("#staff_esign_modal_pad");
+    if (!pad || pad.isEmpty()) {
+        notifikasi("error", "Kosong", "Gambar tanda tangan dulu sebelum simpan.");
+        return;
+    }
+    staffEsignPending = pad.getValue();
+    setStaffEsignPreview(staffEsignPending);
+    $("#modalStaffEsign").modal("hide");
 });
 
 $(document).on("click", "#btn_select_all_warehouses", function () {
@@ -264,6 +389,11 @@ $(document).on("click", ".btn-save", function () {
         fd.append(key, value);
     }
     // fd.append('image', $('#staff_image')[0].files[0]);
+    // E-sign baru dari modal mengganti yang lama (tanpa checkbox hapus)
+    if (staffEsignPending) {
+        fd.append("remove_signature", "0");
+        fd.append("signature_data_uri", staffEsignPending);
+    }
 
     LoadingButton($(this));
     $.ajax({

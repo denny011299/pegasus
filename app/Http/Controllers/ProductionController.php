@@ -8,10 +8,15 @@ use App\Models\LogStock;
 use App\Models\Production;
 use App\Models\ProductionDetails;
 use App\Models\ProductionPhoto;
+use App\Models\ProductionPlanning;
+use App\Models\ProductionSkala;
+use App\Models\ProductionWorkOrder;
 use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\SalesOrder;
+use App\Models\ShipmentShortageDocument;
 use App\Models\Staff;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
@@ -24,6 +29,7 @@ use App\Models\Warehouse;
 use App\Support\ProductionPendingStockRestorer;
 use App\Support\ProductUnitStock;
 use App\Support\UnitRollUp;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -58,6 +64,13 @@ class ProductionController extends Controller
     function insertBom(Request $req)
     {
         $data = $req->all();
+        $bahan = json_decode($req->bahan, true) ?: [];
+        if ($msg = Supplies::rejectTradingSuppliesIds(collect($bahan)->pluck('supplies_id'))) {
+            return [
+                'status' => -1,
+                'message' => 'Bahan Trading tidak boleh di resep (stok ada di produk). '.$msg,
+            ];
+        }
 
         // Pengecekan unique resep
         $bom = Bom::where('product_id', $data['product_id'])->where('status', 1)->get();
@@ -68,7 +81,7 @@ class ProductionController extends Controller
             ];
         }
         $bom_id = (new Bom())->insertBom($data);
-        foreach (json_decode($req->bahan, true) as $key => $value) {
+        foreach ($bahan as $key => $value) {
             $value['bom_id'] = $bom_id;
             (new BomDetail())->insertBomDetail($value);
         }
@@ -77,9 +90,16 @@ class ProductionController extends Controller
     function updateBom(Request $req)
     {
         $data = $req->all();
+        $bahan = json_decode($req->bahan, true) ?: [];
+        if ($msg = Supplies::rejectTradingSuppliesIds(collect($bahan)->pluck('supplies_id'))) {
+            return [
+                'status' => -1,
+                'message' => 'Bahan Trading tidak boleh di resep (stok ada di produk). '.$msg,
+            ];
+        }
         $list_id_detail = [];
         $bom_id = (new Bom())->updateBom($data);
-        foreach (json_decode($req->bahan, true) as $key => $value) {
+        foreach ($bahan as $key => $value) {
             $value['bom_id'] = $bom_id;
             if (isset($value["bom_detail_id"])) $id = (new BomDetail())->updateBomDetail($value);
             else $id = (new BomDetail())->insertBomDetail($value);
@@ -111,6 +131,584 @@ class ProductionController extends Controller
     public function production()
     {
         return view('Backoffice.Production.Production');
+    }
+
+    /** Production Planning FE shell — refine via /productionPlanning. */
+    public function productionPlanning()
+    {
+        return view('Backoffice.Production.Production_Planning');
+    }
+
+    /** Mode View: PP mode fullscreen tanpa sidebar & navbar. */
+    public function productionPlanningView()
+    {
+        return view('Backoffice.Production.Production_Planning', [
+            'ppFullscreen' => true,
+        ]);
+    }
+
+    // ── Master Skala ───────────────────────────────────────────────
+    public function productionSkala()
+    {
+        return view('Backoffice.Production.Production_Skala');
+    }
+
+    function getProductionSkala(Request $req)
+    {
+        $data = (new ProductionSkala())->getProductionSkala([
+            'code' => $req->code,
+            'name' => $req->name,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function insertProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->insertProductionSkala($req->all());
+    }
+
+    function updateProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->updateProductionSkala($req->all());
+    }
+
+    function deleteProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->deleteProductionSkala($req->all());
+    }
+
+    // ── Production Planning CRUD ─────────────────────────────────
+    function getProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->paginateList($req->all()));
+    }
+
+    /** Polling ringan KPI + badge tab (tanpa payload DataTables). */
+    function getProductionPlanningLive()
+    {
+        return response()->json(ProductionPlanning::liveSummary());
+    }
+
+    /** 4 kartu stage bawah — 1 request, ikut filter tanggal. */
+    function getProductionPlanningStageCards(Request $req)
+    {
+        return response()->json(ProductionPlanning::stageMiniCards($req->all()));
+    }
+
+    function getProductionPlanningDetail(Request $req)
+    {
+        $detail = (new ProductionPlanning())->getDetail($req->production_planning_id ?? $req->id);
+        if (! $detail) {
+            return response()->json(['status' => -1, 'message' => 'Planning tidak ditemukan'], 404);
+        }
+
+        return response()->json($detail);
+    }
+
+    /**
+     * Cek stok gudang (FG multi-satuan) + bahan mentah untuk Release draft.
+     * Satu batch snapshot + satu validateProductionItems — untuk modal async.
+     */
+    function checkProductionPlanningRelease(Request $req)
+    {
+        $ppId = (int) $req->input('production_planning_id', $req->input('id', 0));
+        $whId = (int) (ProductionPlanning::activeWarehouseId() ?: 0);
+        if ($ppId <= 0 || $whId <= 0) {
+            return response()->json([
+                'status' => -1,
+                'can_release' => false,
+                'message' => 'Planning / gudang aktif tidak valid',
+                'items' => [],
+                'shortages' => [],
+            ]);
+        }
+
+        ProductUnitStock::clearCache();
+
+        $pp = ProductionPlanning::query()
+            ->where('production_planning_id', $ppId)
+            ->where('warehouse_id', $whId)
+            ->where('status', 1)
+            ->first();
+        if (! $pp || $pp->pp_status !== 'draft') {
+            return response()->json([
+                'status' => -1,
+                'can_release' => false,
+                'message' => 'Hanya draft yang dicek untuk Release',
+                'items' => [],
+                'shortages' => [],
+            ]);
+        }
+
+        $rows = \App\Models\ProductionPlanningItem::query()
+            ->where('production_planning_id', $pp->production_planning_id)
+            ->where('status', 1)
+            ->orderBy('ppi_id')
+            ->get([
+                'ppi_id',
+                'product_variant_id',
+                'product_name',
+                'sku',
+                'qty',
+                'unit_id',
+                'unit_label',
+            ]);
+
+        $itemOut = [];
+        foreach ($rows as $row) {
+            $variantId = (int) ($row->product_variant_id ?? 0);
+            $unitId = (int) ($row->unit_id ?? 0);
+            $qty = (float) $row->qty;
+            $snap = $variantId > 0
+                ? ProductUnitStock::snapshot($whId, $variantId)
+                : ['stock_text' => '—', 'units' => []];
+            $available = ($variantId > 0 && $unitId > 0)
+                ? ProductUnitStock::totalAvailable($whId, $variantId, $unitId)
+                : 0.0;
+            $unitLabel = (string) ($row->unit_label ?: '—');
+
+            $itemOut[(int) $row->ppi_id] = [
+                'ppi_id' => (int) $row->ppi_id,
+                'product_variant_id' => $variantId ?: null,
+                'stock_text' => $snap['stock_text'] ?: '0',
+                'stock_units' => $snap['units'] ?? [],
+                // Setara stok di satuan rencana (bongkar unit besar → target)
+                'available_in_unit' => $available,
+                'available_text' => rtrim(rtrim(number_format($available, 2, ',', '.'), '0'), ',').' '.$unitLabel,
+                'plan_qty' => $qty,
+                'unit_label' => $unitLabel,
+                'materials_ok' => true,
+                'row_ok' => true,
+                'issue' => null,
+            ];
+        }
+
+        $built = $this->buildReleaseStockCheckItems($ppId);
+        if (isset($built['error'])) {
+            $err = $built['error'];
+            foreach ($itemOut as &$it) {
+                $it['materials_ok'] = false;
+                $it['row_ok'] = false;
+                $it['issue'] = $err['header'] ?? ($err['message'] ?? 'Tidak bisa di-release');
+            }
+            unset($it);
+
+            return response()->json([
+                'status' => (int) ($err['status'] ?? 0),
+                'can_release' => false,
+                'header' => $err['header'] ?? 'Tidak bisa Release',
+                'message' => $err['message'] ?? 'Validasi gagal',
+                'code' => $err['code'] ?? null,
+                'shortages' => $err['shortages'] ?? [],
+                'items' => array_values($itemOut),
+            ]);
+        }
+
+        $checkItems = $built['items'];
+        $destinationValidation = $this->normalizeProductionDestinations($checkItems);
+        if (! $destinationValidation['ok']) {
+            foreach ($itemOut as &$it) {
+                $it['materials_ok'] = false;
+                $it['row_ok'] = false;
+                $it['issue'] = $destinationValidation['message'];
+            }
+            unset($it);
+
+            return response()->json([
+                'status' => 0,
+                'can_release' => false,
+                'header' => 'Gudang Tidak Valid',
+                'message' => $destinationValidation['message'],
+                'shortages' => [],
+                'items' => array_values($itemOut),
+            ]);
+        }
+
+        $validation = $this->validateProductionItems($checkItems);
+        if ($validation) {
+            foreach ($itemOut as &$it) {
+                $it['materials_ok'] = false;
+                $it['row_ok'] = false;
+                $it['issue'] = $validation['header'] ?? 'Stok bahan kurang';
+            }
+            unset($it);
+
+            return response()->json([
+                'status' => (int) ($validation['status'] ?? -1),
+                'can_release' => false,
+                'header' => $validation['header'] ?? 'Stock Tidak Mencukupi',
+                'message' => $validation['message'] ?? 'Bahan baku tidak mencukupi',
+                'code' => $validation['code'] ?? null,
+                'bom_id' => $validation['bom_id'] ?? null,
+                'shortages' => $validation['shortages'] ?? [],
+                'items' => array_values($itemOut),
+            ]);
+        }
+
+        return response()->json([
+            'status' => 1,
+            'can_release' => true,
+            'header' => null,
+            'message' => null,
+            'shortages' => [],
+            'items' => array_values($itemOut),
+        ]);
+    }
+
+    function insertProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->insertDraft($req->all()));
+    }
+
+    function approveProductionPlanning(Request $req)
+    {
+        // Read-only: cek resep (satuan/relasi) + stok bahan — sama validateProductionItems produksi lama.
+        // Tidak mutasi stok di release (hanya status PP).
+        $ppId = (int) $req->input('production_planning_id', 0);
+        $built = $this->buildReleaseStockCheckItems($ppId);
+        if (isset($built['error'])) {
+            return response()->json($built['error']);
+        }
+
+        $items = $built['items'];
+        $destinationValidation = $this->normalizeProductionDestinations($items);
+        if (! $destinationValidation['ok']) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang Tidak Valid',
+                'message' => $destinationValidation['message'],
+            ]);
+        }
+
+        $validation = $this->validateProductionItems($items);
+        if ($validation) {
+            return response()->json($validation);
+        }
+
+        return response()->json((new ProductionPlanning())->approveDraft($req->all()));
+    }
+
+    /**
+     * Susun payload mirip insertProduction dari item PP draft (resolve bom per varian).
+     *
+     * @return array{items: array<int, array<string, mixed>>}|array{error: array<string, mixed>}
+     */
+    private function buildReleaseStockCheckItems(int $ppId): array
+    {
+        $whId = (int) (ProductionPlanning::activeWarehouseId() ?: 0);
+        if ($ppId <= 0 || $whId <= 0) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak ditemukan di gudang aktif',
+                ],
+            ];
+        }
+
+        $pp = ProductionPlanning::query()
+            ->where('production_planning_id', $ppId)
+            ->where('warehouse_id', $whId)
+            ->where('status', 1)
+            ->first();
+        if (! $pp) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak ditemukan di gudang aktif',
+                ],
+            ];
+        }
+        if ($pp->pp_status !== 'draft') {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Hanya draft yang bisa di-release',
+                ],
+            ];
+        }
+
+        $rows = \App\Models\ProductionPlanningItem::query()
+            ->where('production_planning_id', $pp->production_planning_id)
+            ->where('status', 1)
+            ->orderBy('ppi_id')
+            ->get();
+        if ($rows->isEmpty()) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak punya item',
+                ],
+            ];
+        }
+
+        $ppWhId = (int) ($pp->warehouse_id ?: $whId);
+        $items = [];
+        $missingBom = [];
+        $missingVariant = [];
+
+        foreach ($rows as $row) {
+            $variantId = (int) ($row->product_variant_id ?? 0);
+            if ($variantId <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: $row->sku ?: 'Item #'.$row->ppi_id));
+                continue;
+            }
+            // boms.product_id = product_variant_id (pola master resep)
+            $bomId = (int) Bom::query()
+                ->where('product_id', $variantId)
+                ->where('status', 1)
+                ->orderByDesc('bom_id')
+                ->value('bom_id');
+            if ($bomId <= 0) {
+                $missingBom[] = trim((string) ($row->product_name ?: $row->sku ?: 'Varian #'.$variantId));
+                continue;
+            }
+            $qty = (int) round((float) $row->qty);
+            if ($qty <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: 'Item #'.$row->ppi_id)).' (qty invalid)';
+                continue;
+            }
+            $unitId = (int) ($row->unit_id ?? 0);
+            if ($unitId <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: 'Item #'.$row->ppi_id)).' (satuan kosong)';
+                continue;
+            }
+
+            $items[] = [
+                'product_variant_id' => $variantId,
+                'product_name' => $row->product_name,
+                'pd_qty' => $qty,
+                'unit_id' => $unitId,
+                'unit_name' => $row->unit_label,
+                'bom_id' => $bomId,
+                'destination_warehouse_id' => $ppWhId > 0 ? $ppWhId : null,
+            ];
+        }
+
+        if ($missingVariant !== []) {
+            return [
+                'error' => [
+                    'status' => 0,
+                    'header' => 'Item Planning Tidak Valid',
+                    'message' => 'Item planning belum lengkap (varian/satuan/qty): '.implode(', ', $missingVariant),
+                ],
+            ];
+        }
+        if ($missingBom !== []) {
+            return [
+                'error' => [
+                    'status' => 0,
+                    'header' => 'Resep Tidak Ditemukan',
+                    'code' => 'recipe_needs_update',
+                    'message' => 'Produk belum punya resep bahan mentah aktif. Buat/perbarui resep dulu: '.implode(', ', $missingBom),
+                ],
+            ];
+        }
+        if ($items === []) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Tidak ada item valid untuk dicek stok.',
+                ],
+            ];
+        }
+
+        return ['items' => $items];
+    }
+
+    function deleteProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->deletePlanning($req->all()));
+    }
+
+    function assignProductionPlanningWorkOrder(Request $req)
+    {
+        try {
+            return response()->json((new ProductionPlanning())->assignWorkOrder($req->all()));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => -1,
+                'message' => 'Gagal simpan Work Order: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function printProductionPlanning(int $id)
+    {
+        $planning = (new ProductionPlanning())->getDetail($id);
+        if (! $planning) {
+            abort(404, 'Planning tidak ditemukan di gudang aktif');
+        }
+        if (! in_array($planning['pp_status'], ['released', 'work_order', 'inprod', 'done'], true)) {
+            abort(422, 'Surat Perintah Kerja dapat dicetak setelah Release to Production');
+        }
+
+        $settings = (new \App\Models\Setting())->getSetting([
+            'select' => ['company_name', 'company_address', 'logo', 'company_logo'],
+        ]);
+        $payload = [
+            'planning' => $planning,
+            'company_name' => $settings['company_name'] ?? 'Pegasus Hikari Group',
+            'company_address' => $settings['company_address'] ?? '',
+            'logo_base64' => ProductionWorkOrder::resolveCompanyLogoBase64($settings['logo'] ?? $settings['company_logo'] ?? null),
+            'skalas' => ProductionSkala::where('status', 1)->orderBy('code')->get(),
+        ];
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $planning['pp_number']);
+
+        return Pdf::loadView('Backoffice.PDF.ProductionPlanningOrder', $payload)
+            ->setPaper('a5', 'landscape')
+            ->stream('Surat_Perintah_Kerja_'.$safeName.'.pdf');
+    }
+
+    /** Print FORM-OPS-09 — DomPDF stream, 1 lembar per PIC (SPV). */
+    public function printProductionWorkOrder(int $id)
+    {
+        $payload = ProductionWorkOrder::printPayload($id);
+        if (! $payload) {
+            abort(404, 'Work Order tidak ditemukan di gudang aktif');
+        }
+
+        $u = session()->get('user') ?? Session::get('user');
+        if ($u) {
+            $payload['printed_by'] = $u->staff_name ?? $u->name ?? 'Admin';
+        }
+        $payload['printed_at'] = now()->translatedFormat('d F Y H:i');
+
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($payload['wo_number'] ?? 'WO'));
+        $pdf = Pdf::loadView('Backoffice.PDF.WorkOrderProduction', $payload)
+            ->setPaper('a6', 'landscape');
+
+        return $pdf->stream('Work_Order_'.$safeName.'.pdf');
+    }
+
+    /**
+     * Dokumen Form Kekurangan aktif — prefill item di modal Buat PP.
+     * Nama produk = product_name + variasi (lookup SKU).
+     */
+    public function shortageDocsForPlanning()
+    {
+        $docs = ShipmentShortageDocument::query()
+            ->where('status', 1)
+            ->orderByDesc('id')
+            ->limit(80)
+            ->get(['id', 'doc_number', 'so_id', 'ref_shipment_id', 'items', 'created_at']);
+
+        $soIds = $docs->pluck('so_id')->filter()->unique()->values()->all();
+        $soById = $soIds === []
+            ? collect()
+            : SalesOrder::query()
+                ->whereIn('so_id', $soIds)
+                ->get(['so_id', 'so_number', 'so_date'])
+                ->keyBy('so_id');
+
+        $allSkus = [];
+        $allUnitIds = [];
+        foreach ($docs as $doc) {
+            foreach ($doc->items ?? [] as $row) {
+                $sku = trim((string) ($row['sku'] ?? ''));
+                if ($sku !== '') {
+                    $allSkus[$sku] = true;
+                }
+                if (isset($row['unit_id']) && $row['unit_id'] !== '' && $row['unit_id'] !== null) {
+                    $allUnitIds[(int) $row['unit_id']] = true;
+                }
+            }
+        }
+        $skuList = array_keys($allSkus);
+        $unitIdList = array_keys($allUnitIds);
+
+        $namesBySku = $skuList === []
+            ? collect()
+            : ProductVariant::query()
+                ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+                ->whereIn('product_variants.product_variant_sku', $skuList)
+                ->get([
+                    'product_variants.product_variant_id',
+                    'product_variants.product_variant_sku',
+                    'pr.product_name',
+                    'product_variants.product_variant_name',
+                ])
+                ->mapWithKeys(function ($v) {
+                    $label = trim(($v->product_name ?? '') . ' ' . ($v->product_variant_name ?? ''));
+
+                    return [(string) $v->product_variant_sku => [
+                        'product_variant_id' => (int) $v->product_variant_id,
+                        'product' => $label !== '' ? $label : (string) $v->product_variant_sku,
+                    ]];
+                });
+
+        $unitsByRef = collect();
+        $unitsById = collect();
+        if ($unitIdList !== []) {
+            $unitRows = Unit::query()
+                ->where(function ($q) use ($unitIdList) {
+                    $q->whereIn('ref_unit_id', $unitIdList)->orWhereIn('unit_id', $unitIdList);
+                })
+                ->get(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
+            foreach ($unitRows as $u) {
+                $label = trim((string) ($u->unit_short_name ?: $u->unit_name)) ?: '—';
+                $unitsById->put((int) $u->unit_id, $label);
+                if ($u->ref_unit_id !== null && $u->ref_unit_id !== '') {
+                    $unitsByRef->put((int) $u->ref_unit_id, $label);
+                }
+            }
+        }
+
+        $payload = [];
+        foreach ($docs as $doc) {
+            $so = $soById->get($doc->so_id);
+            $items = [];
+            foreach ($doc->items ?? [] as $row) {
+                $sku = trim((string) ($row['sku'] ?? ''));
+                $meta = $namesBySku->get($sku);
+                $unitKey = isset($row['unit_id']) ? (int) $row['unit_id'] : null;
+                $unitLabel = '—';
+                if ($unitKey !== null) {
+                    $unitLabel = $unitsByRef->get($unitKey)
+                        ?: $unitsById->get($unitKey)
+                        ?: '—';
+                }
+                $shortage = (int) ($row['shortage'] ?? 0);
+                if ($shortage <= 0) {
+                    continue;
+                }
+                $items[] = [
+                    'sku' => $sku !== '' ? $sku : '—',
+                    'product' => $meta['product'] ?? ($sku !== '' ? $sku : '—'),
+                    'product_variant_id' => $meta['product_variant_id'] ?? null,
+                    'unit_id' => $unitKey,
+                    'unit' => $unitLabel,
+                    'shortage' => $shortage,
+                    'requested' => (int) ($row['requested'] ?? 0),
+                    'available' => (int) ($row['available'] ?? 0),
+                    'qty' => $shortage,
+                ];
+            }
+            if ($items === []) {
+                continue;
+            }
+            $payload[] = [
+                'id' => (int) $doc->id,
+                'doc_number' => $doc->doc_number,
+                'so_id' => (int) $doc->so_id,
+                'so_number' => $so->so_number ?? null,
+                'so_date' => $so->so_date ?? null,
+                'ref_shipment_id' => $doc->ref_shipment_id,
+                'item_count' => count($items),
+                'label' => trim(
+                    ($doc->doc_number ?? '')
+                    . ' · '
+                    . ($so->so_number ?? ('SO#' . $doc->so_id))
+                    . ' · '
+                    . count($items) . ' item kurang'
+                ),
+                'items' => $items,
+            ];
+        }
+
+        return response()->json(['status' => 1, 'data' => $payload]);
     }
 
     function getProduction(Request $req)
@@ -275,6 +873,7 @@ class ProductionController extends Controller
     {
         $cek = -1;
         $bahan_kurang = [];
+        $shortages = []; // supplies_id => detail kekurangan (butuh / stok / kurang)
         $produk_tanpa_relasi = [];
         $produk_qty_tidak_kelipatan = [];
         $simulasiHasil = [];
@@ -480,16 +1079,36 @@ class ProductionController extends Controller
             $bd = $butuh['details'];
             $reqUnitId = (int) $bd['unit_id'];
 
+            // Trading → cek stok product_variant link (bukan supplies_stocks).
+            $trading = $this->tradingBomSupplyMeta((int) $suppliesId);
+            if ($trading !== null) {
+                $whId = (int) (SuppliesStock::resolveWarehouseId() ?: 0);
+                $availableNow = ($whId > 0 && $trading['pv_id'] > 0)
+                    ? ProductUnitStock::totalAvailable($whId, $trading['pv_id'], $reqUnitId, false, true)
+                    : 0.0;
+                if ($availableNow < $butuhTersedia) {
+                    $cek = 1;
+                    $name = $trading['name'];
+                    if (! in_array($name, $bahan_kurang, true)) {
+                        $bahan_kurang[] = $name;
+                    }
+                    $this->mergeProductionShortage($shortages, $suppliesId, $name, $reqUnitId, $butuhTersedia, $availableNow);
+                }
+                continue;
+            }
+
             $ss = $this->ensureSuppliesStockRows($suppliesId);
-            if (
-                $ss->isEmpty()
-                || $this->getTotalSuppliesStockInUnit($suppliesId, $reqUnitId, $ss) < $butuhTersedia
-            ) {
+            $availableNow = $ss->isEmpty()
+                ? 0.0
+                : $this->getTotalSuppliesStockInUnit($suppliesId, $reqUnitId, $ss);
+            if ($ss->isEmpty() || $availableNow < $butuhTersedia) {
                 $cek = 1;
                 $s = Supplies::find($suppliesId);
-                if (!in_array($s['supplies_name'], $bahan_kurang, true)) {
-                    $bahan_kurang[] = $s['supplies_name'];
+                $name = $s['supplies_name'] ?? ('Bahan #'.$suppliesId);
+                if (! in_array($name, $bahan_kurang, true)) {
+                    $bahan_kurang[] = $name;
                 }
+                $this->mergeProductionShortage($shortages, $suppliesId, $name, $reqUnitId, $butuhTersedia, $availableNow);
                 continue;
             }
 
@@ -589,20 +1208,92 @@ class ProductionController extends Controller
             } else {
                 $cek = 1;
                 $s = Supplies::find($suppliesId);
-                if (!in_array($s['supplies_name'], $bahan_kurang, true)) {
-                    $bahan_kurang[] = $s['supplies_name'];
+                $name = $s['supplies_name'] ?? ('Bahan #'.$suppliesId);
+                if (! in_array($name, $bahan_kurang, true)) {
+                    $bahan_kurang[] = $name;
                 }
+                $availableAfter = (float) ($virtualStock[$idPalingBawah]['current'] ?? 0);
+                $this->mergeProductionShortage($shortages, $suppliesId, $name, $reqUnitId, $butuhTersedia, $availableAfter);
             }
         }
 
         if ($cek == 1) {
+            $lines = [];
+            foreach ($shortages as $sh) {
+                $unit = $sh['unit_name'] !== '' ? ' '.$sh['unit_name'] : '';
+                $lines[] = sprintf(
+                    '%s — butuh %s%s, stok %s%s, kurang %s%s',
+                    $sh['supplies_name'],
+                    $this->formatShortageQty($sh['needed']),
+                    $unit,
+                    $this->formatShortageQty($sh['available']),
+                    $unit,
+                    $this->formatShortageQty($sh['shortage']),
+                    $unit
+                );
+            }
+            if ($lines === []) {
+                $lines[] = 'Bahan baku tidak mencukupi untuk : '.implode(', ', $bahan_kurang);
+            }
+
             return [
-                "status"  => -1,
-                "message" => "Bahan baku tidak mencukupi untuk : " . implode(", ", $bahan_kurang)
+                'status' => -1,
+                'header' => 'Stock Tidak Mencukupi',
+                'message' => "Bahan baku tidak mencukupi:\n".implode("\n", $lines),
+                'shortages' => array_values($shortages),
             ];
         }
 
         return null;
+    }
+
+    /** Agregasi detail kekurangan bahan untuk response checkProductionStock / insert. */
+    private function mergeProductionShortage(
+        array &$shortages,
+        int $suppliesId,
+        string $name,
+        int $unitId,
+        float $needed,
+        float $available
+    ): void {
+        $unitName = '';
+        if ($unitId > 0) {
+            $unit = Unit::find($unitId);
+            $unitName = (string) ($unit->unit_short_name ?? $unit->unit_name ?? '');
+        }
+        $needed = max(0, $needed);
+        $available = max(0, $available);
+        $shortage = max(0, $needed - $available);
+        if (isset($shortages[$suppliesId])) {
+            // Ambil kekurangan terburuk (butuh terbesar / stok tersisa terkecil)
+            $shortages[$suppliesId]['needed'] = max($shortages[$suppliesId]['needed'], $needed);
+            $shortages[$suppliesId]['available'] = min($shortages[$suppliesId]['available'], $available);
+            $shortages[$suppliesId]['shortage'] = max(
+                0,
+                $shortages[$suppliesId]['needed'] - $shortages[$suppliesId]['available']
+            );
+
+            return;
+        }
+        $shortages[$suppliesId] = [
+            'supplies_id' => $suppliesId,
+            'supplies_name' => $name,
+            'unit_id' => $unitId,
+            'unit_name' => $unitName,
+            'needed' => $needed,
+            'available' => $available,
+            'shortage' => $shortage,
+        ];
+    }
+
+    private function formatShortageQty(float $qty): string
+    {
+        $rounded = round($qty, 2);
+        if (abs($rounded - (int) $rounded) < 0.001) {
+            return (string) (int) $rounded;
+        }
+
+        return rtrim(rtrim(number_format($rounded, 2, '.', ''), '0'), '.');
     }
 
     function updateProduction(Request $req) {}
@@ -961,6 +1652,20 @@ class ProductionController extends Controller
             }
             $bd = $butuh['details'];
             $reqUnitId = (int) $bd['unit_id'];
+
+            $trading = $this->tradingBomSupplyMeta((int) $suppliesId);
+            if ($trading !== null) {
+                $availableNow = $trading['pv_id'] > 0
+                    ? ProductUnitStock::totalAvailable($mainWhId, $trading['pv_id'], $reqUnitId, false, true)
+                    : 0.0;
+                if ($availableNow < $butuhTersedia) {
+                    if (! in_array($trading['name'], $bahan_kurang, true)) {
+                        $bahan_kurang[] = $trading['name'];
+                    }
+                }
+                continue;
+            }
+
             $ss = $this->ensureSuppliesStockRows($suppliesId);
 
             if (
@@ -1183,6 +1888,34 @@ class ProductionController extends Controller
                 if ($butuhTersedia <= 0) continue;
                 $bd = $butuh['details'];
                 $reqUnitId = (int) $bd['unit_id'];
+
+                // Trading → potong stok product_variant link (roll-up/bongkar lewat ProductUnitStock).
+                $trading = $this->tradingBomSupplyMeta((int) $suppliesId);
+                if ($trading !== null) {
+                    if ($trading['pv_id'] <= 0) {
+                        if (! in_array($trading['name'], $bahan_kurang, true)) {
+                            $bahan_kurang[] = $trading['name'];
+                        }
+                        continue;
+                    }
+                    $deduct = ProductUnitStock::deductQty(
+                        (int) $mainWarehouse->id,
+                        $trading['pv_id'],
+                        $reqUnitId,
+                        $butuhTersedia,
+                        $p->production_code,
+                        'Pengurangan bahan Trading untuk produksi '.$p->production_code,
+                        false,
+                        true,
+                        'Produksi'
+                    );
+                    if (! ($deduct['ok'] ?? false)) {
+                        if (! in_array($trading['name'], $bahan_kurang, true)) {
+                            $bahan_kurang[] = $trading['name'];
+                        }
+                    }
+                    continue;
+                }
 
                 $ss = $this->ensureSuppliesStockRows($suppliesId);
                 if ($ss->isEmpty()) {
@@ -1706,6 +2439,31 @@ class ProductionController extends Controller
         foreach ($aggregatedRequirements as $suppliesId => $butuh) {
             $butuhTersedia = (float)$butuh['total_butuh'];
             if ($butuhTersedia <= 0) continue;
+
+            // Trading → kembalikan ke product_variant link.
+            $trading = $this->tradingBomSupplyMeta((int) $suppliesId);
+            if ($trading !== null) {
+                if ($trading['pv_id'] <= 0) {
+                    continue;
+                }
+                $pv = ProductVariant::find($trading['pv_id']);
+                if (! $pv) {
+                    continue;
+                }
+                $bd = $butuh['details'];
+                $reqUnitId = (int) $bd['unit_id'];
+                ProductUnitStock::addQty(
+                    (int) $mainWarehouse->id,
+                    (int) $pv->product_id,
+                    $trading['pv_id'],
+                    $reqUnitId,
+                    $butuhTersedia,
+                    $p->production_code,
+                    'Pengembalian stok Trading akibat pembatalan produksi '.LogStock::actorSuffix(),
+                    true
+                );
+                continue;
+            }
 
             $ss = SuppliesStock::where('supplies_id', $suppliesId)
                 ->where('status', 1)
@@ -2325,6 +3083,29 @@ class ProductionController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Trading di BOM: stok fisik di product_variant link, bukan supplies_stocks.
+     *
+     * @return array{pv_id:int,name:string}|null
+     */
+    private function tradingBomSupplyMeta(int $suppliesId): ?array
+    {
+        if ($suppliesId <= 0 || ! Supplies::hasKindColumn()) {
+            return null;
+        }
+        $s = Supplies::find($suppliesId);
+        if (! $s || ! Supplies::isTradingKind($s->supplies_kind ?? null)) {
+            return null;
+        }
+
+        return [
+            'pv_id' => Schema::hasColumn('supplies', 'trading_product_variant_id')
+                ? (int) ($s->trading_product_variant_id ?? 0)
+                : 0,
+            'name' => (string) ($s->supplies_name ?? ('Bahan #'.$suppliesId)),
+        ];
     }
 
     private function activeMainProductionWarehouse(): ?Warehouse
