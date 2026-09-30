@@ -948,23 +948,19 @@
                 esc(line.warehouse_name || crActiveWarehouseName()) + "</span>";
         }
         var destId = parseInt(line.destination_warehouse_id || 0, 10);
+        // Satu label saja: Transfer → nama eceran; Stok → nama gudang terima.
+        var shownId = destId || parseInt(line.warehouse_id || 0, 10);
+        var shownName =
+            (destId ? line.destination_warehouse_name : line.warehouse_name) ||
+            (shownId ? "Gudang #" + shownId : crMainWarehouseName());
         if (!editable) {
-            if (destId) {
-                return '<span class="cr-main-warehouse"><i class="fe fe-home"></i> ' +
-                    esc(line.warehouse_name || crMainWarehouseName()) +
-                    ' → <i class="fe fe-map-pin me-1"></i>' +
-                    esc(line.destination_warehouse_name || ("Gudang #" + destId)) +
-                    "</span>";
-            }
             return '<span class="cr-main-warehouse"><i class="fe fe-home"></i> ' +
-                esc(line.warehouse_name || crMainWarehouseName()) + "</span>";
+                esc(shownName) +
+                "</span>";
         }
         // UI pilih: main = Stok; eceran = Transfer (warehouse=main, destination=eceran).
-        var selected = destId || parseInt(line.warehouse_id || 0, 10);
-        var label = esc(
-            (destId ? line.destination_warehouse_name : line.warehouse_name) ||
-            (selected ? ("Gudang #" + selected) : "")
-        );
+        var selected = shownId;
+        var label = esc(shownName);
         return '<select class="form-select form-select-sm cr-retail-warehouse" id="cr_retail_wh_' + index + '" data-index="' + index + '">' +
             (selected ? '<option value="' + selected + '" selected>' + label + "</option>" : "") +
             "</select>";
@@ -1010,11 +1006,19 @@
             line.warehouse_name ||
             "";
         ensureCrRetailWarehouseOption($select, id, name);
-        var selectedIsRetail =
-            data && typeof data.is_main_warehouse !== "undefined"
-                ? parseInt(data.is_main_warehouse, 10) === 0
-                : isRetailWarehouse(id);
         var main = crMainWarehouse();
+        var mainId = main ? parseInt(main.id, 10) : 0;
+        // Utama / ID sama dengan receive → mode Stok (jangan isi destination).
+        var selectedIsRetail = id !== mainId && isRetailWarehouse(id);
+        if (
+            data &&
+            Object.prototype.hasOwnProperty.call(data, "is_main_warehouse") &&
+            data.is_main_warehouse !== null &&
+            data.is_main_warehouse !== ""
+        ) {
+            selectedIsRetail =
+                id !== mainId && parseInt(data.is_main_warehouse, 10) === 0;
+        }
         if (selectedIsRetail) {
             // Transfer path: terima di utama, ST ke eceran saat ACC.
             if (!main) {
@@ -1022,14 +1026,14 @@
                 syncCrSaveEnabled();
                 return false;
             }
-            line.warehouse_id = parseInt(main.id, 10);
+            line.warehouse_id = mainId;
             line.warehouse_name = main.warehouse_name;
             line.destination_warehouse_id = id;
             line.destination_warehouse_name = name;
         } else {
             // Stok path: tetap di utama, tanpa ST.
-            line.warehouse_id = id;
-            line.warehouse_name = name;
+            line.warehouse_id = id || mainId;
+            line.warehouse_name = name || (main && main.warehouse_name) || "";
             line.destination_warehouse_id = null;
             line.destination_warehouse_name = null;
         }
