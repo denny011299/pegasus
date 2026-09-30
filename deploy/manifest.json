@@ -1,15 +1,14 @@
 {
-    "generated_at": "2026-10-01T01:05:28+07:00",
-    "commit": "095b6389e61b35d335bad1833af38edfe933d45d",
+    "generated_at": "2026-10-01T01:22:09+07:00",
+    "commit": "beaa17d10c8cbd3400a332b33f74ca186f4d5867",
     "branch": "fase2/main",
     "file_count": 3590,
-    "previous_commit": "0a54a11b2ceb848624e6b01c49dd0f39ab7f1853",
-    "previous_generated_at": "2026-10-01T00:48:47+07:00",
+    "previous_commit": "095b6389e61b35d335bad1833af38edfe933d45d",
+    "previous_generated_at": "2026-10-01T01:05:28+07:00",
     "added": [],
     "removed": [],
     "changed": [
-        "app/Http/Controllers/CustomerReturnController.php",
-        "public/Custom_js/Backoffice/Customers/Customer_Return.js"
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -3364,7 +3363,7 @@
         "resources/views/Backoffice/Inventory/Stock_Opname_Live.blade.php": "bcb33c8b4a1b5ef945892ba5b3cd22c6eb22a019",
         "resources/views/Backoffice/Inventory/Stock_Product.blade.php": "996939ba66248fefa2300be05851d79a91681ee0",
         "resources/views/Backoffice/Inventory/Stock_Supplies.blade.php": "887d10d9acf1c4961d41f71ac7b49d2d9d559c98",
-        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "a96294d9ef38456507cc7d05f7abee5279b159db",
+        "resources/views/Backoffice/Inventory/Stock_Transfer.blade.php": "6296dd48c696f9df87b94d000a9fe643221a8c23",
         "resources/views/Backoffice/Order/WorkOrder.blade.php": "57596e54f1848538347b8409c5a27aea92c240bd",
         "resources/views/Backoffice/Order/bestSeller.blade.php": "0c42983b39094530e9902f7da799e214eb61cf09",
         "resources/views/Backoffice/Order/purchase.blade.php": "456f9b3b135ce496c3f06adb1ee0d66432d1b498",
