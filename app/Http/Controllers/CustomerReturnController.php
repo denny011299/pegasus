@@ -1437,18 +1437,8 @@ class CustomerReturnController extends Controller
                 $receiveWarehouse = $warehousesById->get((int) $detail['warehouse_id']);
                 $receiveIsRetail = $receiveWarehouse && (int) ($receiveWarehouse['is_main_warehouse'] ?? 1) === 0;
                 // Mirror Produksi: eceran langsung, atau utama (stok) tanpa ST wajib.
+                // Destination eceran opsional (Transfer → ST saat ACC); destination non-eceran diabaikan.
                 if ($receiveIsRetail || $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                    $destinationId = (int) ($detail['destination_warehouse_id'] ?? 0);
-                    if ($destinationId <= 0) {
-                        continue;
-                    }
-                    $destination = $warehousesById->get($destinationId);
-                    $isRetailDestination = $destination && (int) ($destination['is_main_warehouse'] ?? 1) === 0;
-                    if (! $isRetailDestination) {
-                        throw ValidationException::withMessages([
-                            "product_details.$index.destination_warehouse_id" => 'Tujuan stock transfer harus gudang eceran aktif.',
-                        ]);
-                    }
                     continue;
                 }
                 throw ValidationException::withMessages([
