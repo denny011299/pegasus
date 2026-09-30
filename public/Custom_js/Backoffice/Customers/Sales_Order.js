@@ -603,18 +603,8 @@ function doScanAddSoProduct(data, qty) {
         $("#so_scan_barcode").val("").focus();
     }
 
-    // Sama seperti #btn-add-product-so - lihat catatan GitHub #116 di sana: baris eceran
-    // yang gudangnya belum dipilih langsung masuk daftar tanpa cek, baris lain (gudang
-    // sudah pasti) dicek SATU baris ini saja.
-    var isPendingRetailWarehouse =
-        !isActiveRetailWarehouse() &&
-        parseInt(data.retail_unit || 0, 10) > 0 &&
-        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
-    if (isPendingRetailWarehouse) {
-        commitScanAdd();
-        return;
-    }
-
+    // Gudang sudah pasti: eceran aktif, atau utama aktif (default juga untuk satuan eceran —
+    // mirror Produksi mode Stok; user bisa ganti ke eceran di dropdown baris).
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
@@ -808,24 +798,8 @@ $(document).on("click", "#btn-add-product-so", function () {
         $("#so_qty_input").val(1);
     }
 
-    // Satuan eceran, dan staf tidak sedang "berada" di gudang eceran (gudangnya sendiri
-    // sudah pasti) - baris ini belum tahu gudang tujuannya (dipilih belakangan lewat
-    // dropdown per baris), jadi TIDAK ada yang bisa dicek sekarang. Cukup masuk ke daftar;
-    // cek stok baru jalan begitu dropdown gudang eceran baris itu diisi (lihat handler
-    // .so-retail-warehouse) - GitHub #116.
-    var isPendingRetailWarehouse =
-        !isActiveRetailWarehouse() &&
-        parseInt(temp.retail_unit || 0, 10) > 0 &&
-        unitId === parseInt(temp.retail_unit, 10);
-    if (isPendingRetailWarehouse) {
-        commitSoAdd();
-        return;
-    }
-
-    // Gudangnya sudah pasti di titik ini (gudang utama aktif, atau gudang eceran aktif
-    // kalau staf sedang berada di situ) - cek stok baris INI SAJA, bukan seluruh daftar
-    // (mengecek ulang baris lama tiap kali baris baru ditambah cuma bikin alert lama
-    // nongol lagi berulang-ulang tanpa alasan baru).
+    // Gudang sudah pasti di titik ini (gudang utama aktif — termasuk default satuan eceran
+    // mode Stok — atau gudang eceran aktif). Cek stok baris INI SAJA.
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
@@ -996,11 +970,8 @@ function applyDefaultMainWarehouse(product) {
     if (!product || isActiveRetailWarehouse()) {
         return product;
     }
-    var retailUnit = parseInt(product.retail_unit || 0, 10);
-    var unitId = parseInt(product.unit_id || 0, 10);
-    if (retailUnit > 0 && unitId === retailUnit) {
-        return product;
-    }
+    // Satuan eceran juga default ke gudang aktif/utama (mirror Produksi mode Stok);
+    // user bisa ganti ke gudang eceran lewat dropdown per baris.
     if (parseInt(product.warehouse_id || 0, 10) > 0) {
         return product;
     }
@@ -2022,12 +1993,14 @@ function refreshTableProduct() {
                 "</span>";
         } else if (isViewMode && isRetail) {
             var viewRetailMeta = activeRetailWarehouseMeta();
+            var viewMainMeta = activeMainWarehouseMeta();
             warehouseCell =
                 '<span class="so-retail-warehouse-label"><i class="fe fe-home"></i> ' +
                 escapeHtmlSo(
                     p.warehouse_name ||
                         viewRetailMeta.name ||
-                        "Gudang eceran",
+                        viewMainMeta.name ||
+                        "Gudang sumber",
                 ) +
                 "</span>";
         } else if (!isViewMode && isRetail) {
@@ -2095,9 +2068,9 @@ function initSalesOrderWarehouseSelects() {
             selector = "#" + $(this).attr("id");
         }
         if (typeof autocompleteWarehouse === "function") {
+            // Satuan eceran: boleh gudang utama/aktif ATAU eceran (bukan retailOnly).
             autocompleteWarehouse(selector, "#add_sales_order .modal-content", {
-                retailOnly: true,
-                placeholder: "Pilih gudang eceran",
+                placeholder: "Pilih gudang sumber",
             });
         }
         if (mode === 3) {
@@ -2432,7 +2405,7 @@ $(document).on("click", ".btn-save", function () {
         missing.push("Satuan eceran default pada item produk");
     }
     if (missingRetailWarehouse) {
-        missing.push("Gudang Eceran pada item produk");
+        missing.push("Gudang sumber pada item satuan eceran");
     }
 
     var hasPhoto =

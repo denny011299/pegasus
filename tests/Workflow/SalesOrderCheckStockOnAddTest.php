@@ -143,12 +143,10 @@ class SalesOrderCheckStockOnAddTest extends TestCase
     }
 
     /**
-     * A retail-unit line dropped into the modal before the footer's "gudang eceran" select is
-     * filled in must NOT trip a "Gudang eceran wajib" error on add-row — that gate stays at
-     * final submit (insertSalesOrder()/updateSalesOrder()) only. The add-time check simply
-     * skips such a line (no warehouse to check stock against yet) instead of failing it.
+     * A retail-unit line without an explicit warehouse defaults to the active main warehouse
+     * (mirror Produksi mode Stok) and is stock-checked there — not blocked as "gudang eceran wajib".
      */
-    public function test_check_does_not_demand_a_retail_warehouse_yet_on_add(): void
+    public function test_check_defaults_retail_line_without_warehouse_to_main(): void
     {
         $this->actingAsSuperAdminStaff();
 
@@ -174,15 +172,23 @@ class SalesOrderCheckStockOnAddTest extends TestCase
         $variant->status = 1;
         $variant->save();
 
+        $mainStock = new ProductStock();
+        $mainStock->product_id = $product->product_id;
+        $mainStock->product_variant_id = $variant->product_variant_id;
+        $mainStock->unit_id = self::UNIT_ID;
+        $mainStock->warehouse_id = self::WAREHOUSE_ID;
+        $mainStock->ps_stock = 20;
+        $mainStock->status = 1;
+        $mainStock->save();
+
         $line = $this->productLine($variant, 5);
-        // No warehouse_id on the line and no retail_warehouse_id posted — the footer's gudang
-        // eceran select hasn't been touched yet, same as right after clicking "+ Tambah".
+        // No warehouse_id — assignBulkWarehouseToProducts fills main (mode Stok).
         $response = $this->post('/checkSalesOrderStock', [
             'products' => json_encode([$line]),
         ]);
 
         $response->assertStatus(200);
-        $this->assertSame(1, $response->json('status'), 'add-row check must not demand a retail warehouse before final submit');
+        $this->assertSame(1, $response->json('status'), 'retail line without warehouse should default to main and pass when main has stock');
     }
 
     /**
