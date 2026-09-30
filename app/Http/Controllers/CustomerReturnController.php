@@ -538,7 +538,8 @@ class CustomerReturnController extends Controller
     }
 
     /**
-     * Produk jadi satuan eceran: stok masuk gudang utama, lalu ST pending ke gudang eceran.
+     * Opsional: satuan eceran di gudang utama + destination eceran → ST pending.
+     * Tanpa destination (mode Stok): stok tetap di gudang tujuan baris saja.
      *
      * @param  array<int, array<string, mixed>>  $details
      * @return array<int, int>
@@ -1435,22 +1436,24 @@ class CustomerReturnController extends Controller
             if ($isRetailUnit) {
                 $receiveWarehouse = $warehousesById->get((int) $detail['warehouse_id']);
                 $receiveIsRetail = $receiveWarehouse && (int) ($receiveWarehouse['is_main_warehouse'] ?? 1) === 0;
-                if ($receiveIsRetail) {
+                // Mirror Produksi: eceran langsung, atau utama (stok) tanpa ST wajib.
+                if ($receiveIsRetail || $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
+                    $destinationId = (int) ($detail['destination_warehouse_id'] ?? 0);
+                    if ($destinationId <= 0) {
+                        continue;
+                    }
+                    $destination = $warehousesById->get($destinationId);
+                    $isRetailDestination = $destination && (int) ($destination['is_main_warehouse'] ?? 1) === 0;
+                    if (! $isRetailDestination) {
+                        throw ValidationException::withMessages([
+                            "product_details.$index.destination_warehouse_id" => 'Tujuan stock transfer harus gudang eceran aktif.',
+                        ]);
+                    }
                     continue;
                 }
-                if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                    throw ValidationException::withMessages([
-                        "product_details.$index.warehouse_id" => 'Satuan eceran diterima di gudang utama, lalu di-stock transfer ke gudang eceran.',
-                    ]);
-                }
-                $destinationId = (int) ($detail['destination_warehouse_id'] ?? 0);
-                $destination = $warehousesById->get($destinationId);
-                $isRetailWarehouse = $destination && (int) ($destination['is_main_warehouse'] ?? 1) === 0;
-                if (! $isRetailWarehouse) {
-                    throw ValidationException::withMessages([
-                        "product_details.$index.destination_warehouse_id" => 'Pilih gudang eceran tujuan stock transfer.',
-                    ]);
-                }
+                throw ValidationException::withMessages([
+                    "product_details.$index.warehouse_id" => 'Satuan eceran harus ke gudang utama atau gudang eceran aktif.',
+                ]);
             } elseif (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
                 throw ValidationException::withMessages([
                     "product_details.$index.warehouse_id" => 'Satuan selain eceran harus dikembalikan ke gudang utama.',
