@@ -1,13 +1,14 @@
 {
-    "generated_at": "2026-10-01T00:48:47+07:00",
-    "commit": "0a54a11b2ceb848624e6b01c49dd0f39ab7f1853",
+    "generated_at": "2026-10-01T01:05:28+07:00",
+    "commit": "095b6389e61b35d335bad1833af38edfe933d45d",
     "branch": "fase2/main",
     "file_count": 3590,
-    "previous_commit": "ebd7be4947f6795673396a616c3a6acefa0ad64b",
-    "previous_generated_at": "2026-10-01T00:28:28+07:00",
+    "previous_commit": "0a54a11b2ceb848624e6b01c49dd0f39ab7f1853",
+    "previous_generated_at": "2026-10-01T00:48:47+07:00",
     "added": [],
     "removed": [],
     "changed": [
+        "app/Http/Controllers/CustomerReturnController.php",
         "public/Custom_js/Backoffice/Customers/Customer_Return.js"
     ],
     "files": {
@@ -95,7 +96,7 @@
         "app/Http/Controllers/Controller.php": "a33a5105f92c73a309c9f8a549905dcdf6dccbae",
         "app/Http/Controllers/CustomerController.php": "7ddaea1887edbbcd71ac39ce60131355653fc581",
         "app/Http/Controllers/CustomerProductReturnController.php": "259138a847e52307791f5bc0589d316379cea413",
-        "app/Http/Controllers/CustomerReturnController.php": "c3fad35730eda2202e303a87c0be62dda576e36d",
+        "app/Http/Controllers/CustomerReturnController.php": "5842cd2fb34a218ffafc2a602a5f25b4047bfccf",
         "app/Http/Controllers/CustomerSupplyReturnController.php": "3f623806e7490266a67ed95c1a1de4ffcad4b473",
         "app/Http/Controllers/DashboardActivityController.php": "59060b57f8f90583e0d49218a27f38dde9e88742",
         "app/Http/Controllers/DeployController.php": "661ddb9b2b9494030cdeb1d65b3095285675117f",
@@ -1123,7 +1124,7 @@
         "public/Custom_js/Backoffice/Customers/Customer.js": "9211ed6a838f94a189b1c50127db2b8f44b15181",
         "public/Custom_js/Backoffice/Customers/Customer_Detail.js": "27c92091440b404d36017940fb25208478868b64",
         "public/Custom_js/Backoffice/Customers/Customer_Product_Return.js": "828f1be139630c77925651b5819cf5d69b399556",
-        "public/Custom_js/Backoffice/Customers/Customer_Return.js": "aa8e497ceebd154fb09acc575df384e9bb96593d",
+        "public/Custom_js/Backoffice/Customers/Customer_Return.js": "e8a1543b966cc2c9df5f7c5b22460bd904a9dce4",
         "public/Custom_js/Backoffice/Customers/Customer_Supply_Return.js": "171199a89637e41de8861e6916ca510f08e23b7f",
         "public/Custom_js/Backoffice/Customers/Sales_Order.js": "9a5d2897e4897ccbe0ac507b83c028333717349c",
         "public/Custom_js/Backoffice/Customers/Sales_Order_detail copy.js": "399cc82d4d7d53e7a0ae2d19b7df29ac808a3ce0",
