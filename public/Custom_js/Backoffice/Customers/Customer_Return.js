@@ -488,6 +488,22 @@
         return isRetailUnit(line, line && line.unit_id);
     }
 
+    /** retail_unit sama dengan satuan default produk (SKU 1 satuan). */
+    function isRetailSameAsDefault(product) {
+        var retail = parseInt(product && product.retail_unit || 0, 10);
+        var def = parseInt(product && product.default_unit_id || 0, 10);
+        return retail > 0 && def > 0 && retail === def;
+    }
+
+    function crDefaultRetailWarehouse() {
+        var list = (crContext && crContext.product_warehouses) || [];
+        return (
+            list.find(function (warehouse) {
+                return parseInt(warehouse.is_main_warehouse, 10) === 0;
+            }) || null
+        );
+    }
+
     function updateProductRetailUnit(variantId, retailUnitId) {
         if (!crContext || !Array.isArray(crContext.products)) return;
         crContext.products.forEach(function (product) {
@@ -506,22 +522,42 @@
             if (isRetailWarehouse(activeId)) {
                 return { id: activeId, name: crActiveWarehouseName() };
             }
-            // Satuan eceran di gudang utama/aktif: default Stok di situ (mirror Produksi);
-            // user boleh ganti ke gudang eceran lewat dropdown baris.
             var main = crMainWarehouse();
             if (!main) {
                 return { error: "Gudang utama tidak ditemukan." };
             }
+            var mainId = parseInt(main.id, 10);
+            var mainName = main.warehouse_name;
+            // Eceran ≠ default → default Transfer ke gudang eceran (boleh diganti).
+            // Eceran = default (1 satuan) → default Stok di utama (boleh pilih eceran).
+            if (!isRetailSameAsDefault(product)) {
+                var eceran = crDefaultRetailWarehouse();
+                if (eceran) {
+                    return {
+                        id: mainId,
+                        name: mainName,
+                        destination_warehouse_id: parseInt(eceran.id, 10),
+                        destination_warehouse_name: eceran.warehouse_name,
+                    };
+                }
+            }
             return {
-                id: parseInt(main.id, 10),
-                name: main.warehouse_name,
+                id: mainId,
+                name: mainName,
+                destination_warehouse_id: null,
+                destination_warehouse_name: null,
             };
         }
         var mainWh = crMainWarehouse();
         if (!mainWh) {
             return { error: "Gudang utama tidak ditemukan." };
         }
-        return { id: parseInt(mainWh.id, 10), name: mainWh.warehouse_name };
+        return {
+            id: parseInt(mainWh.id, 10),
+            name: mainWh.warehouse_name,
+            destination_warehouse_id: null,
+            destination_warehouse_name: null,
+        };
     }
 
     function crActiveWarehouseName() {
@@ -1599,8 +1635,8 @@
                 warehouse_id: dest.id,
                 warehouse_name: dest.name,
                 retail_unit: parseInt(product.retail_unit || 0, 10) || null,
-                destination_warehouse_id: null,
-                destination_warehouse_name: null,
+                destination_warehouse_id: dest.destination_warehouse_id || null,
+                destination_warehouse_name: dest.destination_warehouse_name || null,
                 qty: qty,
             });
         }
