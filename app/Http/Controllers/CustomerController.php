@@ -95,7 +95,7 @@ class CustomerController extends Controller
         if ($retailErr) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gudang eceran wajib',
+                'header' => 'Gudang sumber wajib',
                 'message' => $retailErr,
             ]);
         }
@@ -107,7 +107,7 @@ class CustomerController extends Controller
         // dalam satu DB::transaction()). Memblokir pembuatan dokumen dengan stok SAAT INI salah
         // waktunya: stok bisa bertambah (produksi selesai, PO diterima, transfer masuk) antara
         // pengajuan dan ACC, jadi pengiriman yang terjadwal untuk besok jadi tidak bisa dibuat
-        // hari ini. Validasi struktural (satuan eceran + gudang eceran wajib) di atas tetap
+        // hari ini. Validasi struktural (satuan eceran + gudang sumber wajib) di atas tetap
         // dipertahankan karena itu tentang bentuk data, bukan jumlah stok.
 
         $img = [];
@@ -166,8 +166,8 @@ class CustomerController extends Controller
      * SENGAJA tidak menjalankan validateRetailWarehouseUnits()/validateRetailSelection() di
      * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), karena
      * baris yang gudangnya belum dipilih memang tidak sampai ke sini sama sekali (lihat di
-     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang eceran" tetap
-     * divalidasi & fokus ke dropdown yang kosong saat klik "Tambah/Update Pengiriman".
+     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang sumber" tetap
+     * divalidasi saat klik "Tambah/Update Pengiriman".
      */
     function checkSalesOrderStock(Request $req)
     {
@@ -246,7 +246,7 @@ class CustomerController extends Controller
             if ($retailErr) {
                 return response()->json([
                     'status' => 0,
-                    'header' => 'Gudang eceran wajib',
+                    'header' => 'Gudang sumber wajib',
                     'message' => $retailErr,
                 ]);
             }
@@ -279,7 +279,7 @@ class CustomerController extends Controller
         if ($retailErr) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gudang eceran wajib',
+                'header' => 'Gudang sumber wajib',
                 'message' => $retailErr,
             ]);
         }

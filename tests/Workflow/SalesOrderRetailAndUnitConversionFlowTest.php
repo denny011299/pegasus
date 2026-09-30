@@ -148,12 +148,12 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         $this->assertSame(40, $retailStock->ps_stock, 'a retail-unit line must deduct from the retail warehouse (50-10=40)');
     }
 
-    public function test_inserting_a_retail_unit_line_without_a_retail_warehouse_is_blocked(): void
+    public function test_inserting_a_retail_unit_line_without_a_retail_warehouse_defaults_to_main(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $fx = $this->createProductFixture(retailUnit: self::PIECE_UNIT_ID);
-        $this->createProductStock($fx['variant'], self::RETAIL_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
+        $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
         $soCountBefore = SalesOrder::count();
         config(['pegasus.shipment_internal_insert_enabled' => true]);
 
@@ -172,11 +172,15 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
                 'so_qty' => 10,
                 'so_subtotal' => 10000,
             ]]),
-            // retail_warehouse_id deliberately omitted
+            // retail_warehouse_id deliberately omitted — defaults to gudang utama (mode Stok)
         ]);
 
-        $response->assertJson(['status' => 0, 'header' => 'Gudang eceran wajib']);
-        $this->assertSame($soCountBefore, SalesOrder::count(), 'a blocked retail-selection error must create no sales_orders row at all');
+        $this->assertSame('1', $response->getContent());
+        $this->assertSame($soCountBefore + 1, SalesOrder::count());
+
+        $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
+        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->assertSame(2, (int) SalesOrder::findOrFail($soId)->status);
     }
 
     public function test_ordering_in_a_smaller_unit_bongkars_from_larger_unit_stock_at_the_main_warehouse(): void
