@@ -248,7 +248,13 @@
                 max-width: 420px;
             }
             #add_stock_transfer #transfer_date {
-                max-width: 200px !important;
+                max-width: none !important;
+                width: 100%;
+            }
+            /* Wrapper ikut lebar tanggal — icon calendar jangan nempel ujung kolom */
+            #add_stock_transfer #st-date-block .position-relative {
+                max-width: 200px;
+                width: 100%;
             }
         }
         #add_stock_transfer .transfer-product-field label {
