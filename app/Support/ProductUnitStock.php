@@ -456,6 +456,7 @@ class ProductUnitStock
 
     /**
      * Seluruh unit pada chain linear yang sama, terurut besar → kecil.
+     * Tanpa product_relations: anchor sendiri = chain 1 satuan (boleh kirim same-unit).
      *
      * @return array<int, int>
      */
@@ -466,6 +467,11 @@ class ProductUnitStock
         }
 
         $ordered = self::orderedUnitIds($productVariantId);
+        // Single-unit produk (no conversion rows): treat default/retail as valid 1-unit chain.
+        if ($ordered === []) {
+            return [$anchorUnitId];
+        }
+
         if (! in_array($anchorUnitId, $ordered, true)) {
             return [];
         }

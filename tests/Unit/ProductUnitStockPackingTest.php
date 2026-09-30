@@ -49,4 +49,22 @@ class ProductUnitStockPackingTest extends TestCase
         $this->assertSame(0.0, $plan['after'][10]);
         $this->assertSame(2.0, $plan['after'][20]);
     }
+
+    /** Produk tanpa product_relations: default/retail unit tetap chain valid (ST main→eceran 1 Piece). */
+    public function test_connected_unit_ids_falls_back_to_anchor_when_no_relations(): void
+    {
+        ProductUnitStock::clearCache();
+
+        $ref = new \ReflectionClass(ProductUnitStock::class);
+        $cache = $ref->getProperty('relationsCache');
+        $cache->setAccessible(true);
+        $cache->setValue(null, [301 => collect()]);
+
+        $method = $ref->getMethod('connectedUnitIds');
+        $method->setAccessible(true);
+
+        $this->assertSame([9], $method->invoke(null, 301, 9));
+
+        ProductUnitStock::clearCache();
+    }
 }
