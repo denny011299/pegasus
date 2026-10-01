@@ -156,6 +156,31 @@ function setOpnameTableBusy(busy) {
     $(OPNAME_ACTION_BTNS).prop("disabled", false).removeAttr("aria-busy");
 }
 
+/**
+ * Guard submit ganda: set sinkron saat klik pertama, dilepas lewat
+ * setStockOpnameFormLocked(false). Klik kedua (jaringan lambat) diabaikan.
+ */
+var opnameSubmitInFlight = false;
+
+function beginOpnameSubmit() {
+    if (opnameSubmitInFlight) return false;
+    opnameSubmitInFlight = true;
+    return true;
+}
+
+/** Refresh data sebelum simpan gagal (bukan abort) → buka lagi form + tombol. */
+function failOpnameSubmitRefresh(btnSelector, doneText) {
+    setStockOpnameFormLocked(false);
+    ResetLoadingButton(btnSelector, doneText);
+    if (typeof notifikasi === "function") {
+        notifikasi(
+            "error",
+            "Gagal Memuat Data",
+            "Koneksi bermasalah saat memuat data. Silakan coba simpan lagi.",
+        );
+    }
+}
+
 function guardOpnameNotBusy($btn, doneText) {
     if (!isOpnameTableLoading()) return true;
     if ($btn) ResetLoadingButton($btn, doneText);
@@ -183,6 +208,7 @@ function setStockOpnameFormLocked(locked) {
     if (locked) {
         $("#tb-stock-wrap").addClass("opname-submitting");
     } else {
+        opnameSubmitInFlight = false;
         $("#tb-stock-wrap").removeClass("opname-submitting");
         // Jangan buka tombol kalau tabel masih loading
         if (!isOpnameTableLoading()) {
