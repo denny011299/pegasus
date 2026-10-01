@@ -137,7 +137,7 @@ function escapeHtml(str) {
         .replace(/"/g, "&quot;");
 }
 
-function refreshStockOpname(callback) {
+function refreshStockOpname(callback, onError) {
     // Simpan value yang sudah diinput sebelum refresh
     $(".row-stock").each(function () {
         var productId = $(this).data("product-id");
@@ -262,9 +262,13 @@ function refreshStockOpname(callback) {
         },
         error: function (e) {
             if (e && e.statusText === "abort") return;
-            if (handlePermissionError(e)) return;
             if (reqId !== stockOpnameReqSeq) return;
+            if (handlePermissionError(e)) {
+                if (typeof onError === "function") onError(e, true);
+                return;
+            }
             console.log(e);
+            if (typeof onError === "function") onError(e);
         },
         complete: function () {
             if (reqId !== stockOpnameReqSeq) return;
@@ -386,6 +390,7 @@ $(document).on("change", "#category_id", function () {
 
 $(document).on("click", ".btn-save", function () {
     if (!guardOpnameNotBusy(this, "Tambah Stok Opname")) return;
+    if (!beginOpnameSubmit()) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
@@ -393,11 +398,14 @@ $(document).on("click", ".btn-save", function () {
     refreshStockOpname(function () {
         setStockOpnameFormLocked(true);
         insertData({ btnSelector: ".btn-save", doneText: "Tambah Stok Opname" });
+    }, function () {
+        failOpnameSubmitRefresh(".btn-save", "Tambah Stok Opname");
     });
 });
 
 $(document).on("click", ".btn-save-draft", function () {
     if (!guardOpnameNotBusy(this, "Simpan sebagai Draft")) return;
+    if (!beginOpnameSubmit()) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
@@ -417,11 +425,14 @@ $(document).on("click", ".btn-save-draft", function () {
                     : "/stockOpname";
             },
         });
+    }, function () {
+        failOpnameSubmitRefresh(".btn-save-draft", "Simpan sebagai Draft");
     });
 });
 
 $(document).on("click", ".btn-ajukan", function () {
     if (!guardOpnameNotBusy(this, "Ajukan")) return;
+    if (!beginOpnameSubmit()) return;
     LoadingButton(this);
     setStockOpnameFormLocked(true);
     clearTimeout(searchProdukDebounce);
@@ -465,6 +476,8 @@ $(document).on("click", ".btn-ajukan", function () {
                 });
             },
         });
+    }, function () {
+        failOpnameSubmitRefresh(".btn-ajukan", "Ajukan");
     });
 });
 
