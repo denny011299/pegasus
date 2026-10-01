@@ -59,6 +59,7 @@ class CashPaymentShowDoc extends ApiEndpointDoc
                 'payment_date' => '2026-07-29',
                 'payment_amount' => 150000,
                 'notes' => 'Pengeluaran armada W 9518 PG (Agus)',
+                'armada_code' => 'ARM-JKT-001',
                 'armada_id' => 4,
                 'staff_id' => null,
                 'status' => 'accepted',
