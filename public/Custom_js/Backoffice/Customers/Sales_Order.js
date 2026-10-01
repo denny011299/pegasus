@@ -603,8 +603,21 @@ function doScanAddSoProduct(data, qty) {
         $("#so_scan_barcode").val("").focus();
     }
 
-    // Gudang sudah pasti: eceran aktif, atau utama aktif (default juga untuk satuan eceran —
-    // mirror Produksi mode Stok; user bisa ganti ke eceran di dropdown baris).
+    // Satuan eceran di gudang utama: jangan cek stok di sini. Default bisa ke utama
+    // (applyDefaultMainWarehouse), tapi stok utama=0 tidak boleh memblokir add — user
+    // masih bisa ganti ke eceran di dropdown (cek stok jalan di .so-retail-warehouse).
+    // Kalau dicek ke utama dulu, baris gagal masuk + modal rekomendasi "Pakai Gudang Ini"
+    // tidak ngefek karena produk belum ada di `products` (regresi b04866b1 / #116).
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(data.retail_unit || 0, 10) > 0 &&
+        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitScanAdd();
+        return;
+    }
+
+    // Gudang sudah pasti (eceran aktif, atau non-eceran unit di utama).
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
@@ -798,8 +811,19 @@ $(document).on("click", "#btn-add-product-so", function () {
         $("#so_qty_input").val(1);
     }
 
-    // Gudang sudah pasti di titik ini (gudang utama aktif — termasuk default satuan eceran
-    // mode Stok — atau gudang eceran aktif). Cek stok baris INI SAJA.
+    // Satuan eceran di gudang utama: skip cek stok saat add (GitHub #116). Default gudang
+    // tetap utama lewat applyDefaultMainWarehouse; user boleh ganti ke eceran di dropdown.
+    // Cek ke utama(0) di sini memblokir add + modal rekomendasi eceran tidak menambah baris.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(temp.retail_unit || 0, 10) > 0 &&
+        unitId === parseInt(temp.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitSoAdd();
+        return;
+    }
+
+    // Gudang sudah pasti (eceran aktif, atau satuan non-eceran di utama). Cek baris INI SAJA.
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
