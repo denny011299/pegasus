@@ -173,6 +173,12 @@
             {{-- ── FOOTER ── --}}
             <div class="modal-footer pg-modal-footer">
               <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+              {{-- Live 1-tahap: dari modal Konfirmasi bisa Edit Data dulu (ganti gudang/baris) lalu Simpan, baru ACC. --}}
+              @roleCan('Pengiriman', 'edit')
+                <button type="button" class="btn btn-outline-primary btn_edit_so d-none">
+                  <i class="fe fe-edit-2 me-1"></i>Edit Data
+                </button>
+              @endroleCan
               @roleCan('Pengiriman', 'others')
                 <button type="button" class="btn pg-btn-decline btn_decline d-none"><i class="fe fe-x me-1"></i>Tolak</button>
                 <button type="button" class="btn pg-btn-accept btn_acc d-none"><i class="fe fe-check-circle me-1"></i>Terima</button>

@@ -31,11 +31,22 @@ autocompleteProductVariantOnly("#so_sku", "#add_sales_order .modal-content");
 // Bootstrap d-inline-flex uses !important; toggle via d-none / d-inline-flex
 function hideSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-inline-flex").addClass("d-none");
+    hideSoEditButton();
     setSoModalMode("form");
 }
 function showSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-none").addClass("d-inline-flex");
     setSoModalMode("confirm");
+}
+function hideSoEditButton() {
+    $(".btn_edit_so").removeClass("d-inline-flex").addClass("d-none");
+}
+function showSoEditButton() {
+    if (!soHasAccess("Pengiriman", "edit")) {
+        hideSoEditButton();
+        return;
+    }
+    $(".btn_edit_so").removeClass("d-none").addClass("d-inline-flex");
 }
 function setSoModalMode(kind) {
     var $modal = $("#add_sales_order");
@@ -326,6 +337,7 @@ function openSalesOrderDetailModal(data, intent) {
         soHasAccess("Pengiriman", "others");
     if (confirmMode) {
         showSoAccButtons();
+        showSoEditButton();
         $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
         $(".btn_acc").attr("so_id", data.so_id);
         $(".btn_acc").data("items", data.items);
@@ -333,6 +345,7 @@ function openSalesOrderDetailModal(data, intent) {
         $(".btn_decline").data("items", data.items);
     } else {
         hideSoAccButtons();
+        hideSoEditButton();
     }
 
     $("#so_ppn").trigger("blur");
@@ -2324,6 +2337,12 @@ function openSalesOrderEditModal(data) {
     $("#so_ref_number").val(data.so_ref_number || "");
     $("#so_payment").val(data.so_payment);
     $("#bukti").val(data.so_img);
+    // Dari modal Konfirmasi (mode view) field terkunci — buka lagi untuk edit
+    $(
+        "#so_customer, #sales_id, #so_date, #so_invoice_no, #so_ref_number, #so_payment, #retail_warehouse_id",
+    )
+        .prop("disabled", false)
+        .removeAttr("disabled");
     (data.items || []).forEach((e) => {
         var temp = {
             sod_id: e.sod_id,
@@ -2349,12 +2368,14 @@ function openSalesOrderEditModal(data) {
         products.push(temp);
     });
     refreshTableProduct();
+    // Update pending: boleh ganti gudang/qty di tabel; tambah produk lewat revisi full
     $("#so_sku, .so_qty, .so_unit, #so_unit_input, #so_qty_input").attr(
         "disabled",
-        true,
+        false,
     );
-    $("#so_scan_barcode, #so_scan_qty").attr("disabled", true);
-    $("#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so").hide();
+    $("#so_scan_barcode, #so_scan_qty").attr("disabled", false);
+    $("#btn-add-product-so, #btn_scan_add_so, #btn_toggle_scan_so").show();
+    $(".deleteRow").show();
 
     // update summary
     $("#so_ppn").trigger("blur");
@@ -2364,6 +2385,7 @@ function openSalesOrderEditModal(data) {
     $(".is-invalid").removeClass("is-invalid");
     showSoSaveButton(mode == 1 ? "Tambah Pengiriman" : "Update Pengiriman");
     hideSoAccButtons();
+    hideSoEditButton();
     setSoProductInputVisible(true);
     $("#add_sales_order").modal("show");
     $("#add_sales_order").attr("so_id", data.so_id);
@@ -2372,11 +2394,18 @@ function openSalesOrderEditModal(data) {
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
 
-//edit
-$(document).on("click", "#tableSalesOrder-wrap .btn_edit", function (e) {
+//edit dari list (kalau ada) atau dari modal Konfirmasi → Edit Data
+$(document).on("click", "#tableSalesOrder-wrap .btn_edit, .btn_edit_so", function (e) {
     e.preventDefault();
-    var soId = parseInt($(this).attr("data-id"), 10);
+    var soId = parseInt(
+        $(this).attr("data-id") || $("#add_sales_order").attr("so_id"),
+        10,
+    );
     if (!soId) return;
+    if (!soHasAccess("Pengiriman", "edit")) {
+        notifikasi("error", "Akses ditolak", "Tidak punya hak edit pengiriman.");
+        return;
+    }
     loadSalesOrderWithItems(soId, openSalesOrderEditModal);
 });
 
