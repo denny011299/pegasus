@@ -84,6 +84,11 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
 
     private function insertSalesOrder(array $product, ?int $retailWarehouseId, int $qty, int $unitId): int
     {
+        // Insert Pengiriman manual dinonaktifkan bawaan (2026-09) — dibuka lagi khusus di test
+        // ini karena butuh fixture SO nyata, bukan menguji endpoint-nya sendiri. Lihat
+        // config/pegasus.php.
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
+
         $payload = [
             'so_customer' => $this->customerId(),
             'so_date' => now()->toDateString(),
@@ -132,7 +137,7 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         $so = SalesOrder::findOrFail($soId);
         $this->assertSame($retailWarehouseId, (int) $so->retail_warehouse_id);
 
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId, self::MAIN_WAREHOUSE_ID);
 
         $so->refresh();
         $this->assertSame(2, (int) $so->status);
@@ -143,13 +148,14 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         $this->assertSame(40, $retailStock->ps_stock, 'a retail-unit line must deduct from the retail warehouse (50-10=40)');
     }
 
-    public function test_inserting_a_retail_unit_line_without_a_retail_warehouse_defaults_to_main(): void
+    public function test_inserting_a_retail_unit_line_without_a_retail_warehouse_is_blocked(): void
     {
         $this->actingAsSuperAdminStaff();
 
         $fx = $this->createProductFixture(retailUnit: self::PIECE_UNIT_ID);
-        $this->createProductStock($fx['variant'], self::MAIN_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
+        $this->createProductStock($fx['variant'], self::RETAIL_WAREHOUSE_ID, self::PIECE_UNIT_ID, 50);
         $soCountBefore = SalesOrder::count();
+        config(['pegasus.shipment_internal_insert_enabled' => true]);
 
         $response = $this->post('/insertSalesOrder', [
             'so_customer' => $this->customerId(),
@@ -166,15 +172,11 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
                 'so_qty' => 10,
                 'so_subtotal' => 10000,
             ]]),
-            // retail_warehouse_id deliberately omitted — defaults to gudang utama (mode Stok)
+            // retail_warehouse_id deliberately omitted
         ]);
 
-        $this->assertSame('1', $response->getContent());
-        $this->assertSame($soCountBefore + 1, SalesOrder::count());
-
-        $soId = (int) SalesOrder::orderByDesc('so_id')->value('so_id');
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
-        $this->assertSame(2, (int) SalesOrder::findOrFail($soId)->status);
+        $response->assertJson(['status' => 0, 'header' => 'Gudang eceran wajib']);
+        $this->assertSame($soCountBefore, SalesOrder::count(), 'a blocked retail-selection error must create no sales_orders row at all');
     }
 
     public function test_ordering_in_a_smaller_unit_bongkars_from_larger_unit_stock_at_the_main_warehouse(): void
@@ -203,7 +205,7 @@ class SalesOrderRetailAndUnitConversionFlowTest extends TestCase
         // Only 2 Piece in stock, ordering 22 -> needs 20 more -> ceil(20/12)=2 DOS broken down.
         $soId = $this->insertSalesOrder($fx, retailWarehouseId: null, qty: 22, unitId: self::PIECE_UNIT_ID);
 
-        $this->post('/accSO', ['so_id' => $soId])->assertStatus(200);
+        $this->approveShipmentTwoStage($soId, self::MAIN_WAREHOUSE_ID);
 
         $so = SalesOrder::findOrFail($soId);
         $this->assertSame(2, (int) $so->status);

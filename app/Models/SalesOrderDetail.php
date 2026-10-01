@@ -77,7 +77,6 @@ class SalesOrderDetail extends Model
             $unit = $unitsMap->get($value->unit_id);
             $value->unit_name = $unit ? $unit->unit_name : null;
             $value->retail_unit = $variant ? (int) ($variant->retail_unit ?? 0) : 0;
-            $value->default_unit = $product ? (int) ($product->unit_id ?? 0) : 0;
             $value->warehouse_name = $value->warehouse_id
                 ? ($warehouseNames[$value->warehouse_id] ?? null)
                 : null;
