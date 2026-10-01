@@ -37,20 +37,6 @@ function showSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-none").addClass("d-inline-flex");
     setSoModalMode("confirm");
 }
-/** Approval 2 tahap QC & Gudang / Kepala Operasional — modal detail dipakai ulang sebagai
- * "Konfirmasi Pengiriman" bertema hijau, sama seperti Customer_Return.js (Pengembalian), dan
- * TERPISAH dari .btn_acc/.btn_decline lama (endpoint /accSO, /declineSO) supaya tidak tabrakan. */
-function hideSoQcOpsButtons() {
-    $(".btn-so-qcops-accept, .btn-so-qcops-decline")
-        .removeClass("d-inline-flex")
-        .addClass("d-none");
-}
-function showSoQcOpsButtons() {
-    $(".btn-so-qcops-accept, .btn-so-qcops-decline")
-        .removeClass("d-none")
-        .addClass("d-inline-flex");
-    setSoModalMode("confirm");
-}
 function setSoModalMode(kind) {
     var $modal = $("#add_sales_order");
     var $icon = $modal.find(".pg-modal-icon i");
@@ -154,10 +140,6 @@ function loadSalesOrderWithItems(soId, onSuccess, onError) {
 function openSalesOrderRevisionModal(data) {
     products = [];
     mode = 2;
-    // Tampilkan alasan penolakan di sini juga — staf yang merevisi perlu tahu kenapa
-    // ditolak sebelum mengedit ulang. updateSalesOrder() sendiri yang mengembalikan status ke
-    // Pending saat disimpan, jadi banner ini otomatis tidak relevan lagi setelah submit.
-    renderSoRejectBanner(data);
     $("#add_sales_order .modal-title").html("Revisi Pengiriman");
     $("#add_sales_order input").empty().val("");
     $("#so_customer, #sales_id").empty();
@@ -253,44 +235,6 @@ function openSalesOrderRevisionModal(data) {
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
 
-/**
- * Banner alasan penolakan (approval 2 tahap) di modal Detail Pengiriman — hanya tampil kalau
- * status Ditolak (3) DAN reject_reason terisi. reject_stage/reject_reason/rejected_at/
- * rejected_by_name dikirim SalesOrder::getSalesOrder() apa adanya (kolom sudah ada sejak
- * approval 2 tahap, lihat App\Support\ShipmentApproval).
- */
-function renderSoRejectBanner(data) {
-    var status = parseInt(data.status, 10);
-    var reason = (data.reject_reason || "").toString().trim();
-    if (status !== 3 || !reason) {
-        $("#so_reject_banner").hide();
-        return;
-    }
-
-    var stageLabel =
-        data.reject_stage === "ops"
-            ? "di tahap Kepala Operasional"
-            : data.reject_stage === "qc"
-              ? "di tahap Staf QC & Gudang"
-              : "";
-    $("#so_reject_stage_label").text(stageLabel);
-    $("#so_reject_reason_text").text(reason);
-
-    var metaParts = [];
-    if (data.rejected_by_name) metaParts.push("oleh " + data.rejected_by_name);
-    if (data.rejected_at) {
-        var d = new Date(data.rejected_at);
-        if (!isNaN(d.getTime())) {
-            metaParts.push(
-                d.toLocaleDateString("id-ID") + " " + d.toLocaleTimeString("id-ID").slice(0, 5),
-            );
-        }
-    }
-    $("#so_reject_meta_text").text(metaParts.join(" — "));
-
-    $("#so_reject_banner").show();
-}
-
 function openSalesOrderDetailModal(data, intent) {
     intent = intent === "confirm" ? "confirm" : "view";
     var img =
@@ -375,33 +319,12 @@ function openSalesOrderDetailModal(data, intent) {
     $("#so_scan_barcode, #so_scan_qty").attr("disabled", true);
     setSoProductInputVisible(false);
 
-    renderSoRejectBanner(data);
-
     var soStatus = parseInt(data.status, 10);
-    // Terima true/1 — sama pola renderSoAction() (JSON kadang kirim 1, bukan boolean true)
-    var soCanApproveQc = data.can_approve_qc === true || data.can_approve_qc === 1;
-    var soCanApproveOps = data.can_approve_ops === true || data.can_approve_ops === 1;
-    var qcOpsMode =
-        intent === "confirm" &&
-        soStatus === 1 &&
-        (soCanApproveQc || soCanApproveOps);
     var confirmMode =
-        !qcOpsMode &&
         intent === "confirm" &&
         soStatus === 1 &&
         soHasAccess("Pengiriman", "others");
-    if (qcOpsMode) {
-        hideSoAccButtons();
-        var approveType = soCanApproveQc ? "qc" : "ops";
-        var approveLabel = soCanApproveQc ? "Staf QC & Gudang" : "Kepala Operasional";
-        showSoQcOpsButtons();
-        $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman (" + approveLabel + ")");
-        $(".btn-so-qcops-accept, .btn-so-qcops-decline")
-            .attr("so_id", data.so_id)
-            .attr("data-type", approveType)
-            .attr("data-label", approveLabel);
-    } else if (confirmMode) {
-        hideSoQcOpsButtons();
+    if (confirmMode) {
         showSoAccButtons();
         $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
         $(".btn_acc").attr("so_id", data.so_id);
@@ -410,7 +333,6 @@ function openSalesOrderDetailModal(data, intent) {
         $(".btn_decline").data("items", data.items);
     } else {
         hideSoAccButtons();
-        hideSoQcOpsButtons();
     }
 
     $("#so_ppn").trigger("blur");
@@ -603,18 +525,7 @@ function doScanAddSoProduct(data, qty) {
         $("#so_scan_barcode").val("").focus();
     }
 
-    // Sama seperti #btn-add-product-so - lihat catatan GitHub #116 di sana: baris eceran
-    // yang gudangnya belum dipilih langsung masuk daftar tanpa cek, baris lain (gudang
-    // sudah pasti) dicek SATU baris ini saja.
-    var isPendingRetailWarehouse =
-        !isActiveRetailWarehouse() &&
-        parseInt(data.retail_unit || 0, 10) > 0 &&
-        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
-    if (isPendingRetailWarehouse) {
-        commitScanAdd();
-        return;
-    }
-
+    // Gudang pasti: eceran aktif, atau utama aktif (non-eceran). Eceran di utama → skip di bawah.
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
@@ -625,6 +536,16 @@ function doScanAddSoProduct(data, qty) {
         so_qty: checkQty,
         warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
     };
+
+    // #116: eceran @ gudang utama — baris masuk dulu, cek saat pilih gudang eceran.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(data.retail_unit || 0, 10) > 0 &&
+        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitScanAdd();
+        return;
+    }
 
     checkSoStockThenAdd([checkLine], commitScanAdd);
 }
@@ -647,7 +568,6 @@ $(document).on("click", ".btnAdd", function () {
     initSalesOrderProductInput();
     mode = 1;
     products = [];
-    $("#so_reject_banner").hide();
     $("#tableSalesModal").html("");
     refreshTableProduct();
     $("#add_sales_order .modal-title").html("Tambah Pengiriman");
@@ -808,24 +728,7 @@ $(document).on("click", "#btn-add-product-so", function () {
         $("#so_qty_input").val(1);
     }
 
-    // Satuan eceran, dan staf tidak sedang "berada" di gudang eceran (gudangnya sendiri
-    // sudah pasti) - baris ini belum tahu gudang tujuannya (dipilih belakangan lewat
-    // dropdown per baris), jadi TIDAK ada yang bisa dicek sekarang. Cukup masuk ke daftar;
-    // cek stok baru jalan begitu dropdown gudang eceran baris itu diisi (lihat handler
-    // .so-retail-warehouse) - GitHub #116.
-    var isPendingRetailWarehouse =
-        !isActiveRetailWarehouse() &&
-        parseInt(temp.retail_unit || 0, 10) > 0 &&
-        unitId === parseInt(temp.retail_unit, 10);
-    if (isPendingRetailWarehouse) {
-        commitSoAdd();
-        return;
-    }
-
-    // Gudangnya sudah pasti di titik ini (gudang utama aktif, atau gudang eceran aktif
-    // kalau staf sedang berada di situ) - cek stok baris INI SAJA, bukan seluruh daftar
-    // (mengecek ulang baris lama tiap kali baris baru ditambah cuma bikin alert lama
-    // nongol lagi berulang-ulang tanpa alasan baru).
+    // Gudang pasti: eceran aktif, atau utama aktif (non-eceran). Eceran di utama → skip di bawah.
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
         : activeMainWarehouseMeta();
@@ -836,6 +739,16 @@ $(document).on("click", "#btn-add-product-so", function () {
         so_qty: checkQty,
         warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
     };
+
+    // #116: eceran @ gudang utama — baris masuk dulu, cek saat pilih gudang eceran.
+    var isPendingRetailWarehouse =
+        !isActiveRetailWarehouse() &&
+        parseInt(temp.retail_unit || 0, 10) > 0 &&
+        unitId === parseInt(temp.retail_unit, 10);
+    if (isPendingRetailWarehouse) {
+        commitSoAdd();
+        return;
+    }
 
     checkSoStockThenAdd([checkLine], commitSoAdd, "#btn-add-product-so");
 });
@@ -998,6 +911,7 @@ function applyDefaultMainWarehouse(product) {
     }
     var retailUnit = parseInt(product.retail_unit || 0, 10);
     var unitId = parseInt(product.unit_id || 0, 10);
+    // Eceran: jangan auto-isi gudang utama (#116) — user pilih eceran di dropdown.
     if (retailUnit > 0 && unitId === retailUnit) {
         return product;
     }
@@ -1361,28 +1275,10 @@ function salesOrderAjax(data, callback) {
     });
 }
 
-function renderSoStatus(status, row) {
+function renderSoStatus(status) {
     status = parseInt(status, 10);
     if (status === 1) {
-        // Same "requested" / "need_approval" phase badges as Stock_Transfer.js
-        // (StockTransferController's pseudo-status filter), derived from
-        // qc_approved_by_name/ops_approved_by_name instead of a real status value.
-        if (row && row.ops_approved_by_name) {
-            return (
-                '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Pending</span>' +
-                '<div class="small text-muted mt-1">Menunggu potong stok</div>'
-            );
-        }
-        if (row && row.qc_approved_by_name) {
-            return (
-                '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>' +
-                '<div class="small text-muted mt-1">Menunggu Kepala Operasional</div>'
-            );
-        }
-        return (
-            '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Requested</span>' +
-            '<div class="small text-muted mt-1">Menunggu Staf QC &amp; Gudang</div>'
-        );
+        return '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Pending</span>';
     }
     if (status === 2) {
         return '<span class="badge" style="background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-check-circle me-1"></i> Diterima</span>';
@@ -1411,216 +1307,35 @@ function renderSoStatus(status, row) {
 
 function renderSoAction(row) {
     var soa =
-        '<div class="d-flex justify-content-center align-items-center gap-1">';
+        '<div class="d-flex justify-content-center align-items-center gap-2">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
     var canView = soHasAccess("Pengiriman", "view");
-    // Approval 2 tahap (Staf QC & Gudang -> Kepala Operasional) — can_approve_qc/can_approve_ops
-    // dihitung SERVER-SIDE (SalesOrder::getSalesOrderDataTable()), bukan dari ability "others"
-    // lagi. Tombol Tolak muncul mengikuti tahap approve yang sama (guard sama di rejectShipment()).
-    // Terima true/1 — sama pola Stock_Transfer.js (JSON kadang kirim 1)
-    var canApproveQc = pending && (row.can_approve_qc === true || row.can_approve_qc === 1);
-    var canApproveOps = pending && (row.can_approve_ops === true || row.can_approve_ops === 1);
-    // Satu ikon buka modal konfirmasi (Terima+Tolak ada di footernya) — tidak ada lagi ikon
-    // Tolak terpisah di baris, mengikuti pola Customer_Return.js (Pengembalian): approve dan
-    // reject sama-sama gerbang lewat modal detail yang sama.
-    var canApprove = canApproveQc || canApproveOps;
+    var canConfirm = pending && soHasAccess("Pengiriman", "others");
     var canDelete = pending && soHasAccess("Pengiriman", "delete");
-    if (canApprove) {
-        var approveLabel = canApproveQc ? "Konfirmasi (Staf QC & Gudang)" : "Konfirmasi (Kepala Operasional)";
-        // .btn-action-approve — kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
-        // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini —
-        // aturan dasar .btn-action-icon menimpa background/color dengan !important, jadi warna
-        // custom lewat inline style tidak pernah kelihatan; kelas ini sudah dibuat khusus untuk
-        // menembus itu.
+    if (canConfirm) {
         soa +=
-            '<a class="btn-action-icon btn-approve-shipment btn-action-approve" data-id="' +
+            '<a class="btn-action-icon btn_confirm btn-action-approve" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="' +
-            approveLabel +
-            '"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
-    }
-    if (canView) {
+            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
+    } else if (canView) {
         soa +=
-            '<a class="btn-action-icon btn_view btn-action-view" data-id="' +
+            '<a class="btn-action-icon btn_view" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (canDelete) {
-        // btn_delete sudah punya warna sendiri dari .btn-action-icon.btn_delete di
-        // header.blade.php — tidak diubah, sudah sesuai sebelum perubahan ini.
         soa +=
             '<a class="btn-action-icon btn_delete" data-id="' +
             row.so_id +
-            '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
+            '" href="javascript:void(0);" style="background:#fef2f2;border:1px solid #fecaca;color:#dc2626;" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
     }
     soa += "</div>";
-    if (!canApprove && !canView && !canDelete) {
+    if (!canConfirm && !canView && !canDelete) {
         return '<span class="text-muted small">—</span>';
     }
     return soa;
 }
-
-/** Alasan penolakan wajib (Tolak QC/Ops Pengiriman) — sama pola dengan showKonfirmasiPhotoProof
- * di Stock_Transfer.js: field disuntik ke #modalKonfirmasi yang dipakai bersama banyak halaman
- * lain, jadi selalu di-reset & disembunyikan lagi setelah dipakai. */
-var soRejectReasonRequired = false;
-function resetKonfirmasiRejectReason() {
-    $("#konfirmasi_reject_reason").val("");
-    $("#konfirmasi-reject-reason-error").hide();
-}
-function showKonfirmasiRejectReason() {
-    soRejectReasonRequired = true;
-    resetKonfirmasiRejectReason();
-    $("#konfirmasi-reject-reason").removeClass("d-none");
-}
-function hideKonfirmasiRejectReason() {
-    soRejectReasonRequired = false;
-    $("#konfirmasi-reject-reason").addClass("d-none");
-    resetKonfirmasiRejectReason();
-}
-function getKonfirmasiRejectReason() {
-    return ($("#konfirmasi_reject_reason").val() || "").trim();
-}
-function assertKonfirmasiRejectReason() {
-    if (!soRejectReasonRequired) return true;
-    if (getKonfirmasiRejectReason()) return true;
-    $("#konfirmasi-reject-reason-error").show();
-    return false;
-}
-$(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
-    hideKonfirmasiRejectReason();
-});
-
-// Ikon baris tidak lagi langsung buka popup konfirmasi kecil — buka modal detail
-// (#add_sales_order dalam mode qcOps, lihat openSalesOrderDetailModal()) yang berisi Terima
-// dan Tolak di footernya, sama seperti Customer_Return.js (Pengembalian).
-$(document).on("click", ".btn-approve-shipment", function (e) {
-    e.preventDefault();
-    var soId = parseInt($(this).attr("data-id"), 10);
-    if (!soId) return;
-    loadSalesOrderWithItems(soId, function (data) {
-        openSalesOrderDetailModal(data, "confirm");
-    });
-});
-
-// Dari dalam modal detail: Terima/Tolak menyembunyikan modal detail lalu membuka popup
-// konfirmasi kecil yang sama (#modalKonfirmasi) — pola sama dengan Customer_Return.js
-// processRecord().
-$(document).on("click", ".btn-so-qcops-accept", function () {
-    var $btn = $(this);
-    var soId = $btn.attr("so_id");
-    var type = $btn.attr("data-type");
-    var label = $btn.attr("data-label");
-    var confirmMsg =
-        type === "ops"
-            ? "Setujui Pengiriman ini (Kepala Operasional)? Stok akan dicek dan dipotong, status menjadi Diterima."
-            : "Setujui Pengiriman ini (Staf QC & Gudang)? Selanjutnya menunggu approval Kepala Operasional.";
-    $("#add_sales_order").modal("hide");
-    showModalKonfirmasi(confirmMsg, "btn-approve-shipment-confirm");
-    hideKonfirmasiRejectReason();
-    $("#modalKonfirmasi #btn-approve-shipment-confirm")
-        .attr("data-id", soId)
-        .attr("data-type", type)
-        .attr("data-label", label);
-});
-
-$(document).on("click", ".btn-so-qcops-decline", function () {
-    var $btn = $(this);
-    var soId = $btn.attr("so_id");
-    var type = $btn.attr("data-type");
-    $("#add_sales_order").modal("hide");
-    showModalKonfirmasi("Tolak Pengiriman ini? Tuliskan alasan penolakan di bawah.", "btn-reject-shipment-confirm", true, "Tolak");
-    showKonfirmasiRejectReason();
-    $("#modalKonfirmasi #btn-reject-shipment-confirm")
-        .attr("data-id", soId)
-        .attr("data-type", type);
-});
-
-$(document).on("click", "#btn-approve-shipment-confirm", function () {
-    var $confirmBtn = $(this);
-    if ($confirmBtn.data("busy")) return;
-    var soId = $confirmBtn.attr("data-id");
-    var type = $confirmBtn.attr("data-type");
-    var label = $confirmBtn.attr("data-label");
-    $confirmBtn.data("busy", true);
-    LoadingButton($confirmBtn);
-    $.ajax({
-        url: "/approveShipment",
-        method: "post",
-        data: { so_id: soId, type: type, _token: token },
-        success: function (res) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
-            if (!res || res.status != 1) {
-                closeModalConfirm();
-                notifikasi(
-                    "error",
-                    "Gagal Approve",
-                    (res && res.message) || "Gagal approve " + label,
-                );
-                return;
-            }
-            closeModalConfirm();
-            notifikasi("success", "Berhasil", res.message || "Approval berhasil");
-            refreshSalesOrder();
-        },
-        error: function (err) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
-            closeModalConfirm();
-            if (handlePermissionError(err)) return;
-            notifikasi(
-                "error",
-                "Gagal Approve",
-                (err.responseJSON && err.responseJSON.message) || "Gagal approve " + label,
-            );
-        },
-    });
-});
-
-$(document).on("click", "#btn-reject-shipment-confirm", function () {
-    var $confirmBtn = $(this);
-    if ($confirmBtn.data("busy")) return;
-    if (!assertKonfirmasiRejectReason()) return;
-    var soId = $confirmBtn.attr("data-id");
-    var type = $confirmBtn.attr("data-type");
-    var reason = getKonfirmasiRejectReason();
-    $confirmBtn.data("busy", true);
-    LoadingButton($confirmBtn);
-    $.ajax({
-        url: "/rejectShipment",
-        method: "post",
-        data: { so_id: soId, type: type, reason: reason, _token: token },
-        success: function (res) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Tolak');
-            if (!res || res.status != 1) {
-                closeModalConfirm();
-                notifikasi(
-                    "error",
-                    "Gagal Menolak",
-                    (res && res.message) || "Gagal menolak Pengiriman",
-                );
-                return;
-            }
-            closeModalConfirm();
-            notifikasi("success", "Berhasil", res.message || "Pengiriman ditolak");
-            refreshSalesOrder();
-        },
-        error: function (err) {
-            $confirmBtn.data("busy", false);
-            ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Tolak');
-            closeModalConfirm();
-            if (handlePermissionError(err)) return;
-            notifikasi(
-                "error",
-                "Gagal Menolak",
-                (err.responseJSON && err.responseJSON.message) || "Gagal menolak Pengiriman",
-            );
-        },
-    });
-});
 
 function maybeOpenDeepLinkModals() {
     if (!revisionAutoOpened && revisionSoId) {
@@ -1744,8 +1459,8 @@ function inisialisasi() {
                 data: "status",
                 width: "12%",
                 className: "text-center",
-                render: function (data, type, row) {
-                    return renderSoStatus(data, row);
+                render: function (data) {
+                    return renderSoStatus(data);
                 },
             },
             {
@@ -1776,10 +1491,7 @@ function inisialisasi() {
             {
                 data: null,
                 className: "text-center align-middle",
-                // Diperlebar dari 11% — Pending sekarang bisa menampilkan sampai 4 ikon aksi
-                // sekaligus (Setujui/Tolak/Lihat/Hapus), 11% terlalu sempit dan bikin ikon
-                // meluber keluar sel.
-                width: "15%",
+                width: "11%",
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {
@@ -1976,12 +1688,14 @@ function refreshTableProduct() {
                 "</span>";
         } else if (isViewMode && isRetail) {
             var viewRetailMeta = activeRetailWarehouseMeta();
+            var viewMainMeta = activeMainWarehouseMeta();
             warehouseCell =
                 '<span class="so-retail-warehouse-label"><i class="fe fe-home"></i> ' +
                 escapeHtmlSo(
                     p.warehouse_name ||
                         viewRetailMeta.name ||
-                        "Gudang eceran",
+                        viewMainMeta.name ||
+                        "Gudang sumber",
                 ) +
                 "</span>";
         } else if (!isViewMode && isRetail) {
@@ -2386,7 +2100,7 @@ $(document).on("click", ".btn-save", function () {
         missing.push("Satuan eceran default pada item produk");
     }
     if (missingRetailWarehouse) {
-        missing.push("Gudang Eceran pada item produk");
+        missing.push("Gudang sumber pada item satuan eceran");
     }
 
     var hasPhoto =
