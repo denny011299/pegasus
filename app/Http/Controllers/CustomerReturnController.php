@@ -14,7 +14,6 @@ use App\Models\SuppliesStock;
 use App\Support\CustomerReturnCreation;
 use App\Support\ProductUnitStock;
 use App\Support\RoleAccess;
-use App\Support\RoleIds;
 use App\Support\SuppliesUnitStock;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -81,11 +80,6 @@ class CustomerReturnController extends Controller
         });
 
         $page = array_slice($rows, $start, $length);
-        $canConfirmQc = $this->canConfirmQc();
-        foreach ($page as &$row) {
-            $row['can_confirm_qc'] = $canConfirmQc;
-        }
-        unset($row);
 
         return response()->json([
             'draw' => $draw,
@@ -120,7 +114,6 @@ class CustomerReturnController extends Controller
         $header['supply_details'] = $bundle['supply_details'];
         $header['product_details'] = $bundle['product_details'];
         $header['context'] = $this->buildReturnContext();
-        $header['can_confirm_qc'] = $this->canConfirmQc();
 
         return response()->json($header);
     }
@@ -334,7 +327,6 @@ class CustomerReturnController extends Controller
     public function accept(string $docKey): JsonResponse
     {
         $this->authorizeAbility('others');
-        abort_unless($this->canConfirmQc(), 403, 'Akses ditolak. Hanya Staf QC & Gudang, Direksi, atau Developer yang boleh konfirmasi.');
 
         $bundle = $this->resolveBundle($docKey, false);
         if ($bundle) {
@@ -411,7 +403,6 @@ class CustomerReturnController extends Controller
     public function decline(string $docKey): JsonResponse
     {
         $this->authorizeAbility('others');
-        abort_unless($this->canConfirmQc(), 403, 'Akses ditolak. Hanya Staf QC & Gudang, Direksi, atau Developer yang boleh konfirmasi.');
 
         DB::transaction(function () use ($docKey) {
             $bundle = $this->resolveBundle($docKey, true);
@@ -547,7 +538,8 @@ class CustomerReturnController extends Controller
     }
 
     /**
-     * Produk jadi satuan eceran: stok masuk gudang utama, lalu ST pending ke gudang eceran.
+     * Opsional: satuan eceran di gudang utama + destination eceran → ST pending.
+     * Tanpa destination (mode Stok): stok tetap di gudang tujuan baris saja.
      *
      * @param  array<int, array<string, mixed>>  $details
      * @return array<int, int>
@@ -676,56 +668,6 @@ class CustomerReturnController extends Controller
         }
 
         return $staffId;
-    }
-
-    /**
-     * GitHub #205: tombol Konfirmasi & popup approval staff QC hanya untuk role yang berhak —
-     * Staf QC & Gudang yang di-assign ke gudang aktif, Direksi/Developer (boleh menggantikan),
-     * atau Super Admin (role_id -1, tetap boleh seperti sebelumnya).
-     */
-    private function canConfirmQc(): bool
-    {
-        $user = Session::get('user');
-        if (! $user) {
-            return false;
-        }
-
-        $roleId = (int) ($user->role_id ?? 0);
-        if ($roleId === -1 || in_array($roleId, [RoleIds::DIREKSI, RoleIds::DEVELOPER], true)) {
-            return true;
-        }
-        if ($roleId !== RoleIds::QC_GUDANG) {
-            return false;
-        }
-
-        $staffId = (int) ($user->staff_id ?? 0);
-        if ($staffId <= 0) {
-            return false;
-        }
-
-        $allowed = collect(Staff::qcGudangForWarehouse($this->activeWarehouseId()))
-            ->pluck('id')
-            ->all();
-
-        return in_array($staffId, $allowed, true);
-    }
-
-    /** Current user, dipakai popup approval staff QC untuk auto-fill (tetap read-only). */
-    private function currentQcStaffContext(): ?array
-    {
-        if (! $this->canConfirmQc()) {
-            return null;
-        }
-
-        $user = Session::get('user');
-        $staffId = (int) ($user->staff_id ?? 0);
-        if ($staffId <= 0) {
-            return null;
-        }
-
-        $name = DB::table('staffs')->where('staff_id', $staffId)->value('staff_name');
-
-        return ['id' => $staffId, 'name' => $name !== null ? (string) $name : ''];
     }
 
     private function qcStaffIdFrom($record): ?int
@@ -1517,22 +1459,14 @@ class CustomerReturnController extends Controller
             if ($isRetailUnit) {
                 $receiveWarehouse = $warehousesById->get((int) $detail['warehouse_id']);
                 $receiveIsRetail = $receiveWarehouse && (int) ($receiveWarehouse['is_main_warehouse'] ?? 1) === 0;
-                if ($receiveIsRetail) {
+                // Mirror Produksi: eceran langsung, atau utama (stok) tanpa ST wajib.
+                // Destination eceran opsional (Transfer → ST saat ACC); destination non-eceran diabaikan.
+                if ($receiveIsRetail || $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
                     continue;
                 }
-                if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                    throw ValidationException::withMessages([
-                        "product_details.$index.warehouse_id" => 'Satuan eceran diterima di gudang utama, lalu di-stock transfer ke gudang eceran.',
-                    ]);
-                }
-                $destinationId = (int) ($detail['destination_warehouse_id'] ?? 0);
-                $destination = $warehousesById->get($destinationId);
-                $isRetailWarehouse = $destination && (int) ($destination['is_main_warehouse'] ?? 1) === 0;
-                if (! $isRetailWarehouse) {
-                    throw ValidationException::withMessages([
-                        "product_details.$index.destination_warehouse_id" => 'Pilih gudang eceran tujuan stock transfer.',
-                    ]);
-                }
+                throw ValidationException::withMessages([
+                    "product_details.$index.warehouse_id" => 'Satuan eceran harus ke gudang utama atau gudang eceran aktif.',
+                ]);
             } elseif (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
                 throw ValidationException::withMessages([
                     "product_details.$index.warehouse_id" => 'Satuan selain eceran harus dikembalikan ke gudang utama.',
@@ -1550,7 +1484,6 @@ class CustomerReturnController extends Controller
             'product_warehouses' => $this->allActiveWarehouses(),
             'active_warehouse' => $this->activeWarehouseContext(),
             'qc_staff' => Staff::qcGudangForWarehouse($this->activeWarehouseId()),
-            'current_qc_staff' => $this->currentQcStaffContext(),
         ];
     }
 

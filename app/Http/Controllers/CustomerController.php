@@ -9,11 +9,17 @@ use App\Models\Customer;
 use App\Models\ProductVariant;
 use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
+use App\Models\ProductStock;
+use App\Models\Setting;
+use App\Models\ShipmentShortageDocument;
 use App\Models\Staff;
+use App\Models\Unit;
 use App\Models\Warehouse;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
 use App\Support\ShipmentApproval;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use App\Support\UnitRollUp;
@@ -27,6 +33,276 @@ class CustomerController extends Controller
     public function SalesOrder()
     {
         return view('Backoffice.Customers.Sales_Order');
+    }
+
+    /** PDF Form Kekurangan Barang untuk 1 pengiriman (dari dokumen BG / API shortage). */
+    public function printShipmentShortage(int $soId)
+    {
+        $doc = ShipmentShortageDocument::query()
+            ->where('so_id', $soId)
+            ->where('status', 1)
+            ->orderByDesc('id')
+            ->first();
+        if (! $doc) {
+            abort(404, 'Dokumen kekurangan tidak ditemukan untuk pengiriman ini.');
+        }
+
+        $so = SalesOrder::query()
+            ->from('sales_orders')
+            ->leftJoin('customers as c', 'c.customer_id', '=', 'sales_orders.so_customer')
+            ->where('sales_orders.so_id', $soId)
+            ->select([
+                'sales_orders.so_id',
+                'sales_orders.so_number',
+                'sales_orders.so_date',
+                'sales_orders.ref_shipment_id',
+                'sales_orders.retail_warehouse_id',
+                'sales_orders.notes',
+                'c.customer_notes as armada_name',
+                'c.customer_code as armada_code',
+                'c.customer_pic as armada_pic',
+            ])
+            ->first();
+        if (! $so) {
+            abort(404, 'Pengiriman tidak ditemukan.');
+        }
+
+        $unitIds = collect($doc->items ?? [])->pluck('unit_id')->filter()->unique()->values()->all();
+        // items[].unit_id bisa ref_unit_id (API) ATAU unit_id internal (seeder lokal)
+        $unitsByRef = collect();
+        $unitsById = collect();
+        if ($unitIds !== []) {
+            $unitRows = Unit::query()
+                ->where(function ($q) use ($unitIds) {
+                    $q->whereIn('ref_unit_id', $unitIds)->orWhereIn('unit_id', $unitIds);
+                })
+                ->get(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
+            foreach ($unitRows as $u) {
+                $label = trim((string) ($u->unit_short_name ?: $u->unit_name)) ?: '—';
+                $unitsById->put((int) $u->unit_id, $label);
+                if ($u->ref_unit_id !== null && $u->ref_unit_id !== '') {
+                    $unitsByRef->put((int) $u->ref_unit_id, $label);
+                }
+            }
+        }
+
+        $skus = collect($doc->items ?? [])->pluck('sku')->filter()->unique()->values()->all();
+        // Nama = produk + variasi (bukan variasi saja)
+        $namesBySku = $skus === []
+            ? collect()
+            : ProductVariant::query()
+                ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+                ->whereIn('product_variants.product_variant_sku', $skus)
+                ->get([
+                    'product_variants.product_variant_sku',
+                    'pr.product_name',
+                    'product_variants.product_variant_name',
+                ])
+                ->mapWithKeys(function ($v) {
+                    $label = trim(($v->product_name ?? '') . ' ' . ($v->product_variant_name ?? ''));
+
+                    return [(string) $v->product_variant_sku => $label !== '' ? $label : (string) $v->product_variant_sku];
+                });
+
+        $items = [];
+        $totalRequested = 0;
+        $totalAvailable = 0;
+        $totalShortage = 0;
+        foreach ($doc->items ?? [] as $row) {
+            $sku = (string) ($row['sku'] ?? '');
+            $unitKey = isset($row['unit_id']) ? (int) $row['unit_id'] : null;
+            $unitLabel = '—';
+            if ($unitKey !== null) {
+                $unitLabel = $unitsByRef->get($unitKey)
+                    ?: $unitsById->get($unitKey)
+                    ?: '—';
+            }
+            $req = (int) ($row['requested'] ?? 0);
+            $avail = (int) ($row['available'] ?? 0);
+            $short = (int) ($row['shortage'] ?? 0);
+
+            $totalRequested += $req;
+            $totalAvailable += $avail;
+            $totalShortage += $short;
+
+            $items[] = [
+                'sku' => $sku !== '' ? $sku : '—',
+                'nama' => $namesBySku->get($sku) ?: $sku ?: '—',
+                'unit' => $unitLabel,
+                'requested' => $req,
+                'available' => $avail,
+                'shortage' => $short,
+            ];
+        }
+
+        $warehouseId = (int) ($so->retail_warehouse_id ?? 0);
+        if ($warehouseId <= 0) {
+            $warehouseId = (int) ProductStock::resolveWarehouseId(null);
+        }
+
+        $warehouseName = 'Gudang Pusat / Utama';
+        if ($warehouseId > 0) {
+            $wh = Warehouse::query()->whereKey($warehouseId)->first();
+            if ($wh && ! empty($wh->warehouse_name)) {
+                $warehouseName = $wh->warehouse_name;
+            }
+        }
+        $kepalaGudangName = Warehouse::kepalaCabangName($warehouseId > 0 ? $warehouseId : null, true);
+
+        $u = session()->get('user') ?? Session::get('user');
+        $printedBy = $u ? ($u->staff_name ?? $u->name ?? 'Admin') : 'Admin';
+        $printedAt = Carbon::now()->translatedFormat('d F Y H:i');
+
+        // Company Setting (settings table) — logo + identitas perusahaan
+        $setting = (new Setting())->getSetting([
+            'select' => [
+                'logo',
+                'company_logo',
+                'company_name',
+                'company_address',
+                'company_phone',
+                'company_email',
+                'city_name',
+                'state_name',
+            ],
+        ]);
+        $companyName = trim((string) ($setting['company_name'] ?? '')) ?: 'PEGASUS HIKARI INDONESIA';
+        $companyAddress = trim((string) ($setting['company_address'] ?? '')) ?: 'Pergudangan Meiko Abadi 2, Blok A8 - 9, Jl. Industri, Buduran, Sidoarjo';
+        $city = trim((string) ($setting['city_name'] ?? ''));
+        $state = trim((string) ($setting['state_name'] ?? ''));
+        $phone = trim((string) ($setting['company_phone'] ?? ''));
+        $companyContactParts = array_values(array_filter([
+            $city !== '' || $state !== '' ? trim($city.($city && $state ? ', ' : '').$state) : null,
+            $phone !== '' ? 'Telp. '.$phone : null,
+            'Sistem ERP Pegasus',
+        ]));
+        $companyContact = $companyContactParts !== []
+            ? implode(' • ', $companyContactParts)
+            : 'Sidoarjo, Jawa Timur • Sistem ERP Pegasus';
+        $companyCity = $city !== '' ? $city : 'Sidoarjo';
+
+        // Logo dari Company Setting (settings.logo — path upload hasil Simpan Perubahan)
+        $logoBase64 = $this->resolveCompanyLogoBase64(
+            (string) ($setting['logo'] ?? $setting['company_logo'] ?? '')
+        );
+
+        $docDate = $doc->created_at ? Carbon::parse($doc->created_at)->translatedFormat('d F Y') : Carbon::now()->translatedFormat('d F Y');
+        $docTime = $doc->created_at ? Carbon::parse($doc->created_at)->format('H:i') : Carbon::now()->format('H:i');
+        $soDate = $so->so_date ? Carbon::parse($so->so_date)->translatedFormat('d F Y') : '—';
+
+        $param = [
+            'company_name' => $companyName,
+            'company_address' => $companyAddress,
+            'company_contact' => $companyContact,
+            'company_city' => $companyCity,
+            'doc_number' => $doc->doc_number,
+            'doc_date' => $docDate,
+            'doc_time' => $docTime,
+            'doc_created_at' => $doc->created_at,
+            'so_number' => $so->so_number ?? '—',
+            'so_date' => $soDate,
+            'armada_name' => $so->armada_name ?? '—',
+            'armada_code' => $so->armada_code ?? '',
+            // Tanda tangan: nama PIC. Fallback parse "(Nama)" dari notes kalau pic kosong (data demo lama).
+            'armada_pic' => $this->resolveArmadaPicName(
+                trim((string) ($so->armada_pic ?? '')),
+                trim((string) ($so->armada_name ?? ''))
+            ),
+            'ref_shipment_id' => $so->ref_shipment_id ?? $doc->ref_shipment_id ?? '—',
+            'warehouse_name' => $warehouseName,
+            'kepala_gudang_name' => $kepalaGudangName,
+            'notes' => $doc->notes ?? $so->notes ?? null,
+            'items' => $items,
+            'total_requested' => $totalRequested,
+            'total_available' => $totalAvailable,
+            'total_shortage' => $totalShortage,
+            'logo_base64' => $logoBase64,
+            'printed_by' => $printedBy,
+            'printed_at' => $printedAt,
+        ];
+
+        $pdf = Pdf::loadView('Backoffice.PDF.FormKekuranganBarang', $param)
+            ->setPaper('a5', 'portrait');
+
+        return $pdf->stream('Form_Kekurangan_Barang_'.$doc->doc_number.'.pdf');
+    }
+
+    /** Nama sopir untuk tanda tangan: customer_pic, atau isi kurung terakhir di notes. */
+    private function resolveArmadaPicName(string $pic, string $notes): ?string
+    {
+        if ($pic !== '') {
+            return $pic;
+        }
+        if ($notes !== '' && preg_match('/\(([^()]+)\)\s*$/', $notes, $m)) {
+            $fromNotes = trim($m[1]);
+
+            return $fromNotes !== '' ? $fromNotes : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Logo PDF dari Company Setting (settings.logo / company_logo).
+     * WebP dikonversi ke PNG base64 — DomPDF tidak andal render .webp.
+     */
+    private function resolveCompanyLogoBase64(string $settingPath): ?string
+    {
+        $candidates = [];
+        $path = trim(str_replace('\\', '/', $settingPath));
+        if ($path !== '') {
+            $path = ltrim($path, '/');
+            if (str_starts_with($path, 'public/')) {
+                $path = substr($path, 7);
+            }
+            $candidates[] = public_path($path);
+        }
+        $candidates = array_merge($candidates, [
+            public_path('assets/pegasus_logo.jpg'),
+            public_path('upload/logo/pegasus_logo_clean.png'),
+            public_path('upload/logo/logo.png'),
+            public_path('assets/img/logo.png'),
+        ]);
+
+        foreach (array_unique($candidates) as $cand) {
+            if (! is_string($cand) || $cand === '' || ! is_file($cand)) {
+                continue;
+            }
+
+            $ext = strtolower(pathinfo($cand, PATHINFO_EXTENSION) ?: 'png');
+            $binary = @file_get_contents($cand);
+            if ($binary === false || $binary === '') {
+                continue;
+            }
+
+            // DomPDF: webp → png
+            if ($ext === 'webp' && function_exists('imagecreatefromwebp') && function_exists('imagepng')) {
+                $img = @imagecreatefromwebp($cand);
+                if ($img !== false) {
+                    ob_start();
+                    imagepng($img);
+                    $binary = (string) ob_get_clean();
+                    imagedestroy($img);
+                    $ext = 'png';
+                }
+            }
+
+            if ($ext === 'jpg') {
+                $ext = 'jpeg';
+            }
+            if (! in_array($ext, ['png', 'jpeg', 'gif', 'svg+xml'], true)) {
+                // Coba deteksi via getimagesize
+                $info = @getimagesize($cand);
+                if (! empty($info['mime']) && str_starts_with((string) $info['mime'], 'image/')) {
+                    return 'data:'.$info['mime'].';base64,'.base64_encode($binary);
+                }
+                continue;
+            }
+
+            return 'data:image/'.$ext.';base64,'.base64_encode($binary);
+        }
+
+        return null;
     }
 
     public function SalesOrderDetail($id)
@@ -95,7 +371,7 @@ class CustomerController extends Controller
         if ($retailErr) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gudang eceran wajib',
+                'header' => 'Gudang sumber wajib',
                 'message' => $retailErr,
             ]);
         }
@@ -107,7 +383,7 @@ class CustomerController extends Controller
         // dalam satu DB::transaction()). Memblokir pembuatan dokumen dengan stok SAAT INI salah
         // waktunya: stok bisa bertambah (produksi selesai, PO diterima, transfer masuk) antara
         // pengajuan dan ACC, jadi pengiriman yang terjadwal untuk besok jadi tidak bisa dibuat
-        // hari ini. Validasi struktural (satuan eceran + gudang eceran wajib) di atas tetap
+        // hari ini. Validasi struktural (satuan eceran + gudang sumber wajib) di atas tetap
         // dipertahankan karena itu tentang bentuk data, bukan jumlah stok.
 
         $img = [];
@@ -166,8 +442,8 @@ class CustomerController extends Controller
      * SENGAJA tidak menjalankan validateRetailWarehouseUnits()/validateRetailSelection() di
      * sini - itu tetap khusus submit akhir (insertSalesOrder()/updateSalesOrder()), karena
      * baris yang gudangnya belum dipilih memang tidak sampai ke sini sama sekali (lihat di
-     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang eceran" tetap
-     * divalidasi & fokus ke dropdown yang kosong saat klik "Tambah/Update Pengiriman".
+     * atas), jadi tidak ada yang perlu digagalkan; "wajib pilih gudang sumber" tetap
+     * divalidasi saat klik "Tambah/Update Pengiriman".
      */
     function checkSalesOrderStock(Request $req)
     {
@@ -246,7 +522,7 @@ class CustomerController extends Controller
             if ($retailErr) {
                 return response()->json([
                     'status' => 0,
-                    'header' => 'Gudang eceran wajib',
+                    'header' => 'Gudang sumber wajib',
                     'message' => $retailErr,
                 ]);
             }
@@ -279,7 +555,7 @@ class CustomerController extends Controller
         if ($retailErr) {
             return response()->json([
                 'status' => 0,
-                'header' => 'Gudang eceran wajib',
+                'header' => 'Gudang sumber wajib',
                 'message' => $retailErr,
             ]);
         }
