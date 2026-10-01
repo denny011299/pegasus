@@ -163,7 +163,15 @@ class CashPaymentController extends Controller
 
             // armada_id menunjuk ke customers (lihat catatan kelas).
             'armada_id' => ['required_if:payment_type,'.self::TYPE_ARMADA, 'integer'],
-            'staff_id' => ['required_if:payment_type,'.self::TYPE_SALES, 'integer'],
+            // staff_id di API = staffs.external_ref_id (kontrak sama /master/sales), bukan PK internal.
+            'staff_id' => ['required_if:payment_type,'.self::TYPE_SALES, function (string $attribute, $value, \Closure $fail) {
+                if ($value === null || $value === '') {
+                    return;
+                }
+                if (! is_string($value) && ! is_int($value)) {
+                    $fail('staff_id wajib berupa teks atau angka (external_ref_id sales).');
+                }
+            }],
 
             'payment_date' => ['required', 'date'],
             'payment_amount' => ['required', 'integer'],
@@ -185,7 +193,7 @@ class CashPaymentController extends Controller
         return $data;
     }
 
-    /** Armada dicari di customers, sales dicari di staff. */
+    /** Armada dicari di customers, sales dicari lewat external_ref_id (bukan PK staff_id). */
     private function assertReferencedRecordExists(array $data): void
     {
         if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
@@ -198,11 +206,26 @@ class CashPaymentController extends Controller
             return;
         }
 
-        $exists = Staff::where('staff_id', '=', $data['staff_id'])->exists();
-
-        if (! $exists) {
-            $this->fail('staff_id', 'Sales dengan staff_id '.$data['staff_id'].' tidak ditemukan.');
+        if ($this->resolveSalesStaff($data['staff_id'] ?? null) === null) {
+            $this->fail(
+                'staff_id',
+                'Sales dengan staff_id (external_ref_id) '.$data['staff_id'].' tidak ditemukan.'
+            );
         }
+    }
+
+    /**
+     * staff_id pada body External API = staffs.external_ref_id (sama /master/sales).
+     * cash_sales.staff_id tetap menyimpan PK internal.
+     */
+    private function resolveSalesStaff(mixed $externalRefId): ?Staff
+    {
+        $ref = trim((string) ($externalRefId ?? ''));
+        if ($ref === '') {
+            return null;
+        }
+
+        return Staff::where('external_ref_id', $ref)->where('status', 1)->first();
     }
 
     /**
@@ -295,13 +318,18 @@ class CashPaymentController extends Controller
      */
     private function createSales(array $data, PaymentPhotoStore $photos): CashSales
     {
-        $staff = Staff::find($data['staff_id']);
+        $staff = $this->resolveSalesStaff($data['staff_id']);
+        if ($staff === null) {
+            // Sudah dicek di assertReferencedRecordExists — jaring pengaman race.
+            $this->fail('staff_id', 'Sales dengan staff_id (external_ref_id) '.$data['staff_id'].' tidak ditemukan.');
+        }
+
         $direction = (int) $data['items'][0]['type'];
         $isMasuk = $direction === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
-            'staff_id' => $data['staff_id'],
+            'staff_id' => (int) $staff->staff_id,
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
             // transaksi operasional; kolomnya sendiri berdefault 0.
@@ -423,6 +451,11 @@ class CashPaymentController extends Controller
         $rawPhotos = $isArmada ? $payment->cr_img : $payment->cs_img;
         $photoNames = $rawPhotos ? (json_decode($rawPhotos, true) ?: []) : [];
 
+        $staffExternalRef = null;
+        if (! $isArmada && $payment->staff_id) {
+            $staffExternalRef = Staff::where('staff_id', (int) $payment->staff_id)->value('external_ref_id');
+        }
+
         return [
             'ref_payment_id' => $payment->ref_payment_id,
             'payment_id' => (int) $id,
@@ -431,7 +464,8 @@ class CashPaymentController extends Controller
             'payment_amount' => (int) ($isArmada ? $payment->cr_nominal : $payment->cs_nominal),
             'notes' => (string) ($isArmada ? $payment->cr_notes : $payment->cs_notes),
             'armada_id' => $isArmada ? (int) $payment->customer_id : null,
-            'staff_id' => $isArmada ? null : (int) $payment->staff_id,
+            // Kembalikan external_ref_id supaya konsisten dengan body request /master/sales.
+            'staff_id' => $isArmada ? null : ($staffExternalRef !== null ? (string) $staffExternalRef : null),
             'status' => $this->statusLabel((int) $payment->status),
             'items' => $details->map(static fn ($detail) => [
                 'amount' => (int) ($isArmada ? $detail->crd_nominal : $detail->csd_nominal),
