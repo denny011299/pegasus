@@ -1,13 +1,16 @@
 {
-    "generated_at": "2026-10-02T00:56:32+07:00",
-    "commit": "4d39370ebd5fdca12587c2b7625baff975a04696",
+    "generated_at": "2026-10-02T01:51:58+07:00",
+    "commit": "d4c66c0dddc88ad7b7284acb0202fd30d5c2b637",
     "branch": "fase2/main",
     "file_count": 3590,
     "previous_commit": "4d39370ebd5fdca12587c2b7625baff975a04696",
-    "previous_generated_at": "2026-10-02T00:56:21+07:00",
+    "previous_generated_at": "2026-10-02T00:56:32+07:00",
     "added": [],
     "removed": [],
-    "changed": [],
+    "changed": [
+        "app/ExternalApi/Docs/Endpoints/V1/CashPaymentCreateDoc.php",
+        "app/Http/Controllers/ExternalApi/V1/CashPaymentController.php"
+    ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
         "app/Console/Commands/CleanupRetailUnitStockCommand.php": "6b5b1e705c5a303d77f4c073aeb2af8f55318be6",
@@ -27,7 +30,7 @@
         "app/ExternalApi/Auth/ExternalApiAuthenticator.php": "6478df5ec6eadbdf20bb509b95b0632278cdf492",
         "app/ExternalApi/Docs/ApiDocRegistry.php": "5b7c997fb2abc2f7cb2a05c3bc3337adef9e9e9a",
         "app/ExternalApi/Docs/ApiEndpointDoc.php": "d29c90139f97ca93accd1e37f726800a98fc76b7",
-        "app/ExternalApi/Docs/Endpoints/V1/CashPaymentCreateDoc.php": "73ecaf8ef66f2ed67cf5c4727409216ac1529566",
+        "app/ExternalApi/Docs/Endpoints/V1/CashPaymentCreateDoc.php": "ac5d79fad8cf1e0b6f78fccdf33bb6294e577aa4",
         "app/ExternalApi/Docs/Endpoints/V1/CashPaymentShowDoc.php": "4ac7074021104c4cc752d8bd4897259992d5a4d3",
         "app/ExternalApi/Docs/Endpoints/V1/MasterArmadaCreateDoc.php": "7508c6557e68372b2ffe558f89bfd27cdb3d71c2",
         "app/ExternalApi/Docs/Endpoints/V1/MasterArmadaDeleteDoc.php": "f377e0657b1d5a86179ec51bd651da2446094e01",
@@ -99,7 +102,7 @@
         "app/Http/Controllers/DeployController.php": "661ddb9b2b9494030cdeb1d65b3095285675117f",
         "app/Http/Controllers/DeploymentCheckController.php": "ecce71a2d0b2b1b34d8dc0f11e245d10f14172f3",
         "app/Http/Controllers/DevCheatController.php": "38d268d26a8df0fe9d9d9014429530ee3b0937fe",
-        "app/Http/Controllers/ExternalApi/V1/CashPaymentController.php": "c69046cbb4b893e678201e7be1b3f259c8e8c888",
+        "app/Http/Controllers/ExternalApi/V1/CashPaymentController.php": "540f5ef3b646ae0a6a3de21da6352eb1c2374a63",
         "app/Http/Controllers/ExternalApi/V1/Concerns/ChecksStockAvailability.php": "39c053b1bdd89cdc6ae5872917bcab12cdcff997",
         "app/Http/Controllers/ExternalApi/V1/Concerns/HandlesListQueryParams.php": "319553a2ea198836d401bfb40bd0409b4e85fdc8",
         "app/Http/Controllers/ExternalApi/V1/MasterArmadaController.php": "4d15cb72e05037d071cd0d2afe48e636cd0dd08b",
