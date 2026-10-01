@@ -66,6 +66,7 @@ class ShipmentShowDoc extends ApiEndpointDoc
                 'ref_shipment_id' => '32134',
                 'ipm_status' => 2,
                 'ipm_status_label' => 'Berjalan',
+                'ref_number' => 'INV1084',
                 'shipment_date' => '2026-07-23',
                 'armada_code' => 'ARM-JKT-001',
                 'notes' => 'Pengiriman PMO SHP-7788',
