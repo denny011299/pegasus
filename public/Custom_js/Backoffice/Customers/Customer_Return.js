@@ -504,7 +504,14 @@
     function isRetailSameAsDefault(product) {
         var retail = parseInt((product && product.retail_unit) || 0, 10);
         var def = parseInt((product && product.default_unit_id) || 0, 10);
-        return retail > 0 && def > 0 && retail === def;
+        if (retail > 0 && def > 0 && retail === def) return true;
+        // Produk cuma punya 1 satuan (== satuan eceran) → tetap SKU 1 satuan.
+        var ids = {};
+        ((product && product.units) || []).forEach(function (u) {
+            ids[parseInt(u.unit_id, 10)] = true;
+        });
+        var keys = Object.keys(ids);
+        return retail > 0 && keys.length === 1 && parseInt(keys[0], 10) === retail;
     }
 
     function crDefaultRetailWarehouse() {

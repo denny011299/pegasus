@@ -945,7 +945,14 @@ function soProductDefaultUnitId(product) {
 function isSoRetailSameAsDefault(product) {
     var retail = parseInt((product && product.retail_unit) || 0, 10);
     var def = soProductDefaultUnitId(product);
-    return retail > 0 && def > 0 && retail === def;
+    if (retail > 0 && def > 0 && retail === def) return true;
+    // Produk cuma punya 1 satuan (== satuan eceran) → tetap SKU 1 satuan.
+    var ids = {};
+    (product && Array.isArray(product.pr_unit) ? product.pr_unit : []).forEach(function (u) {
+        ids[parseInt(u.unit_id, 10)] = true;
+    });
+    var keys = Object.keys(ids);
+    return retail > 0 && keys.length === 1 && parseInt(keys[0], 10) === retail;
 }
 
 function applyDefaultMainWarehouse(product) {
