@@ -372,7 +372,7 @@ class CashOperasionalDataTable
     private static function footerSales(Builder $query): array
     {
         $row = $query->where('status', 2)
-            ->selectRaw('COALESCE(SUM(CASE WHEN cs_transaction = 1 AND cs_aksi = 1 THEN cs_nominal ELSE 0 END), 0) as debits, COALESCE(SUM(CASE WHEN NOT (cs_transaction = 1 AND cs_aksi = 1) THEN cs_nominal ELSE 0 END), 0) as credits')
+            ->selectRaw('COALESCE(SUM(CASE WHEN cs_transaction = 1 THEN cs_nominal ELSE 0 END), 0) as debits, COALESCE(SUM(CASE WHEN cs_transaction >= 2 THEN cs_nominal ELSE 0 END), 0) as credits')
             ->first();
 
         return [
