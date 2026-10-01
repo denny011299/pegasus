@@ -26,7 +26,9 @@
         }
 
         .select2-container--default .select2-selection--multiple .select2-selection__rendered {
-            display: block !important;
+            display: flex !important;
+            flex-wrap: wrap !important;
+            align-items: center !important;
             padding: 0 !important;
             margin: 0 !important;
             overflow: visible !important;
@@ -39,7 +41,7 @@
             border-radius: 0.4rem !important;
             padding: 2px 8px !important;
             margin: 3px 4px 3px 0 !important;
-            float: left !important;
+            float: none !important;
             display: inline-flex !important;
             align-items: center !important;
         }
@@ -81,7 +83,7 @@
         }
 
         .select2-container--default .select2-selection--multiple .select2-search--inline {
-            float: left !important;
+            float: none !important;
             margin-top: 3px !important;
         }
 
