@@ -514,6 +514,18 @@
         return retail > 0 && keys.length === 1 && parseInt(keys[0], 10) === retail;
     }
 
+    /**
+     * Baris satuan eceran WAJIB gudang eceran hanya kalau produknya punya >1 satuan.
+     * Produk 1 satuan (eceran == default / satu-satunya satuan) boleh tetap di gudang utama.
+     */
+    function retailLineNeedsEceran(line) {
+        if (!isRetailProductLine(line)) return false;
+        var product = (crContext && crContext.products || []).find(function (p) {
+            return parseInt(p.product_variant_id, 10) === parseInt(line.product_variant_id, 10);
+        });
+        return !isRetailSameAsDefault(product || line);
+    }
+
     function crDefaultRetailWarehouse() {
         var list = (crContext && crContext.product_warehouses) || [];
         return (
@@ -1030,7 +1042,7 @@
         if (!id) {
             line.destination_warehouse_id = null;
             line.destination_warehouse_name = null;
-            markCrRetailWarehouseSelect($select, true);
+            markCrRetailWarehouseSelect($select, retailLineNeedsEceran(line));
             syncCrSaveEnabled();
             return false;
         }
@@ -1040,8 +1052,14 @@
             line.destination_warehouse_name ||
             "";
         ensureCrRetailWarehouseOption($select, id, name);
-        line.destination_warehouse_id = id;
-        line.destination_warehouse_name = name;
+        if (!isRetailWarehouse(id)) {
+            // Gudang utama dipilih → stok langsung di utama, tanpa transfer.
+            line.destination_warehouse_id = null;
+            line.destination_warehouse_name = null;
+        } else {
+            line.destination_warehouse_id = id;
+            line.destination_warehouse_name = name;
+        }
         markCrRetailWarehouseSelect($select, false);
         syncCrSaveEnabled();
         return true;
@@ -1081,9 +1099,11 @@
                 ensureCrRetailWarehouseOption($select, preId, preName);
             }
             if (typeof autocompleteWarehouse === "function") {
+                var needEceran = line ? retailLineNeedsEceran(line) : true;
                 autocompleteWarehouse(selector, "#customer-return-modal", {
-                    retailOnly: true,
-                    placeholder: "Pilih gudang eceran",
+                    retailOnly: needEceran,
+                    mainFirst: !needEceran,
+                    placeholder: needEceran ? "Pilih gudang eceran" : "Gudang utama / pilih gudang eceran",
                 });
             }
             if (preId) {
@@ -1094,7 +1114,7 @@
                     line.destination_warehouse_name = preName;
                 }
             }
-            markCrRetailWarehouseSelect($select, !preId);
+            markCrRetailWarehouseSelect($select, !preId && !(line && !retailLineNeedsEceran(line)));
         });
         syncCrSaveEnabled();
     }
@@ -1102,7 +1122,7 @@
     function missingRetailDestinations() {
         return productLines.some(function (line) {
             return (
-                isRetailProductLine(line) &&
+                retailLineNeedsEceran(line) &&
                 !isRetailWarehouse(line.warehouse_id) &&
                 !parseInt(line.destination_warehouse_id || 0, 10)
             );
@@ -1509,7 +1529,8 @@
         syncRetailDestinationsFromDom();
         if (missingRetailDestinations()) {
             $("#customer-return-modal .cr-retail-warehouse").each(function () {
-                markCrRetailWarehouseSelect($(this), !$(this).val());
+                var ln = productLines[parseInt($(this).data("index"), 10)];
+                markCrRetailWarehouseSelect($(this), !$(this).val() && !!ln && retailLineNeedsEceran(ln));
             });
             if (typeof toastr !== "undefined") {
                 toastr.error("Pilih gudang eceran pada setiap produk satuan eceran.");
