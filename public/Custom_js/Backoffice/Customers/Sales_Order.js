@@ -2469,7 +2469,10 @@ $(document).on("click", "#btn-accept-so", function () {
                         Array.isArray(e.recommendations) &&
                         e.recommendations.length
                     ) {
-                        showStockRecommendModal(e);
+                        // ACC 1-tahap dari list: simpan gudang pilihan + ACC ulang
+                        showStockRecommendModal(e, {
+                            soId: $("#btn-accept-so").attr("so_id"),
+                        });
                     } else {
                         var fallbackNames =
                             $("#btn-accept-so").data("fallback_products") || [];
@@ -2575,7 +2578,246 @@ function showSoErrorModal(header, message) {
     });
 }
 
-function showStockRecommendModal(res) {
+/** Map items dari getSalesOrder → bentuk products untuk updateSalesOrder. */
+function soItemsToProductLines(data) {
+    return (data.items || []).map(function (e) {
+        var retailUnit = parseInt(e.retail_unit || 0, 10);
+        return {
+            sod_id: e.sod_id,
+            product_variant_id: e.product_variant_id,
+            product_name: e.sod_nama,
+            product_variant_name: e.sod_variant,
+            product_variant_sku: e.sod_sku,
+            so_qty: e.sod_qty,
+            product_variant_price: e.sod_harga,
+            so_subtotal: e.sod_subtotal,
+            unit_name: e.unit_name,
+            unit_id: e.unit_id,
+            pr_unit: e.pr_unit,
+            retail_unit: retailUnit,
+            warehouse_id:
+                e.warehouse_id ||
+                (parseInt(e.unit_id, 10) === retailUnit
+                    ? data.retail_warehouse_id || null
+                    : null),
+            warehouse_name:
+                e.warehouse_name || data.retail_warehouse_name || null,
+        };
+    });
+}
+
+function firstRetailWarehouseIdFromLines(lines) {
+    var row = (lines || []).find(function (p) {
+        var retailUnit = parseInt(p.retail_unit || 0, 10);
+        return (
+            retailUnit > 0 &&
+            parseInt(p.unit_id || 0, 10) === retailUnit &&
+            parseInt(p.warehouse_id || 0, 10) > 0
+        );
+    });
+    return row ? parseInt(row.warehouse_id, 10) : null;
+}
+
+/** Ganti warehouse_id baris yang stoknya kurang & punya gudang pilihan di available_at. */
+function applyPickedWarehouseToShortLines(lines, picked, recommendations) {
+    var whId = parseInt(picked.warehouse_id, 10);
+    var whName = picked.warehouse_name;
+    var changed = 0;
+    (recommendations || []).forEach(function (r) {
+        var hasPick = (r.available_at || []).some(function (a) {
+            return String(a.warehouse_id) === String(whId);
+        });
+        if (!hasPick) return;
+        (lines || []).forEach(function (p) {
+            if (
+                parseInt(p.product_variant_id, 10) ===
+                    parseInt(r.product_variant_id, 10) &&
+                parseInt(p.unit_id, 10) === parseInt(r.unit_id, 10)
+            ) {
+                p.warehouse_id = whId;
+                p.warehouse_name = whName;
+                changed += 1;
+            }
+        });
+    });
+    return changed;
+}
+
+/**
+ * ACC dari list: simpan gudang rekomendasi ke DB (SO masih status 1 → tanpa mutasi stok),
+ * lalu ACC ulang. Aman diulang jika masih ada baris lain yang short.
+ */
+function applyRecommendWarehouseAndRetryAcc(soId, picked, recommendations) {
+    soId = parseInt(soId, 10);
+    if (!soId || !picked) return;
+
+    Swal.fire({
+        title: "Menyimpan gudang…",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: function () {
+            Swal.showLoading();
+        },
+    });
+
+    loadSalesOrderWithItems(
+        soId,
+        function (data) {
+            if (parseInt(data.status, 10) !== 1) {
+                Swal.close();
+                showSoErrorModal(
+                    "Gagal ACC",
+                    "Pengiriman sudah tidak berstatus menunggu ACC.",
+                );
+                refreshSalesOrder();
+                return;
+            }
+
+            var lines = soItemsToProductLines(data);
+            var changed = applyPickedWarehouseToShortLines(
+                lines,
+                picked,
+                recommendations,
+            );
+            if (!changed) {
+                Swal.close();
+                showSoErrorModal(
+                    "Stok tidak cukup",
+                    "Gudang yang dipilih tidak cocok untuk baris yang kurang stok. Edit pengiriman lalu ganti gudang manual.",
+                );
+                return;
+            }
+
+            var retailWh =
+                firstRetailWarehouseIdFromLines(lines) ||
+                data.retail_warehouse_id ||
+                null;
+
+            $.ajax({
+                url: "/updateSalesOrder",
+                method: "post",
+                data: {
+                    so_id: data.so_id,
+                    so_number: data.so_number,
+                    so_customer: data.so_customer,
+                    sales_id: data.so_cashier || "",
+                    so_date: data.so_date,
+                    so_invoice_no: data.so_invoice_no,
+                    so_ref_number: data.so_ref_number || "",
+                    retail_warehouse_id: retailWh,
+                    so_total: 0,
+                    products: JSON.stringify(lines),
+                    _token: token,
+                },
+                success: function (upd) {
+                    if (upd != 1) {
+                        Swal.close();
+                        if (typeof upd === "object") {
+                            showSoErrorModal(
+                                upd.header || "Gagal simpan gudang",
+                                upd.message || "Gagal update pengiriman",
+                            );
+                        } else {
+                            showSoErrorModal(
+                                "Gagal simpan gudang",
+                                String(upd || "Gagal update pengiriman"),
+                            );
+                        }
+                        return;
+                    }
+
+                    Swal.update({ title: "ACC ulang…" });
+                    $.ajax({
+                        url: "/accSO",
+                        method: "post",
+                        data: { so_id: soId, _token: token },
+                        success: function (acc) {
+                            if (acc == 1) {
+                                Swal.close();
+                                $(".modal").modal("hide");
+                                refreshSalesOrder();
+                                notifikasi(
+                                    "success",
+                                    "Berhasil Terima",
+                                    "Berhasil Terima Pengiriman",
+                                );
+                                return;
+                            }
+                            if (typeof acc === "object") {
+                                if (acc.status == -2) {
+                                    Swal.close();
+                                    showSoErrorModal(
+                                        acc.header || "Gagal ACC",
+                                        acc.message ||
+                                            "Pengiriman sudah diproses.",
+                                    );
+                                    refreshSalesOrder();
+                                    return;
+                                }
+                                if (
+                                    Array.isArray(acc.recommendations) &&
+                                    acc.recommendations.length
+                                ) {
+                                    // Masih ada baris lain yang short — tawarkan lagi
+                                    showStockRecommendModal(acc, {
+                                        soId: soId,
+                                    });
+                                    return;
+                                }
+                                Swal.close();
+                                var fallbackNames =
+                                    $("#btn-accept-so").data(
+                                        "fallback_products",
+                                    ) || [];
+                                showSoErrorModal(
+                                    acc.header || "Gagal ACC",
+                                    normalizeProductErrorMessage(
+                                        acc.message,
+                                        fallbackNames,
+                                    ),
+                                );
+                                return;
+                            }
+                            Swal.close();
+                            showSoErrorModal("Gagal ACC", String(acc || ""));
+                        },
+                        error: function (err) {
+                            Swal.close();
+                            if (handlePermissionError(err)) return;
+                            showSoErrorModal(
+                                "Gagal ACC",
+                                "Terjadi kesalahan saat ACC ulang.",
+                            );
+                        },
+                    });
+                },
+                error: function (err) {
+                    Swal.close();
+                    if (handlePermissionError(err)) return;
+                    showSoErrorModal(
+                        "Gagal simpan gudang",
+                        "Terjadi kesalahan saat menyimpan gudang.",
+                    );
+                },
+            });
+        },
+        function () {
+            Swal.close();
+            showSoErrorModal(
+                "Gagal",
+                "Gagal memuat detail pengiriman untuk ganti gudang.",
+            );
+        },
+    );
+}
+
+/**
+ * options.soId = ACC dari list → persist gudang + retry ACC.
+ * Tanpa soId (modal edit/tambah) → hanya update array products di memori.
+ */
+function showStockRecommendModal(res, options) {
+    options = options || {};
+    var soIdForAcc = options.soId ? parseInt(options.soId, 10) : 0;
     var opts = collectRecommendWarehouses(res);
     var summary = formatStockRecommendations(res);
 
@@ -2600,7 +2842,12 @@ function showStockRecommendModal(res) {
         })
         .join("");
 
+    var hint = soIdForAcc
+        ? '<p class="text-start text-muted mb-2" style="font-size:13px;">Gudang dipilih akan disimpan ke pengiriman, lalu ACC diulang otomatis.</p>'
+        : "";
+
     var html =
+        hint +
         '<p class="text-start mb-3" style="font-size:14px;white-space:pre-wrap;">' +
         escapeHtmlSo(summary) +
         "</p>" +
@@ -2616,7 +2863,9 @@ function showStockRecommendModal(res) {
         html: html,
         showCancelButton: true,
         reverseButtons: true, // Batal di kiri, aksi di kanan (SOP tombol footer modal)
-        confirmButtonText: '<i class="fe fe-check"></i> Pakai Gudang Ini',
+        confirmButtonText: soIdForAcc
+            ? '<i class="fe fe-check"></i> Pakai & ACC Lagi'
+            : '<i class="fe fe-check"></i> Pakai Gudang Ini',
         cancelButtonText: "Batal",
         focusConfirm: false,
         customClass: {
@@ -2656,6 +2905,34 @@ function showStockRecommendModal(res) {
             return String(a.warehouse_id) === String(result.value);
         });
         if (!picked) return;
+
+        // ACC dari list: persist + retry (jangan andalkan array products modal edit)
+        if (soIdForAcc > 0) {
+            applyRecommendWarehouseAndRetryAcc(
+                soIdForAcc,
+                picked,
+                res.recommendations || [],
+            );
+            return;
+        }
+
+        // Modal edit/tambah: update semua baris short yang cocok di memori
+        var whId = parseInt(picked.warehouse_id, 10);
+        var whName = picked.warehouse_name;
+        var touched = applyPickedWarehouseToShortLines(
+            products,
+            picked,
+            res.recommendations || [],
+        );
+        if (touched > 0) {
+            refreshTableProduct();
+            toastr.success(
+                "",
+                "Gudang diganti ke " + (whName || "pilihan") + ". Simpan lalu ACC.",
+            );
+            return;
+        }
+        // Fallback 1 baris (kode lama)
         var recommendation = (res.recommendations || []).find(function (r) {
             return (r.available_at || []).some(function (a) {
                 return String(a.warehouse_id) === String(picked.warehouse_id);
@@ -2670,11 +2947,8 @@ function showStockRecommendModal(res) {
             );
         });
         if (productIndex >= 0) {
-            products[productIndex].warehouse_id = parseInt(
-                picked.warehouse_id,
-                10,
-            );
-            products[productIndex].warehouse_name = picked.warehouse_name;
+            products[productIndex].warehouse_id = whId;
+            products[productIndex].warehouse_name = whName;
             refreshTableProduct();
         }
     });
