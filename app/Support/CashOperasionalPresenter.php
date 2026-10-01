@@ -245,14 +245,14 @@ class CashOperasionalPresenter
     public static function salesRow(object $row, $user): array
     {
         $nominal = (int) ($row->cs_nominal ?? 0);
-        // GitHub #130 (item 38): only the "Pengembalian" saldo action (`cs_aksi` == 3) needs the
-        // sign-based flip — a negative pengembalian is functionally an addition, so it belongs in
-        // Masuk instead of Keluar. "Pemasukan" (aksi 1), "Setor ke Bank" (aksi 2, and per item 39
-        // now guarded against ever being negative) and "operasional" rows (aksi left at its 0
-        // default) all keep their original logic untouched.
-        $isDebit = (int) ($row->cs_aksi ?? 0) === 3
+        // Masuk/Keluar list harus selaras detail (csd_type) + sisaKasSales:
+        // cs_transaction 1 = Masuk, >=2 = Keluar. Khusus Pengembalian (cs_aksi=3): ikut tanda nominal
+        // (GitHub #130 item 38). Jangan wajibkan cs_aksi=1 — itu cuma cabang "Pemasukan" saldo;
+        // operasional API/admin (aksi 0/2) tetap pakai arah cs_transaction.
+        $aksi = (int) ($row->cs_aksi ?? 0);
+        $isDebit = $aksi === 3
             ? $nominal < 0
-            : ((int) ($row->cs_transaction ?? 0) === 1 && (int) ($row->cs_aksi ?? 0) === 1);
+            : (int) ($row->cs_transaction ?? 0) === 1;
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
