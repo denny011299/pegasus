@@ -248,7 +248,7 @@
         var status = parseInt(row.status, 10);
         var pending = status === 1;
         var canView = can("view");
-        var canConfirm = pending && can("others") && row.can_confirm_qc === true;
+        var canConfirm = pending && can("others");
         var canEdit = pending && can("edit");
         var canDelete = pending && can("delete");
         var key = esc(row.doc_key);
@@ -1380,7 +1380,7 @@
                 var status = parseInt(record.status, 10);
                 // Confirm hanya untuk pending + akses others; ACC/ditolak selalu read-only view
                 var confirmMode =
-                    intent === "confirm" && status === 1 && can("others") && record.can_confirm_qc === true;
+                    intent === "confirm" && status === 1 && can("others");
                 if (intent === "confirm" && !confirmMode) {
                     intent = "view";
                 }
