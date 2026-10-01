@@ -50,8 +50,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
                 'description' => '1 = Armada, 2 = Sales.'],
             ['name' => 'armada_id', 'type' => 'integer', 'required' => false,
                 'description' => 'Wajib bila payment_type = 1. Merujuk ke data pelanggan yang mewakili armada (lihat catatan).'],
-            ['name' => 'staff_id', 'type' => 'integer', 'required' => false,
-                'description' => 'Wajib bila payment_type = 2. Merujuk ke staf sales.'],
+            ['name' => 'staff_id', 'type' => 'string atau integer', 'required' => false,
+                'description' => 'Wajib bila payment_type = 2. Id sales milik sistem pemanggil (= staffs.external_ref_id), SAMA field staff_id pada /master/sales — BUKAN id internal Pegasus.'],
             ['name' => 'payment_date', 'type' => 'date', 'required' => true,
                 'description' => 'Tanggal transaksi, format YYYY-MM-DD.'],
             ['name' => 'payment_amount', 'type' => 'integer', 'required' => true,
@@ -129,6 +129,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return [
             'Idempotensi: bila ref_payment_id sudah pernah dipakai, permintaan dianggap kiriman ulang. Pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — ref_payment_id yang menentukan.',
+            'staff_id (payment_type=2) adalah external_ref_id sales milik PMO — SAMA nilai staff_id di /master/sales. Bukan PK internal staffs.staff_id. Sales harus sudah terdaftar/tersinkron (status aktif) sebelum POST /payments/cash.',
             'Pembuatan berhasil menjawab 201; kiriman ulang menjawab 200.',
             'Istilah "armada": di Pegasus, armada dicatat sebagai data pelanggan dengan nomor polisi pada keterangannya. Karena itu armada_id divalidasi terhadap daftar pelanggan, bukan tabel armada tersendiri.',
             'payment_amount wajib sama dengan jumlah seluruh items[].amount. Bila berbeda, permintaan ditolak 422 dan tidak ada yang tersimpan.',
