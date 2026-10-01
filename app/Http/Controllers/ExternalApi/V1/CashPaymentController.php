@@ -25,12 +25,11 @@ use Illuminate\Validation\Rule;
  *   payment_type 1 = Armada  -> cash_armadas  + cash_armada_details
  *   payment_type 2 = Sales   -> cash_sales    + cash_sales_details
  *
- * CATATAN PENTING soal istilah: spesifikasi menyebut "armada_id", padahal di
- * basis data tidak ada entitas armada sama sekali. Kas armada tercatat atas
- * nama CUSTOMER (cash_armadas.customer_id) — kendaraan disimpan sebagai
- * pelanggan dengan nomor polisi pada customer_notes, misalnya
- * "W 9518 PG (Agus)". Jadi armada_id di kontrak API diterjemahkan ke
- * customers.customer_id, dan divalidasi ke tabel customers.
+ * CATATAN PENTING soal istilah: spesifikasi lama menyebut "armada_id" (PK
+ * customers.customer_id). Kontrak External API modul lain (shipment, master
+ * armada) memakai armada_code = customers.customer_code. Endpoint ini menerima
+ * KEDUANYA: utamakan armada_code; armada_id tetap didukung untuk kompatibilitas.
+ * Di DB, kas armada tetap tersimpan di cash_armadas.customer_id.
  *
  * Yang dipakai ulang dari implementasi yang sudah ada, bukan ditulis ulang:
  *   - urutan pembuatan kas operasional (ReportController::insertCashArmada /
@@ -161,8 +160,9 @@ class CashPaymentController extends Controller
             'ref_payment_id' => ['required', 'string', 'max:100'],
             'payment_type' => ['required', 'integer', Rule::in([self::TYPE_ARMADA, self::TYPE_SALES])],
 
-            // armada_id menunjuk ke customers (lihat catatan kelas).
-            'armada_id' => ['required_if:payment_type,'.self::TYPE_ARMADA, 'integer'],
+            // armada_code = customer_code (sama shipment); armada_id = PK internal (legacy).
+            'armada_code' => ['nullable', 'string', 'max:64'],
+            'armada_id' => ['nullable', 'integer'],
             // staff_id di API = staffs.external_ref_id (kontrak sama /master/sales), bukan PK internal.
             'staff_id' => ['required_if:payment_type,'.self::TYPE_SALES, function (string $attribute, $value, \Closure $fail) {
                 if ($value === null || $value === '') {
@@ -193,14 +193,25 @@ class CashPaymentController extends Controller
         return $data;
     }
 
-    /** Armada dicari di customers, sales dicari lewat external_ref_id (bukan PK staff_id). */
+    /** Armada lewat armada_code (customer_code) atau armada_id (legacy); sales lewat external_ref_id. */
     private function assertReferencedRecordExists(array $data): void
     {
         if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
-            $exists = Customer::where('customer_id', '=', $data['armada_id'])->exists();
+            $code = trim((string) ($data['armada_code'] ?? ''));
+            $hasCode = $code !== '';
+            $hasId = array_key_exists('armada_id', $data) && $data['armada_id'] !== null && $data['armada_id'] !== '';
 
-            if (! $exists) {
-                $this->fail('armada_id', 'Armada dengan id '.$data['armada_id'].' tidak ditemukan.');
+            if (! $hasCode && ! $hasId) {
+                $this->fail('armada_code', 'armada_code wajib dikirim bila payment_type = 1 (atau armada_id legacy).');
+            }
+
+            if ($this->resolveArmadaCustomer($data) === null) {
+                $this->fail(
+                    $hasCode ? 'armada_code' : 'armada_id',
+                    $hasCode
+                        ? 'Armada dengan armada_code "'.$code.'" tidak ditemukan.'
+                        : 'Armada dengan id '.$data['armada_id'].' tidak ditemukan.'
+                );
             }
 
             return;
@@ -212,6 +223,24 @@ class CashPaymentController extends Controller
                 'Sales dengan staff_id (external_ref_id) '.$data['staff_id'].' tidak ditemukan.'
             );
         }
+    }
+
+    /**
+     * Utamakan armada_code (= customers.customer_code, sama shipment).
+     * Fallback armada_id = customers.customer_id.
+     */
+    private function resolveArmadaCustomer(array $data): ?Customer
+    {
+        $code = trim((string) ($data['armada_code'] ?? ''));
+        if ($code !== '') {
+            return Customer::where('customer_code', $code)->where('status', 1)->first();
+        }
+
+        if (! empty($data['armada_id'])) {
+            return Customer::where('customer_id', (int) $data['armada_id'])->where('status', 1)->first();
+        }
+
+        return null;
     }
 
     /**
@@ -275,12 +304,16 @@ class CashPaymentController extends Controller
      */
     private function createArmada(array $data, PaymentPhotoStore $photos): CashArmada
     {
-        $customer = Customer::find($data['armada_id']);
+        $customer = $this->resolveArmadaCustomer($data);
+        if ($customer === null) {
+            $this->fail('armada_code', 'Armada tidak ditemukan.');
+        }
+
         $isMasuk = (int) $data['items'][0]['type'] === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
-            'customer_id' => $data['armada_id'],
+            'customer_id' => (int) $customer->customer_id,
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
             'cr_nominal' => (int) $data['payment_amount'],
@@ -456,6 +489,11 @@ class CashPaymentController extends Controller
             $staffExternalRef = Staff::where('staff_id', (int) $payment->staff_id)->value('external_ref_id');
         }
 
+        $armadaCode = null;
+        if ($isArmada && $payment->customer_id) {
+            $armadaCode = Customer::where('customer_id', (int) $payment->customer_id)->value('customer_code');
+        }
+
         return [
             'ref_payment_id' => $payment->ref_payment_id,
             'payment_id' => (int) $id,
@@ -463,6 +501,7 @@ class CashPaymentController extends Controller
             'payment_date' => (string) ($isArmada ? $payment->cr_date : $payment->cs_date),
             'payment_amount' => (int) ($isArmada ? $payment->cr_nominal : $payment->cs_nominal),
             'notes' => (string) ($isArmada ? $payment->cr_notes : $payment->cs_notes),
+            'armada_code' => $isArmada ? ($armadaCode !== null ? (string) $armadaCode : null) : null,
             'armada_id' => $isArmada ? (int) $payment->customer_id : null,
             // Kembalikan external_ref_id supaya konsisten dengan body request /master/sales.
             'staff_id' => $isArmada ? null : ($staffExternalRef !== null ? (string) $staffExternalRef : null),
