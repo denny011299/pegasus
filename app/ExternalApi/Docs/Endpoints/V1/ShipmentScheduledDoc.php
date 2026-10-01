@@ -55,6 +55,8 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
                 'description' => 'Tanggal shipment dijadwalkan, format YYYY-MM-DD. Disimpan sebagai sales_orders.so_date.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => true,
                 'description' => 'customers.customer_code — id universal Armada (lihat modul Data Armada). Kalau belum ada di Pegasus, dibuat otomatis (upsert minimal, tanpa profil) — tidak wajib disinkronkan/dibuat lewat endpoint Armada lebih dulu.'],
+            ['name' => 'ref_number', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor referensi bebas — masuk ke field "Nomor Referensi" di halaman admin Pengiriman (kolom sales_orders.so_ref_number). Bukan kunci upsert; upsert tetap lewat ref_shipment_id.'],
             ['name' => 'auto_create_shortage_doc', 'type' => 'boolean', 'required' => false,
                 'description' => 'true = buat dokumen kekurangan stok otomatis BILA ada item yang shortage-nya > 0 (berlaku juga saat memperbarui shipment yang sudah ada — dokumen baru dibuat, bukan menimpa dokumen sebelumnya). Tidak dikirim/false = tidak pernah membuat dokumen.'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
@@ -76,6 +78,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'ref_shipment_id' => 'SHP-7788',
             'scheduled_date' => '2026-07-25',
             'armada_code' => 'ARM-JKT-001',
+            'ref_number' => 'INV1084',
             'auto_create_shortage_doc' => true,
             'items' => [
                 ['sku' => 'AAHK400ML', 'qty' => 24, 'unit_id' => 5, 'ref_nota_id' => 4328012026102327],
@@ -90,6 +93,7 @@ class ShipmentScheduledDoc extends ApiEndpointDoc
             'data' => [
                 'shipment_internal_id' => 505,
                 'ref_shipment_id' => 'SHP-7788',
+                'ref_number' => 'INV1084',
                 'ipm_status' => 1,
                 'ipm_status_label' => 'Dijadwalkan',
                 'shortage_doc_created' => true,

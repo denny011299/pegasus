@@ -56,6 +56,8 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                 'description' => 'Wajib "onprocess" ("Berjalan"), baik untuk membuat maupun memperbarui. Nilai lain ditolak (INVALID_STATUS) — ini penanda dari kontrak, bukan penentu status akhir shipment di sini (lihat catatan).'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas.'],
+            ['name' => 'ref_number', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor referensi bebas — masuk ke field "Nomor Referensi" di halaman admin Pengiriman (kolom sales_orders.so_ref_number). Bukan kunci idempotensi; idempotensi/upsert tetap lewat ref_shipment_id.'],
             ['name' => 'detail_handler', 'type' => 'string', 'required' => false,
                 'description' => '"force" (bawaan) = timpa data tersimpan dengan permintaan ini bila berbeda. "validate" = tolak dengan galat SHIPMENT_DETAIL_MISMATCH bila berbeda, tidak ada yang berubah.'],
             ['name' => 'auto_create_shortage_doc', 'type' => 'boolean', 'required' => false,
@@ -86,6 +88,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'shipment_date' => '2026-07-25',
             'armada_code' => 'ARM-JKT-001',
             'status' => 'onprocess',
+            'ref_number' => 'INV1084',
             'notes' => 'Pengiriman SHP-7788',
             'detail_handler' => 'force',
             'items' => [
@@ -108,6 +111,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'data' => [
                 'ref_shipment_id' => 'SHP-7788',
                 'shipment_internal_id' => 4521,
+                'ref_number' => 'INV1084',
                 'ipm_status' => 2,
                 'ipm_status_label' => 'Berjalan',
                 'shortage_doc_created' => false,
