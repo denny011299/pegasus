@@ -69,7 +69,7 @@ class StockOpnameBahan extends Model
             $result->where('warehouse_id', $warehouseId);
         }
 
-        $result->orderBy('status', 'asc')->orderBy('stob_date', 'desc');
+        $result->orderBy('stob_date', 'desc')->orderBy('stob_id', 'desc');
 
         $result = $result->get();
 

@@ -83,7 +83,7 @@ class StockOpname extends Model
             $result->where('warehouse_id', $warehouseId);
         }
 
-        $result->orderBy('status', 'asc')->orderBy('sto_date', 'desc');
+        $result->orderBy('sto_date', 'desc')->orderBy('sto_id', 'desc');
 
         $result = $result->get();
 
