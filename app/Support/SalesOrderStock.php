@@ -118,8 +118,28 @@ class SalesOrderStock
             return false;
         }
         $defaultUnit = self::productDefaultUnitId($variantId);
+        if ($defaultUnit > 0 && $defaultUnit === $retailUnit) {
+            return true;
+        }
 
-        return $defaultUnit > 0 && $defaultUnit === $retailUnit;
+        return self::productHasOnlyUnit($variantId, $retailUnit);
+    }
+
+    /** Produk hanya punya satu satuan (product_unit) dan itu satuan eceran → tetap SKU 1 satuan. */
+    public static function productHasOnlyUnit(int $variantId, int $unitId): bool
+    {
+        $productId = (int) (ProductVariant::where('product_variant_id', $variantId)->value('product_id') ?? 0);
+        if ($productId <= 0) {
+            return false;
+        }
+        $raw = Product::where('product_id', $productId)->value('product_unit');
+        $ids = collect(is_array($raw) ? $raw : (json_decode((string) $raw, true) ?: []))
+            ->map(fn ($id) => (int) $id)
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $ids->count() === 1 && $ids->first() === $unitId;
     }
 
     public static function isRetailWarehouse(int $warehouseId): bool
