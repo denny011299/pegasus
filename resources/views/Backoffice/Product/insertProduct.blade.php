@@ -57,21 +57,21 @@
                             <form action="#">
                                 <div class="form-group-item">
                                     <div class="row">
-                                        <div class="col-12 col-md-6">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Nama<span class="text-danger">*</span></label>
                                                 <input type="text" class="form-control fill" id="product_name"
                                                     placeholder="Input {{ $productPage['name_label'] ?? 'Nama Produk' }}">
                                             </div>
                                         </div>
-                                        <div class="col-12 col-md-6">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Kategori<span class="text-danger">*</span></label>
                                                 <select class="form-select fill select2" id="product_category">
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-12 col-md-8">
+                                        <div class="col-12 col-md-4">
                                             <div class="input-block mb-3">
                                                 <label>Satuan<span class="text-danger">*</span></label>
                                                 <div class="container-satuan">
@@ -79,7 +79,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-12 col-md-4">
+                                        <div class="col-12 col-md-3">
                                             <div class="input-block mb-3">
                                                 <label>Default Unit<span class="text-danger">*</span></label>
                                                 <select class="form-select fill select2" id="unit_id">
