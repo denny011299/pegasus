@@ -53,6 +53,8 @@ class ShipmentShippedDoc extends ApiEndpointDoc
                 'description' => 'customers.customer_code — id universal Armada. Kalau belum ada di Pegasus, dibuat otomatis (upsert minimal, tanpa profil) — tidak wajib disinkronkan/dibuat lewat endpoint Armada lebih dulu.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas, disimpan sebagai sales_orders.notes.'],
+            ['name' => 'ref_number', 'type' => 'string', 'required' => false,
+                'description' => 'Nomor referensi bebas — masuk ke field "Nomor Referensi" di halaman admin Pengiriman (kolom sales_orders.so_ref_number). Bukan kunci idempotensi; idempotensi/upsert tetap lewat ref_shipment_id.'],
             ['name' => 'detail_handler', 'type' => 'string', 'required' => false,
                 'description' => '"force" (bawaan) = timpa data tersimpan dengan permintaan ini bila berbeda. "validate" = tolak dengan galat SHIPMENT_DETAIL_MISMATCH bila berbeda, tidak ada yang berubah. Hanya berlaku saat ref_shipment_id sudah ada DAN belum ipm_status "Berjalan" — lihat catatan.'],
             ['name' => 'items', 'type' => 'array', 'required' => true,
@@ -80,6 +82,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'ref_shipment_id' => 'SHP-7788',
             'shipment_date' => '2026-07-25',
             'armada_code' => 'L8533N',
+            'ref_number' => 'INV1084',
             'notes' => 'Pengiriman PMO SHP-7788',
             'detail_handler' => 'force',
             'items' => [
@@ -102,6 +105,7 @@ class ShipmentShippedDoc extends ApiEndpointDoc
             'data' => [
                 'ref_shipment_id' => 'SHP-7788',
                 'shipment_internal_id' => 4521,
+                'ref_number' => 'INV1084',
                 'ipm_status' => 2,
                 'ipm_status_label' => 'Berjalan',
             ],

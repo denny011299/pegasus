@@ -52,7 +52,7 @@ class ShipmentReturnCreateDoc extends ApiEndpointDoc
             ['name' => 'armada_code', 'type' => 'string', 'required' => true,
                 'description' => 'customers.customer_code — id universal Armada, sama field yang dipakai POST /shipments/scheduled dan /shipments/shipped. Harus armada aktif.'],
             ['name' => 'ref_number', 'type' => 'string', 'required' => false,
-                'description' => 'Nomor referensi bebas, catatan saja — bukan kunci idempotensi (endpoint ini TIDAK idempoten, lihat catatan).'],
+                'description' => 'Nomor referensi bebas yang tampil di field "Nomor Referensi" modal pengembalian admin. Boleh diisi no pembayaran/group (mis. pym-…), no nota, atau teks lain — bukan kunci idempotensi.'],
             ['name' => 'notes', 'type' => 'string', 'required' => false,
                 'description' => 'Catatan bebas.'],
             ['name' => 'proof', 'type' => 'file', 'required' => true,

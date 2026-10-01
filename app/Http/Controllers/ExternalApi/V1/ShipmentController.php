@@ -130,6 +130,8 @@ class ShipmentController extends Controller
             'ref_shipment_id' => ['required', 'string', 'max:100'],
             'scheduled_date' => ['required', 'date'],
             'armada_code' => ['required', 'string', 'max:64'],
+            // Nomor Referensi di UI admin Pengiriman (= sales_orders.so_ref_number)
+            'ref_number' => ['nullable', 'string', 'max:255'],
             'auto_create_shortage_doc' => ['nullable', 'boolean'],
         ], $this->stockItemValidationRules()));
 
@@ -186,6 +188,7 @@ class ShipmentController extends Controller
         return ApiResponse::success(array_merge([
             'shipment_internal_id' => (int) $result['so']->so_id,
             'ref_shipment_id' => (string) $data['ref_shipment_id'],
+            'ref_number' => $result['so']->so_ref_number,
         ], $ipm, [
             'shortage_doc_created' => $result['shortage_doc_number'] !== null,
             'shortage_doc_number' => $result['shortage_doc_number'],
@@ -205,6 +208,8 @@ class ShipmentController extends Controller
     {
         $isCreate = $so === null;
 
+        $refNumber = $this->normalizeRefNumber($data);
+
         if ($isCreate) {
             $so = (new SalesOrder())->insertSalesOrder([
                 'so_customer' => (string) $customer->customer_id,
@@ -213,11 +218,13 @@ class ShipmentController extends Controller
                 'so_img' => json_encode([]),
             ]);
             $so->ref_shipment_id = $data['ref_shipment_id'];
+            $so->so_ref_number = $refNumber;
             $so->status = self::STATUS_SCHEDULED;
             $so->save();
         } else {
             $so->so_customer = (string) $customer->customer_id;
             $so->so_date = $data['scheduled_date'];
+            $so->so_ref_number = $refNumber;
             $so->save();
         }
 
@@ -451,6 +458,7 @@ class ShipmentController extends Controller
         return ApiResponse::success(array_merge([
             'shipment_internal_id' => (int) $so->so_id,
             'ref_shipment_id' => (string) $so->ref_shipment_id,
+            'ref_number' => $so->so_ref_number,
         ], $this->ipmStatusFields($so), [
             'shipment_date' => (string) $so->so_date,
             'armada_code' => $customer->customer_code ?? null,
@@ -660,6 +668,8 @@ class ShipmentController extends Controller
             'shipment_date' => ['required', 'date'],
             'armada_code' => ['required', 'string', 'max:64'],
             'notes' => ['nullable', 'string', 'max:2000'],
+            // Nomor Referensi di UI admin Pengiriman (= sales_orders.so_ref_number)
+            'ref_number' => ['nullable', 'string', 'max:255'],
             'detail_handler' => ['nullable', 'string', Rule::in(['force', 'validate'])],
             'items' => ['required', 'array', 'min:1'],
             'items.*.variant_sku' => [
@@ -691,6 +701,7 @@ class ShipmentController extends Controller
         ]);
         $so->ref_shipment_id = $data['ref_shipment_id'];
         $so->notes = $data['notes'] ?? null;
+        $so->so_ref_number = $this->normalizeRefNumber($data);
         $so->status = self::STATUS_SCHEDULED;
         $so->save();
 
@@ -708,6 +719,7 @@ class ShipmentController extends Controller
         $so->so_customer = (string) $customer->customer_id;
         $so->so_date = $data['shipment_date'];
         $so->notes = $data['notes'] ?? null;
+        $so->so_ref_number = $this->normalizeRefNumber($data);
         $so->save();
 
         $this->replaceDetails($so, $resolvedItems);
@@ -772,6 +784,9 @@ class ShipmentController extends Controller
         if ((string) ($so->notes ?? '') !== (string) ($data['notes'] ?? '')) {
             $diffs[] = 'notes';
         }
+        if ((string) ($so->so_ref_number ?? '') !== (string) ($this->normalizeRefNumber($data) ?? '')) {
+            $diffs[] = 'ref_number';
+        }
 
         $existingItems = SalesOrderDetail::where('so_id', $so->so_id)->where('status', 1)
             ->get(['product_variant_id', 'unit_id', 'sod_qty', 'ref_nota_id'])
@@ -810,7 +825,16 @@ class ShipmentController extends Controller
         return ApiResponse::success(array_merge([
             'ref_shipment_id' => (string) $so->ref_shipment_id,
             'shipment_internal_id' => (int) $so->so_id,
+            'ref_number' => $so->so_ref_number,
         ], $this->ipmStatusFields($so)), $meta, $httpStatus);
+    }
+
+    /** ref_number API → sales_orders.so_ref_number (field "Nomor Referensi" di admin). */
+    private function normalizeRefNumber(array $data): ?string
+    {
+        $value = trim((string) ($data['ref_number'] ?? ''));
+
+        return $value !== '' ? $value : null;
     }
 
     /**
