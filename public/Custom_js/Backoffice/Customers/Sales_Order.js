@@ -501,6 +501,7 @@ function doScanAddSoProduct(data, qty) {
                             unit_name: defaultUnitName,
                             pr_unit: data.pr_unit || [],
                             retail_unit: data.retail_unit || 0,
+                            default_unit: soProductDefaultUnitId(data),
                             warehouse_id: null,
                             warehouse_name: null,
                         }),
@@ -537,11 +538,16 @@ function doScanAddSoProduct(data, qty) {
         warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
     };
 
-    // #116: eceran @ gudang utama — baris masuk dulu, cek saat pilih gudang eceran.
+    // #116: eceran ≠ default @ utama — baris masuk dulu; 1 satuan (eceran=default) cek stok langsung.
     var isPendingRetailWarehouse =
         !isActiveRetailWarehouse() &&
         parseInt(data.retail_unit || 0, 10) > 0 &&
-        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10);
+        parseInt(defaultUnitId, 10) === parseInt(data.retail_unit, 10) &&
+        !isSoRetailSameAsDefault({
+            retail_unit: data.retail_unit,
+            default_unit: soProductDefaultUnitId(data),
+            pr_unit: data.pr_unit || [],
+        });
     if (isPendingRetailWarehouse) {
         commitScanAdd();
         return;
@@ -708,6 +714,7 @@ $(document).on("click", "#btn-add-product-so", function () {
                 unit_name: unitText,
                 pr_unit: temp.pr_unit || [],
                 retail_unit: temp.retail_unit || 0,
+                default_unit: soProductDefaultUnitId(temp),
                 warehouse_id: null,
                 warehouse_name: null,
             };
@@ -740,11 +747,16 @@ $(document).on("click", "#btn-add-product-so", function () {
         warehouse_id: (idx >= 0 && products[idx].warehouse_id) || whMeta.id || null,
     };
 
-    // #116: eceran @ gudang utama — baris masuk dulu, cek saat pilih gudang eceran.
+    // #116: eceran ≠ default @ utama — baris masuk dulu; 1 satuan (eceran=default) cek stok langsung.
     var isPendingRetailWarehouse =
         !isActiveRetailWarehouse() &&
         parseInt(temp.retail_unit || 0, 10) > 0 &&
-        unitId === parseInt(temp.retail_unit, 10);
+        unitId === parseInt(temp.retail_unit, 10) &&
+        !isSoRetailSameAsDefault({
+            retail_unit: temp.retail_unit,
+            default_unit: soProductDefaultUnitId(temp),
+            pr_unit: temp.pr_unit || [],
+        });
     if (isPendingRetailWarehouse) {
         commitSoAdd();
         return;
@@ -905,14 +917,32 @@ function activeMainWarehouseMeta() {
     };
 }
 
+
+function soProductDefaultUnitId(product) {
+    if (!product) return 0;
+    var d = parseInt(product.default_unit || product.default_unit_id || 0, 10);
+    if (d > 0) return d;
+    if (Array.isArray(product.pr_unit) && product.pr_unit.length === 1) {
+        return parseInt(product.pr_unit[0].unit_id || 0, 10) || 0;
+    }
+    return 0;
+}
+
+/** retail_unit === default → SKU 1 satuan (boleh gudang utama). */
+function isSoRetailSameAsDefault(product) {
+    var retail = parseInt((product && product.retail_unit) || 0, 10);
+    var def = soProductDefaultUnitId(product);
+    return retail > 0 && def > 0 && retail === def;
+}
+
 function applyDefaultMainWarehouse(product) {
     if (!product || isActiveRetailWarehouse()) {
         return product;
     }
     var retailUnit = parseInt(product.retail_unit || 0, 10);
     var unitId = parseInt(product.unit_id || 0, 10);
-    // Eceran: jangan auto-isi gudang utama (#116) — user pilih eceran di dropdown.
-    if (retailUnit > 0 && unitId === retailUnit) {
+    // Eceran ≠ default → jangan isi utama. Eceran = default (1 satuan) → boleh utama.
+    if (retailUnit > 0 && unitId === retailUnit && !isSoRetailSameAsDefault(product)) {
         return product;
     }
     if (parseInt(product.warehouse_id || 0, 10) > 0) {
@@ -1763,9 +1793,11 @@ function initSalesOrderWarehouseSelects() {
             selector = "#" + $(this).attr("id");
         }
         if (typeof autocompleteWarehouse === "function") {
+            var p = products[parseInt($(this).data("index"), 10)] || {};
+            var retailOnly = !isSoRetailSameAsDefault(p);
             autocompleteWarehouse(selector, "#add_sales_order .modal-content", {
-                retailOnly: true,
-                placeholder: "Pilih gudang eceran",
+                retailOnly: retailOnly,
+                placeholder: retailOnly ? "Pilih gudang eceran" : "Pilih gudang sumber",
             });
         }
         if (mode === 3) {
