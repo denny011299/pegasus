@@ -566,7 +566,31 @@ function doScanAddSoProduct(data, qty) {
         return;
     }
 
-    checkSoStockThenAdd([checkLine], commitScanAdd);
+    // Stok kurang → modal rekomendasi; "Pakai Gudang Ini" menambah/update lewat pendingProduct.
+    var pendingProduct =
+        idx === -1
+            ? {
+                  product_variant_id: data.product_variant_id,
+                  product_name: data.pr_name || "-",
+                  product_variant_name: data.product_variant_name,
+                  product_variant_sku: data.product_variant_sku,
+                  product_variant_price: data.product_variant_price || 0,
+                  so_qty: qty,
+                  unit_id: defaultUnitId,
+                  unit_name: defaultUnitName,
+                  pr_unit: data.pr_unit || [],
+                  retail_unit: data.retail_unit || 0,
+                  default_unit: soProductDefaultUnitId(data),
+                  warehouse_id: null,
+                  warehouse_name: null,
+              }
+            : {
+                  product_variant_id: data.product_variant_id,
+                  unit_id: defaultUnitId,
+                  so_qty: checkQty,
+              };
+
+    checkSoStockThenAdd([checkLine], commitScanAdd, null, null, pendingProduct);
 }
 
 $(document).on("click", "#btn_scan_add_so", function () {
@@ -775,22 +799,46 @@ $(document).on("click", "#btn-add-product-so", function () {
         return;
     }
 
-    checkSoStockThenAdd([checkLine], commitSoAdd, "#btn-add-product-so");
+    // Stok kurang → modal rekomendasi; "Pakai Gudang Ini" menambah/update lewat pendingProduct.
+    var pendingProduct =
+        idx == -1
+            ? {
+                  product_variant_id: temp.product_variant_id,
+                  product_name: temp.product_name || temp.pr_name || "-",
+                  product_variant_name: temp.product_variant_name,
+                  product_variant_sku: temp.product_variant_sku,
+                  product_variant_price: temp.product_variant_price || 0,
+                  so_qty: qty,
+                  unit_id: unitId,
+                  unit_name: unitText,
+                  pr_unit: temp.pr_unit || [],
+                  retail_unit: temp.retail_unit || 0,
+                  default_unit: soProductDefaultUnitId(temp),
+                  warehouse_id: null,
+                  warehouse_name: null,
+              }
+            : {
+                  product_variant_id: temp.product_variant_id,
+                  unit_id: unitId,
+                  so_qty: checkQty,
+              };
+
+    checkSoStockThenAdd(
+        [checkLine],
+        commitSoAdd,
+        "#btn-add-product-so",
+        null,
+        pendingProduct,
+    );
 });
 
 /**
- * Cek stok bahan/produk sebelum baris BENAR-BENAR masuk ke `products` - GitHub #116,
- * meniru pola continueAddProduct()/checkProductionStock() di Produksi (GitHub #101/#105).
- * Dipanggil dengan salinan `products` yang SUDAH termasuk baris baru/gabungan; kalau
- * /checkSalesOrderStock lolos, `onOk()` dijalankan (baris itu dipanggil push oleh caller
- * ke `products` asli) - kalau tidak, popup error/rekomendasi gudang yang sama seperti ACC
- * ditampilkan dan baris TIDAK ditambahkan.
- *
- * Ini murni peringatan dini di UI (lihat catatan di checkSalesOrderStock() backend) -
- * submit akhir (Tambah/Update Pengiriman) tetap tidak diblokir oleh stok saat ini, sesuai
- * keputusan GitHub #99.
+ * Cek stok sebelum baris masuk ke `products` (GitHub #116).
+ * Stok cukup → onOk(); kurang + recommendations → showStockRecommendModal({ pendingProduct }).
+ * pendingProduct: meta baris yang belum di-push (Tambah/Scan) agar "Pakai Gudang Ini" bisa menambah baris.
+ * Submit akhir tetap tidak diblokir stok (GitHub #99).
  */
-function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail) {
+function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail, pendingProduct) {
     if ($btn) LoadingButton($btn);
     $.ajax({
         url: "/checkSalesOrderStock",
@@ -806,7 +854,9 @@ function checkSoStockThenAdd(candidateProducts, onOk, $btn, onFail) {
             if ($btn) ResetLoadingButton($btn, '<i class="fe fe-plus"></i> Tambah');
             if (!e || e.status != 1) {
                 if (e && e.recommendations && e.recommendations.length) {
-                    showStockRecommendModal(e);
+                    showStockRecommendModal(e, {
+                        pendingProduct: pendingProduct || null,
+                    });
                 } else {
                     showSoErrorModal(
                         (e && e.header) || "Stok tidak cukup",
@@ -2849,11 +2899,21 @@ function applyRecommendWarehouseAndRetryAcc(soId, picked, recommendations) {
 
 /**
  * options.soId = ACC dari list → persist gudang + retry ACC.
- * Tanpa soId (modal edit/tambah) → hanya update array products di memori.
+ * options.pendingProduct = baris Tambah/Scan yang belum di `products` — "Pakai Gudang Ini" menambahnya.
+ * Tanpa keduanya (modal edit qty/gudang) → update array products di memori.
  */
 function showStockRecommendModal(res, options) {
     options = options || {};
     var soIdForAcc = options.soId ? parseInt(options.soId, 10) : 0;
+    var pendingProduct = options.pendingProduct || null;
+    // Legacy: argumen ke-2 pernah berupa pendingProduct langsung (bukan { soId }).
+    if (
+        !pendingProduct &&
+        options.product_variant_id != null &&
+        options.soId == null
+    ) {
+        pendingProduct = options;
+    }
     var opts = collectRecommendWarehouses(res);
     var summary = formatStockRecommendations(res);
 
@@ -2880,7 +2940,9 @@ function showStockRecommendModal(res, options) {
 
     var hint = soIdForAcc
         ? '<p class="text-start text-muted mb-2" style="font-size:13px;">Gudang dipilih akan disimpan ke pengiriman, lalu ACC diulang otomatis.</p>'
-        : "";
+        : pendingProduct
+          ? '<p class="text-start text-muted mb-2" style="font-size:13px;">Produk akan ditambahkan ke daftar dengan gudang yang dipilih.</p>'
+          : "";
 
     var html =
         hint +
@@ -2952,9 +3014,49 @@ function showStockRecommendModal(res, options) {
             return;
         }
 
-        // Modal edit/tambah: update semua baris short yang cocok di memori
         var whId = parseInt(picked.warehouse_id, 10);
         var whName = picked.warehouse_name;
+
+        // Tambah/Scan: baris belum di `products` — push/merge dengan gudang pilihan
+        if (pendingProduct && pendingProduct.product_variant_id) {
+            var matchVariantId = pendingProduct.product_variant_id;
+            var matchUnitId = pendingProduct.unit_id;
+            var productIndex = products.findIndex(function (p) {
+                return (
+                    matchVariantId != null &&
+                    matchUnitId != null &&
+                    parseInt(p.product_variant_id, 10) ===
+                        parseInt(matchVariantId, 10) &&
+                    parseInt(p.unit_id, 10) === parseInt(matchUnitId, 10)
+                );
+            });
+            if (productIndex >= 0) {
+                products[productIndex].warehouse_id = whId;
+                products[productIndex].warehouse_name = whName;
+                if (pendingProduct.so_qty != null) {
+                    products[productIndex].so_qty = pendingProduct.so_qty;
+                }
+                refreshTableProduct();
+                toastr.success(
+                    "",
+                    "Gudang diganti ke " + (whName || "pilihan") + ".",
+                );
+                return;
+            }
+            var line = Object.assign({}, pendingProduct);
+            line.warehouse_id = whId;
+            line.warehouse_name = whName;
+            products.push(normalizeProductForActiveWarehouse(line));
+            toastr.success("", "Berhasil menambahkan Produk");
+            refreshTableProduct();
+            $("#so_sku").val(null).trigger("change");
+            fillSoUnitInput(null);
+            $("#so_qty_input").val(1);
+            $("#so_scan_barcode").val("").focus();
+            return;
+        }
+
+        // Modal edit: update semua baris short yang cocok di memori
         var touched = applyPickedWarehouseToShortLines(
             products,
             picked,
@@ -2974,7 +3076,7 @@ function showStockRecommendModal(res, options) {
                 return String(a.warehouse_id) === String(picked.warehouse_id);
             });
         });
-        var productIndex = products.findIndex(function (p) {
+        var productIndexFallback = products.findIndex(function (p) {
             return (
                 recommendation &&
                 parseInt(p.product_variant_id, 10) ===
@@ -2982,9 +3084,9 @@ function showStockRecommendModal(res, options) {
                 parseInt(p.unit_id, 10) === parseInt(recommendation.unit_id, 10)
             );
         });
-        if (productIndex >= 0) {
-            products[productIndex].warehouse_id = whId;
-            products[productIndex].warehouse_name = whName;
+        if (productIndexFallback >= 0) {
+            products[productIndexFallback].warehouse_id = whId;
+            products[productIndexFallback].warehouse_name = whName;
             refreshTableProduct();
         }
     });
