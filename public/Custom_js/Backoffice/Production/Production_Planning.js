@@ -13,12 +13,22 @@ var PP_SKALA_OPTIONS = [];
 var ppApprovePlanningId = null;
 var ppWorkOrderPlanningId = null;
 var ppViewPlanningId = null;
+/** Cache detail terakhir di modal view (untuk konfirmasi WO + edit PIC/Skala/Armada). */
+var ppViewDetailCache = null;
+/** Snapshot item sebelum edit — untuk Batal. */
+var ppViewAssignSnapshot = null;
+var ppViewAssignEditMode = false;
 var ppLoadXhr = null;
 
-/** Polling realtime ringan — skip saat modal/klik/loading. */
+/** Polling realtime ringan — skip saat modal/hover tabel/loading. */
 var ppLiveStamp = null;
+var ppLivePendingStamp = null;
 var ppLiveXhr = null;
 var ppLiveTimer = null;
+/** Soft reload: jangan skeleton penuh (hindari “lompat” halaman). */
+var ppReloadSoft = false;
+var ppLiveUiPaused = false;
+var ppLiveUiPauseTimer = null;
 
 /** Histori produksi selesai. */
 var ppHistoriTable = null;
@@ -234,6 +244,8 @@ function ppBindSharedDatePicker($date) {
     $date.off(
         "apply.daterangepicker.ppShared cancel.daterangepicker.ppShared show.daterangepicker.ppShared hide.daterangepicker.ppShared"
     );
+    // Plugin ini: klik preset (Hari Ini, dll) → clickApply → hide dulu → baru apply.
+    // Jangan setStart/End di hide (itu menimpa tanggal baru sebelum apply kebaca).
     $date.on("apply.daterangepicker.ppShared", function (ev, picker) {
         ppSetSharedDateRange(
             picker.startDate.format("YYYY-MM-DD"),
@@ -244,7 +256,8 @@ function ppBindSharedDatePicker($date) {
     $date.on("cancel.daterangepicker.ppShared", function () {
         ppApplyDefaultSharedDate({ soft: true });
     });
-    $date.on("show.daterangepicker.ppShared hide.daterangepicker.ppShared", function () {
+    // Sync display saat buka saja (bukan saat hide).
+    $date.on("show.daterangepicker.ppShared", function () {
         ppPaintDateInput($date, ppFilterDateStart, ppFilterDateEnd);
     });
 
@@ -304,6 +317,17 @@ function getPpFilterState() {
     };
 }
 
+/** Tab aktif dari nav-link — jangan andalkan .show di pane (BS fade bisa nyangkut). */
+function ppActiveMainTab() {
+    var $btn = $("#pp-main-tabs .nav-link.active").first();
+    if (!$btn.length) return "planning";
+    var t = String($btn.attr("data-bs-target") || $btn.attr("id") || "");
+    if (t.indexOf("job") !== -1) return "job";
+    if (t.indexOf("bahan") !== -1) return "bahan";
+    if (t.indexOf("histori") !== -1) return "histori";
+    return "planning";
+}
+
 function buildPpQueryString() {
     var q = new URLSearchParams();
     // Tanggal selalu shared (satu value untuk semua tab).
@@ -311,7 +335,8 @@ function buildPpQueryString() {
         q.set("date_from", ppFilterDateStart);
         q.set("date_to", ppFilterDateEnd);
     }
-    if (typeof ppJobTabIsActive === "function" ? ppJobTabIsActive() : $("#pp-tab-job").hasClass("active")) {
+    var tab = ppActiveMainTab();
+    if (tab === "job") {
         q.set("tab", "job");
         var st = $("#pp_job_filter_status").val() || "";
         q.set("status", st);
@@ -319,11 +344,11 @@ function buildPpQueryString() {
         if (ppid) q.set("product_variant_id", ppid);
         var jsid = $("#pp_job_filter_supervisor").val();
         if (jsid) q.set("pic_staff_id", jsid);
-    } else if ($("#pp-tab-bahan").hasClass("active") || $("#pp-pane-bahan").hasClass("show")) {
+    } else if (tab === "bahan") {
         q.set("tab", "bahan");
         var bst = $("#pp_bahan_filter_stage").val() || "";
         if (bst) q.set("status", bst);
-    } else if ($("#pp-tab-histori").hasClass("active") || $("#pp-pane-histori").hasClass("show")) {
+    } else if (tab === "histori") {
         q.set("tab", "histori");
         var hpid = $("#pp_histori_filter_product").val();
         if (hpid) q.set("product_variant_id", hpid);
@@ -640,9 +665,9 @@ function mapPpRows(rows) {
                       '"><i class="fe fe-trash-2"></i></a>';
                 return (
                     '<div class="d-flex align-items-center justify-content-center gap-1">' +
-                    '<a href="javascript:void(0);" class="btn-action-icon btn-pp-view" data-id="' +
+                    '<button type="button" class="btn-action-icon btn-pp-view" data-id="' +
                     id +
-                    '" title="Lihat Detail"><i class="fe fe-eye"></i></a>' +
+                    '" title="Lihat Detail"><i class="fe fe-eye"></i></button>' +
                     prints +
                     delBtn +
                     "</div>"
@@ -665,12 +690,73 @@ function applyPpTabBadges(tabs) {
     });
 }
 
+/** Area UI yang kalau di-hover/klik → jangan auto-refresh tabel. */
+function ppLiveInteractiveSelector() {
+    return [
+        "#tablePpPlanning-wrap",
+        "#tablePpJob-wrap",
+        "#tablePpBahan-wrap",
+        "#tablePpHistori-wrap",
+        "#tablePpReleased-wrap",
+        "#tablePpWorkOrder-wrap",
+        "#tablePpProduksi-wrap",
+        "#tablePpSelesai-wrap",
+        "#pp-pane-planning .dataTables_wrapper",
+        "#pp-pane-job .dataTables_wrapper",
+        "#pp-pane-bahan .dataTables_wrapper",
+        "#pp-pane-histori .dataTables_wrapper",
+        ".pp-filter-box",
+    ].join(", ");
+}
+
+function ppBindLiveUiPause() {
+    var sel = ppLiveInteractiveSelector();
+    $(document)
+        .off(".ppLivePause")
+        .on("mouseenter.ppLivePause", sel, function () {
+            if (ppLiveUiPauseTimer) {
+                clearTimeout(ppLiveUiPauseTimer);
+                ppLiveUiPauseTimer = null;
+            }
+            ppLiveUiPaused = true;
+        })
+        .on("mouseleave.ppLivePause", sel, function () {
+            if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
+            // Delay kecil biar pindah ke pagination/length tidak sempat refresh
+            ppLiveUiPauseTimer = setTimeout(function () {
+                ppLiveUiPaused = false;
+                ppLiveUiPauseTimer = null;
+                // Ada perubahan tertunda saat user hover → soft reload sekarang
+                if (ppLivePendingStamp && ppLivePendingStamp !== ppLiveStamp && !ppLiveBusyUi()) {
+                    ppLiveStamp = ppLivePendingStamp;
+                    ppLivePendingStamp = null;
+                    ppLiveSoftReloadActive();
+                }
+            }, 900);
+        })
+        .on(
+            "mousedown.ppLivePause click.ppLivePause",
+            sel + ", .dataTables_paginate, .dataTables_length",
+            function () {
+                ppLiveUiPaused = true;
+                if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
+                ppLiveUiPauseTimer = setTimeout(function () {
+                    ppLiveUiPaused = false;
+                    ppLiveUiPauseTimer = null;
+                }, 2500);
+            }
+        );
+}
+
 /** Jangan ganggu user yang sedang interaksi / modal / ajax loading. */
 function ppLiveBusyUi() {
     if (document.hidden) return true;
+    if (ppLiveUiPaused) return true;
     if ($(".modal.show").length) return true;
     if ($(".select2-container--open").length) return true;
     if ($(".daterangepicker:visible").length) return true;
+    if ($(ppLiveInteractiveSelector()).filter(":hover").length) return true;
+    if ($(".dataTables_paginate:hover, .dataTables_length:hover").length) return true;
     if (
         $("#tablePpPlanning-wrap.is-loading, #tablePpJob-wrap.is-loading, #tablePpBahan-wrap.is-loading, #tablePpHistori-wrap.is-loading")
             .length
@@ -699,6 +785,13 @@ function ppLiveSoftReloadActive() {
 
 function ppLiveTick() {
     if (ppLiveBusyUi()) return;
+    // Stamp tertunda saat busy → apply soft reload dulu
+    if (ppLivePendingStamp && ppLivePendingStamp !== ppLiveStamp) {
+        ppLiveStamp = ppLivePendingStamp;
+        ppLivePendingStamp = null;
+        ppLiveSoftReloadActive();
+        return;
+    }
     if (ppLiveXhr && ppLiveXhr.readyState !== 4) return;
     ppLiveXhr = $.ajax({
         url: "/getProductionPlanningLive",
@@ -706,7 +799,7 @@ function ppLiveTick() {
         cache: false,
         success: function (res) {
             if (!res) return;
-            // Polling: hanya badge ACC Bahan + stamp. KPI ikut filter dari reload tabel aktif.
+            // Badge ACC Bahan dari live; KPI/list tetap dari reload tabel (ikut filter tanggal).
             if (res.tabs && res.tabs.bahan != null) {
                 applyPpTabBadges({ bahan: res.tabs.bahan });
             } else if (res.counts && res.counts.bahan_pending != null) {
@@ -715,11 +808,20 @@ function ppLiveTick() {
             var stamp = res.stamp || "";
             if (ppLiveStamp === null) {
                 ppLiveStamp = stamp;
+                // First poll: pastikan stage board ikut terisi (mirror)
+                if (typeof refreshPpStageMiniTables === "function") {
+                    refreshPpStageMiniTables();
+                }
                 return;
             }
             if (stamp === ppLiveStamp) return;
+            // Busy? simpan stamp, jangan anggap sudah ter-apply (biar reload jalan setelah idle)
+            if (ppLiveBusyUi()) {
+                ppLivePendingStamp = stamp;
+                return;
+            }
             ppLiveStamp = stamp;
-            if (ppLiveBusyUi()) return;
+            ppLivePendingStamp = null;
             ppLiveSoftReloadActive();
         },
         error: function () {
@@ -730,6 +832,11 @@ function ppLiveTick() {
 
 function startPpLivePolling() {
     if (ppLiveTimer) return;
+    ppBindLiveUiPause();
+    // Lepas sisa is-loading dari soft-reload lama (bisa bikin tombol aksi mati)
+    $(
+        "#tablePpPlanning-wrap, #tablePpJob-wrap, #tablePpBahan-wrap, #tablePpHistori-wrap"
+    ).removeClass("is-loading");
     ppLiveTick();
     ppLiveTimer = setInterval(ppLiveTick, 4000);
     document.addEventListener("visibilitychange", function () {
@@ -802,41 +909,86 @@ function getPpListExtraParams(stage) {
     return param;
 }
 
+/** Soft reload: tetap di halaman yang sama; JANGAN is-loading (itu pointer-events:none). */
+function ppDtSoftReload(table) {
+    if (!table) return;
+    var page = 0;
+    try {
+        page = table.page();
+    } catch (e) {
+        page = 0;
+    }
+    ppReloadSoft = true;
+    table.ajax.reload(function () {
+        ppReloadSoft = false;
+        try {
+            var info = table.page.info();
+            if (info && info.pages > 0 && page > 0) {
+                var target = Math.min(page, info.pages - 1);
+                if (info.page !== target) {
+                    table.page(target).draw(false);
+                }
+            }
+        } catch (e2) { /* ignore */ }
+    }, false);
+}
+
 function refreshPpTable(soft) {
     if (!ppTable) return;
+    // Soft/hard: stage board harus ikut mirror daftar Planning
     window._ppStageMiniLoaded = false;
     if (soft) {
-        $("#tablePpPlanning-wrap").removeClass("dt-pending").addClass("dt-ready is-loading");
-    } else {
-        showPpSkeleton();
+        // Soft: tanpa skeleton / is-loading agar tombol aksi tetap bisa diklik
+        $("#tablePpPlanning-wrap").removeClass("dt-pending is-loading").addClass("dt-ready");
+        ppDtSoftReload(ppTable);
+        // Soft reload tidak selalu lewat gate ajax success → sync stage langsung
+        refreshPpStageMiniTables();
+        return;
     }
+    showPpSkeleton();
     ppTable.ajax.reload(null, false);
 }
 
 function refreshPpJobTable(soft) {
     if (!$("#tablePpJob").length || !ppJobTable) return;
     if (soft) {
-        $("#tablePpJob-wrap").removeClass("dt-pending").addClass("dt-ready is-loading");
-    } else {
-        showPpJobSkeleton();
+        $("#tablePpJob-wrap").removeClass("dt-pending is-loading").addClass("dt-ready");
+        ppDtSoftReload(ppJobTable);
+        return;
     }
+    showPpJobSkeleton();
     ppJobTable.ajax.reload(null, false);
 }
 
 function refreshPpHistoriTable(soft) {
     if (!$("#tablePpHistori").length || !ppHistoriTable) return;
     if (soft) {
-        $("#tablePpHistori-wrap").removeClass("dt-pending").addClass("dt-ready is-loading");
-    } else {
-        showPpHistoriSkeleton();
+        $("#tablePpHistori-wrap").removeClass("dt-pending is-loading").addClass("dt-ready");
+        ppDtSoftReload(ppHistoriTable);
+        return;
     }
+    showPpHistoriSkeleton();
     ppHistoriTable.ajax.reload(null, false);
 }
 
+/** Debounce biar soft+live+list tidak hajar API stage berkali-kali. */
+var _ppStageRefreshTimer = null;
+var _ppStageXhr = null;
 function refreshPpStageMiniTables() {
-    // Satu request untuk 4 kartu stage; ikut filter Planning biar sync.
+    if (_ppStageRefreshTimer) clearTimeout(_ppStageRefreshTimer);
+    _ppStageRefreshTimer = setTimeout(ppFetchStageMiniTables, 120);
+}
+
+function ppFetchStageMiniTables() {
+    _ppStageRefreshTimer = null;
+    // Satu request untuk 4 kartu stage; filter = filter Planning (mirror daftar).
     var f = typeof getPpFilterState === "function" ? getPpFilterState() : {};
-    $.ajax({
+    if (_ppStageXhr && _ppStageXhr.readyState !== 4) {
+        try {
+            _ppStageXhr.abort();
+        } catch (e) { /* ignore */ }
+    }
+    _ppStageXhr = $.ajax({
         url: "/getProductionPlanningStageCards",
         method: "get",
         cache: false,
@@ -860,8 +1012,31 @@ function refreshPpStageMiniTables() {
                 try {
                     initPpStageTable(s.table, s.wrap, rows);
                     $("#" + s.count).text((card.total != null ? card.total : rows.length) + " Data");
-                } catch (e) { /* ignore */ }
+                } catch (e) {
+                    console.warn("stage card", s.status, e);
+                    $("#" + s.wrap)
+                        .removeClass("dt-pending is-loading")
+                        .addClass("dt-ready");
+                    $("#" + s.count).text("0 Data");
+                }
             });
+            window._ppStageMiniLoaded = true;
+        },
+        error: function (err) {
+            if (err && err.statusText === "abort") return;
+            [
+                "tablePpReleased-wrap",
+                "tablePpWorkOrder-wrap",
+                "tablePpProduksi-wrap",
+                "tablePpSelesai-wrap",
+            ].forEach(function (id) {
+                $("#" + id)
+                    .removeClass("dt-pending is-loading")
+                    .addClass("dt-ready");
+            });
+        },
+        complete: function () {
+            _ppStageXhr = null;
         },
     });
 }
@@ -929,7 +1104,7 @@ function inisialisasiPp() {
         },
         ajax: function (dtData, callback) {
             if (ppLoadXhr && ppLoadXhr.readyState !== 4) ppLoadXhr.abort();
-            showPpSkeleton();
+            if (!ppReloadSoft) showPpSkeleton();
             ppLoadXhr = $.ajax({
                 url: "/getProductionPlanning",
                 method: "get",
@@ -952,23 +1127,23 @@ function inisialisasiPp() {
                         qtySum += Number(r.qty) || 0;
                     });
                     $('[data-pp-sum="qty"]').text(ppFormatNumber(qtySum));
-                    if (!window._ppStageMiniLoaded) {
-                        window._ppStageMiniLoaded = true;
-                        refreshPpStageMiniTables();
-                    }
+                    // Selalu mirror 4 kartu stage dengan filter/list Planning yang sama
+                    refreshPpStageMiniTables();
+                    // Skeleton hilang di drawCallback — setelah baris benar-benar ter-render
                     callback({
                         draw: json.draw,
                         recordsTotal: json.recordsTotal || 0,
                         recordsFiltered: json.recordsFiltered || 0,
                         data: mapPpRows(PP_DATA),
                     });
-                    hidePpSkeleton();
-                    if (typeof feather !== "undefined") feather.replace();
                 },
                 error: function (err) {
+                    ppReloadSoft = false;
                     if (err && err.statusText === "abort") return;
-                    hidePpSkeleton();
-                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) {
+                        hidePpSkeleton();
+                        return;
+                    }
                     console.error("Gagal load PP:", err);
                     callback({
                         draw: dtData.draw,
@@ -990,8 +1165,13 @@ function inisialisasiPp() {
             { data: "created_by", width: "10%" },
             { data: "action", width: "9%", className: "text-center", orderable: false },
         ],
-        initComplete: function () {
+        drawCallback: function () {
+            // Baru lepas skeleton setelah DataTables selesai menggambar baris
             hidePpSkeleton();
+            if (typeof feather !== "undefined") feather.replace();
+        },
+        initComplete: function () {
+            // Jangan hide di sini — first draw belum tentu selesai / data belum ada
             if (typeof feather !== "undefined") feather.replace();
         },
     });
@@ -1056,9 +1236,9 @@ function mapPpStageRows(rows) {
                 "</div>",
             action:
                 '<div class="d-flex align-items-center justify-content-end gap-1">' +
-                '<a href="javascript:void(0);" class="btn-action-icon btn-pp-view" data-id="' +
+                '<button type="button" class="btn-action-icon btn-pp-view" data-id="' +
                 id +
-                '" title="Lihat Detail"><i class="fe fe-eye"></i></a>' +
+                '" title="Lihat Detail"><i class="fe fe-eye"></i></button>' +
                 prints +
                 "</div>",
         };
@@ -1070,11 +1250,21 @@ function initPpStageTable(tableId, wrapId, rows) {
     var $wrap = $("#" + wrapId);
     if (!$table.length) return null;
 
-    $wrap.removeClass("dt-ready is-loading").addClass("dt-pending");
+    var mapped = mapPpStageRows(rows);
 
+    // Soft update: jangan destroy tiap poll (lebih stabil + mirror cepat)
     if ($.fn.DataTable.isDataTable("#" + tableId)) {
-        $table.DataTable().destroy();
+        var existing = $table.DataTable();
+        existing.clear();
+        if (mapped.length) existing.rows.add(mapped);
+        existing.draw(false);
+        $wrap.removeClass("dt-pending is-loading").addClass("dt-ready");
+        if (typeof feather !== "undefined") feather.replace();
+        return existing;
     }
+
+    // First load: skeleton sampai drawCallback
+    $wrap.removeClass("dt-ready is-loading").addClass("dt-pending");
 
     var prevNumbersLength =
         $.fn.dataTable && $.fn.dataTable.ext && $.fn.dataTable.ext.pager
@@ -1111,14 +1301,14 @@ function initPpStageTable(tableId, wrapId, rows) {
             { data: "datetime", width: "32%" },
             { data: "action", width: "28%", className: "text-end", orderable: false },
         ],
-        data: mapPpStageRows(rows),
+        data: mapped,
         drawCallback: function () {
-            if (typeof feather !== "undefined") feather.replace();
-        },
-        initComplete: function () {
             $wrap
                 .removeClass("dt-pending is-loading")
                 .addClass("dt-ready");
+            if (typeof feather !== "undefined") feather.replace();
+        },
+        initComplete: function () {
             if (typeof feather !== "undefined") feather.replace();
         },
     });
@@ -1131,23 +1321,19 @@ function initPpStageTable(tableId, wrapId, rows) {
 }
 
 function inisialisasiPpStageTables() {
-    // Kartu TV (McD board): skeleton kosong dulu, isi via refreshPpStageMiniTables (API).
-    if ($("#tablePpReleased").length) {
-        initPpStageTable("tablePpReleased", "tablePpReleased-wrap", []);
-        $("#countPpReleased").text("0 Data");
-    }
-    if ($("#tablePpWorkOrder").length) {
-        initPpStageTable("tablePpWorkOrder", "tablePpWorkOrder-wrap", []);
-        $("#countPpWorkOrder").text("0 Data");
-    }
-    if ($("#tablePpProduksi").length) {
-        initPpStageTable("tablePpProduksi", "tablePpProduksi-wrap", []);
-        $("#countPpProduksi").text("0 Data");
-    }
-    if ($("#tablePpSelesai").length) {
-        initPpStageTable("tablePpSelesai", "tablePpSelesai-wrap", []);
-        $("#countPpSelesai").text("0 Data");
-    }
+    // Jangan init DT kosong di sini — biarkan dt-pending sampai API stage cards selesai.
+    [
+        ["tablePpReleased-wrap", "countPpReleased"],
+        ["tablePpWorkOrder-wrap", "countPpWorkOrder"],
+        ["tablePpProduksi-wrap", "countPpProduksi"],
+        ["tablePpSelesai-wrap", "countPpSelesai"],
+    ].forEach(function (pair) {
+        var $w = $("#" + pair[0]);
+        if ($w.length) {
+            $w.removeClass("dt-ready is-loading").addClass("dt-pending");
+        }
+        $("#" + pair[1]).text("…");
+    });
 }
 
 function showPpHistoriSkeleton() {
@@ -1187,9 +1373,9 @@ function mapPpHistoriRows(rows) {
             wo_html: ppWoProgressBadge(r),
             action:
                 '<div class="d-flex align-items-center justify-content-center gap-1">' +
-                '<a href="javascript:void(0);" class="btn-action-icon btn-pp-view" data-id="' +
+                '<button type="button" class="btn-action-icon btn-pp-view" data-id="' +
                 (r.production_planning_id || "") +
-                '" title="Lihat Detail"><i class="fe fe-eye"></i></a>' +
+                '" title="Lihat Detail"><i class="fe fe-eye"></i></button>' +
                 ppWorkOrderPrintIcons(r) +
                 "</div>",
         };
@@ -1262,7 +1448,7 @@ function mapPpJobRows(rows) {
                 '<div class="d-flex align-items-center justify-content-center gap-1">' +
                 '<a href="javascript:void(0);" class="btn-action-icon btn-pp-wo-view" data-id="' +
                 woId +
-                '" title="Lihat detail / hasil produksi"><i class="fe fe-eye"></i></a>' +
+                '" title="Konfirmasi / hasil produksi"><i class="fe fe-check-circle"></i></a>' +
                 (String(r.state || r.execution_status || "") === "inprod"
                     ? '<a href="javascript:void(0);" class="btn-action-icon btn-pp-wo-mat" data-id="' +
                       woId +
@@ -1294,11 +1480,7 @@ function initPpJobDateFilter() {
 }
 
 function ppJobTabIsActive() {
-    return (
-        $("#pp-tab-job").hasClass("active") ||
-        $("#pp-pane-job").hasClass("active") ||
-        $("#pp-pane-job").hasClass("show")
-    );
+    return ppActiveMainTab() === "job";
 }
 
 function ppSyncJobViewUrl() {
@@ -1369,7 +1551,7 @@ function inisialisasiPpJob() {
         },
         ajax: function (dtData, callback) {
             if (ppJobLoadXhr && ppJobLoadXhr.readyState !== 4) ppJobLoadXhr.abort();
-            showPpJobSkeleton();
+            if (!ppReloadSoft) showPpJobSkeleton();
             var state = $("#pp_job_filter_status").val() || "";
             var payload = $.extend({}, dtData, {
                 active_only: state ? 0 : 1,
@@ -1391,13 +1573,14 @@ function inisialisasiPpJob() {
                         data: mapPpJobRows(json.data || []),
                     });
                     applyPpTabBadges({ job: json.recordsFiltered || 0 });
-                    hidePpJobSkeleton();
-                    if (typeof feather !== "undefined") feather.replace();
                 },
                 error: function (err) {
+                    ppReloadSoft = false;
                     if (err && err.statusText === "abort") return;
-                    hidePpJobSkeleton();
-                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) {
+                        hidePpJobSkeleton();
+                        return;
+                    }
                     callback({
                         draw: dtData.draw,
                         recordsTotal: 0,
@@ -1416,10 +1599,10 @@ function inisialisasiPpJob() {
             { data: "action", width: "10%", className: "text-center", orderable: false },
         ],
         initComplete: function () {
-            hidePpJobSkeleton();
             if (typeof feather !== "undefined") feather.replace();
         },
         drawCallback: function () {
+            hidePpJobSkeleton();
             if (typeof feather !== "undefined") feather.replace();
         },
     });
@@ -1464,19 +1647,23 @@ function hidePpBahanSkeleton() {
 function refreshPpBahanTable(soft) {
     if (!$("#tablePpBahan").length || !ppBahanTable) return;
     if (soft) {
-        $("#tablePpBahan-wrap").removeClass("dt-pending").addClass("dt-ready is-loading");
-    } else {
-        showPpBahanSkeleton();
+        $("#tablePpBahan-wrap").removeClass("dt-pending is-loading").addClass("dt-ready");
+        ppDtSoftReload(ppBahanTable);
+        return;
     }
+    showPpBahanSkeleton();
     ppBahanTable.ajax.reload(null, false);
 }
 
 function ppBahanStageBadge(stage) {
     if (stage === "awaiting_ops") {
-        return '<span class="pp-status work_order">Menunggu Ops</span>';
+        return '<span class="pp-status awaiting_ops">Menunggu Ops</span>';
     }
     if (stage === "awaiting_qc") {
-        return '<span class="pp-status inprod">Menunggu QC</span>';
+        return '<span class="pp-status awaiting_qc">Menunggu QC</span>';
+    }
+    if (stage === "approved") {
+        return '<span class="pp-status done">Disetujui</span>';
     }
     return '<span class="pp-status draft">' + $("<div>").text(stage || "—").html() + "</span>";
 }
@@ -1582,7 +1769,7 @@ function inisialisasiPpBahan() {
         },
         ajax: function (dtData, callback) {
             if (ppBahanLoadXhr && ppBahanLoadXhr.readyState !== 4) ppBahanLoadXhr.abort();
-            showPpBahanSkeleton();
+            if (!ppReloadSoft) showPpBahanSkeleton();
             ppBahanLoadXhr = $.ajax({
                 url: "/getProductionPendingMaterials",
                 method: "get",
@@ -1597,13 +1784,14 @@ function inisialisasiPpBahan() {
                         data: mapPpBahanRows(json.data || []),
                     });
                     applyPpTabBadges({ bahan: json.recordsFiltered || 0 });
-                    hidePpBahanSkeleton();
-                    if (typeof feather !== "undefined") feather.replace();
                 },
                 error: function (err) {
+                    ppReloadSoft = false;
                     if (err && err.statusText === "abort") return;
-                    hidePpBahanSkeleton();
-                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) {
+                        hidePpBahanSkeleton();
+                        return;
+                    }
                     callback({
                         draw: dtData.draw,
                         recordsTotal: 0,
@@ -1623,10 +1811,10 @@ function inisialisasiPpBahan() {
             { data: "action", width: "12%", className: "text-center", orderable: false },
         ],
         initComplete: function () {
-            hidePpBahanSkeleton();
             if (typeof feather !== "undefined") feather.replace();
         },
         drawCallback: function () {
+            hidePpBahanSkeleton();
             if (typeof feather !== "undefined") feather.replace();
         },
     });
@@ -1704,7 +1892,7 @@ function inisialisasiPpHistori() {
         },
         ajax: function (dtData, callback) {
             if (ppHistoriLoadXhr && ppHistoriLoadXhr.readyState !== 4) ppHistoriLoadXhr.abort();
-            showPpHistoriSkeleton();
+            if (!ppReloadSoft) showPpHistoriSkeleton();
             ppHistoriLoadXhr = $.ajax({
                 url: "/getProductionPlanning",
                 method: "get",
@@ -1719,13 +1907,14 @@ function inisialisasiPpHistori() {
                         recordsFiltered: json.recordsFiltered || 0,
                         data: mapPpHistoriRows(json.data || []),
                     });
-                    hidePpHistoriSkeleton();
-                    if (typeof feather !== "undefined") feather.replace();
                 },
                 error: function (err) {
+                    ppReloadSoft = false;
                     if (err && err.statusText === "abort") return;
-                    hidePpHistoriSkeleton();
-                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
+                    if (typeof handlePermissionError === "function" && handlePermissionError(err)) {
+                        hidePpHistoriSkeleton();
+                        return;
+                    }
                     callback({
                         draw: dtData.draw,
                         recordsTotal: 0,
@@ -1746,6 +1935,9 @@ function inisialisasiPpHistori() {
             { data: "action", width: "8%", className: "text-center", orderable: false },
         ],
         initComplete: function () {
+            if (typeof feather !== "undefined") feather.replace();
+        },
+        drawCallback: function () {
             hidePpHistoriSkeleton();
             if (typeof feather !== "undefined") feather.replace();
         },
@@ -2093,28 +2285,203 @@ function addManualPpItem(silent) {
     return true;
 }
 
-$(document).ready(function () {
-    inisialisasiPp();
-    initPpFormAutocompletes();
-
-    var tab = new URLSearchParams(window.location.search || "").get("tab") || "planning";
-    if (tab === "job") {
-        var $jobTab = $('button[data-bs-target="#pp-pane-job"]');
-        if ($jobTab.length) $jobTab.tab("show");
-    } else if (tab === "bahan") {
-        var $bahanTab = $('button[data-bs-target="#pp-pane-bahan"]');
-        if ($bahanTab.length) $bahanTab.tab("show");
-    } else if (tab === "histori") {
-        var $histTab = $('button[data-bs-target="#pp-pane-histori"]');
-        if ($histTab.length) $histTab.tab("show");
-    } else {
-        // Default: Daftar Planning
-        var $planTab = $('button[data-bs-target="#pp-pane-planning"]');
-        if ($planTab.length) $planTab.tab("show");
-        if (typeof ppReplacePageUrl === "function") ppReplacePageUrl();
+/** Bootstrap 5: jangan andalkan $.fn.tab (bisa undefined → crash init → semua klik mati). */
+function ppShowTab(selector) {
+    var el = document.querySelector(selector);
+    if (!el) return;
+    try {
+        if (typeof bootstrap !== "undefined" && bootstrap.Tab) {
+            bootstrap.Tab.getOrCreateInstance(el).show();
+            return;
+        }
+        if (typeof $ !== "undefined" && $.fn && typeof $.fn.tab === "function") {
+            $(el).tab("show");
+            return;
+        }
+        // Fallback kasar (pane di .tab-content, bukan #pp-tab-content)
+        var target = el.getAttribute("data-bs-target") || el.getAttribute("href");
+        if (!target || target.charAt(0) !== "#") return;
+        document.querySelectorAll("#pp-main-tabs .nav-link").forEach(function (n) {
+            n.classList.remove("active");
+            n.setAttribute("aria-selected", "false");
+        });
+        el.classList.add("active");
+        el.setAttribute("aria-selected", "true");
+        document.querySelectorAll(".tab-content > .tab-pane").forEach(function (p) {
+            p.classList.remove("show", "active");
+        });
+        var pane = document.querySelector(target);
+        if (pane) pane.classList.add("show", "active");
+    } catch (err) {
+        console.warn("ppShowTab failed:", err);
     }
+}
 
-    startPpLivePolling();
+/** Paksa query tab=planning di address bar (hindari refresh nempel Job Order). */
+function ppForcePlanningTabUrl() {
+    try {
+        var url = new URL(window.location.href);
+        url.searchParams.set("tab", "planning");
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, "", url.pathname + "?" + url.searchParams.toString());
+        }
+    } catch (e) { /* ignore */ }
+}
+
+/** Bootstrap 5 + jQuery bridge — aman kalau salah satu hilang. */
+function ppShowModal(sel) {
+    var el =
+        typeof sel === "string"
+            ? document.querySelector(sel)
+            : sel && sel.jquery
+              ? sel[0]
+              : sel;
+    if (!el) throw new Error("Modal tidak ditemukan: " + sel);
+    if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+        bootstrap.Modal.getOrCreateInstance(el).show();
+        return;
+    }
+    if (typeof $ !== "undefined" && $.fn && typeof $.fn.modal === "function") {
+        $(el).modal("show");
+        return;
+    }
+    throw new Error("API modal tidak tersedia");
+}
+
+function ppHideModal(sel) {
+    var el =
+        typeof sel === "string"
+            ? document.querySelector(sel)
+            : sel && sel.jquery
+              ? sel[0]
+              : sel;
+    if (!el) return;
+    try {
+        if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+            var inst = bootstrap.Modal.getInstance(el);
+            if (inst) inst.hide();
+            return;
+        }
+        if (typeof $ !== "undefined" && $.fn && typeof $.fn.modal === "function") {
+            $(el).modal("hide");
+        }
+    } catch (err) {
+        console.warn("ppHideModal:", err);
+    }
+}
+
+/** Bersihkan backdrop yatim / is-loading — JANGAN hapus backdrop modal yang sedang .show. */
+function ppClearStuckModalUi() {
+    try {
+        $(
+            "#tablePpPlanning-wrap, #tablePpJob-wrap, #tablePpBahan-wrap, #tablePpHistori-wrap"
+        ).removeClass("is-loading");
+
+        var hasOpenModal = $(".modal.show").length > 0;
+        if (!hasOpenModal) {
+            $(".modal-backdrop").remove();
+            $("body").removeClass("modal-open").css({ overflow: "", paddingRight: "" });
+            return;
+        }
+        // Modal terbuka: buang backdrop ekstra saja (sisakan 1)
+        var $backs = $(".modal-backdrop");
+        if ($backs.length > 1) {
+            $backs.slice(0, $backs.length - 1).remove();
+        }
+    } catch (err) {
+        /* diam */
+    }
+}
+
+$(document).ready(function () {
+    // Lepas sisa backdrop yatim di first load (bukan saat modal aktif).
+    ppClearStuckModalUi();
+
+    // Sebelum init: hapus tab=job dari URL supaya refresh tidak "nempel" Job Order.
+    ppForcePlanningTabUrl();
+
+    // WAJIB: bind klik DULU — kalau init di bawah error, tombol tetap hidup.
+    $(document).on("click", ".btn-pp-create", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            // Jangan clear backdrop di sini — race dengan Bootstrap → modal tanpa gelap
+            $(
+                "#tablePpPlanning-wrap, #tablePpJob-wrap, #tablePpBahan-wrap, #tablePpHistori-wrap"
+            ).removeClass("is-loading");
+            if (typeof resetAddPlanningForm === "function") resetAddPlanningForm();
+            ppShowModal("#modalAddPlanning");
+        } catch (err) {
+            console.error("btn-pp-create:", err);
+            if (typeof notifikasi === "function") {
+                notifikasi("error", "Gagal", "Tidak bisa buka form Buat Planning");
+            }
+        }
+    });
+
+    $(document).on("click", ".btn-pp-view", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            var id = $(this).attr("data-id") || $(this).data("id");
+            if (!id) {
+                if (typeof notifikasi === "function") {
+                    notifikasi("error", "Gagal", "ID planning tidak ditemukan");
+                }
+                return;
+            }
+            openPpViewModal(id);
+        } catch (err) {
+            console.error("btn-pp-view:", err);
+            if (typeof notifikasi === "function") {
+                notifikasi("error", "Gagal", "Tidak bisa buka detail planning");
+            }
+        }
+    });
+
+    $(document).on("click", ".btn-pp-delete:not(.is-disabled)", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        try {
+            var id = $(this).attr("data-id") || $(this).data("id");
+            var code = $(this).attr("data-code") || $(this).data("code") || "Planning";
+            if (!id) return;
+            $("#modalDelete .modal-body #delete_reason").remove();
+            showModalDelete(
+                "Hapus " + code + "? Planning akan diarsipkan. Isi alasan di bawah.",
+                "btn-delete-pp"
+            );
+            $("#modalDelete .modal-body").append(
+                '<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan penghapusan planning..." rows="3"></textarea>'
+            );
+            $("#btn-delete-pp").html("Hapus Planning").attr("data-id", id);
+        } catch (err) {
+            console.error("btn-pp-delete:", err);
+            if (typeof notifikasi === "function") {
+                notifikasi("error", "Gagal", "Tidak bisa buka konfirmasi hapus");
+            }
+        }
+    });
+
+    $(document).on("click", "#btn-pp-fullscreen-view", function (e) {
+        e.preventDefault();
+        window.open(buildPpViewUrl(), "_blank", "noopener");
+    });
+
+    $(document).on("click", "a[href*='productionPlanning']:not(#btn-pp-fullscreen-view):not(.btn-pp-create)", function (e) {
+        var href = $(this).attr("href") || "";
+        if (!window.ppFullscreen) return;
+        if (href.indexOf("/productionPlanning/view") !== -1) return;
+        if (href.indexOf("productionPlanning") === -1) return;
+        if (!$(this).closest(".page-header, .page-header-right, .list-inline").length) return;
+        e.preventDefault();
+        var base =
+            typeof window.ppMainBaseUrl === "string" && window.ppMainBaseUrl
+                ? window.ppMainBaseUrl
+                : "/productionPlanning";
+        var qs = buildPpQueryString();
+        window.location.href = qs ? base + "?" + qs : base;
+    });
 
     $("#pp_filter_status").off("change.ppFilterStatus").on("change.ppFilterStatus", refreshPpTable);
     $("#pp_filter_clear").on("click", function () {
@@ -2132,34 +2499,31 @@ $(document).ready(function () {
         }
     });
 
-    // View: tab baru (URL /view) — halaman normal tetap di /productionPlanning
-    $(document).on("click", "#btn-pp-fullscreen-view", function (e) {
-        e.preventDefault();
-        window.open(buildPpViewUrl(), "_blank", "noopener");
-    });
+    try {
+        inisialisasiPp();
+    } catch (err) {
+        console.error("inisialisasiPp failed:", err);
+    }
+    try {
+        initPpFormAutocompletes();
+    } catch (err) {
+        console.error("initPpFormAutocompletes failed:", err);
+    }
 
-    // Kembali dari fullscreen → halaman normal + bawa filter aktif
-    $(document).on("click", "a[href*='productionPlanning']:not(#btn-pp-fullscreen-view)", function (e) {
-        var href = $(this).attr("href") || "";
-        if (!window.ppFullscreen) return;
-        if (href.indexOf("/productionPlanning/view") !== -1) return;
-        if (href.indexOf("productionPlanning") === -1) return;
-        // Hanya tombol Kembali di header view
-        if (!$(this).closest(".page-header, .page-header-right, .list-inline").length) return;
-        e.preventDefault();
-        var base =
-            typeof window.ppMainBaseUrl === "string" && window.ppMainBaseUrl
-                ? window.ppMainBaseUrl
-                : "/productionPlanning";
-        var qs = buildPpQueryString();
-        window.location.href = qs ? base + "?" + qs : base;
-    });
+    // Full page load / refresh: SELALU Daftar Planning + bersihkan tab=job di URL.
+    ppShowTab('button[data-bs-target="#pp-pane-planning"]');
+    ppForcePlanningTabUrl();
+    $("#pp-main-tabs")
+        .off("shown.bs.tab.ppUrl")
+        .on("shown.bs.tab.ppUrl", 'button[data-bs-toggle="tab"]', function () {
+            if (typeof ppReplacePageUrl === "function") ppReplacePageUrl();
+        });
 
-    $(document).on("click", ".btn-pp-create", function (e) {
-        e.preventDefault();
-        resetAddPlanningForm();
-        $("#modalAddPlanning").modal("show");
-    });
+    try {
+        startPpLivePolling();
+    } catch (err) {
+        console.error("startPpLivePolling failed:", err);
+    }
 
     $("#modalAddPlanning").on("shown.bs.modal", function () {
         if (typeof feather !== "undefined") feather.replace();
@@ -2195,29 +2559,6 @@ $(document).ready(function () {
         ppFormItems[idx].unit_id = $opt.data("unit-id") || null;
     });
 
-    $(document).on("click", ".btn-pp-view", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        openPpViewModal($(this).data("id"));
-    });
-
-    $(document).on("click", ".btn-pp-delete:not(.is-disabled)", function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        var id = $(this).data("id");
-        var code = $(this).data("code") || "Planning";
-        if (!id) return;
-        $("#modalDelete .modal-body #delete_reason").remove();
-        showModalDelete(
-            "Hapus " + code + "? Planning akan diarsipkan. Isi alasan di bawah.",
-            "btn-delete-pp"
-        );
-        $("#modalDelete .modal-body").append(
-            '<textarea class="form-control mt-2" id="delete_reason" placeholder="Alasan penghapusan planning..." rows="3"></textarea>'
-        );
-        $("#btn-delete-pp").html("Hapus Planning").attr("data-id", id);
-    });
-
     $(document).on("click", "#btn-delete-pp", function () {
         var $btn = $(this);
         var id = $btn.attr("data-id");
@@ -2238,7 +2579,9 @@ $(document).ready(function () {
                 _token: token,
             },
             success: function (res) {
-                $(".modal").modal("hide");
+                // Jangan $(".modal").hide() global — bisa sisakan backdrop / state aneh
+                ppHideModal("#modalDelete");
+                ppClearStuckModalUi();
                 $("#modalDelete .modal-body").html(
                     '<p id="text-delete" style="font-size:10pt"></p>'
                 );
@@ -2259,7 +2602,8 @@ $(document).ready(function () {
                 );
             },
             error: function (err) {
-                $(".modal").modal("hide");
+                ppHideModal("#modalDelete");
+                ppClearStuckModalUi();
                 $("#modalDelete .modal-body").html(
                     '<p id="text-delete" style="font-size:10pt"></p>'
                 );
@@ -2272,9 +2616,38 @@ $(document).ready(function () {
         });
     });
 
+    // Modal detail Released = konfirmasi WO; Edit → modal biru + Simpan Perubahan.
+    $(document).on("click", "#btn-pp-view-edit-assign", function () {
+        if (!ppViewDetailCache) return;
+        if (ppViewAssignEditMode) {
+            // Batal edit → kembalikan snapshot
+            if (ppViewAssignSnapshot) {
+                ppViewDetailCache.items = JSON.parse(JSON.stringify(ppViewAssignSnapshot));
+            }
+            ppSetViewAssignUiMode(false);
+            return;
+        }
+        ppViewAssignSnapshot = JSON.parse(JSON.stringify(ppViewDetailCache.items || []));
+        ppSetViewAssignUiMode(true);
+    });
+
+    $(document).on("click", "#btn-pp-view-save-assign", function () {
+        if (!ppViewDetailCache || !ppViewAssignEditMode) return;
+        var items = collectPpViewAssignItems();
+        if (!items) return;
+        syncPpViewAssignCacheFromForm();
+        ppViewAssignSnapshot = JSON.parse(JSON.stringify(ppViewDetailCache.items || []));
+        ppSetViewAssignUiMode(false);
+        if (typeof notifikasi === "function") {
+            notifikasi("success", "Tersimpan", "Perubahan PIC / Skala / Armada siap dikonfirmasi");
+        }
+    });
+
     $(document).on("click", "#btn-pp-view-work-order", function () {
-        $("#modalViewPlanning").modal("hide");
-        if (ppViewPlanningId) openPpWorkOrderModal(ppViewPlanningId);
+        if (!ppViewPlanningId || ppViewAssignEditMode) return;
+        var items = collectPpViewAssignItems();
+        if (!items) return;
+        submitPpWorkOrder($(this), ppViewPlanningId, items);
     });
 
     $(document).on("click", "#btn-pp-view-release", function () {
@@ -2285,10 +2658,6 @@ $(document).ready(function () {
 
     $(document).on("click", "#btn-confirm-approve-planning", function () {
         submitPpApprove($(this));
-    });
-
-    $(document).on("click", "#btn-confirm-work-order", function () {
-        submitPpWorkOrder($(this));
     });
 
     $("#btn-save-planning").on("click", function () {
@@ -2458,75 +2827,114 @@ function ensurePpSkalaOptions(done) {
 }
 
 function openPpViewModal(id) {
-    if (!id) return;
+    id = Number(id || 0);
+    if (!id) {
+        notifikasi("error", "Gagal", "ID planning tidak valid");
+        return;
+    }
+    ppClearStuckModalUi();
+
     ppViewPlanningId = id;
     ppApprovePlanningId = id;
+    ppViewDetailCache = null;
+    ppViewAssignSnapshot = null;
+    ppViewAssignEditMode = false;
     $("#pp-view-stock-alert").hide().empty();
     $("#btn-pp-view-release").prop("disabled", false).removeClass("disabled");
+    $("#btn-pp-view-edit-assign").hide().html('<i class="fe fe-edit me-1"></i> Edit');
+    $("#btn-pp-view-save-assign").hide();
     $.ajax({
         url: "/getProductionPlanningDetail",
         method: "get",
         data: { production_planning_id: id },
         success: function (d) {
-            $("#pp-view-code").text(d.pp_number || d.code || "—");
-            $("#pp-view-date").text(d.date || "—");
-            $("#pp-view-status").html(ppStatusBadge(d.status || d.pp_status));
-            if (Number(d.wo_total || 0) > 0) {
-                $("#pp-view-status").append(
-                    '<div class="mt-1">' + ppWoProgressBadge(d) + "</div>"
-                );
-            }
-            $("#pp-view-subtitle").text(d.notes || "Detail rencana produksi");
-            $("#pp-view-notes").text(d.notes ? "Catatan: " + d.notes : "");
+            try {
+                if (!d || (!d.production_planning_id && !d.pp_number && !d.code)) {
+                    notifikasi("error", "Gagal", "Detail planning kosong / tidak ditemukan");
+                    return;
+                }
+                ppViewDetailCache = d;
+                $("#pp-view-code").text(d.pp_number || d.code || "—");
+                $("#pp-view-date").text(d.date || "—");
+                $("#pp-view-status").html(ppStatusBadge(d.status || d.pp_status));
+                if (Number(d.wo_total || 0) > 0) {
+                    $("#pp-view-status").append(
+                        '<div class="mt-1">' + ppWoProgressBadge(d) + "</div>"
+                    );
+                }
+                $("#pp-view-notes").text(d.notes ? "Catatan: " + d.notes : "");
 
-            var st = d.status || d.pp_status;
-            var isDraft = st === "draft";
+                var st = d.status || d.pp_status;
+                var isDraft = st === "draft";
+                var canRelease = !!d.can_release;
+                var canAssignWo = !!d.can_assign_wo;
+                var isWoConfirm = st === "released" && canAssignWo;
 
-            if (isDraft) {
-                renderPpViewDraftItems(d.items || []);
-            } else {
-                renderPpViewGroupedItems(d);
-            }
+                $("#pp-view-work-orders-list").empty();
+                $("#pp-view-work-orders").hide();
 
-            $("#pp-view-work-orders-list").empty();
-            $("#pp-view-work-orders").hide();
+                $("#btn-pp-view-print-spk")
+                    .attr("href", "/printProductionPlanning/" + Number(d.production_planning_id || id))
+                    .toggle(["released", "work_order", "inprod", "done"].indexOf(st) !== -1);
+                var $modal = $("#modalViewPlanning");
+                if (!$modal.length) {
+                    notifikasi("error", "Gagal", "Modal view tidak ditemukan di halaman");
+                    return;
+                }
+                $modal.removeClass("pg-modal--form pg-modal--confirm");
 
-            $("#btn-pp-view-print-spk")
-                .attr("href", "/printProductionPlanning/" + Number(d.production_planning_id))
-                .toggle(["released", "work_order", "inprod", "done"].indexOf(st) !== -1);
-            var canRelease = !!d.can_release;
-            var canAssignWo = !!d.can_assign_wo;
-            var $modal = $("#modalViewPlanning");
-            $modal.removeClass("pg-modal--form pg-modal--confirm");
+                $("#btn-pp-view-release").hide();
+                $("#btn-pp-view-work-order").hide();
+                $("#btn-pp-view-edit-assign").hide();
+                $("#btn-pp-view-save-assign").hide();
 
-            $("#btn-pp-view-release").hide();
-            $("#btn-pp-view-work-order").hide();
-
-            if (isDraft) {
-                $modal.addClass("pg-modal--confirm");
-                $("#pp-view-modal-title").text("Release to Production");
-                if ($("#pp-view-icon-wrap").length) {
-                    $("#pp-view-icon-wrap").html('<i class="fe fe-check-circle" id="pp-view-modal-icon"></i>');
+                if (isDraft) {
+                    renderPpViewDraftItems(d.items || []);
+                    $modal.addClass("pg-modal--confirm");
+                    $("#pp-view-modal-title").text("Release to Production");
+                    $("#pp-view-subtitle").text(d.notes || "Cek stok bahan lalu release");
+                    if ($("#pp-view-icon-wrap").length) {
+                        $("#pp-view-icon-wrap").html('<i class="fe fe-check-circle" id="pp-view-modal-icon"></i>');
+                    } else {
+                        $("#pp-view-modal-icon").attr("class", "fe fe-check-circle");
+                    }
+                    if (canRelease) {
+                        $("#btn-pp-view-release").show().prop("disabled", true).addClass("disabled");
+                    }
+                    ppLoadDraftReleaseStockCheck(d.production_planning_id || id);
+                } else if (isWoConfirm) {
+                    // Released siap WO → modal konfirmasi (bukan form terpisah)
+                    renderPpViewConfirmWoItems(d, false);
+                    $modal.addClass("pg-modal--confirm");
+                    $("#pp-view-modal-title").text("Konfirmasi Work Order");
+                    $("#pp-view-subtitle").text(
+                        "Cek PIC / Skala / Armada — konfirmasi = In Production + cetak WO per PIC"
+                    );
+                    if ($("#pp-view-icon-wrap").length) {
+                        $("#pp-view-icon-wrap").html('<i class="fe fe-check-circle" id="pp-view-modal-icon"></i>');
+                    } else {
+                        $("#pp-view-modal-icon").attr("class", "fe fe-check-circle");
+                    }
+                    $("#btn-pp-view-edit-assign").show();
+                    $("#btn-pp-view-work-order").show();
                 } else {
-                    $("#pp-view-modal-icon").attr("class", "fe fe-check-circle");
+                    renderPpViewGroupedItems(d);
+                    $modal.addClass("pg-modal--form");
+                    $("#pp-view-modal-title").text("Detail Production Planning");
+                    $("#pp-view-subtitle").text(d.notes || "Detail rencana produksi");
+                    if ($("#pp-view-icon-wrap").length) {
+                        $("#pp-view-icon-wrap").html('<i class="fe fe-calendar" id="pp-view-modal-icon"></i>');
+                    } else {
+                        $("#pp-view-modal-icon").attr("class", "fe fe-calendar");
+                    }
                 }
-                if (canRelease) {
-                    $("#btn-pp-view-release").show().prop("disabled", true).addClass("disabled");
-                    ppLoadDraftReleaseStockCheck(d.production_planning_id);
-                }
-            } else {
-                $modal.addClass("pg-modal--form");
-                $("#pp-view-modal-title").text("Detail Production Planning");
-                if ($("#pp-view-icon-wrap").length) {
-                    $("#pp-view-icon-wrap").html('<i class="fe fe-calendar" id="pp-view-modal-icon"></i>');
-                } else {
-                    $("#pp-view-modal-icon").attr("class", "fe fe-calendar");
-                }
-                if (st === "released" && canAssignWo) $("#btn-pp-view-work-order").show();
-            }
 
-            $modal.modal("show");
-            if (typeof feather !== "undefined") feather.replace();
+                ppShowModal($modal);
+                if (typeof feather !== "undefined") feather.replace();
+            } catch (err) {
+                console.error("openPpViewModal render error:", err);
+                notifikasi("error", "Gagal", "Gagal menampilkan detail: " + (err && err.message ? err.message : "error"));
+            }
         },
         error: function (err) {
             if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
@@ -2535,20 +2943,97 @@ function openPpViewModal(id) {
     });
 }
 
-/** Draft: flat rows + kolom stok (tanpa grouping PIC). */
-function renderPpViewDraftItems(items) {
+/** Toggle UI konfirmasi (hijau) ↔ edit assignment (biru + Simpan Perubahan). */
+function ppSetViewAssignUiMode(editMode) {
+    ppViewAssignEditMode = !!editMode;
+    var $modal = $("#modalViewPlanning");
+    $modal.removeClass("pg-modal--form pg-modal--confirm");
+
+    if (ppViewAssignEditMode) {
+        $modal.addClass("pg-modal--form");
+        $("#pp-view-modal-title").text("Edit Assignment");
+        $("#pp-view-subtitle").text("Ubah PIC / Skala / Armada, lalu simpan perubahan");
+        if ($("#pp-view-icon-wrap").length) {
+            $("#pp-view-icon-wrap").html('<i class="fe fe-edit" id="pp-view-modal-icon"></i>');
+        } else {
+            $("#pp-view-modal-icon").attr("class", "fe fe-edit");
+        }
+        $("#btn-pp-view-edit-assign")
+            .show()
+            .html('<i class="fe fe-x me-1"></i> Batal');
+        $("#btn-pp-view-save-assign").show();
+        $("#btn-pp-view-work-order").hide();
+    } else {
+        $modal.addClass("pg-modal--confirm");
+        $("#pp-view-modal-title").text("Konfirmasi Work Order");
+        $("#pp-view-subtitle").text(
+            "Cek PIC / Skala / Armada — konfirmasi = In Production + cetak WO per PIC"
+        );
+        if ($("#pp-view-icon-wrap").length) {
+            $("#pp-view-icon-wrap").html('<i class="fe fe-check-circle" id="pp-view-modal-icon"></i>');
+        } else {
+            $("#pp-view-modal-icon").attr("class", "fe fe-check-circle");
+        }
+        $("#btn-pp-view-edit-assign")
+            .show()
+            .html('<i class="fe fe-edit me-1"></i> Edit');
+        $("#btn-pp-view-save-assign").hide();
+        $("#btn-pp-view-work-order").show();
+    }
+
+    renderPpViewConfirmWoItems(ppViewDetailCache, ppViewAssignEditMode);
+    if (typeof feather !== "undefined") feather.replace();
+}
+
+/**
+ * Modal konfirmasi WO (status Released): tampilkan PIC/Skala/Armada;
+ * mode edit = select2 di tempat (tanpa modal Work Order terpisah).
+ */
+function renderPpViewConfirmWoItems(d, editMode) {
+    $("#pp-view-materials-wrap").hide();
+    $("#pp-view-materials-body").empty();
+    $("#pp-view-release-accordion").empty();
+    $("#pp-view-release-accordion-wrap").hide();
+    $("#pp-view-items-table-wrap").show();
     $("#pp-view-items-head").html(
-        '<th style="min-width:220px;">Produk</th>' +
-            '<th class="text-end" style="width:80px;">Qty</th>' +
-            '<th style="width:80px;">Satuan</th>' +
-            '<th style="min-width:160px;">Stok Gudang</th>'
+        '<th style="min-width:150px;">PIC</th>' +
+            '<th style="min-width:180px;">Produk</th>' +
+            '<th class="text-end" style="width:70px;">Qty</th>' +
+            '<th style="width:70px;">Satuan</th>' +
+            '<th style="min-width:140px;">Skala</th>' +
+            '<th style="min-width:140px;">Armada</th>'
     );
+
+    var items = d.items || [];
     var body = "";
-    (items || []).forEach(function (it) {
+    items.forEach(function (it, idx) {
+        var ppiId = it.ppi_id || "";
+        var picName = it.pic_name || (it.pic_staff_id ? "PIC #" + it.pic_staff_id : "—");
+        var skalaLabel = it.skala_label || it.skala_code || "—";
+        var armadaLabel = it.armada_name || it.armada_label || "—";
         body +=
-            '<tr data-ppi="' +
-            Number(it.ppi_id || 0) +
-            '">' +
+            '<tr class="pp-view-assign-row" data-ppi-id="' +
+            ppiId +
+            '" data-skala-id="' +
+            (it.production_skala_id || "") +
+            '" data-pic-id="' +
+            (it.pic_staff_id || "") +
+            '" data-armada-id="' +
+            (it.armada_customer_id || "") +
+            '">';
+        if (editMode) {
+            body +=
+                '<td><select class="form-select form-select-sm pp-view-pic" id="pp_view_pic_' +
+                idx +
+                '" style="width:100%;"><option value=""></option></select></td>';
+        } else {
+            body +=
+                '<td><div class="fw-bold text-dark d-flex align-items-center gap-1" style="font-size:13px;">' +
+                '<i class="fe fe-user"></i> ' +
+                $("<div>").text(picName).html() +
+                "</div></td>";
+        }
+        body +=
             "<td>" +
             '<div class="fw-semibold text-dark">' +
             $("<div>").text(it.product || it.product_name || "—").html() +
@@ -2561,17 +3046,194 @@ function renderPpViewDraftItems(items) {
             "</td>" +
             "<td>" +
             $("<div>").text(it.unit || it.unit_label || "—").html() +
-            "</td>" +
-            '<td class="pp-stock-cell text-muted"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Cek stok…</td>' +
-            "</tr>";
+            "</td>";
+        if (editMode) {
+            body +=
+                '<td><select class="form-select form-select-sm pp-view-skala" id="pp_view_skala_' +
+                idx +
+                '" style="width:100%;"></select></td>' +
+                '<td><select class="form-select form-select-sm pp-view-armada" id="pp_view_armada_' +
+                idx +
+                '" style="width:100%;"><option value=""></option></select></td>';
+        } else {
+            body +=
+                "<td>" +
+                $("<div>").text(skalaLabel).html() +
+                "</td>" +
+                "<td>" +
+                $("<div>").text(armadaLabel).html() +
+                "</td>";
+        }
+        body += "</tr>";
     });
     $("#pp-view-items-body").html(
-        body || '<tr><td colspan="4" class="text-center text-muted">Tidak ada item</td></tr>'
+        body || '<tr><td colspan="6" class="text-center text-muted">Tidak ada item</td></tr>'
     );
+
+    if (!editMode) return;
+
+    ensurePpSkalaOptions(function (skalas) {
+        var $parent = $("#modalViewPlanning");
+        var skalaOpts = '<option value="">Pilih skala...</option>';
+        skalas.forEach(function (m) {
+            skalaOpts +=
+                '<option value="' +
+                m.production_skala_id +
+                '">' +
+                $("<div>").text(ppSkalaOptionLabel(m)).html() +
+                "</option>";
+        });
+        items.forEach(function (it, idx) {
+            var $skala = $("#pp_view_skala_" + idx);
+            if ($skala.length) {
+                $skala.html(skalaOpts);
+                if (typeof $skala.select2 === "function") {
+                    if ($skala.hasClass("select2-hidden-accessible")) $skala.select2("destroy");
+                    $skala.select2({
+                        width: "100%",
+                        dropdownParent: $parent,
+                        placeholder: "Pilih skala...",
+                        allowClear: true,
+                    });
+                }
+                if (it.production_skala_id) $skala.val(String(it.production_skala_id)).trigger("change");
+            }
+            if (typeof autocompleteStaff === "function") {
+                autocompleteStaff("#pp_view_pic_" + idx, $parent);
+                if (it.pic_staff_id) {
+                    $("#pp_view_pic_" + idx)
+                        .append(
+                            new Option(
+                                it.pic_name || "PIC #" + it.pic_staff_id,
+                                it.pic_staff_id,
+                                true,
+                                true
+                            )
+                        )
+                        .trigger("change");
+                }
+            }
+            if (typeof autocompleteCustomer === "function") {
+                autocompleteCustomer("#pp_view_armada_" + idx, $parent);
+                if (it.armada_customer_id) {
+                    $("#pp_view_armada_" + idx)
+                        .append(
+                            new Option(
+                                it.armada_name || it.armada_label || "Armada #" + it.armada_customer_id,
+                                it.armada_customer_id,
+                                true,
+                                true
+                            )
+                        )
+                        .trigger("change");
+                }
+            }
+        });
+    });
+}
+
+/** Sinkron pilihan form edit → cache detail (label + id). */
+function syncPpViewAssignCacheFromForm() {
+    if (!ppViewDetailCache || !ppViewAssignEditMode) return;
+    $("#pp-view-items-body tr.pp-view-assign-row").each(function () {
+        var $tr = $(this);
+        var ppiId = Number($tr.attr("data-ppi-id"));
+        var skalaId = $tr.find(".pp-view-skala").val();
+        var picId = $tr.find(".pp-view-pic").val();
+        var armadaId = $tr.find(".pp-view-armada").val();
+        (ppViewDetailCache.items || []).forEach(function (it) {
+            if (Number(it.ppi_id) !== ppiId) return;
+            if (skalaId) {
+                it.production_skala_id = parseInt(skalaId, 10);
+                it.skala_label = $tr.find(".pp-view-skala option:selected").text() || it.skala_label;
+            }
+            if (picId) {
+                it.pic_staff_id = parseInt(picId, 10);
+                it.pic_name = $tr.find(".pp-view-pic option:selected").text() || it.pic_name;
+            }
+            it.armada_customer_id = armadaId ? parseInt(armadaId, 10) : null;
+            it.armada_name = armadaId
+                ? $tr.find(".pp-view-armada option:selected").text() || it.armada_name
+                : "—";
+        });
+    });
+}
+
+/** Ambil PIC/Skala/Armada dari baris konfirmasi (edit select atau data-* read-only). */
+function collectPpViewAssignItems() {
+    if (ppViewAssignEditMode) syncPpViewAssignCacheFromForm();
+    var items = [];
+    var valid = true;
+    $("#pp-view-items-body tr.pp-view-assign-row").each(function () {
+        var $tr = $(this);
+        var ppiId = parseInt($tr.attr("data-ppi-id"), 10);
+        var skalaId;
+        var picId;
+        var armadaId;
+        if (ppViewAssignEditMode) {
+            skalaId = $tr.find(".pp-view-skala").val();
+            picId = $tr.find(".pp-view-pic").val();
+            armadaId = $tr.find(".pp-view-armada").val();
+            $tr.find("select").removeClass("is-invalid");
+            if (!skalaId || !picId) {
+                valid = false;
+                if (!skalaId) $tr.find(".pp-view-skala").addClass("is-invalid");
+                if (!picId) $tr.find(".pp-view-pic").addClass("is-invalid");
+                return;
+            }
+        } else {
+            skalaId = $tr.attr("data-skala-id");
+            picId = $tr.attr("data-pic-id");
+            armadaId = $tr.attr("data-armada-id");
+            if (!skalaId || !picId) {
+                valid = false;
+                return;
+            }
+        }
+        items.push({
+            ppi_id: ppiId,
+            production_skala_id: parseInt(skalaId, 10),
+            pic_staff_id: parseInt(picId, 10),
+            armada_customer_id: parseInt(armadaId, 10) || null,
+        });
+    });
+    if (!valid || !items.length) {
+        notifikasi(
+            "error",
+            "Validasi Gagal",
+            ppViewAssignEditMode
+                ? "Isi PIC dan Skala untuk semua item"
+                : "PIC/Skala belum lengkap — klik Edit untuk melengkapi"
+        );
+        return null;
+    }
+    return items;
+}
+
+/** Draft: placeholder sampai cek stok → accordion per produk. */
+function renderPpViewDraftItems(items) {
+    $("#pp-view-materials-wrap").hide();
+    $("#pp-view-materials-body").empty();
+    $("#pp-view-items-table-wrap").hide();
+    $("#pp-view-items-body").empty();
+    var n = (items || []).length;
+    $("#pp-view-release-accordion").html(
+        '<div class="py-4 text-center text-muted small">' +
+            '<span class="spinner-border spinner-border-sm me-2 text-primary"></span>Memuat ' +
+            n +
+            " produk &amp; cek stok bahan mentah…" +
+            "</div>"
+    );
+    $("#pp-view-release-accordion-wrap").show();
 }
 
 /** Released+: grouping PIC / Work Order. */
 function renderPpViewGroupedItems(d) {
+    $("#pp-view-materials-wrap").hide();
+    $("#pp-view-materials-body").empty();
+    $("#pp-view-release-accordion").empty();
+    $("#pp-view-release-accordion-wrap").hide();
+    $("#pp-view-items-table-wrap").show();
     $("#pp-view-items-head").html(
         '<th style="min-width:170px;">PIC / Work Order</th>' +
             '<th style="min-width:180px;">Produk</th>' +
@@ -2694,120 +3356,231 @@ function renderPpViewGroupedItems(d) {
     );
 }
 
-/** Async: stok FG multi-satuan + cek bahan mentah → highlight & disable Release. */
+/** Qty desimal ringan (match formatShortageQty backend). */
+function ppFmtShortageQty(n) {
+    var x = Number(n);
+    if (!isFinite(x)) return "0";
+    var rounded = Math.round(x * 100) / 100;
+    if (Math.abs(rounded - Math.round(rounded)) < 0.001) {
+        return ppFormatNumber(Math.round(rounded));
+    }
+    return String(rounded);
+}
+
+/** Unified Tree Table: Baris produk dengan sub-row bahan mentah tanpa card box / card dalam card */
+function ppRenderReleaseAccordion(itemGroups) {
+    var $acc = $("#pp-view-release-accordion");
+    var groups = itemGroups || [];
+    if (!groups.length) {
+        $acc.html(
+            '<div class="py-4 text-center text-muted small border-top border-bottom">Tidak ada produk / resep terdaftar.</div>'
+        );
+        $("#pp-view-release-accordion-wrap").show();
+        return;
+    }
+
+    var body = "";
+    groups.forEach(function (g, idx) {
+        var ok = !!g.ok;
+        var open = !ok; // kurang → open; cukup → closed
+        var badge = ok
+            ? '<span class="pp-stock-pill pp-stock-pill--ok">Cukup</span>'
+            : '<span class="pp-stock-pill pp-stock-pill--short">Kurang</span>';
+        var matCount = (g.materials || []).length;
+        var matBadge = matCount > 0
+            ? '<span class="badge bg-white text-dark border ms-2 fw-semibold px-2 py-1 rounded-pill" style="font-size:10.5px;box-shadow:0 1px 2px rgba(0,0,0,0.03);"><i class="fe fe-layers me-1 text-primary"></i>' + matCount + ' Bahan</span>'
+            : '<span class="badge bg-light text-muted border ms-2 fw-normal px-2 py-1 rounded-pill" style="font-size:10.5px;">Tanpa Resep</span>';
+        var unitProd = $("<div>").text(g.unit_name || "—").html();
+
+        // Baris Produk Utama (Header Accordion)
+        body +=
+            '<tr class="pp-rel-prod-row' +
+            (ok ? "" : " is-short") +
+            (open ? " is-expanded" : "") +
+            '" data-prod-idx="' + idx + '" role="button" title="Klik untuk buka / tutup rincian bahan">' +
+            '<td>' +
+                '<div class="d-flex align-items-center flex-wrap gap-1">' +
+                    '<span class="pp-rel-prod-name">' + $("<div>").text(g.product_name || "Produk").html() + '</span>' +
+                    matBadge +
+                '</div>' +
+            '</td>' +
+            '<td class="text-start"><span class="pp-rel-sku">' + $("<div>").text(g.sku || "—").html() + '</span></td>' +
+            '<td class="text-center"><span class="fw-semibold text-dark">' + ppFormatNumber(g.qty) + '</span></td>' +
+            '<td class="text-center"><span class="text-dark">' + unitProd + '</span></td>' +
+            '<td class="text-center text-muted">—</td>' +
+            '<td class="text-center">' + badge + '</td>' +
+            '<td class="text-center">' +
+                '<span class="pp-rel-chevron-wrap"><i class="fe fe-chevron-down pp-rel-chevron"></i></span>' +
+            '</td>' +
+            '</tr>';
+
+        // Sub-rows Bahan Mentah (Body Accordion)
+        if (matCount > 0) {
+            (g.materials || []).forEach(function (m, mIdx) {
+                var mok = !!m.ok;
+                var isLast = mIdx === (g.materials.length - 1);
+                var unitMat = $("<div>").text(m.unit_name || "—").html();
+                body +=
+                    '<tr class="pp-rel-mat-row pp-rel-mat-for-' + idx + (isLast ? " pp-rel-mat-last" : "") + (mok ? "" : " table-danger") + (ok ? " parent-ok" : " parent-short") + '"' +
+                    (open ? "" : ' style="display:none;"') +
+                    '>' +
+                    '<td class="ps-4">' +
+                        '<div class="d-flex align-items-center gap-2">' +
+                            '<span class="text-muted d-inline-flex align-items-center justify-content-center" style="width:16px;height:16px;"><i class="fe fe-corner-down-right" style="font-size:13px;color:#94a3b8;"></i></span>' +
+                            '<span class="pp-rel-mat-name">' + $("<div>").text(m.supplies_name || "Bahan").html() + '</span>' +
+                        '</div>' +
+                    '</td>' +
+                    '<td class="text-start text-muted">—</td>' +
+                    '<td class="text-center fw-semibold text-dark">' +
+                        $("<div>").text(ppFmtShortageQty(m.needed)).html() +
+                    '</td>' +
+                    '<td class="text-center text-dark">' + unitMat + '</td>' +
+                    '<td class="text-center text-dark fw-medium">' +
+                        $("<div>").text(ppFmtShortageQty(m.available)).html() +
+                    '</td>' +
+                    '<td class="text-center">' +
+                        (mok
+                            ? '<span class="pp-stock-pill pp-stock-pill--ok">Cukup</span>'
+                            : '<span class="pp-stock-pill pp-stock-pill--short">Kurang</span>') +
+                    '</td>' +
+                    '<td></td>' +
+                    '</tr>';
+            });
+        } else {
+            body +=
+                '<tr class="pp-rel-mat-row pp-rel-mat-for-' + idx + ' pp-rel-mat-last' + (ok ? " parent-ok" : " parent-short") + '"' +
+                (open ? "" : ' style="display:none;"') +
+                '>' +
+                '<td colspan="7" class="text-center text-muted small py-2 fst-italic ps-4">' +
+                    'Tidak ada bahan mentah dalam resep produk ini' +
+                '</td>' +
+                '</tr>';
+        }
+    });
+
+    $acc.html(
+        '<div class="table-responsive mb-0">' +
+            '<table class="table table-hover mb-0 align-middle pp-rel-table">' +
+            "<thead><tr>" +
+            '<th style="width:32%;min-width:180px;">Produk / Bahan Mentah</th>' +
+            '<th class="text-start" style="width:14%;min-width:90px;">SKU</th>' +
+            '<th class="text-center" style="width:12%;min-width:100px;">Dibuat / Dibutuhkan</th>' +
+            '<th class="text-center" style="width:10%;min-width:70px;">Satuan</th>' +
+            '<th class="text-center" style="width:12%;min-width:80px;">Stok Gudang</th>' +
+            '<th class="text-center" style="width:12%;min-width:85px;">Status</th>' +
+            '<th class="text-center no-sort" style="width:8%;min-width:40px;"></th>' +
+            "</tr></thead><tbody>" +
+            body +
+            "</tbody></table></div>"
+    );
+
+    // Toggle expand/collapse baris sub-item saat baris produk diklik
+    $acc
+        .off("click.ppRel", ".pp-rel-prod-row")
+        .on("click.ppRel", ".pp-rel-prod-row", function () {
+            var $row = $(this);
+            var idx = $row.data("prod-idx");
+            var $matRows = $acc.find(".pp-rel-mat-for-" + idx);
+            var isExpanded = $row.hasClass("is-expanded");
+
+            if (isExpanded) {
+                $row.removeClass("is-expanded");
+                $matRows.hide();
+            } else {
+                $row.addClass("is-expanded");
+                $matRows.show();
+            }
+        });
+
+    if (typeof feather !== "undefined") feather.replace();
+
+    $("#pp-view-release-accordion-wrap").show();
+    $("#pp-view-items-table-wrap").hide();
+    $("#pp-view-materials-wrap").hide();
+}
+
+/** Async: accordion bahan per produk → disable Release jika agregat kurang. */
+var _ppReleaseStockXhr = null;
 function ppLoadDraftReleaseStockCheck(ppId) {
     var $btn = $("#btn-pp-view-release");
     var $alert = $("#pp-view-stock-alert");
+    $("#pp-view-materials-wrap").hide();
+    $("#pp-view-materials-body").empty();
+    $btn.prop("disabled", true).addClass("disabled");
     $alert
         .html(
             '<div class="alert alert-light border text-muted py-2 px-3 mb-0">' +
-                '<span class="spinner-border spinner-border-sm me-2"></span>Memeriksa stok gudang &amp; bahan mentah…' +
+                '<span class="spinner-border spinner-border-sm me-2"></span>Memeriksa stok bahan mentah sesuai resep…' +
                 "</div>"
         )
         .show();
 
-    $.ajax({
+    if (_ppReleaseStockXhr && typeof _ppReleaseStockXhr.abort === "function") {
+        try {
+            _ppReleaseStockXhr.abort();
+        } catch (e) {}
+    }
+
+    _ppReleaseStockXhr = $.ajax({
         url: "/checkProductionPlanningRelease",
         method: "get",
         data: { production_planning_id: ppId },
         success: function (res) {
-            var byPpi = {};
-            (res.items || []).forEach(function (it) {
-                byPpi[Number(it.ppi_id)] = it;
-            });
+            ppRenderReleaseAccordion(res.items || []);
 
-            $("#pp-view-items-body tr[data-ppi]").each(function () {
-                var ppi = Number($(this).data("ppi"));
-                var info = byPpi[ppi];
-                var $cell = $(this).find(".pp-stock-cell");
-                if (!info) {
-                    $cell.html('<span class="text-muted">—</span>');
-                    return;
-                }
-                var short = info.row_ok === false;
-                $(this).toggleClass("pp-row-stock-short", short);
-                $cell.toggleClass("is-short", short);
-                var lines = "";
-                if (info.stock_units && info.stock_units.length) {
-                    lines = info.stock_units
-                        .map(function (u) {
-                            return (
-                                "<div>" +
-                                $("<div>")
-                                    .text(
-                                        (u.ps_stock_text || "0") +
-                                            " " +
-                                            (u.unit_short_name || u.unit_name || "")
-                                    )
-                                    .html() +
-                                "</div>"
-                            );
-                        })
-                        .join("");
-                } else {
-                    lines =
-                        "<div>" +
-                        $("<div>").text(info.stock_text || "0").html() +
-                        "</div>";
-                }
-                if (info.available_text) {
-                    lines +=
-                        '<div class="small text-muted mt-1">≈ ' +
-                        $("<div>").text(info.available_text).html() +
-                        " (satuan rencana)</div>";
-                }
-                if (short && info.issue) {
-                    lines +=
-                        '<div class="small mt-1">' +
-                        $("<div>").text(info.issue).html() +
-                        "</div>";
-                }
-                $cell.html(lines);
-            });
-
+            // can_release = agregat seluruh PP (bahan dipakai bersama antar produk)
             var can = !!res.can_release;
             $btn.prop("disabled", !can).toggleClass("disabled", !can);
 
             if (can) {
                 $alert
                     .html(
-                        '<div class="alert alert-success border py-2 px-3 mb-0">' +
-                            '<i class="fe fe-check-circle me-1"></i>Stok bahan mencukupi — siap Release to Production.' +
-                            "</div>"
+                        '<div class="alert alert-success d-flex align-items-center gap-2 py-2 px-3 mb-0" style="border-radius:8px;font-size:13px;">' +
+                            '<i class="fe fe-check-circle fs-6"></i>' +
+                            '<div>Stok <strong>bahan mentah</strong> mencukupi (sesuai resep) — siap <strong>Release to Production</strong>.</div>' +
+                        '</div>'
                     )
                     .show();
             } else {
-                var msg = res.message || "Stok / resep tidak memenuhi syarat Release.";
+                var msg = res.message || "Stok bahan mentah / resep tidak memenuhi syarat Release.";
                 if (res.shortages && res.shortages.length) {
                     msg +=
                         "\n" +
                         res.shortages
                             .map(function (s) {
+                                var butuh =
+                                    s.needed_text ||
+                                    (s.needed != null ? String(s.needed) : "?");
+                                var stok =
+                                    s.available_text ||
+                                    (s.available != null ? String(s.available) : "?");
                                 return (
                                     "• " +
                                     (s.supplies_name || s.label || "Bahan") +
                                     " — butuh " +
-                                    (s.needed != null ? s.needed : "?") +
+                                    butuh +
                                     ", stok " +
-                                    (s.available != null ? s.available : "?")
+                                    stok
                                 );
                             })
                             .join("\n");
                 }
                 $alert
                     .html(
-                        '<div class="alert alert-danger border py-2 px-3 mb-0">' +
-                            '<div class="fw-bold mb-1">' +
-                            $("<div>").text(res.header || "Tidak bisa Release").html() +
-                            "</div>" +
-                            '<div style="white-space:pre-wrap;">' +
-                            $("<div>").text(msg).html() +
-                            "</div></div>"
+                        '<div class="alert alert-danger d-flex align-items-start gap-2 py-2.5 px-3 mb-0" style="border-radius:8px;font-size:13px;">' +
+                            '<i class="fe fe-alert-triangle fs-6 mt-0.5"></i>' +
+                            '<div>' +
+                                '<div class="fw-bold mb-0.5">' + $("<div>").text(res.header || "Tidak bisa Release").html() + '</div>' +
+                                '<div style="white-space:pre-wrap;">' + $("<div>").text(msg).html() + '</div>' +
+                            '</div>' +
+                        '</div>'
                     )
                     .show();
             }
+            if (typeof feather !== "undefined") feather.replace();
         },
         error: function (xhr) {
+            if (xhr && xhr.statusText === "abort") return;
             if (typeof handlePermissionError === "function" && handlePermissionError(xhr)) {
                 return;
             }
@@ -2817,9 +3590,9 @@ function ppLoadDraftReleaseStockCheck(ppId) {
                     '<div class="alert alert-warning border py-2 px-3 mb-0">Gagal cek stok. Tutup &amp; buka ulang modal, atau coba lagi.</div>'
                 )
                 .show();
-            $("#pp-view-items-body .pp-stock-cell").html(
-                '<span class="text-danger">Gagal cek</span>'
-            );
+        },
+        complete: function () {
+            _ppReleaseStockXhr = null;
         },
     });
 }
@@ -2929,6 +3702,7 @@ function submitPpApprove($btn) {
                 $("#modalApprovePlanning").modal("hide");
                 refreshPpTable();
                 if (typeof refreshPpJobTable === "function") refreshPpJobTable();
+                if (typeof refreshPpStageMiniTables === "function") refreshPpStageMiniTables();
                 notifikasi(
                     "success",
                     "Berhasil Release",
@@ -3076,58 +3850,38 @@ function openPpWorkOrderModal(id) {
     });
 }
 
-function submitPpWorkOrder($btn) {
-    if (!ppWorkOrderPlanningId) return;
-    var items = [];
-    var valid = true;
-    $("#pp-wo-items-body tr[data-ppi-id]").each(function () {
-        var $tr = $(this);
-        var ppiId = parseInt($tr.attr("data-ppi-id"), 10);
-        var skalaId = $tr.find(".pp-wo-skala").val();
-        var picId = $tr.find(".pp-wo-pic").val();
-        var armadaId = $tr.find(".pp-wo-armada").val();
-        if (!skalaId || !picId) {
-            valid = false;
-            $tr.find("select").each(function () {
-                if (!$(this).val()) $(this).addClass("is-invalid");
-                else $(this).removeClass("is-invalid");
-            });
-            return;
-        }
-        items.push({
-            ppi_id: ppiId,
-            production_skala_id: parseInt(skalaId, 10),
-            pic_staff_id: parseInt(picId, 10),
-            armada_customer_id: parseInt(armadaId, 10) || null,
-        });
-    });
-    if (!valid || !items.length) {
-        notifikasi("error", "Validasi Gagal", "Isi Skala, PIC, dan Armada untuk semua item");
-        return;
-    }
+/** Terbitkan WO. items diisi dari modal konfirmasi; kosong = BE pakai data Release. */
+function submitPpWorkOrder($btn, planningId, items) {
+    var id = planningId || ppWorkOrderPlanningId || ppViewPlanningId;
+    if (!id) return;
+    var btnHtml =
+        ($btn && $btn.length && $btn.html()) ||
+        '<i class="fe fe-check-circle me-1"></i> Buat Work Order';
     if (typeof LoadingButton === "function") LoadingButton($btn);
+    var payload = {
+        production_planning_id: id,
+        _token: token,
+    };
+    if (items && items.length) payload.items = items;
     $.ajax({
         url: "/assignProductionPlanningWorkOrder",
         method: "post",
-        data: {
-            production_planning_id: ppWorkOrderPlanningId,
-            items: items,
-            _token: token,
-        },
+        data: payload,
         success: function (res) {
             if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton($btn, '<i class="fe fe-check me-1"></i> Simpan Work Order');
+                ResetLoadingButton($btn, btnHtml);
             }
             if (res && res.status === -1) {
                 notifikasi("error", "Gagal Work Order", res.message || "Gagal simpan Work Order");
                 return;
             }
+            $("#modalViewPlanning").modal("hide");
             $("#modalWorkOrderPlanning").modal("hide");
+            ppViewAssignEditMode = false;
+            ppViewDetailCache = null;
             refreshPpTable();
             if (typeof refreshPpJobTable === "function") refreshPpJobTable();
-            // Setelah assign → Job Order (1 baris per PIC)
-            var $jobTab = $('button[data-bs-target="#pp-pane-job"]');
-            if ($jobTab.length) $jobTab.tab("show");
+            if (typeof refreshPpStageMiniTables === "function") refreshPpStageMiniTables();
             var woCount = (res.work_orders || []).length;
             notifikasi(
                 "success",
@@ -3140,7 +3894,7 @@ function submitPpWorkOrder($btn) {
         },
         error: function (err) {
             if (typeof ResetLoadingButton === "function") {
-                ResetLoadingButton($btn, '<i class="fe fe-check me-1"></i> Simpan Work Order');
+                ResetLoadingButton($btn, btnHtml);
             }
             if (typeof handlePermissionError === "function" && handlePermissionError(err)) return;
             var msg =

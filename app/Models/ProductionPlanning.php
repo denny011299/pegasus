@@ -390,17 +390,18 @@ class ProductionPlanning extends Model
             return ['status' => -1, 'message' => 'Hanya status Released yang bisa masuk Work Order'];
         }
 
+        // Items opsional: kosong = pakai Skala/PIC/Armada yang sudah disimpan saat Release.
         $itemInputs = $data['items'] ?? [];
-        if (! is_array($itemInputs) || $itemInputs === []) {
-            return ['status' => -1, 'message' => 'Isi PIC dan Skala untuk setiap item'];
-        }
+        $useDbAssignment = ! is_array($itemInputs) || $itemInputs === [];
 
         $byId = [];
-        foreach ($itemInputs as $row) {
-            if (! is_array($row) || empty($row['ppi_id'])) {
-                continue;
+        if (! $useDbAssignment) {
+            foreach ($itemInputs as $row) {
+                if (! is_array($row) || empty($row['ppi_id'])) {
+                    continue;
+                }
+                $byId[(int) $row['ppi_id']] = $row;
             }
-            $byId[(int) $row['ppi_id']] = $row;
         }
 
         $dbItems = ProductionPlanningItem::where('production_planning_id', $pp->production_planning_id)
@@ -412,15 +413,21 @@ class ProductionPlanning extends Model
 
         $prepared = [];
         foreach ($dbItems as $item) {
-            $in = $byId[(int) $item->ppi_id] ?? null;
-            if (! $in) {
-                return ['status' => -1, 'message' => 'Data Work Order tidak lengkap untuk semua item'];
+            if ($useDbAssignment) {
+                $skalaId = (int) ($item->production_skala_id ?? 0);
+                $picId = (int) ($item->pic_staff_id ?? 0);
+                $armadaId = (int) ($item->armada_customer_id ?? 0);
+            } else {
+                $in = $byId[(int) $item->ppi_id] ?? null;
+                if (! $in) {
+                    return ['status' => -1, 'message' => 'Data Work Order tidak lengkap untuk semua item'];
+                }
+                $skalaId = (int) ($in['production_skala_id'] ?? 0);
+                $picId = (int) ($in['pic_staff_id'] ?? 0);
+                $armadaId = (int) ($in['armada_customer_id'] ?? 0);
             }
-            $skalaId = (int) ($in['production_skala_id'] ?? 0);
-            $picId = (int) ($in['pic_staff_id'] ?? 0);
-            $armadaId = (int) ($in['armada_customer_id'] ?? 0);
             if ($skalaId <= 0 || $picId <= 0) {
-                return ['status' => -1, 'message' => 'Setiap item wajib PIC dan Skala'];
+                return ['status' => -1, 'message' => 'Setiap item wajib PIC dan Skala (isi saat Release)'];
             }
             $skalaOk = ProductionSkala::where('production_skala_id', $skalaId)->where('status', 1)->exists();
             if (! $skalaOk) {
@@ -535,6 +542,38 @@ class ProductionPlanning extends Model
             ->first();
     }
 
+    /**
+     * Self-heal: inprod + semua WO aktif sudah production_completed_at → done.
+     * Agar Histori / kartu Selesai tidak kosong untuk data lama yang macet di inprod.
+     */
+    public static function healDoneFromCompletedWorkOrders(int $whId): void
+    {
+        if ($whId <= 0) {
+            return;
+        }
+        $ids = self::where('warehouse_id', $whId)
+            ->where('status', 1)
+            ->where('pp_status', 'inprod')
+            ->whereExists(function ($q) {
+                $q->selectRaw('1')
+                    ->from('production_work_orders as wo')
+                    ->whereColumn('wo.production_planning_id', 'production_plannings.production_planning_id')
+                    ->where('wo.status', 1);
+            })
+            ->whereNotExists(function ($q) {
+                $q->selectRaw('1')
+                    ->from('production_work_orders as wo')
+                    ->whereColumn('wo.production_planning_id', 'production_plannings.production_planning_id')
+                    ->where('wo.status', 1)
+                    ->whereNull('wo.production_completed_at');
+            })
+            ->pluck('production_planning_id');
+        if ($ids->isEmpty()) {
+            return;
+        }
+        self::whereIn('production_planning_id', $ids->all())->update(['pp_status' => 'done']);
+    }
+
     function paginateList(array $data): array
     {
         $dt = DataTableParams::from($data);
@@ -560,22 +599,58 @@ class ProductionPlanning extends Model
 
         $allowed = ['draft', 'released', 'work_order', 'inprod', 'done'];
 
+        // Self-heal: inprod yang semua WO sudah production-complete → done (Histori/Selesai).
+        self::healDoneFromCompletedWorkOrders($whId);
+
         // Scope KPI = tanggal/produk/PIC (status dropdown tidak mengecilkan kartu ringkasan).
         $scope = self::where('status', 1)->where('warehouse_id', $whId);
         $dateFrom = null;
         $dateTo = null;
+        $stageHint = trim((string) ($data['stage'] ?? ''));
+        // Histori label "Tanggal Selesai" → filter tgl selesai WO, bukan pp_date.
+        $filterByCompletion = $stageHint === 'histori';
         if (! empty($data['date_from'])) {
             try {
                 $dateFrom = Carbon::parse($data['date_from'])->toDateString();
-                $scope->where('pp_date', '>=', $dateFrom);
+                if (! $filterByCompletion) {
+                    $scope->where('pp_date', '>=', $dateFrom);
+                }
             } catch (\Throwable $e) {
             }
         }
         if (! empty($data['date_to'])) {
             try {
                 $dateTo = Carbon::parse($data['date_to'])->toDateString();
-                $scope->where('pp_date', '<=', $dateTo);
+                if (! $filterByCompletion) {
+                    $scope->where('pp_date', '<=', $dateTo);
+                }
             } catch (\Throwable $e) {
+            }
+        }
+        if ($filterByCompletion && ($dateFrom || $dateTo)) {
+            $scope->whereRaw(
+                '(SELECT DATE(MAX(COALESCE(wo.production_completed_at, wo.closed_at)))
+                  FROM production_work_orders wo
+                  WHERE wo.production_planning_id = production_plannings.production_planning_id
+                    AND wo.status = 1) IS NOT NULL'
+            );
+            if ($dateFrom) {
+                $scope->whereRaw(
+                    '(SELECT DATE(MAX(COALESCE(wo.production_completed_at, wo.closed_at)))
+                      FROM production_work_orders wo
+                      WHERE wo.production_planning_id = production_plannings.production_planning_id
+                        AND wo.status = 1) >= ?',
+                    [$dateFrom]
+                );
+            }
+            if ($dateTo) {
+                $scope->whereRaw(
+                    '(SELECT DATE(MAX(COALESCE(wo.production_completed_at, wo.closed_at)))
+                      FROM production_work_orders wo
+                      WHERE wo.production_planning_id = production_plannings.production_planning_id
+                        AND wo.status = 1) <= ?',
+                    [$dateTo]
+                );
             }
         }
         if (! empty($data['product_variant_id'])) {
@@ -746,6 +821,8 @@ class ProductionPlanning extends Model
         if (! $whId) {
             return $empty;
         }
+
+        self::healDoneFromCompletedWorkOrders($whId);
 
         $scope = self::where('status', 1)->where('warehouse_id', $whId);
         if (! empty($data['date_from'])) {

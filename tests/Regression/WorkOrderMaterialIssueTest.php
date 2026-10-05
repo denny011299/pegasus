@@ -161,15 +161,17 @@ class WorkOrderMaterialIssueTest extends TestCase
         $this->assertSame(1, (int) $req['status']);
         $docId = (int) $req['document_id'];
         $doc = ProductionExecutionDocument::find($docId);
-        $this->assertSame('awaiting_ops', $doc->document_status);
-
-        $accOps = Execution::approve($docId, 'ops', []);
-        $this->assertSame(1, (int) $accOps['status']);
-        $doc->refresh();
         $this->assertSame('awaiting_qc', $doc->document_status);
 
         $accQc = Execution::approve($docId, 'qc', ['received' => [0 => 10]]);
         $this->assertSame(1, (int) $accQc['status']);
+        $doc->refresh();
+        $this->assertSame('awaiting_ops', $doc->document_status);
+        $fx['ss']->refresh();
+        $this->assertEqualsWithDelta(100.0, (float) $fx['ss']->ss_stock, 0.01, 'Stok belum dipotong sebelum ACC Ops');
+
+        $accOps = Execution::approve($docId, 'ops', []);
+        $this->assertSame(1, (int) $accOps['status']);
         $fx['ss']->refresh();
         $this->assertEqualsWithDelta(90.0, (float) $fx['ss']->ss_stock, 0.01);
     }

@@ -18,7 +18,7 @@ use App\Support\{ProductionExecution as Execution, ProductUnitStock};
 use Tests\Support\ActingAsStaff;
 use Tests\TestCase;
 
-/** Alur WO: hasil → Form Gudang → Ops → QC → stok + Tally. */
+/** Alur WO: hasil → Form Gudang → QC → Ops → stok + Tally. */
 class ProductionExecutionTest extends TestCase
 {
     use ActingAsStaff;
@@ -141,33 +141,34 @@ class ProductionExecutionTest extends TestCase
         $this->assertNotNull($wo->fresh()->production_completed_at);
         $this->assertNull($wo->fresh()->closed_at);
         $this->assertEquals(0, $this->stockPcs($v));
-        $this->assertSame('inprod', $pp->fresh()->pp_status);
+        // Histori / Selesai = produksi selesai (FG terbit); stok tetap menunggu ACC final.
+        $this->assertSame('done', $pp->fresh()->pp_status);
 
         $fg = $this->fg($wo->production_work_order_id);
         $this->assertNotNull($fg);
-        $this->assertSame('awaiting_ops', $fg->document_status);
+        $this->assertSame('awaiting_qc', $fg->document_status);
         $this->assertNull($fg->warehouse_at);
         $this->assertNull($fg->tally_number);
 
-        // QC sebelum Ops ditolak
+        // Ops sebelum QC ditolak
         try {
-            Execution::approve($fg->id, 'qc', []);
-            $this->fail('QC before Ops accepted');
+            Execution::approve($fg->id, 'ops', []);
+            $this->fail('Ops before QC accepted');
         } catch (\RuntimeException $e) {
             $this->assertStringContainsString('berurutan', $e->getMessage());
         }
 
-        $ops = Execution::approve($fg->id, 'ops', []);
-        $this->assertSame(1, $ops['status']);
+        $qc = Execution::approve($fg->id, 'qc', []);
+        $this->assertSame(1, $qc['status']);
         $fg = $fg->fresh();
-        $this->assertSame('awaiting_qc', $fg->document_status);
-        $this->assertNotNull($fg->ops_approved_at);
+        $this->assertSame('awaiting_ops', $fg->document_status);
+        $this->assertNotNull($fg->qc_approved_at);
         $this->assertNull($fg->warehouse_at);
         $this->assertEquals(0, $this->stockPcs($v));
 
-        $qc = Execution::approve($fg->id, 'qc', []);
-        $this->assertSame(1, $qc['status']);
-        $this->assertNotEmpty($qc['tally_number']);
+        $ops = Execution::approve($fg->id, 'ops', []);
+        $this->assertSame(1, $ops['status']);
+        $this->assertNotEmpty($ops['tally_number']);
         $fg = $fg->fresh();
         $this->assertSame('approved', $fg->document_status);
         $this->assertNotNull($fg->warehouse_at);
@@ -177,7 +178,7 @@ class ProductionExecutionTest extends TestCase
         $this->assertSame('done', $pp->fresh()->pp_status);
     }
 
-    public function test_pallet_unit_issues_fg_then_qc_credits_stock(): void
+    public function test_pallet_unit_issues_fg_then_ops_credits_stock(): void
     {
         [$wo, $item, $v, $pp] = $this->fixture(120);
         $r = $this->report($wo, $item, 1, 'pallet', 'pallet-done1');
@@ -186,8 +187,8 @@ class ProductionExecutionTest extends TestCase
         $this->assertEquals(0, $this->stockPcs($v));
         $fg = $this->fg($wo->production_work_order_id);
         $this->assertNotNull($fg);
-        Execution::approve($fg->id, 'ops', []);
         Execution::approve($fg->id, 'qc', []);
+        Execution::approve($fg->id, 'ops', []);
         $this->assertEquals(120, $this->stockPcs($v));
         $this->assertSame('done', $pp->fresh()->pp_status);
         $this->assertSame(1, ProductionOutputReport::where('production_work_order_id', $wo->production_work_order_id)->count());

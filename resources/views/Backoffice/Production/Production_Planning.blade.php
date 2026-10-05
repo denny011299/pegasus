@@ -302,18 +302,20 @@
     .pp-status {
         display: inline-flex !important;
         align-items: center !important;
-        gap: 5px !important;
-        padding: 3px 8px !important;
-        border-radius: 20px !important;
-        font-size: 11px !important;
+        gap: 6px !important;
+        padding: 4px 12px !important;
+        border-radius: 999px !important;
+        font-size: 12px !important;
         font-weight: 600 !important;
         white-space: nowrap !important;
-        line-height: 1.2 !important;
+        line-height: 1.25 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+        letter-spacing: 0.2px !important;
     }
     .pp-status::before {
         content: "";
-        width: 6px;
-        height: 6px;
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
         display: inline-block;
         flex-shrink: 0;
@@ -321,42 +323,110 @@
     .pp-status.draft {
         background: #fff7ed !important;
         color: #c2410c !important;
-        border: 1px solid #fed7aa !important;
+        border: 1px solid #fdba74 !important;
     }
     .pp-status.draft::before {
         background: #ea580c;
+        box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.25);
+    }
+    .pp-status.awaiting_ops,
+    .pp-status.waiting_ops,
+    .pp-status.warning {
+        background: #fefce8 !important;
+        color: #854d0e !important;
+        border: 1px solid #fef08a !important;
+    }
+    .pp-status.awaiting_ops::before,
+    .pp-status.waiting_ops::before,
+    .pp-status.warning::before {
+        background: #eab308;
+        box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.25);
+    }
+    .pp-status.awaiting_qc {
+        background: #f0f9ff !important;
+        color: #0284c7 !important;
+        border: 1px solid #7dd3fc !important;
+    }
+    .pp-status.awaiting_qc::before {
+        background: #0284c7;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
     }
     .pp-status.released {
         background: #eff6ff !important;
         color: #1d4ed8 !important;
-        border: 1px solid #bfdbfe !important;
+        border: 1px solid #93c5fd !important;
     }
     .pp-status.released::before {
         background: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
     }
     .pp-status.work_order {
         background: #f5f3ff !important;
         color: #6d28d9 !important;
-        border: 1px solid #ddd6fe !important;
+        border: 1px solid #c4b5fd !important;
     }
     .pp-status.work_order::before {
         background: #7c3aed;
+        box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.25);
     }
     .pp-status.inprod {
-        background: #e0f2fe !important;
-        color: #0369a1 !important;
-        border: 1px solid #bae6fd !important;
+        background: #f0f9ff !important;
+        color: #0284c7 !important;
+        border: 1px solid #7dd3fc !important;
     }
     .pp-status.inprod::before {
         background: #0284c7;
+        box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.25);
     }
     .pp-status.done {
         background: #f0fdf4 !important;
         color: #15803d !important;
-        border: 1px solid #bbf7d0 !important;
+        border: 1px solid #86efac !important;
     }
     .pp-status.done::before {
         background: #16a34a;
+        box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.25);
+    }
+
+    /* Badge Pill Status Stok Bahan / Produk */
+    .pp-stock-pill {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        padding: 3.5px 11px !important;
+        border-radius: 999px !important;
+        font-size: 11.5px !important;
+        font-weight: 600 !important;
+        line-height: 1.25 !important;
+        white-space: nowrap !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+    }
+    .pp-stock-pill::before {
+        content: "";
+        width: 6.5px;
+        height: 6.5px;
+        border-radius: 50%;
+        display: inline-block;
+        flex-shrink: 0;
+    }
+    .pp-stock-pill--ok {
+        background: #ecfdf5 !important;
+        color: #065f46 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    .pp-stock-pill--ok::before {
+        background: #10b981;
+        box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.25);
+    }
+    .pp-stock-pill--short {
+        background: #fff1f2 !important;
+        color: #9f1239 !important;
+        border: 1px solid #fecdd3 !important;
+    }
+    .pp-stock-pill--short::before {
+        background: #f43f5e;
+        box-shadow: 0 0 0 2px rgba(244, 63, 94, 0.25);
     }
 
     /* Badge merah total di tab (realtime) */
@@ -513,10 +583,16 @@
     }
     #tablePpPlanning-wrap.is-loading .dataTables_processing {
         display: flex !important;
+        /* Overlay loading jangan makan klik tombol aksi */
+        pointer-events: none !important;
     }
     #tablePpPlanning-wrap.is-loading tbody {
         opacity: 0.45;
-        pointer-events: none;
+        /* Tetap bisa klik view/hapus meski sedang refresh */
+        pointer-events: auto !important;
+    }
+    #tablePpPlanning-wrap .dataTables_processing {
+        pointer-events: none !important;
     }
 
     #tablePpPlanning .btn-action-icon,
@@ -532,6 +608,9 @@
         background: #fff;
         border: 1px solid #e2e8f0;
         transition: all 0.15s ease;
+        pointer-events: auto !important;
+        position: relative;
+        z-index: 2;
     }
     #tablePpPlanning .btn-action-icon.is-disabled,
     #tablePpPlanning .btn-action-icon[aria-disabled="true"] {
@@ -1378,8 +1457,8 @@
                                 <label for="pp_bahan_filter_stage">Tahap ACC</label>
                                 <select class="form-select" id="pp_bahan_filter_stage">
                                     <option value="" selected>Semua (menunggu)</option>
-                                    <option value="awaiting_ops">Menunggu Kepala Ops</option>
                                     <option value="awaiting_qc">Menunggu QC</option>
+                                    <option value="awaiting_ops">Menunggu Kepala Ops</option>
                                 </select>
                             </div>
                             <div class="col-xl-2 col-md-12">
@@ -1939,6 +2018,148 @@
         font-size: 13px;
         white-space: pre-wrap;
     }
+    /* Unified Tree Table — Tanpa Card Box / Card dalam Card */
+    #modalViewPlanning .pp-rel-table,
+    #modalViewPlanning #pp-view-items-table {
+        width: 100%;
+        margin-bottom: 0;
+    }
+    #modalViewPlanning .pp-rel-table > thead > tr > th,
+    #modalViewPlanning #pp-view-items-table > thead > tr > th {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        color: #64748b;
+        padding: 10px 14px;
+        white-space: nowrap;
+    }
+    /* Header Accordion: Baris Produk Utama */
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row > td {
+        padding: 12px 14px;
+        vertical-align: middle;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 13px;
+        background-color: #ffffff;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row:hover > td {
+        background-color: #f8fafc;
+    }
+
+    /* Saat Produk Terbuka (Expanded) */
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-expanded > td {
+        background-color: #f0fdf4 !important; /* Hijau pastel halus */
+        border-bottom: 1px solid #dcfce7;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-expanded:hover > td {
+        background-color: #e6f9ed !important;
+    }
+
+    /* Saat Produk Kurang Bahan (Shortage) */
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-short > td {
+        background-color: #ffffff;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-short:hover > td {
+        background-color: #fff5f5;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-short.is-expanded > td {
+        background-color: #fff1f2 !important; /* Merah pastel halus */
+        border-bottom: 1px solid #fecdd3;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-prod-row.is-short.is-expanded:hover > td {
+        background-color: #ffe4e6 !important;
+    }
+
+    #modalViewPlanning .pp-rel-prod-name {
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.35;
+        font-size: 13.5px;
+    }
+    #modalViewPlanning .pp-rel-sku {
+        font-weight: 600;
+        color: #0f172a;
+        font-size: 13px;
+        line-height: 1.35;
+        background: none;
+        border: none;
+        padding: 0;
+        border-radius: 0;
+        font-family: inherit;
+    }
+    #modalViewPlanning .pp-rel-chevron-wrap {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        background-color: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #64748b;
+        transition: all 0.2s ease;
+    }
+    #modalViewPlanning .pp-rel-prod-row:hover .pp-rel-chevron-wrap {
+        background-color: #e2e8f0;
+        color: #334155;
+    }
+    #modalViewPlanning .pp-rel-chevron {
+        transition: transform 0.2s ease, color 0.2s ease;
+        display: inline-block;
+        font-size: 12px;
+    }
+    #modalViewPlanning .pp-rel-prod-row.is-expanded .pp-rel-chevron-wrap {
+        background-color: #16a34a;
+        border-color: #16a34a;
+        color: #ffffff;
+    }
+    #modalViewPlanning .pp-rel-prod-row.is-expanded .pp-rel-chevron {
+        transform: rotate(180deg);
+        color: #ffffff;
+    }
+    #modalViewPlanning .pp-rel-prod-row.is-short.is-expanded .pp-rel-chevron-wrap {
+        background-color: #dc2626;
+        border-color: #dc2626;
+        color: #ffffff;
+    }
+
+    /* Body Accordion: Sub-rows Bahan Mentah (Background Soft Shaded Drawer) */
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-row > td {
+        padding: 9px 14px;
+        font-size: 12px;
+        vertical-align: middle;
+        background-color: #f8fafc !important; /* Latar sub-panel shaded */
+        border-bottom: 1px solid #edf2f7;
+        transition: background-color 0.15s ease;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-row > td:first-child {
+        padding-left: 32px !important;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-row:hover > td {
+        background-color: #f1f5f9 !important;
+    }
+    #modalViewPlanning .pp-rel-mat-name {
+        color: #475569;
+        font-weight: 500;
+        font-size: 12.5px;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-row.table-danger > td {
+        background-color: #fff7f7 !important;
+        border-bottom-color: #fee2e2;
+    }
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-row.table-danger:hover > td {
+        background-color: #fee2e2 !important;
+    }
+
+    /* Batas Bawah Body Accordion (Rapi & Standar) */
+    #modalViewPlanning .pp-rel-table > tbody > tr.pp-rel-mat-last > td {
+        border-bottom: 2px solid #cbd5e1 !important;
+    }
     .pp-wo-chip {
         display: inline-flex;
         flex-direction: column;
@@ -2075,6 +2296,82 @@
     #modalViewPlanning .btn-outline-primary:hover span {
         color: #ffffff !important;
     }
+
+    /* Tombol Cetak SPK (Secondary Soft Tint: Hijau saat Konfirmasi, Biru saat Detail Biasa) */
+    #modalViewPlanning #btn-pp-view-print-spk,
+    #modalViewPlanning .pg-btn-print--soft {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        background: #eff6ff !important;
+        color: #1d4ed8 !important;
+        border: 1px solid #bfdbfe !important;
+        border-radius: 8px !important;
+        padding: 9px 20px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        height: 42px !important;
+        line-height: 1 !important;
+        box-shadow: 0 1px 2px rgba(37, 99, 235, 0.05) !important;
+        transition: all 0.18s ease-in-out !important;
+    }
+    #modalViewPlanning #btn-pp-view-print-spk:hover,
+    #modalViewPlanning .pg-btn-print--soft:hover {
+        background: #dbeafe !important;
+        border-color: #93c5fd !important;
+        color: #1e40af !important;
+        box-shadow: 0 2px 6px rgba(37, 99, 235, 0.15) !important;
+        transform: translateY(-1px) !important;
+    }
+    /* Mode Konfirmasi (Header Hijau: Release to Production & Konfirmasi WO) -> Soft Emerald Tint */
+    #modalViewPlanning.pg-modal--confirm #btn-pp-view-print-spk {
+        background: #ecfdf5 !important;
+        color: #065f46 !important;
+        border: 1px solid #a7f3d0 !important;
+        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.06) !important;
+    }
+    #modalViewPlanning.pg-modal--confirm #btn-pp-view-print-spk:hover {
+        background: #d1fae5 !important;
+        border-color: #6ee7b7 !important;
+        color: #047857 !important;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.16) !important;
+        transform: translateY(-1px) !important;
+    }
+    #modalViewPlanning #btn-pp-view-print-spk i,
+    #modalViewPlanning .pg-btn-print--soft i {
+        color: inherit !important;
+        font-size: 14px !important;
+    }
+
+    /* Tombol Edit Alokasi PIC/Armada di Modal Konfirmasi (Neutral Slate Outline) */
+    #modalViewPlanning #btn-pp-view-edit-assign {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 6px !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 9px 18px !important;
+        font-size: 13px !important;
+        font-weight: 600 !important;
+        height: 42px !important;
+        line-height: 1 !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+        transition: all 0.18s ease-in-out !important;
+    }
+    #modalViewPlanning #btn-pp-view-edit-assign:hover {
+        background: #f8fafc !important;
+        border-color: #94a3b8 !important;
+        color: #0f172a !important;
+        transform: translateY(-1px) !important;
+    }
+    #modalViewPlanning #btn-pp-view-edit-assign i {
+        color: inherit !important;
+        font-size: 14px !important;
+    }
 </style>
 <div class="modal custom-modal fade pg-modal--form" id="modalViewPlanning" tabindex="-1"
     aria-hidden="true" data-bs-backdrop="static">
@@ -2091,12 +2388,25 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 bg-white" style="overflow-y:auto;">
-                <div class="row g-2 mb-3 small">
-                    <div class="col-md-4"><span class="text-muted">No. PP</span><div class="fw-bold" id="pp-view-code">—</div></div>
-                    <div class="col-md-4"><span class="text-muted">Tanggal</span><div class="fw-bold" id="pp-view-date">—</div></div>
-                    <div class="col-md-4"><span class="text-muted">Status</span><div id="pp-view-status">—</div></div>
+                {{-- Info Dokumen (Tanpa Card Box) --}}
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-3 border-bottom">
+                    <div class="d-flex align-items-center gap-4">
+                        <div>
+                            <span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">No. Perencanaan</span>
+                            <span class="fw-bold text-dark fs-6 font-monospace" id="pp-view-code">—</span>
+                        </div>
+                        <div class="border-start ps-4" style="height: 32px;">
+                            <span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Tanggal</span>
+                            <span class="fw-bold text-dark fs-6" id="pp-view-date">—</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="text-muted small text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Status:</span>
+                        <div id="pp-view-status">—</div>
+                    </div>
                 </div>
-                <div class="table-responsive border rounded">
+
+                <div class="table-responsive mb-0" id="pp-view-items-table-wrap">
                     <table class="table table-hover mb-0 align-middle" id="pp-view-items-table">
                         <thead class="bg-light">
                             <tr id="pp-view-items-head">
@@ -2113,7 +2423,34 @@
                         <tbody id="pp-view-items-body"></tbody>
                     </table>
                 </div>
-                <div class="mt-2" id="pp-view-stock-alert" style="display:none;"></div>
+                {{-- Draft Release: Unified table produk & resep bahan (Tanpa Card Box) --}}
+                <div id="pp-view-release-accordion-wrap" style="display:none;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <div class="small text-uppercase text-muted fw-bold" style="letter-spacing:.5px; font-size:11px;">
+                            PRODUK &amp; BAHAN MENTAH (RESEP) — PENENTU RELEASE
+                        </div>
+                        <div class="text-muted small" style="font-size:11.5px;">
+                            <i class="fe fe-info text-primary me-1"></i> Klik baris produk untuk buka / tutup rincian bahan
+                        </div>
+                    </div>
+                    <div id="pp-view-release-accordion"></div>
+                </div>
+                <div class="mt-3" id="pp-view-materials-wrap" style="display:none;">
+                    <div class="table-responsive mb-0">
+                        <table class="table table-sm table-hover mb-0 align-middle" id="pp-view-materials-table">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th>Bahan mentah</th>
+                                    <th class="text-end" style="width:120px;">Butuh</th>
+                                    <th class="text-end" style="width:120px;">Stok</th>
+                                    <th class="text-center" style="width:90px;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pp-view-materials-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="mt-3" id="pp-view-stock-alert" style="display:none;"></div>
                 <div class="mt-3 small text-muted" id="pp-view-notes"></div>
                 <div id="pp-view-work-orders" style="display:none !important;">
                     <div id="pp-view-work-orders-list"></div>
@@ -2121,14 +2458,20 @@
             </div>
             <div class="modal-footer d-flex justify-content-end gap-2 pg-modal-footer">
                 <button type="button" class="btn pg-btn-cancel" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn pg-btn-edit-assign" id="btn-pp-view-edit-assign" style="display:none;">
+                    <i class="fe fe-edit me-1"></i> Edit
+                </button>
                 <button type="button" class="btn pg-btn-confirm" id="btn-pp-view-release" style="display:none;">
                     <i class="fe fe-check me-1"></i> Release to Production
                 </button>
-                <a class="btn pg-btn-save" id="btn-pp-view-print-spk" href="#" target="_blank" rel="noopener" style="display:none;">
+                <a class="btn pg-btn-print--soft" id="btn-pp-view-print-spk" href="#" target="_blank" rel="noopener" style="display:none;">
                     <i class="fe fe-printer me-1"></i> Cetak Surat Perintah Kerja
                 </a>
-                <button type="button" class="btn pg-btn-save" id="btn-pp-view-work-order" style="display:none;">
-                    <i class="fe fe-truck me-1"></i> Buat Work Order
+                <button type="button" class="btn pg-btn-save" id="btn-pp-view-save-assign" style="display:none;">
+                    <i class="fe fe-check me-1"></i> Simpan Perubahan
+                </button>
+                <button type="button" class="btn pg-btn-confirm" id="btn-pp-view-work-order" style="display:none;">
+                    <i class="fe fe-check-circle me-1"></i> Buat Work Order
                 </button>
             </div>
         </div>

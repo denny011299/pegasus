@@ -64,14 +64,14 @@ function woMatStatusLabel(status) {
 
 function woMatStatusBadge(status) {
     var map = {
-        awaiting_pic: { text: "Draft", cls: "bg-light text-dark border" },
-        awaiting_ops: { text: "Menunggu ACC Ops", cls: "bg-warning-subtle text-warning border border-warning-subtle" },
-        awaiting_qc: { text: "Menunggu ACC QC", cls: "bg-info-subtle text-info border border-info-subtle" },
-        approved: { text: "Disetujui (Stok Potong)", cls: "bg-success-subtle text-success border border-success-subtle" },
-        cancelled: { text: "Dibatalkan", cls: "bg-danger-subtle text-danger border border-danger-subtle" },
+        awaiting_pic: { text: "Draft", cls: "draft" },
+        awaiting_ops: { text: "Menunggu ACC Ops", cls: "awaiting_ops" },
+        awaiting_qc: { text: "Menunggu ACC QC", cls: "awaiting_qc" },
+        approved: { text: "Disetujui (Stok Potong)", cls: "done" },
+        cancelled: { text: "Dibatalkan", cls: "draft" },
     };
-    var s = map[status] || { text: status || "—", cls: "bg-light text-muted border" };
-    return '<span class="badge ' + s.cls + ' fw-semibold" style="font-size:11px;padding:5px 8px;">' + woEscape(s.text) + '</span>';
+    var s = map[status] || { text: status || "—", cls: "draft" };
+    return '<span class="pp-status ' + s.cls + '">' + woEscape(s.text) + '</span>';
 }
 
 function woParseDate(str) {
@@ -132,9 +132,17 @@ var woMatMode = null; // 'ambil' | 'acc'
 function woShowMatMode(mode) {
     woMatMode = mode;
     var ambil = mode === "ambil";
+    var $modal = $("#modalWoMaterials");
+    $modal.removeClass("pg-modal--confirm pg-modal--form");
+    if (ambil) {
+        $modal.addClass("pg-modal--form");
+        $("#wo-mat-save").toggle(!window.woMonitor);
+    } else {
+        $modal.addClass("pg-modal--confirm");
+        $("#wo-mat-save").hide();
+    }
     $("#wo-mat-ambil-panel").toggle(ambil);
     $("#wo-mat-acc-panel").toggle(!ambil);
-    $("#wo-mat-save").toggle(ambil && !window.woMonitor);
     $("#wo-mat-print").hide();
     $("#wo-mat-acc-wrap").empty();
     $("#wo-mat-header-icon")
@@ -163,24 +171,20 @@ function woOpenMatTake(id, show) {
             );
 
             $("#wo-mat-ambil-meta").html(
-                '<div class="wo-summary-item">' +
-                    '<div class="wo-summary-icon"><i class="fe fe-clipboard"></i></div>' +
-                    '<div class="wo-summary-info"><div class="lbl">Work Order</div>' +
-                    '<div class="val font-monospace">' +
-                    woEscape(woNum) +
-                    "</div></div></div>" +
-                    '<div class="wo-summary-item">' +
-                    '<div class="wo-summary-icon"><i class="fe fe-user"></i></div>' +
-                    '<div class="wo-summary-info"><div class="lbl">PIC</div>' +
-                    '<div class="val">' +
-                    woEscape(d.pic || "—") +
-                    "</div></div></div>" +
-                    '<div class="wo-summary-item">' +
-                    '<div class="wo-summary-icon"><i class="fe fe-file-text"></i></div>' +
-                    '<div class="wo-summary-info"><div class="lbl">Planning</div>' +
-                    '<div class="val font-monospace">' +
-                    woEscape(d.pp || "—") +
-                    "</div></div></div>"
+                '<div class="d-flex flex-wrap align-items-center gap-4 w-100">' +
+                    '<div>' +
+                        '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Work Order</span>' +
+                        '<span class="fw-bold text-dark fs-6 font-monospace">' + woEscape(woNum) + '</span>' +
+                    '</div>' +
+                    '<div class="border-start ps-4">' +
+                        '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">PIC</span>' +
+                        '<span class="fw-bold text-dark fs-6">' + woEscape(d.pic || "—") + '</span>' +
+                    '</div>' +
+                    '<div class="border-start ps-4">' +
+                        '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Planning</span>' +
+                        '<span class="fw-bold text-dark fs-6 font-monospace">' + woEscape(d.pp || "—") + '</span>' +
+                    '</div>' +
+                '</div>'
             );
 
             $("#wo-mat-save").toggle(!!d.can_materials && !window.woMonitor);
@@ -220,60 +224,34 @@ function woOpenMatAccRequest(doc) {
           : "—";
 
     $("#wo-mat-meta").html(
-        '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-file-text"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">No. STB</div>' +
-            '<div class="val font-monospace text-primary">' +
-            woEscape(doc.number || "—") +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-user"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">PIC Pengambil</div>' +
-            '<div class="val">' +
-            woEscape(doc.pic || "—") +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-clipboard"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">Work Order</div>' +
-            '<div class="val font-monospace">' +
-            woEscape(doc.wo_number || "—") +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-calendar"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">Planning</div>' +
-            '<div class="val font-monospace">' +
-            woEscape(doc.pp_number || "—") +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-clock"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">Waktu Diajukan</div>' +
-            '<div class="val" style="font-size:12px;">' +
-            woEscape(submittedTime) +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            '<div class="wo-summary-item">' +
-            '<div class="wo-summary-icon"><i class="fe fe-check-circle"></i></div>' +
-            '<div class="wo-summary-info">' +
-            '<div class="lbl">Status Tahap</div>' +
-            '<div class="val">' +
-            woMatStatusBadge(doc.stage) +
-            "</div>" +
-            "</div>" +
-            "</div>"
+        '<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 w-100">' +
+            '<div class="d-flex flex-wrap align-items-center gap-4">' +
+                '<div>' +
+                    '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">No. STB</span>' +
+                    '<span class="fw-bold text-primary fs-6 font-monospace">' + woEscape(doc.number || "—") + '</span>' +
+                '</div>' +
+                '<div class="border-start ps-3 ps-md-4">' +
+                    '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">PIC Pengambil</span>' +
+                    '<span class="fw-bold text-dark fs-6">' + woEscape(doc.pic || "—") + '</span>' +
+                '</div>' +
+                '<div class="border-start ps-3 ps-md-4">' +
+                    '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Work Order</span>' +
+                    '<span class="fw-bold text-dark fs-6 font-monospace">' + woEscape(doc.wo_number || "—") + '</span>' +
+                '</div>' +
+                '<div class="border-start ps-3 ps-md-4">' +
+                    '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Planning</span>' +
+                    '<span class="fw-bold text-dark fs-6 font-monospace">' + woEscape(doc.pp_number || "—") + '</span>' +
+                '</div>' +
+                '<div class="border-start ps-3 ps-md-4">' +
+                    '<span class="text-muted small text-uppercase fw-bold d-block" style="font-size: 11px; letter-spacing: 0.5px;">Waktu Diajukan</span>' +
+                    '<span class="fw-bold text-dark fs-6" style="font-size: 13px;">' + woEscape(submittedTime) + '</span>' +
+                '</div>' +
+            '</div>' +
+            '<div class="d-flex align-items-center gap-2">' +
+                '<span class="text-muted small text-uppercase fw-bold" style="font-size: 11px; letter-spacing: 0.5px;">Status:</span>' +
+                '<div>' + woMatStatusBadge(doc.stage) + '</div>' +
+            '</div>' +
+        '</div>'
     );
 
     if ($.fn.DataTable.isDataTable("#tableWoMatAcc")) {
@@ -306,12 +284,12 @@ function woOpenMatAccRequest(doc) {
             if (rec != null) {
                 qcStatusHtml = '<div class="d-inline-flex flex-column align-items-center">' +
                     '<span class="fw-bold text-success" style="font-size:14px;">' + woEscape(String(rec)) + '</span>' +
-                    '<span class="badge bg-success-subtle text-success border border-success-subtle mt-1" style="font-size:10px;padding:2px 6px;"><i class="fe fe-check me-1"></i>Sesuai</span>' +
+                    '<span class="pp-status done mt-1" style="font-size:10px;padding:2px 8px;">Sesuai</span>' +
                     '</div>';
             } else if (doc.stage === "awaiting_qc") {
-                qcStatusHtml = '<span class="badge bg-info-subtle text-info border border-info-subtle px-2 py-1" style="font-size:11px;"><i class="fe fe-clock me-1"></i>Menunggu QC</span>';
+                qcStatusHtml = '<span class="pp-status awaiting_qc" style="font-size:11px;padding:3px 10px;">Menunggu QC</span>';
             } else if (doc.stage === "awaiting_ops") {
-                qcStatusHtml = '<span class="badge bg-warning-subtle text-warning border border-warning-subtle px-2 py-1" style="font-size:11px;"><i class="fe fe-hourglass me-1"></i>Menunggu Ops</span>';
+                qcStatusHtml = '<span class="pp-status awaiting_ops" style="font-size:11px;padding:3px 10px;">Menunggu Ops</span>';
             } else {
                 qcStatusHtml = '<span class="text-muted">—</span>';
             }
@@ -346,20 +324,20 @@ function woOpenMatAccRequest(doc) {
         });
     }
 
-    // Dynamic Hint Text
-    if (doc.stage === "awaiting_ops") {
-        $("#wo-mat-acc-hint").html('<i class="fe fe-info me-1 text-primary"></i>Menunggu persetujuan Kepala Operasional sebelum diverifikasi QC.');
-    } else if (doc.stage === "awaiting_qc") {
-        $("#wo-mat-acc-hint").html('<i class="fe fe-alert-circle me-1 text-warning"></i>Menunggu ACC QC. Stok gudang akan dipotong otomatis setelah ACC.');
+    // Dynamic Hint Text — alur: PIC → QC → Kepala Ops (potong stok di Ops)
+    if (doc.stage === "awaiting_qc") {
+        $("#wo-mat-acc-hint").html('<i class="fe fe-alert-circle me-1 text-warning"></i>Menunggu verifikasi Staf QC sebelum ACC Kepala Operasional.');
+    } else if (doc.stage === "awaiting_ops") {
+        $("#wo-mat-acc-hint").html('<i class="fe fe-info me-1 text-primary"></i>Menunggu ACC Kepala Ops. Stok gudang dipotong otomatis setelah ACC.');
     } else if (doc.stage === "approved") {
         $("#wo-mat-acc-hint").html('<i class="fe fe-check-circle me-1 text-success"></i>Permintaan telah disetujui penuh & stok gudang telah dipotong.');
     } else {
-        $("#wo-mat-acc-hint").html('<i class="fe fe-info me-1 text-primary"></i>Stok gudang akan dipotong otomatis setelah ACC QC.');
+        $("#wo-mat-acc-hint").html('<i class="fe fe-info me-1 text-primary"></i>Stok gudang akan dipotong otomatis setelah ACC Kepala Ops.');
     }
 
-    // Render Timeline Steps
+    // Render Timeline Steps: 1 PIC → 2 QC → 3 Ops
     var step1Html = '<div class="col-12 col-md-4">' +
-        '<div class="wo-timeline-card">' +
+        '<div class="wo-timeline-step">' +
             '<div class="icon-box" style="background:#dcfce7;color:#16a34a;"><i class="fe fe-user-check"></i></div>' +
             '<div class="min-w-0 flex-grow-1">' +
                 '<div class="step-title">1. Diajukan (PIC)</div>' +
@@ -376,27 +354,27 @@ function woOpenMatAccRequest(doc) {
     var step2StatusClass = 'text-muted';
     var step2Time = 'Belum diproses';
 
-    if (doc.ops_approved_at || doc.stage === 'awaiting_qc' || doc.stage === 'approved') {
+    if (doc.qc_approved_at || doc.stage === 'awaiting_ops' || doc.stage === 'approved') {
         step2Icon = '#dcfce7';
         step2Color = '#16a34a';
         step2IconClass = 'fe-check';
-        step2Status = 'Disetujui Ops';
+        step2Status = 'Disetujui QC';
         step2StatusClass = 'text-success';
-        step2Time = doc.ops_approved_at ? woFormatDateTimeFull(doc.ops_approved_at) : 'Sudah di-ACC';
-    } else if (doc.stage === 'awaiting_ops') {
-        step2Icon = '#fef3c7';
-        step2Color = '#d97706';
+        step2Time = doc.qc_approved_at ? woFormatDateTimeFull(doc.qc_approved_at) : 'Sudah di-ACC';
+    } else if (doc.stage === 'awaiting_qc') {
+        step2Icon = '#fefce8';
+        step2Color = '#a16207';
         step2IconClass = 'fe-clock';
-        step2Status = 'Menunggu Persetujuan';
+        step2Status = 'Menunggu QC';
         step2StatusClass = 'text-warning';
         step2Time = 'Dalam antrean';
     }
 
     var step2Html = '<div class="col-12 col-md-4">' +
-        '<div class="wo-timeline-card">' +
+        '<div class="wo-timeline-step">' +
             '<div class="icon-box" style="background:' + step2Icon + ';color:' + step2Color + ';"><i class="fe ' + step2IconClass + '"></i></div>' +
             '<div class="min-w-0 flex-grow-1">' +
-                '<div class="step-title">2. ACC Kepala Ops</div>' +
+                '<div class="step-title">2. ACC QC</div>' +
                 '<div class="step-val text-truncate ' + step2StatusClass + '">' + step2Status + '</div>' +
                 '<div class="text-muted text-truncate" style="font-size:11px;">' + step2Time + '</div>' +
             '</div>' +
@@ -406,31 +384,31 @@ function woOpenMatAccRequest(doc) {
     var step3Icon = '#f1f5f9';
     var step3Color = '#64748b';
     var step3IconClass = 'fe-minus';
-    var step3Status = 'Menunggu Tahap Ops';
+    var step3Status = 'Menunggu Tahap QC';
     var step3StatusClass = 'text-muted';
     var step3Time = 'Belum diproses';
 
-    if (doc.qc_approved_at || doc.stage === 'approved') {
+    if (doc.ops_approved_at || doc.stage === 'approved') {
         step3Icon = '#dcfce7';
         step3Color = '#16a34a';
         step3IconClass = 'fe-check-circle';
         step3Status = 'Stok Dipotong';
         step3StatusClass = 'text-success';
-        step3Time = doc.qc_approved_at ? woFormatDateTimeFull(doc.qc_approved_at) : 'Selesai';
-    } else if (doc.stage === 'awaiting_qc') {
-        step3Icon = '#eff6ff';
-        step3Color = '#2563eb';
+        step3Time = doc.ops_approved_at ? woFormatDateTimeFull(doc.ops_approved_at) : 'Selesai';
+    } else if (doc.stage === 'awaiting_ops') {
+        step3Icon = '#f0f9ff';
+        step3Color = '#0284c7';
         step3IconClass = 'fe-refresh-cw';
-        step3Status = 'Menunggu ACC QC';
+        step3Status = 'Menunggu ACC Ops';
         step3StatusClass = 'text-primary';
         step3Time = 'Siap potong stok';
     }
 
     var step3Html = '<div class="col-12 col-md-4">' +
-        '<div class="wo-timeline-card">' +
+        '<div class="wo-timeline-step">' +
             '<div class="icon-box" style="background:' + step3Icon + ';color:' + step3Color + ';"><i class="fe ' + step3IconClass + '"></i></div>' +
             '<div class="min-w-0 flex-grow-1">' +
-                '<div class="step-title">3. ACC QC (Potong Stok)</div>' +
+                '<div class="step-title">3. ACC Kepala Ops (Potong Stok)</div>' +
                 '<div class="step-val text-truncate ' + step3StatusClass + '">' + step3Status + '</div>' +
                 '<div class="text-muted text-truncate" style="font-size:11px;">' + step3Time + '</div>' +
             '</div>' +
@@ -445,20 +423,21 @@ function woOpenMatAccRequest(doc) {
     } else {
         $print.hide();
     }
+    $("#wo-mat-save").hide();
 
     var $acc = $("#wo-mat-acc-wrap").empty();
-    if (!window.woMonitor && doc.can_ops) {
-        $acc.append(
-            '<button type="button" class="btn pg-btn-confirm wo-mat-acc-ops" data-doc="' +
-                Number(doc.id) +
-                '"><i class="fe fe-check me-1"></i>ACC Kepala Ops</button>'
-        );
-    }
     if (!window.woMonitor && doc.can_qc) {
         $acc.append(
             '<button type="button" class="btn pg-btn-confirm wo-mat-acc-qc" data-doc="' +
                 Number(doc.id) +
-                '"><i class="fe fe-check me-1"></i>ACC QC (Potong Stok)</button>'
+                '"><i class="fe fe-check me-1"></i>ACC QC</button>'
+        );
+    }
+    if (!window.woMonitor && doc.can_ops) {
+        $acc.append(
+            '<button type="button" class="btn pg-btn-confirm wo-mat-acc-ops" data-doc="' +
+                Number(doc.id) +
+                '"><i class="fe fe-check me-1"></i>ACC Kepala Ops (Potong Stok)</button>'
         );
     }
 
@@ -617,18 +596,18 @@ function woRenderFgPanel(d) {
                 '/tally" target="_blank" rel="noopener"><i class="fe fe-printer"></i> Print Tally</a>'
         );
     }
-    if (!window.woMonitor && fg.document_status === "awaiting_ops" && d.can_ops) {
-        $actions.append(
-            '<button type="button" class="btn btn-sm pg-btn-confirm" id="wo-acc-ops" data-doc="' +
-                Number(fg.id) +
-                '"><i class="fe fe-check me-1"></i> ACC Kepala Ops</button>'
-        );
-    }
     if (!window.woMonitor && fg.document_status === "awaiting_qc" && d.can_qc) {
         $actions.append(
             '<button type="button" class="btn btn-sm pg-btn-confirm" id="wo-acc-qc" data-doc="' +
                 Number(fg.id) +
                 '"><i class="fe fe-check me-1"></i> ACC Staf QC Gudang</button>'
+        );
+    }
+    if (!window.woMonitor && fg.document_status === "awaiting_ops" && d.can_ops) {
+        $actions.append(
+            '<button type="button" class="btn btn-sm pg-btn-confirm" id="wo-acc-ops" data-doc="' +
+                Number(fg.id) +
+                '"><i class="fe fe-check me-1"></i> ACC Kepala Ops</button>'
         );
     }
 }
@@ -896,6 +875,8 @@ async function woSend(id, action, payload, title, summary, successMsg) {
         woRefreshLists();
         if (typeof refreshPpBahanTable === "function") refreshPpBahanTable();
         if (typeof refreshPpTable === "function") refreshPpTable();
+        if (typeof refreshPpJobTable === "function") refreshPpJobTable();
+        if (typeof refreshPpHistoriTable === "function") refreshPpHistoriTable();
         if (typeof refreshPpStageMiniTables === "function")
             refreshPpStageMiniTables();
     } catch (xhr) {

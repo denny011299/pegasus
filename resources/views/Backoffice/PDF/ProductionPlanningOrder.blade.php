@@ -5,7 +5,7 @@
     <title>Surat Perintah Kerja - {{ $planning['pp_number'] }}</title>
     <style>
         /* A5 landscape 210×148mm — footer (TTD + skala lengkap) di margin bawah */
-        @page { size: 210mm 148mm; margin: 4mm 5mm 36mm; }
+        @page { size: 210mm 148mm; margin: 4mm 5mm 42mm; }
         body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5pt; line-height: 1.2; margin: 0; color: #1e293b; }
         table { width: 100%; border-collapse: collapse; }
         .header td { padding: 0; vertical-align: middle; }
@@ -25,11 +25,14 @@
         .row-odd { background: #f8fafc; }
         .product { font-weight: bold; color: #0f172a; }
         .center { text-align: center; }
-        .bottom { position: fixed; left: 0; right: 0; bottom: -32mm; height: 32mm; }
-        .sign td { width: 33.33%; text-align: center; vertical-align: top; font-size: 7pt; font-weight: bold; color: #0f172a; padding: 0 2mm; }
-        .sign-line { border-top: 0.5pt solid #0f172a; margin-bottom: 0.5mm; }
-        .space { height: 8mm; }
-        .legend { font-size: 5pt; margin-top: 1.5mm; border-top: 0.5pt dashed #cbd5e1; padding-top: 1mm; color: #334155; }
+        .bottom { position: fixed; left: 0; right: 0; bottom: -38mm; height: 38mm; }
+        .sign td { width: 33.33%; text-align: center; vertical-align: top; font-size: 8.5pt; font-weight: bold; color: #0f172a; padding: 0 2.5mm; }
+        .sign-role { display: block; margin-bottom: 1mm; font-size: 8.5pt; }
+        .sign-name { font-size: 8pt; font-weight: 600; }
+        .sign-img { height: 12mm; max-width: 36mm; display: block; margin: 0 auto 0.5mm; }
+        .sign-line { border-top: 0.7pt solid #0f172a; margin-bottom: 1mm; margin-top: 0.5mm; }
+        .space { height: 13mm; text-align: center; }
+        .legend { font-size: 5pt; margin-top: 2mm; border-top: 0.5pt dashed #cbd5e1; padding-top: 1mm; color: #334155; }
         .legend-title { font-weight: bold; font-size: 5.5pt; color: #0f172a; margin-bottom: 0.5mm; }
         .legend-grid td { width: 25%; vertical-align: top; padding: 0.2mm 1mm 0.2mm 0; line-height: 1.25; }
         .legend-ok { margin-top: 0.8mm; font-size: 5pt; }
@@ -41,14 +44,14 @@
             <tr>
                 @foreach (['Dibuat Oleh', 'Kepala Operasional', 'Diterima Oleh'] as $role)
                     <td>
-                        {{ $role }}
+                        <span class="sign-role">{{ $role }}</span>
                         <div class="space">
                             @if($loop->index === 1 && !empty($planning['approval_snapshot']['signature']))
-                                <img style="height:8mm;max-width:28mm" src="{{ $planning['approval_snapshot']['signature'] }}">
+                                <img class="sign-img" src="{{ $planning['approval_snapshot']['signature'] }}" alt="Tanda tangan">
                             @endif
                         </div>
                         <div class="sign-line"></div>
-                        ( {{ $loop->index === 1 ? ($planning['approval_snapshot']['name'] ?? '................................') : '................................' }} )
+                        <span class="sign-name">( {{ $loop->index === 1 ? ($planning['approval_snapshot']['name'] ?? '................................') : '................................' }} )</span>
                     </td>
                 @endforeach
             </tr>

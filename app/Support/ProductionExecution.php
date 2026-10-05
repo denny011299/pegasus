@@ -293,8 +293,8 @@ class ProductionExecution
     }
 
     /**
-     * Target tercapai: tandai produksi selesai + terbitkan Form Gudang (awaiting_ops).
-     * Belum kredit stok / closed_at / warehouse_at / tally.
+     * Target tercapai: tandai produksi selesai + terbitkan Form Gudang (awaiting_qc).
+     * Belum kredit stok / closed_at / warehouse_at / tally — stok masuk setelah QC lalu Ops.
      */
     private static function issueWarehouseForm(
         ProductionWorkOrder $wo,
@@ -358,10 +358,40 @@ class ProductionExecution
         $wo->save();
         self::event($wo, 'production_completed', $doc->id, ['totals' => $totals]);
 
+        // Kartu Selesai / Histori = produksi selesai (FG terbit), bukan tunggu ACC stok.
+        self::syncPlanningDoneIfAllWosComplete((int) $wo->production_planning_id);
+
         return (int) $doc->id;
     }
 
-    /** Setelah QC ACC Form Gudang: tutup WO + sync PP bila semua WO closed. */
+    /**
+     * PP → done bila semua WO aktif sudah production-complete (FG terbit).
+     * closed_at / ACC final tetap jalur kredit stok terpisah.
+     */
+    private static function syncPlanningDoneIfAllWosComplete(int $ppId): void
+    {
+        $pp = ProductionPlanning::whereKey($ppId)->lockForUpdate()->firstOrFail();
+        if ($pp->pp_status === 'done') {
+            return;
+        }
+        $hasWo = ProductionWorkOrder::where('production_planning_id', $ppId)
+            ->where('status', 1)
+            ->exists();
+        if (! $hasWo) {
+            return;
+        }
+        $incomplete = ProductionWorkOrder::where('production_planning_id', $ppId)
+            ->where('status', 1)
+            ->whereNull('production_completed_at')
+            ->exists();
+        if ($incomplete) {
+            return;
+        }
+        $pp->pp_status = 'done';
+        $pp->save();
+    }
+
+    /** Setelah ACC final Form Gudang: tutup WO + sync PP bila semua WO production-complete. */
     private static function closeWorkOrderAfterFg(ProductionWorkOrder $wo): void
     {
         if ($wo->closed_at) {
@@ -371,17 +401,13 @@ class ProductionExecution
         if ($wo->execution_status !== 'done') {
             $wo->execution_status = 'done';
         }
+        if (! $wo->production_completed_at) {
+            $wo->production_completed_at = $wo->closed_at;
+        }
         $wo->save();
         self::event($wo, 'closed', null, ['via' => 'fg_qc']);
 
-        $pp = ProductionPlanning::whereKey($wo->production_planning_id)->lockForUpdate()->firstOrFail();
-        if (! ProductionWorkOrder::where('production_planning_id', $pp->production_planning_id)
-            ->where('status', 1)
-            ->whereNull('closed_at')
-            ->exists()) {
-            $pp->pp_status = 'done';
-            $pp->save();
-        }
+        self::syncPlanningDoneIfAllWosComplete((int) $wo->production_planning_id);
     }
 
     private static function createDocument(ProductionWorkOrder $wo, string $type, string $key, array $items, array $signatures): ProductionExecutionDocument
@@ -390,9 +416,10 @@ class ProductionExecution
             'production_work_order_id' => $wo->production_work_order_id, 'warehouse_id' => $wo->warehouse_id,
             'type' => $type, 'request_id' => $key, 'items' => $items, 'signatures' => $signatures,
             'created_by' => self::actor()->staff_id, 'confirmed_at' => now(),
+            // QC dulu, baru Kepala Ops (selaras Sales Order / Pengiriman).
             'document_status' => in_array($type, ['warehouse', 'material_issue', 'material_return'], true)
-                ? 'awaiting_ops'
-                : 'awaiting_qc',
+                ? 'awaiting_qc'
+                : 'awaiting_ops',
         ]);
         $prefix = ['warehouse' => 'FG', 'material_issue' => 'STB', 'material_return' => 'KBB'][$type];
         $doc->number = $prefix.'-'.str_pad((string) $doc->id, 4, '0', STR_PAD_LEFT);
@@ -401,83 +428,150 @@ class ProductionExecution
         return $doc;
     }
 
+    /**
+     * Validasi qty terima vs qty PIC; tulis received_qty ke baris dokumen.
+     *
+     * @param  array<int, mixed>  $received
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private static function applyReceivedQtys(ProductionExecutionDocument $doc, array $received, array $rows): array
+    {
+        foreach ($rows as $index => &$row) {
+            if (! array_key_exists($index, $received)) {
+                if (in_array($doc->type, ['warehouse', 'material_issue', 'material_return'], true)) {
+                    $qty = self::qty($row['requested_qty'] ?? null);
+                } else {
+                    throw new RuntimeException('Isi qty terima untuk setiap baris.');
+                }
+            } else {
+                $qty = self::qty($received[$index]);
+            }
+            if (abs($qty - (float) $row['requested_qty']) > 0.0001) {
+                throw new RuntimeException('Qty terima harus sesuai qty yang dikonfirmasi PIC.');
+            }
+            $row['received_qty'] = $qty;
+        }
+        unset($row);
+
+        return $rows;
+    }
+
+    /** Mutasi stok (FG kredit / STB potong / KBB kembali) setelah approval final. */
+    private static function applyDocumentStockMoves(ProductionWorkOrder $wo, ProductionExecutionDocument $doc, array $rows): void
+    {
+        foreach ($rows as $row) {
+            $qty = self::qty($row['received_qty'] ?? null);
+            if ($doc->type === 'warehouse') {
+                ProductVariant::whereKey($row['product_variant_id'])->lockForUpdate()->firstOrFail();
+                foreach (($row['stock_legs'] ?? []) as $stockUnit => $stockQty) {
+                    $add = ProductUnitStock::addQty(
+                        (int) $wo->warehouse_id,
+                        $row['product_id'],
+                        $row['product_variant_id'],
+                        (int) $stockUnit,
+                        $stockQty,
+                        $doc->number,
+                        'Hasil '.$wo->wo_number.' / '.$doc->number,
+                        false
+                    );
+                    if (! $add['ok']) {
+                        throw new RuntimeException($add['message'] ?? 'Gagal masuk stok.');
+                    }
+                }
+            } else {
+                self::moveMaterial($wo, $doc, $row, $qty);
+            }
+        }
+    }
+
     public static function approve(int $documentId, string $stage, array $data): array
     {
         return DB::transaction(function () use ($documentId, $stage, $data) {
             $ref = ProductionExecutionDocument::findOrFail($documentId);
             $wo = self::workOrder((int) $ref->production_work_order_id, true);
             $doc = ProductionExecutionDocument::whereKey($documentId)->lockForUpdate()->firstOrFail();
-            if (! in_array($stage, ['ops', 'qc'], true)) throw new RuntimeException('Tahap approval tidak valid.');
+            if (! in_array($stage, ['ops', 'qc'], true)) {
+                throw new RuntimeException('Tahap approval tidak valid.');
+            }
             if (! ($stage === 'ops' ? self::isOps((int) $wo->warehouse_id) : self::isQc((int) $wo->warehouse_id))) {
                 throw new RuntimeException('Anda bukan petugas approval tahap ini di gudang aktif.');
             }
-            if ($doc->document_status === 'approved' || ($stage === 'ops' && $doc->ops_approved_at)) {
+            if ($doc->document_status === 'approved') {
                 return ['status' => 1, 'duplicate' => true];
             }
-            if ($doc->document_status !== 'awaiting_'.$stage) throw new RuntimeException('Approval harus berurutan: Kepala Operasional lalu QC Gudang.');
-            $signatures = $doc->signatures;
+            if ($stage === 'qc' && $doc->qc_approved_at) {
+                return ['status' => 1, 'duplicate' => true];
+            }
+            if ($stage === 'ops' && $doc->ops_approved_at) {
+                return ['status' => 1, 'duplicate' => true];
+            }
+            if ($doc->document_status !== 'awaiting_'.$stage) {
+                throw new RuntimeException('Approval harus berurutan: Staf QC Gudang lalu Kepala Operasional.');
+            }
+
+            // Legacy mid-flight: Ops sudah ACC → QC masih tahap final + stok.
+            $legacyOpsFirst = $stage === 'qc'
+                && $doc->document_status === 'awaiting_qc'
+                && $doc->ops_approved_at
+                && ! $doc->qc_approved_at;
+
+            $signatures = $doc->signatures ?? [];
             $signatures[$stage] = self::snapshot((int) self::actor()->staff_id);
             $now = now();
-            if ($stage === 'ops') {
-                $doc->ops_approved_by = self::actor()->staff_id;
-                $doc->ops_approved_at = $now;
-                $doc->document_status = 'awaiting_qc';
-            } else {
-                $block = PendingStockSoftBlock::messageIfAnyDomainBlocked((int) $wo->warehouse_id);
-                if ($block) throw new RuntimeException($block);
-                $received = $data['received'] ?? [];
-                $rows = $doc->items;
-                foreach ($rows as $index => &$row) {
-                    // Form Gudang: qty terima default = hasil produksi (requested) jika tidak diisi.
-                    if (! array_key_exists($index, $received)) {
-                        // FG + STB/KBB: default qty terima = qty PIC.
-                        if (in_array($doc->type, ['warehouse', 'material_issue', 'material_return'], true)) {
-                            $qty = self::qty($row['requested_qty'] ?? null);
-                        } else {
-                            throw new RuntimeException('Isi qty terima untuk setiap baris.');
-                        }
-                    } else {
-                        $qty = self::qty($received[$index]);
-                    }
-                    if (abs($qty - (float) $row['requested_qty']) > 0.0001) {
-                        throw new RuntimeException('Qty terima harus sesuai qty yang dikonfirmasi PIC.');
-                    }
-                    $row['received_qty'] = $qty;
-                    if ($doc->type === 'warehouse') {
-                        ProductVariant::whereKey($row['product_variant_id'])->lockForUpdate()->firstOrFail();
-                        foreach (($row['stock_legs'] ?? []) as $stockUnit => $stockQty) {
-                            $add = ProductUnitStock::addQty(
-                                (int) $wo->warehouse_id,
-                                $row['product_id'],
-                                $row['product_variant_id'],
-                                (int) $stockUnit,
-                                $stockQty,
-                                $doc->number,
-                                'Hasil '.$wo->wo_number.' / '.$doc->number,
-                                false
-                            );
-                            if (! $add['ok']) throw new RuntimeException($add['message'] ?? 'Gagal masuk stok.');
-                        }
-                    } else {
-                        self::moveMaterial($wo, $doc, $row, $qty);
-                    }
-                }
-                unset($row);
+
+            if ($stage === 'qc') {
+                $rows = self::applyReceivedQtys($doc, $data['received'] ?? [], $doc->items ?? []);
                 $doc->items = $rows;
                 $doc->qc_approved_by = self::actor()->staff_id;
                 $doc->qc_approved_at = $now;
-                $doc->warehouse_at = $now;
-                $doc->document_status = 'approved';
-                if ($doc->type === 'warehouse') {
-                    $doc->tally_number = 'TLY-'.$now->format('ymd').'-'.str_pad((string) $doc->id, 4, '0', STR_PAD_LEFT);
+                if ($legacyOpsFirst) {
+                    $block = PendingStockSoftBlock::messageIfAnyDomainBlocked((int) $wo->warehouse_id);
+                    if ($block) {
+                        throw new RuntimeException($block);
+                    }
+                    self::applyDocumentStockMoves($wo, $doc, $rows);
+                    $doc->warehouse_at = $now;
+                    $doc->document_status = 'approved';
+                    if ($doc->type === 'warehouse') {
+                        $doc->tally_number = 'TLY-'.$now->format('ymd').'-'.str_pad((string) $doc->id, 4, '0', STR_PAD_LEFT);
+                    }
+                } else {
+                    $doc->document_status = 'awaiting_ops';
+                }
+            } else {
+                $doc->ops_approved_by = self::actor()->staff_id;
+                $doc->ops_approved_at = $now;
+                if ($doc->qc_approved_at) {
+                    $block = PendingStockSoftBlock::messageIfAnyDomainBlocked((int) $wo->warehouse_id);
+                    if ($block) {
+                        throw new RuntimeException($block);
+                    }
+                    $rows = $doc->items ?? [];
+                    foreach ($rows as $row) {
+                        if ($row['received_qty'] === null || $row['received_qty'] === '') {
+                            throw new RuntimeException('Qty QC belum lengkap — ACC QC ulang.');
+                        }
+                    }
+                    self::applyDocumentStockMoves($wo, $doc, $rows);
+                    $doc->warehouse_at = $now;
+                    $doc->document_status = 'approved';
+                    if ($doc->type === 'warehouse') {
+                        $doc->tally_number = 'TLY-'.$now->format('ymd').'-'.str_pad((string) $doc->id, 4, '0', STR_PAD_LEFT);
+                    }
+                } else {
+                    // Legacy: Ops dulu (dokumen lama yang belum dimigrasi).
+                    $doc->document_status = 'awaiting_qc';
                 }
             }
+
             $doc->signatures = $signatures;
             $doc->save();
             self::event($wo, $stage.'_approved', $doc->id);
-            if ($stage === 'qc' && $doc->type === 'warehouse') {
+            if ($doc->document_status === 'approved' && $doc->type === 'warehouse') {
                 self::closeWorkOrderAfterFg($wo);
             }
+
             return ['status' => 1, 'document_id' => $doc->id, 'tally_number' => $doc->tally_number];
         });
     }
@@ -527,7 +621,9 @@ class ProductionExecution
             $ref = ProductionExecutionDocument::findOrFail($documentId);
             $wo = self::workOrder((int) $ref->production_work_order_id, true);
             $doc = ProductionExecutionDocument::whereKey($documentId)->lockForUpdate()->firstOrFail();
-            if ($doc->type !== 'warehouse' || $doc->document_status !== 'awaiting_qc') throw new RuntimeException('Konfirmasi penanganan dilakukan setelah ACC Kepala Operasional, sebelum ACC QC.');
+            if ($doc->type !== 'warehouse' || $doc->document_status !== 'awaiting_ops') {
+                throw new RuntimeException('Konfirmasi penanganan dilakukan setelah ACC QC, sebelum ACC Kepala Operasional.');
+            }
             $signatures = $doc->signatures;
             if (isset($signatures[$role])) {
                 if ((int) $signatures[$role]['staff_id'] === (int) self::actor()->staff_id) return ['status' => 1];
@@ -740,7 +836,7 @@ class ProductionExecution
             $doc = $type === 'material_issue' ? ProductionExecutionDocument::where('production_work_order_id', $woId)->where('document_status', 'awaiting_pic')->lockForUpdate()->first() : null;
             if ($doc) {
                 $doc->request_id = $key; $doc->items = $rows; $doc->signatures = ['pic'=>$signature];
-                $doc->document_status = 'awaiting_ops'; $doc->confirmed_at = now(); $doc->created_by = self::actor()->staff_id; $doc->save();
+                $doc->document_status = 'awaiting_qc'; $doc->confirmed_at = now(); $doc->created_by = self::actor()->staff_id; $doc->save();
                 self::event($wo, 'materials_requested', $doc->id);
             } else {
                 $doc = self::createDocument($wo, $type, $key, $rows, ['pic' => $signature]);
