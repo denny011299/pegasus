@@ -6,24 +6,295 @@
       border: 1px solid red !important;
     }
 
-    .staff-esign-preview-wrap {
-      width: 160px;
-      height: 90px;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      background: #fff;
+    /* Staff E-sign Field (Minimalis & Tenang) */
+    .staff-esign-field {
+      position: relative;
+      display: inline-block;
+      width: 240px;
+      height: 135px; /* Rasio 16:9 */
+      padding: 0;
+      border: 1.5px dashed #cbd5e1;
+      border-radius: 10px;
+      background: #f8fafc;
       overflow: hidden;
+      cursor: pointer;
       flex-shrink: 0;
+      transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
     }
-    .staff-esign-preview {
+    .staff-esign-field:hover,
+    .staff-esign-field:focus-visible {
+      border-color: #2563eb;
+      background: #f0f7ff;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.10);
+      outline: none;
+    }
+    .staff-esign-field.has-image {
+      border-style: solid;
+      border-width: 1px;
+      border-color: #e2e8f0;
+      background: #ffffff;
+    }
+    .staff-esign-field.has-image:hover {
+      border-color: #2563eb;
+    }
+    /* Garis tanda tangan */
+    .staff-esign-field.has-image::before {
+      content: "";
+      position: absolute;
+      left: 18px;
+      right: 18px;
+      bottom: 24px;
+      border-bottom: 1px dashed #cbd5e1;
+      pointer-events: none;
+    }
+    .staff-esign-field.has-image::after {
+      content: "\2715";
+      position: absolute;
+      left: 18px;
+      bottom: 27px;
+      font-size: 10px;
+      color: #94a3b8;
+      pointer-events: none;
+    }
+    .staff-esign-field-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      text-align: center;
+      pointer-events: none;
+    }
+    .staff-esign-field-empty .esign-ico-simple {
+      font-size: 22px;
+      color: #3b82f6;
+      margin-bottom: 6px;
+      transition: transform 0.2s ease;
+    }
+    .staff-esign-field:hover .esign-ico-simple {
+      transform: translateY(-2px);
+    }
+    .staff-esign-field-empty .esign-title {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #1e293b;
+    }
+    .staff-esign-field-empty .esign-sub {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .staff-esign-field-img {
+      position: relative;
+      z-index: 1;
       width: 100%;
       height: 100%;
       object-fit: contain;
       display: block;
+      padding: 8px 12px;
+      background: transparent;
     }
-    #modalStaffEsign .pg-esign {
-      max-width: min(560px, 92vw);
+    .staff-esign-field-hover {
+      position: absolute;
+      z-index: 2;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      background: rgba(15, 23, 42, 0.60);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .staff-esign-field.has-image:hover .staff-esign-field-hover {
+      display: flex;
+    }
+    .staff-esign-side-desc {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+    .staff-esign-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 600;
+      line-height: 1.2;
+    }
+    .staff-esign-chip::before {
+      content: "";
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .staff-esign-chip.st-off {
+      display: inline-flex;
+      color: #64748b;
+      background: #f1f5f9;
+      border: 1px solid #e2e8f0;
+    }
+    .staff-esign-chip.st-on {
+      display: none;
+      color: #15803d;
+      background: #dcfce7;
+      border: 1px solid #bbf7d0;
+    }
+    .staff-esign-field.has-image ~ .staff-esign-side-desc .st-off {
+      display: none !important;
+    }
+    .staff-esign-field.has-image ~ .staff-esign-side-desc .st-on {
+      display: inline-flex !important;
+    }
+
+    /* Modal E-sign Segmented Control */
+    .staff-esign-segmented {
+      display: flex;
+      background: #f1f5f9;
+      padding: 5px;
+      border-radius: 12px;
+      border: 1px solid #e2e8f0;
+      gap: 6px;
+      margin-bottom: 1.25rem;
+    }
+    .staff-esign-segmented .seg-btn {
+      flex: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .staff-esign-segmented .seg-btn:hover {
+      color: #1e293b;
+      background: rgba(255, 255, 255, 0.5);
+    }
+    .staff-esign-segmented .seg-btn.active {
+      background: #ffffff;
+      color: #2563eb;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+
+    /* Modal E-sign Dropzone */
+    .staff-esign-dropzone {
+      border: 2px dashed #cbd5e1;
+      border-radius: 14px;
+      background: #f8fafc;
+      padding: 2.5rem 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease-in-out;
+      outline: none;
+    }
+    .staff-esign-dropzone:hover,
+    .staff-esign-dropzone:focus,
+    .staff-esign-dropzone.is-dragover {
+      border-color: #2563eb;
+      background: #eff6ff;
+      box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    }
+    .staff-esign-dropzone.is-dragover {
+      transform: scale(1.005);
+    }
+    .staff-esign-dropzone .dropzone-icon-wrap {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: #ffffff;
+      border: 1px solid #bfdbfe;
+      color: #2563eb;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 2px 8px rgba(37, 99, 235, 0.1);
       margin: 0 auto;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+    }
+    .staff-esign-dropzone:hover .dropzone-icon-wrap,
+    .staff-esign-dropzone.is-dragover .dropzone-icon-wrap {
+      transform: translateY(-2px);
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    /* Dropzone Preview Card */
+    .staff-esign-preview-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    }
+    .staff-esign-preview-frame {
+      width: 100%;
+      max-width: 520px;
+      aspect-ratio: 16/9;
+      margin: 0 auto;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #ffffff;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+    }
+    .staff-esign-preview-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* Canvas / dropzone penuh lebar modal — jangan “gantung” di tengah */
+    #modalStaffEsign .pg-esign,
+    #modalStaffEsign .pg-esign.pg-esign--lg {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+    }
+    /* 16:9 + cap tinggi — nyaman tanda tangan, modal tanpa scroll */
+    #modalStaffEsign .pg-esign-frame {
+      aspect-ratio: 16 / 9 !important;
+      max-height: min(380px, 48vh) !important;
+    }
+    #modalStaffEsign .modal-body {
+      padding: 1rem 1.25rem !important;
+    }
+    #modalStaffEsign .staff-esign-segmented {
+      margin-bottom: 0.75rem;
+    }
+    #modalStaffEsign .staff-esign-dropzone {
+      padding: 1.25rem 1rem;
+    }
+    #modalStaffEsign .staff-esign-preview-frame {
+      aspect-ratio: 16 / 9;
+      max-height: min(380px, 48vh);
+    }
+    #modalStaffEsign #staff_esign_modal_pad,
+    #modalStaffEsign #staff_esign_panel_draw,
+    #modalStaffEsign #staff_esign_panel_upload,
+    #modalStaffEsign .staff-esign-dropzone,
+    #modalStaffEsign .staff-esign-preview-card {
+      width: 100%;
+      max-width: 100%;
     }
 
     .is-invalids {
@@ -311,17 +582,29 @@
                     </div>
                     <div class="col-12">
                       <div class="input-block mb-3">
-                        <label>Tanda tangan dokumen produksi</label>
-                        <div class="d-flex flex-wrap align-items-start gap-3">
-                          <div id="staff_esign_preview_wrap" class="staff-esign-preview-wrap" style="display:none;">
-                            <img id="staff_esign_preview" alt="Tanda tangan" class="staff-esign-preview">
-                          </div>
-                          <div>
-                            <button type="button" class="btn btn-outline-primary" id="btn_staff_esign_open">
-                              <i class="fe fe-edit-3 me-1"></i><span id="btn_staff_esign_label">Tambah tanda tangan</span>
-                            </button>
-                            <small class="text-muted d-block mt-2" style="max-width:320px;">
-                              E-sign dipakai saat menyetujui dokumen produksi. Gambar baru mengganti yang lama.
+                        <label>Tanda Tangan Dokumen Produksi</label>
+                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                          <button type="button" id="btn_staff_esign_open" class="staff-esign-field" title="Klik untuk atur tanda tangan">
+                            <span id="staff_esign_placeholder" class="staff-esign-field-empty">
+                              <i class="fe fe-edit-3 esign-ico-simple"></i>
+                              <span class="esign-title">Atur Tanda Tangan</span>
+                              <span class="esign-sub">Klik untuk gambar / upload</span>
+                            </span>
+                            <img id="staff_esign_preview" alt="Tanda tangan" class="staff-esign-field-img" style="display:none;">
+                            <span class="staff-esign-field-hover">
+                              <i class="fe fe-edit-3"></i><span id="btn_staff_esign_label">Ubah Tanda Tangan</span>
+                            </span>
+                          </button>
+                          <div class="staff-esign-side-desc">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                              <span class="staff-esign-chip st-off">Belum Diatur</span>
+                              <span class="staff-esign-chip st-on">Aktif</span>
+                              <a href="javascript:void(0)" id="btn_staff_esign_remove" class="text-danger small ms-1" style="display:none; text-decoration: none;">
+                                <i class="fe fe-trash-2 me-1"></i>Hapus
+                              </a>
+                            </div>
+                            <small class="text-muted d-block" style="max-width: 380px; line-height: 1.45;">
+                              Tanda tangan digital untuk persetujuan dokumen produksi (PP, SPK, dan Bukti Pengeluaran).
                             </small>
                           </div>
                         </div>
@@ -406,7 +689,7 @@
   </div>
   <!-- /Page Wrapper -->
 
-{{-- Modal e-sign 16:9 (luas) — di luar form --}}
+{{-- Modal e-sign — di luar form --}}
 <div class="modal custom-modal fade pg-modal--form" id="modalStaffEsign" tabindex="-1"
     aria-labelledby="modalStaffEsignLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-focus="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -416,34 +699,78 @@
                     <div class="pg-modal-icon"><i class="fe fe-edit-3"></i></div>
                     <div>
                         <h5 class="mb-0 fw-bold text-white modal-title" id="modalStaffEsignLabel" style="font-size:16px;">
-                            Tanda Tangan</h5>
-                        <small class="d-block text-white-50 modal-subtitle">Gambar tangan atau upload gambar — simpan untuk mengganti e-sign</small>
+                            Tanda Tangan Digital</h5>
+                        <small class="d-block text-white-50 modal-subtitle">Gambar tangan langsung atau upload file gambar tanda tangan</small>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body p-4 bg-white">
-                <div class="btn-group w-100 mb-3" role="group" aria-label="Mode tanda tangan">
-                    <input type="radio" class="btn-check" name="staff_esign_mode" id="staff_esign_mode_draw" value="draw" autocomplete="off" checked>
-                    <label class="btn btn-outline-primary" for="staff_esign_mode_draw">
-                        <i class="fe fe-edit-3 me-1"></i> Gambar tangan
-                    </label>
-                    <input type="radio" class="btn-check" name="staff_esign_mode" id="staff_esign_mode_upload" value="upload" autocomplete="off">
-                    <label class="btn btn-outline-primary" for="staff_esign_mode_upload">
-                        <i class="fe fe-image me-1"></i> Upload gambar
-                    </label>
+                <!-- Segmented Mode Switcher -->
+                <div class="staff-esign-segmented" role="tablist">
+                    <button type="button" class="seg-btn active" data-mode="draw">
+                        <i class="fe fe-edit-3"></i> Gambar Tangan (Canvas)
+                    </button>
+                    <button type="button" class="seg-btn" data-mode="upload">
+                        <i class="fe fe-upload-cloud"></i> Upload File (Dropzone)
+                    </button>
                 </div>
+
+                <!-- Panel 1: Gambar Tangan -->
                 <div id="staff_esign_panel_draw">
-                    <div id="staff_esign_modal_pad" class="mx-auto"></div>
+                    <div id="staff_esign_modal_pad" class="w-100"></div>
                 </div>
+
+                <!-- Panel 2: Upload File / Dropzone -->
                 <div id="staff_esign_panel_upload" style="display:none;">
-                    <label class="form-label fw-semibold">Pilih file gambar (PNG/JPG)</label>
-                    <input type="file" class="form-control" id="staff_esign_upload_file" accept="image/png,image/jpeg,image/webp">
-                    <div class="mt-3 text-center">
-                        <div id="staff_esign_upload_preview_wrap" class="staff-esign-preview-wrap mx-auto" style="display:none;max-width:360px;">
-                            <img id="staff_esign_upload_preview" alt="Preview upload" class="staff-esign-preview" style="max-width:100%;height:auto;">
+                    {{-- Input di luar dropzone — klik dalam dropzone + trigger("click") sering gagal di browser --}}
+                    <input type="file" class="visually-hidden" id="staff_esign_upload_file"
+                        accept="image/png,image/jpeg,image/webp" tabindex="-1" aria-hidden="true">
+                    <div id="staff_esign_dropzone" class="staff-esign-dropzone" tabindex="0" role="button" aria-label="Upload gambar tanda tangan">
+                        <div class="dropzone-content">
+                            <div class="dropzone-icon-wrap mb-3">
+                                <i class="fe fe-upload-cloud"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1 fs-14">
+                                Tarik & letakkan file gambar di sini, atau
+                                <label for="staff_esign_upload_file" class="text-primary text-decoration-underline mb-0" style="cursor:pointer;">Pilih File</label>
+                            </h6>
+                            <p class="text-muted small mb-3">
+                                Mendukung format PNG, JPG, JPEG, atau WebP (Maksimal 2 MB)
+                            </p>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1" style="font-size:11px;">
+                                <i class="fe fe-maximize-2 me-1"></i> Otomatis dinormalisasi ke canvas putih
+                            </span>
                         </div>
-                        <small class="text-muted d-block mt-2">Gambar dipotong/diskalakan ke rasio 16:9 saat disimpan.</small>
+                    </div>
+
+                    <!-- Dropzone Preview Card -->
+                    <div id="staff_esign_upload_preview_card" class="staff-esign-preview-card" style="display:none;">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2 pb-2 border-bottom">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1" style="font-size:11px;">
+                                    <i class="fe fe-check-circle me-1"></i>Gambar Terpilih
+                                </span>
+                                <span id="staff_esign_file_name" class="fw-semibold text-dark small text-truncate" style="max-width:260px;"></span>
+                                <span id="staff_esign_file_size" class="text-muted small"></span>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <button type="button" class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1" id="btn_staff_esign_change_file" style="height:32px;font-size:12px;border-radius:6px;">
+                                    <i class="fe fe-refresh-cw"></i> Ganti File
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-danger d-inline-flex align-items-center gap-1" id="btn_staff_esign_clear_file" style="height:32px;font-size:12px;border-radius:6px;">
+                                    <i class="fe fe-trash-2"></i> Hapus
+                                </button>
+                            </div>
+                        </div>
+                        <div class="staff-esign-preview-frame">
+                            <img id="staff_esign_upload_preview" alt="Preview Tanda Tangan" class="staff-esign-preview-img">
+                        </div>
+                        <div class="text-center mt-2">
+                            <small class="text-muted" style="font-size:11px;">
+                                <i class="fe fe-info me-1 text-primary"></i>Gambar tanda tangan dipusatkan pada canvas berlatar belakang putih bersih.
+                            </small>
+                        </div>
                     </div>
                 </div>
             </div>
