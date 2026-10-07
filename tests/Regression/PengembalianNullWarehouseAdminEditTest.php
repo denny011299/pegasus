@@ -11,6 +11,7 @@ use App\Models\CustomerSupplyReturnDetail;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
+use App\Models\SuppliesStock;
 use App\Models\Unit;
 use App\Models\Warehouse;
 use Tests\Support\ActingAsStaff;
@@ -210,6 +211,34 @@ class PengembalianNullWarehouseAdminEditTest extends TestCase
 
         $response->assertOk();
         $this->assertSame(2, (int) CustomerSupplyReturn::find($fx['record']->return_id)->status, 'status 2 = accepted');
+    }
+
+    /**
+     * PMO issue #28: potongan barang (jerigen) dari POST /payments/cash datang tanpa gudang, dan
+     * staf boleh memilih gudang ECERAN untuk baris bahan -- dulu ditolak "harus gudang utama".
+     * Gudang eceran dikredit flat, tanpa roll-up.
+     */
+    public function test_accept_succeeds_with_a_retail_warehouse_for_a_bahan_line(): void
+    {
+        $this->actingAsSuperAdminStaff();
+        $fx = $this->makeSupplyReturnWithNullWarehouse();
+        $retailWarehouseId = (int) Warehouse::query()
+            ->where('warehouses.status', 1)
+            ->whereHas('type', fn ($q) => $q->where('status', 1)->where('is_main_warehouse', 0))
+            ->orderBy('warehouses.id')
+            ->value('id');
+        $this->assertGreaterThan(0, $retailWarehouseId, 'fixture needs a non-main warehouse (is_main_warehouse=0) in the seeded data');
+
+        CustomerSupplyReturnDetail::where('return_id', $fx['record']->return_id)
+            ->update(['warehouse_id' => $retailWarehouseId]);
+
+        $this->postJson('/customerReturns/S:'.$fx['record']->return_id.'/accept')->assertOk();
+
+        $this->assertSame(2, (int) CustomerSupplyReturn::find($fx['record']->return_id)->status, 'status 2 = accepted');
+        $this->assertEquals(4, (float) SuppliesStock::withoutGlobalScope('active_warehouse')->where('supplies_id', $fx['supplies']->supplies_id)
+            ->where('unit_id', $fx['unit']->unit_id)
+            ->where('warehouse_id', $retailWarehouseId)
+            ->value('ss_stock'));
     }
 
     public function test_list_surfaces_an_unassigned_eceran_produk_line_while_viewing_the_main_warehouse(): void

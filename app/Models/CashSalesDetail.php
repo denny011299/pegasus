@@ -37,6 +37,7 @@ class CashSalesDetail extends Model
         $t->csd_type = $data["csd_type"];
         // Hanya terisi bila pembayaran datang lewat External API.
         $t->ref_nota_id = $data["ref_nota_id"] ?? null;
+        $t->csd_kind = $data["csd_kind"] ?? 'cash';
         $t->save();
         return $t->csd_id;
     }
