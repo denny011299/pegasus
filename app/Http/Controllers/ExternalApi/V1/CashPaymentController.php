@@ -60,7 +60,8 @@ use Illuminate\Validation\Rule;
  * dari potongan nominal ("potongan", mis. cash diskon 3%) dan potongan barang
  * ("potongan_barang", mis. jerigen). Semua jenis ikut dihitung di payment_amount dan tersimpan
  * sebagai rincian kas (crd_kind/csd_kind), supaya total terbayar di IPM sama dengan PMO.
- * Potongan hanya boleh pada pembayaran Masuk (type=1). Setiap potongan_barang membawa
+ * Potongan boleh di alur kas mana pun (Masuk/Keluar/Keluar 1) — diterima sementara sampai
+ * client mencoba di live (keputusan 2026-10-08). Setiap potongan_barang membawa
  * goods{item_type, ref_id, qty, satuan_id, armada_code, ref_shipment_id}; IPM membuat SATU
  * dokumen Pengembalian per pasangan (armada_code, ref_shipment_id) di dalam transaksi DB yang
  * sama dengan kas — berhasil semua atau gagal semua. Resolusi barisnya memakai
@@ -272,20 +273,9 @@ class CashPaymentController extends Controller
 
         $this->assertItemsShareOneDirection($data['items']);
         $this->assertAmountMatchesItems($data);
-        $this->assertPotonganOnlyOnMasuk($data['items']);
         $data['_return_groups'] = $this->prepareReturnGroups($data);
 
         return $data;
-    }
-
-    /** Potongan mengurangi tagihan, jadi hanya masuk akal pada pembayaran Masuk (type=1). */
-    private function assertPotonganOnlyOnMasuk(array $items): void
-    {
-        foreach ($items as $index => $item) {
-            if ($this->kindOf($item) !== self::KIND_CASH && (int) $item['type'] !== self::DIRECTION_MASUK) {
-                $this->fail("items.$index.kind", 'Potongan hanya boleh pada pembayaran Masuk (type = 1).');
-            }
-        }
     }
 
     private function kindOf(array $item): string

@@ -226,23 +226,34 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
         $this->assertFalse(CashArmada::where('ref_payment_id', $ref)->exists());
     }
 
-    public function test_potongan_is_rejected_on_a_non_masuk_payment(): void
+    public function test_potongan_is_accepted_on_a_keluar_payment_and_still_creates_the_return(): void
     {
+        // Diterima sementara sampai client mencoba di live (keputusan 2026-10-08).
         $headers = $this->externalApiHeaders();
         $armada = $this->createArmada();
+        $jerigen = $this->createJerigen();
+        $ref = 'G-PTG-'.uniqid().'-K';
 
         $this->postJson(self::URL, [
-            'ref_payment_id' => 'G-PTG-'.uniqid().'-K',
+            'ref_payment_id' => $ref,
             'payment_type' => 1,
             'armada_code' => $armada->customer_code,
             'payment_date' => '2026-10-07',
-            'payment_amount' => 10000,
+            'ref_shipment_id' => 'SHP-K',
+            'payment_amount' => 30000,
             'items' => [
+                ['kind' => 'cash', 'type' => 2, 'amount' => 10000],
                 ['kind' => 'potongan', 'type' => 2, 'amount' => 10000],
+                ['kind' => 'potongan_barang', 'type' => 2, 'amount' => 10000, 'goods' => $this->goods($jerigen, 3)],
             ],
         ], $headers)
-            ->assertStatus(422)
-            ->assertJsonPath('error.details', fn ($details) => isset($details['items.0.kind']));
+            ->assertStatus(201)
+            ->assertJsonPath('data.items.1.kind', 'potongan')
+            ->assertJsonPath('data.items.2.type', 2)
+            ->assertJsonCount(1, 'data.returns');
+
+        $return = CustomerSupplyReturn::where('ref_number', $ref)->firstOrFail();
+        $this->assertSame(3, (int) CustomerSupplyReturnDetail::where('return_id', $return->return_id)->value('qty'));
     }
 
     public function test_goods_is_only_allowed_on_potongan_barang(): void
