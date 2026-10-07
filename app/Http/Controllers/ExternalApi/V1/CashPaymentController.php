@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
 use App\ExternalApi\Support\PaymentPhotoStore;
+use App\ExternalApi\Support\ReturnItemResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ReportController;
 use App\Models\CashArmada;
@@ -13,6 +14,8 @@ use App\Models\CashSales;
 use App\Models\CashSalesDetail;
 use App\Models\Customer;
 use App\Models\Staff;
+use App\Support\ArmadaUpsert;
+use App\Support\CustomerReturnCreation;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -53,6 +56,20 @@ use Illuminate\Validation\Rule;
  *   - penyimpanan foto base64 ke public/kas_admin/, disimpan sebagai JSON
  *     nama berkas di kolom cr_img / cs_img
  *
+ * POTONGAN (PMO issue #28, 2026-10-07): items[].kind membedakan uang tunai ("cash", default)
+ * dari potongan nominal ("potongan", mis. cash diskon 3%) dan potongan barang
+ * ("potongan_barang", mis. jerigen). Semua jenis ikut dihitung di payment_amount dan tersimpan
+ * sebagai rincian kas (crd_kind/csd_kind), supaya total terbayar di IPM sama dengan PMO.
+ * Potongan hanya boleh pada pembayaran Masuk (type=1). Setiap potongan_barang membawa
+ * goods{item_type, ref_id, qty, satuan_id, armada_code, ref_shipment_id}; IPM membuat SATU
+ * dokumen Pengembalian per pasangan (armada_code, ref_shipment_id) di dalam transaksi DB yang
+ * sama dengan kas — berhasil semua atau gagal semua. Resolusi barisnya memakai
+ * ReturnItemResolver yang sama dengan POST /shipments/returns, KECUALI baris bahan dibiarkan
+ * tanpa gudang (warehouse_id NULL): staf IPM memilih gudangnya (utama atau eceran) di halaman
+ * Pengembalian sebelum ACC. Ini menggantikan panggilan terpisah PMO ke /shipments/returns.
+ * Dokumen retur ikut idempoten lewat idempotency_key yang diturunkan dari kunci pembayaran
+ * (lihat returnIdempotencyKey()).
+ *
  * Endpoint ini hanya melayani transaksi "operasional" (pengeluaran/setoran
  * berbutir dengan rincian). Penambahan saldo ("saldo") tetap lewat halaman
  * admin karena bentuknya berbeda dan tidak ada dalam kontrak API.
@@ -65,6 +82,11 @@ class CashPaymentController extends Controller
 
     /** Arah rincian kas, sesuai crd_type/csd_type yang sudah dipakai UI. */
     private const DIRECTION_MASUK = 1;
+
+    /** Jenis item pembayaran (crd_kind/csd_kind). */
+    private const KIND_CASH = 'cash';
+    private const KIND_POTONGAN = 'potongan';
+    private const KIND_POTONGAN_BARANG = 'potongan_barang';
 
     /**
      * POST /api/external/v1/payments/cash
@@ -82,30 +104,38 @@ class CashPaymentController extends Controller
 
         if ($existing !== null) {
             return ApiResponse::success(
-                $this->present($existing['payment'], $existing['type']),
+                $this->present($existing['payment'], $existing['type']) + ['returns' => $this->findReturns($data)],
                 ['idempotent_replay' => true],
             );
         }
 
         $photos = new PaymentPhotoStore();
+        $returnProofs = [];
+        $returns = [];
 
         try {
-            $payment = DB::transaction(function () use ($data, $photos) {
-                return $data['payment_type'] === self::TYPE_ARMADA
+            $payment = DB::transaction(function () use ($data, $photos, &$returnProofs, &$returns) {
+                $payment = $data['payment_type'] === self::TYPE_ARMADA
                     ? $this->createArmada($data, $photos)
                     : $this->createSales($data, $photos);
+
+                $returns = $this->createReturns($data, $returnProofs);
+
+                return $payment;
             });
         } catch (\InvalidArgumentException $e) {
             // Foto yang formatnya tidak sah adalah kesalahan pemanggil, bukan
             // kegagalan server — jadi dijawab 422 seperti validasi lainnya,
             // bukan 500.
             $photos->cleanup();
+            $this->deleteReturnProofs($returnProofs);
 
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'photos' => [$e->getMessage()],
             ]);
         } catch (\Illuminate\Database\QueryException $e) {
             $photos->cleanup();
+            $this->deleteReturnProofs($returnProofs);
 
             // Dua permintaan dengan pasangan referensi sama yang tiba nyaris bersamaan:
             // pemeriksaan di awal sama-sama belum melihat baris apa pun, lalu
@@ -115,7 +145,7 @@ class CashPaymentController extends Controller
 
             if ($raced !== null) {
                 return ApiResponse::success(
-                    $this->present($raced['payment'], $raced['type']),
+                    $this->present($raced['payment'], $raced['type']) + ['returns' => $this->findReturns($data)],
                     ['idempotent_replay' => true],
                 );
             }
@@ -125,6 +155,7 @@ class CashPaymentController extends Controller
             // Berkas foto tidak ikut dibatalkan database, jadi dibereskan di
             // sini agar tidak tertinggal sebagai berkas yatim.
             $photos->cleanup();
+            $this->deleteReturnProofs($returnProofs);
 
             throw $e;
         }
@@ -139,7 +170,7 @@ class CashPaymentController extends Controller
             $payment = $this->reload($payment, $data['payment_type']);
         }
 
-        return ApiResponse::success($this->present($payment, $data['payment_type']), [], 201);
+        return ApiResponse::success($this->present($payment, $data['payment_type']) + ['returns' => $returns], [], 201);
     }
 
     /**
@@ -201,6 +232,30 @@ class CashPaymentController extends Controller
             'items.*.notes' => ['nullable', 'string', 'max:255'],
             'items.*.type' => ['required', 'integer', Rule::in([1, 2, 3])],
             'items.*.ref_nota_id' => ['nullable', 'string', 'max:100'],
+            'items.*.kind' => ['nullable', 'string', Rule::in([self::KIND_CASH, self::KIND_POTONGAN, self::KIND_POTONGAN_BARANG])],
+
+            // Potongan barang (PMO issue #28) — lihat catatan kelas.
+            'ref_shipment_id' => ['nullable', 'string', 'max:100'],
+            'items.*.goods' => ['required_if:items.*.kind,'.self::KIND_POTONGAN_BARANG, 'prohibited_unless:items.*.kind,'.self::KIND_POTONGAN_BARANG, 'array'],
+            'items.*.goods.item_type' => ['required_with:items.*.goods', 'integer', Rule::in([1, 2])],
+            'items.*.goods.ref_id' => ['required_with:items.*.goods'],
+            'items.*.goods.qty' => ['required_with:items.*.goods', 'integer', 'min:1'],
+            'items.*.goods.satuan_id' => [
+                'required_with:items.*.goods', 'integer',
+                Rule::exists('units', 'ref_unit_id')->where('status', 1),
+            ],
+            'items.*.goods.armada_code' => ['nullable', 'string', 'max:64'],
+            'items.*.goods.ref_shipment_id' => ['nullable', 'string', 'max:100'],
+            // Profil armada untuk upsert otomatis, bentuk sama dengan body.armada /shipments/returns.
+            'armadas' => ['nullable', 'array'],
+            'armadas.*.code' => ['required', 'string', 'max:64'],
+            'armadas.*.pic' => ['nullable', 'string', 'max:255'],
+            'armadas.*.pic_phone' => ['nullable', 'string', 'max:50'],
+            'armadas.*.nomor_polisi' => ['nullable', 'string'],
+            'armadas.*.category' => ['nullable', 'string', 'max:100'],
+            'armadas.*.merk_model' => ['nullable', 'string', 'max:255'],
+            'armadas.*.tahun_kendaraan' => ['nullable', 'string', 'max:20'],
+            'armadas.*.lokasi' => ['nullable', 'string', 'max:255'],
 
             'photos' => ['nullable', 'array'],
             'photos.*' => ['string'],
@@ -217,8 +272,92 @@ class CashPaymentController extends Controller
 
         $this->assertItemsShareOneDirection($data['items']);
         $this->assertAmountMatchesItems($data);
+        $this->assertPotonganOnlyOnMasuk($data['items']);
+        $data['_return_groups'] = $this->prepareReturnGroups($data);
 
         return $data;
+    }
+
+    /** Potongan mengurangi tagihan, jadi hanya masuk akal pada pembayaran Masuk (type=1). */
+    private function assertPotonganOnlyOnMasuk(array $items): void
+    {
+        foreach ($items as $index => $item) {
+            if ($this->kindOf($item) !== self::KIND_CASH && (int) $item['type'] !== self::DIRECTION_MASUK) {
+                $this->fail("items.$index.kind", 'Potongan hanya boleh pada pembayaran Masuk (type = 1).');
+            }
+        }
+    }
+
+    private function kindOf(array $item): string
+    {
+        return $item['kind'] ?? self::KIND_CASH;
+    }
+
+    /**
+     * Kelompokkan item potongan_barang per (armada_code, ref_shipment_id) — satu kelompok = satu
+     * dokumen Pengembalian — lalu resolusikan barisnya SEBELUM transaksi dibuka, supaya galat
+     * katalog (bahan/SKU/satuan tidak dikenal) dijawab 422 dengan path items.N.goods.*.
+     *
+     * goods.armada_code / goods.ref_shipment_id boleh kosong pada pembayaran Armada (diambil dari
+     * header); pada pembayaran Sales wajib, karena sales tidak punya armada sendiri.
+     *
+     * @return array<int, array{armada_code:string, ref_shipment_id:string, supply_details:array, product_details:array}>
+     */
+    private function prepareReturnGroups(array $data): array
+    {
+        $isArmada = (int) $data['payment_type'] === self::TYPE_ARMADA;
+        $headerArmadaCode = $isArmada ? $this->resolveArmadaCustomer($data)->customer_code : null;
+        $headerShipmentId = $data['ref_shipment_id'] ?? null;
+        $profileCodes = collect($data['armadas'] ?? [])->map(fn ($a) => mb_strtoupper((string) $a['code']))->all();
+
+        $groups = [];
+        foreach ($data['items'] as $index => $item) {
+            if ($this->kindOf($item) !== self::KIND_POTONGAN_BARANG) {
+                continue;
+            }
+            $goods = $item['goods'];
+
+            $armadaCode = trim((string) ($goods['armada_code'] ?? '')) ?: $headerArmadaCode;
+            if ($armadaCode === null || $armadaCode === '') {
+                $this->fail("items.$index.goods.armada_code", 'armada_code wajib diisi untuk potongan barang pada pembayaran Sales.');
+            }
+            if (! in_array(mb_strtoupper($armadaCode), $profileCodes, true)
+                && ! Customer::where('customer_code', $armadaCode)->where('status', 1)->exists()) {
+                $this->fail("items.$index.goods.armada_code", 'Armada "'.$armadaCode.'" tidak ditemukan atau tidak aktif. Sertakan profilnya di armadas[] untuk dibuat otomatis.');
+            }
+
+            $refShipmentId = trim((string) ($goods['ref_shipment_id'] ?? '')) ?: $headerShipmentId;
+            if ($refShipmentId === null || $refShipmentId === '') {
+                $this->fail("items.$index.goods.ref_shipment_id", 'ref_shipment_id wajib diisi untuk potongan barang (di item atau di header).');
+            }
+
+            $refNotaId = (string) ($item['ref_nota_id'] ?? '');
+            $key = mb_strtoupper($armadaCode).'|'.$refShipmentId;
+            $groups[$key]['armada_code'] = $armadaCode;
+            $groups[$key]['ref_shipment_id'] = $refShipmentId;
+            $groups[$key]['items'][$index] = [
+                'type' => (int) $goods['item_type'],
+                'ref_id' => $goods['ref_id'],
+                'qty' => (int) $goods['qty'],
+                'satuan_id' => (int) $goods['satuan_id'],
+                // Kolom ref_nota_id di detail retur bertipe angka; id nota non-angka tidak dibawa.
+                'ref_nota_id' => ctype_digit($refNotaId) ? $refNotaId : null,
+            ];
+        }
+
+        $resolver = new ReturnItemResolver();
+
+        return array_values(array_map(function (array $group) use ($resolver) {
+            [$supplyDetails, $productDetails] = $resolver->resolveItems($group['items'], 'items.%d.goods', true);
+            $resolver->assertAgainstCatalog($supplyDetails, $productDetails);
+
+            return [
+                'armada_code' => $group['armada_code'],
+                'ref_shipment_id' => $group['ref_shipment_id'],
+                'supply_details' => $supplyDetails,
+                'product_details' => $productDetails,
+            ];
+        }, $groups));
     }
 
     /** Armada lewat armada_code (customer_code) atau armada_id (legacy); sales lewat external_ref_id. */
@@ -366,6 +505,7 @@ class CashPaymentController extends Controller
                 'crd_nominal' => (int) $item['amount'],
                 'crd_notes' => $item['notes'] ?? null,
                 'crd_type' => (int) $item['type'],
+                'crd_kind' => $this->kindOf($item),
                 'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
@@ -416,11 +556,116 @@ class CashPaymentController extends Controller
                 'csd_nominal' => (int) $item['amount'],
                 'csd_notes' => $item['notes'] ?? null,
                 'csd_type' => (int) $item['type'],
+                'csd_kind' => $this->kindOf($item),
                 'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
 
         return CashSales::find($csId);
+    }
+
+    /* ------------------------------------------------------------------ */
+    /* Pengembalian dari potongan barang                                   */
+    /* ------------------------------------------------------------------ */
+
+    /**
+     * Buat satu dokumen Pengembalian per kelompok hasil prepareReturnGroups(). Dipanggil di dalam
+     * transaksi kas. Armada yang profilnya dikirim di armadas[] di-upsert lebih dulu, sama seperti
+     * body.armada pada /shipments/returns. photos[0] (kalau ada) disalin jadi bukti retur, satu
+     * berkas per dokumen supaya mengganti bukti satu dokumen tidak menghapus milik dokumen lain.
+     *
+     * @param  array<int, string|null>  $proofPaths  diisi berkas bukti yang dibuat, untuk dibersihkan bila gagal.
+     * @return array<int, array<string, mixed>>
+     */
+    private function createReturns(array $data, array &$proofPaths): array
+    {
+        if ($data['_return_groups'] === []) {
+            return [];
+        }
+
+        $profiles = collect($data['armadas'] ?? [])->keyBy(fn ($a) => mb_strtoupper((string) $a['code']));
+        $results = [];
+
+        foreach ($data['_return_groups'] as $group) {
+            $profile = $profiles->get(mb_strtoupper($group['armada_code']));
+            $customer = $profile !== null
+                ? ArmadaUpsert::upsertProfile($profile)
+                : Customer::where('customer_code', $group['armada_code'])->where('status', 1)->firstOrFail();
+
+            $proofPath = CustomerReturnCreation::storeProofFromInput($data['photos'][0] ?? null, null, false);
+            $proofPaths[] = $proofPath;
+
+            $result = CustomerReturnCreation::create([
+                'customer_id' => (int) $customer->customer_id,
+                'return_date' => $data['payment_date'],
+                'ref_number' => $data['ref_payment_id'],
+                'notes' => 'Potongan barang dari pembayaran '.$data['ref_payment_id'],
+                'proof_path' => $proofPath,
+                'qc_staff_id' => null,
+                'created_by' => null,
+                'ref_shipment_id' => $group['ref_shipment_id'],
+                'idempotency_key' => $this->returnIdempotencyKey($data, $group),
+            ], $group['supply_details'], $group['product_details']);
+
+            $results[] = $this->presentReturn($result, $group);
+        }
+
+        return $results;
+    }
+
+    /** Dokumen retur milik pembayaran ini yang sudah ada — dipakai saat kiriman ulang. */
+    private function findReturns(array $data): array
+    {
+        $results = [];
+        foreach ($data['_return_groups'] as $group) {
+            $existing = CustomerReturnCreation::findByIdempotencyKey($this->returnIdempotencyKey($data, $group));
+            if ($existing !== null) {
+                $results[] = $this->presentReturn($existing, $group);
+            }
+        }
+
+        return $results;
+    }
+
+    /**
+     * Kunci idempotensi dokumen retur = kunci pembayaran (ref_payment_id + penerima) + kelompoknya.
+     * Diawali penanda sumber supaya tidak pernah bertabrakan dengan kunci dari /shipments/returns.
+     */
+    private function returnIdempotencyKey(array $data, array $group): string
+    {
+        $recipient = (int) $data['payment_type'] === self::TYPE_ARMADA
+            ? 'armada:'.$data['_armada_customer_id']
+            : 'sales:'.$data['_sales_staff_id'];
+
+        return hash('sha256', json_encode([
+            'source' => 'payments/cash',
+            'ref_payment_id' => $data['ref_payment_id'],
+            'recipient' => $recipient,
+            'armada_code' => mb_strtoupper($group['armada_code']),
+            'ref_shipment_id' => $group['ref_shipment_id'],
+        ]));
+    }
+
+    private function presentReturn(array $result, array $group): array
+    {
+        $pending = collect($group['supply_details'])->whereNull('warehouse_id')->count()
+            + collect($group['product_details'])->whereNull('warehouse_id')->count();
+
+        return [
+            'armada_code' => $group['armada_code'],
+            'ref_shipment_id' => $group['ref_shipment_id'],
+            'return_number' => $result['return_group'],
+            'supply_return_id' => $result['supply_return_id'],
+            'product_return_id' => $result['product_return_id'],
+            'pending_warehouse_items' => $pending,
+        ];
+    }
+
+    private function deleteReturnProofs(array $proofPaths): void
+    {
+        foreach ($proofPaths as $path) {
+            CustomerReturnCreation::deleteProof($path);
+        }
     }
 
     /* ------------------------------------------------------------------ */
@@ -580,6 +825,7 @@ class CashPaymentController extends Controller
                 'amount' => (int) ($isArmada ? $detail->crd_nominal : $detail->csd_nominal),
                 'notes' => $isArmada ? $detail->crd_notes : $detail->csd_notes,
                 'type' => (int) ($isArmada ? $detail->crd_type : $detail->csd_type),
+                'kind' => (string) (($isArmada ? $detail->crd_kind : $detail->csd_kind) ?: self::KIND_CASH),
                 'ref_nota_id' => $detail->ref_nota_id,
             ])->all(),
             'photos' => array_map(

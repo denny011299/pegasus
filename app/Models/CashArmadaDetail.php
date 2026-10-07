@@ -37,6 +37,7 @@ class CashArmadaDetail extends Model
         $t->crd_type = $data["crd_type"];
         // Hanya terisi bila pembayaran datang lewat External API.
         $t->ref_nota_id = $data["ref_nota_id"] ?? null;
+        $t->crd_kind = $data["crd_kind"] ?? 'cash';
         $t->save();
         return $t->crd_id;
     }
