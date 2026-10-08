@@ -1475,7 +1475,10 @@ class CustomerReturnController extends Controller
         }
         $context = $this->buildReturnContext();
         $allowed = collect($context['supplies'])->keyBy('supplies_id');
-        $mainWarehouseIds = collect($context['supply_warehouses'])->pluck('id')->map(fn ($id) => (int) $id);
+        // Gudang utama ATAU eceran (PMO issue #28): potongan barang dari POST /payments/cash
+        // (mis. jerigen) datang tanpa gudang dan staf memilih gudang eceran tujuannya.
+        // acceptSupply() sudah membedakan keduanya -- roll-up hanya di gudang utama.
+        $activeWarehouseIds = DB::table('warehouses')->where('status', 1)->pluck('id')->map(fn ($id) => (int) $id);
 
         foreach ($details as $index => $detail) {
             $supply = $allowed->get((int) $detail['supplies_id']);
@@ -1485,8 +1488,8 @@ class CustomerReturnController extends Controller
             if (! collect($supply['units'])->contains(fn ($unit) => (int) $unit['unit_id'] === (int) $detail['unit_id'])) {
                 throw ValidationException::withMessages(["supply_details.$index.unit_id" => 'Satuan tidak aktif untuk bahan yang dipilih.']);
             }
-            if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                throw ValidationException::withMessages(["supply_details.$index.warehouse_id" => 'Gudang tujuan bahan harus gudang utama aktif.']);
+            if (! $activeWarehouseIds->contains((int) $detail['warehouse_id'])) {
+                throw ValidationException::withMessages(["supply_details.$index.warehouse_id" => 'Gudang tujuan bahan harus gudang aktif.']);
             }
         }
     }
