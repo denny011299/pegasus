@@ -12,6 +12,8 @@ class CustomerProductReturn extends Model
     protected $fillable = [
         'return_number',
         'return_group',
+        'ref_shipment_id',
+        'idempotency_key',
         'customer_id',
         'return_date',
         'ref_number',

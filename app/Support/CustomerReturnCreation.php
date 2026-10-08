@@ -34,7 +34,7 @@ class CustomerReturnCreation
      * CustomerReturnController::store(), dipindah apa adanya (termasuk urutan create bahan lalu
      * produk) supaya perilaku admin tidak berubah sedikit pun.
      *
-     * @param  array{customer_id:int, return_date:string, ref_number:?string, notes:?string, proof_path:?string, qc_staff_id:?int, created_by:?int}  $header
+     * @param  array{customer_id:int, return_date:string, ref_number:?string, notes:?string, proof_path:?string, qc_staff_id:?int, created_by:?int, ref_shipment_id?:?string, idempotency_key?:?string}  $header
      * @param  array<int, array<string, mixed>>  $supplyDetails  baris siap-simpan (lihat replaceSupplyDetails()), boleh kosong.
      * @param  array<int, array<string, mixed>>  $productDetails  baris siap-simpan (lihat replaceProductDetails()), boleh kosong.
      * @return array{doc_key:string, return_group:string, return_type:string, supply_return_id:?int, product_return_id:?int}
@@ -51,6 +51,8 @@ class CustomerReturnCreation
                     'return_number' => (new CustomerSupplyReturn())->generateReturnNumber(),
                     'return_group' => $group,
                     'so_id' => null,
+                    'ref_shipment_id' => $header['ref_shipment_id'] ?? null,
+                    'idempotency_key' => $header['idempotency_key'] ?? null,
                     'customer_id' => $header['customer_id'],
                     'return_date' => $header['return_date'],
                     'ref_number' => $header['ref_number'] ?: null,
@@ -67,6 +69,8 @@ class CustomerReturnCreation
                 $product = CustomerProductReturn::create([
                     'return_number' => (new CustomerProductReturn())->generateReturnNumber(),
                     'return_group' => $group,
+                    'ref_shipment_id' => $header['ref_shipment_id'] ?? null,
+                    'idempotency_key' => $header['idempotency_key'] ?? null,
                     'customer_id' => $header['customer_id'],
                     'return_date' => $header['return_date'],
                     'ref_number' => $header['ref_number'] ?: null,
@@ -99,6 +103,35 @@ class CustomerReturnCreation
         }
 
         return 'supply';
+    }
+
+    /**
+     * Cari dokumen pengembalian yang SUDAH pernah dibuat dengan idempotency_key ini (GitHub #203)
+     * — dipakai ShipmentReturnController::store() supaya permintaan retry PMO (payload identik
+     * dikirim ulang, mis. karena timeout jaringan) mengembalikan dokumen yang sudah ada apa
+     * adanya, bukan membuat dokumen kedua. supply/product dicek terpisah karena satu return_group
+     * bisa punya salah satu atau keduanya (lihat resolveType()).
+     *
+     * @return array{doc_key:string, return_group:string, return_type:string, supply_return_id:?int, product_return_id:?int}|null
+     */
+    public static function findByIdempotencyKey(string $idempotencyKey): ?array
+    {
+        $supply = CustomerSupplyReturn::where('idempotency_key', $idempotencyKey)->first();
+        $product = CustomerProductReturn::where('idempotency_key', $idempotencyKey)->first();
+
+        if ($supply === null && $product === null) {
+            return null;
+        }
+
+        $group = $supply->return_group ?? $product->return_group;
+
+        return [
+            'doc_key' => $group,
+            'return_group' => $group,
+            'return_type' => self::resolveType($supply !== null, $product !== null),
+            'supply_return_id' => $supply?->return_id,
+            'product_return_id' => $product?->return_id,
+        ];
     }
 
     /**
@@ -137,6 +170,7 @@ class CustomerReturnCreation
             'supplies_id' => $detail['supplies_id'],
             'unit_id' => $detail['unit_id'],
             'warehouse_id' => $detail['warehouse_id'] ?? null,
+            'ref_nota_id' => $detail['ref_nota_id'] ?? null,
             'qty' => $detail['qty'],
             'status' => 1,
             'created_at' => $now,
@@ -163,6 +197,7 @@ class CustomerReturnCreation
                 'product_variant_id' => $detail['product_variant_id'],
                 'unit_id' => $detail['unit_id'],
                 'warehouse_id' => $detail['warehouse_id'] ?? null,
+                'ref_nota_id' => $detail['ref_nota_id'] ?? null,
                 'qty' => $detail['qty'],
                 'status' => 1,
                 'created_at' => $now,
