@@ -11,7 +11,10 @@ use App\Models\Warehouse;
 use App\Support\RoleAccess;
 use App\Synchronization\Pmo\PmoClient;
 use App\Synchronization\SyncFlowRegistry;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\View;
@@ -44,6 +47,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // AI chat: ~20 req/menit per staf (lihat docs/AI_ASSISTANT.md).
+        RateLimiter::for('ai-chat', function (Request $request) {
+            $user = Session::get('user');
+            $key = $user ? ('staff:'.($user->staff_id ?? '0')) : $request->ip();
+
+            return Limit::perMinute(20)->by($key);
+        });
+
         Blade::if('roleCan', function (string $module, string $ability) {
             return RoleAccess::can(Session::get('user'), $module, strtolower($ability));
         });
