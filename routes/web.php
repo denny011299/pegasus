@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
@@ -57,6 +58,17 @@ Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
 
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
+    // Internal AI assistant (all logged-in staff). Key stays server-side.
+    Route::get('/ai', [AiChatController::class, 'page'])->name('ai.page');
+    Route::get('/ai/history', [AiChatController::class, 'history'])->name('ai.history');
+    // Thumbnail history: hanya staff pemilik baris log (bukan public disk).
+    Route::get('/ai/history-image/{id}', [AiChatController::class, 'historyImage'])
+        ->whereNumber('id')
+        ->name('ai.history-image');
+    Route::post('/ai/chat', [AiChatController::class, 'chat'])
+        ->middleware('throttle:ai-chat')
+        ->name('ai.chat');
 
     // Internal dev-only pages: intentionally NOT in the sidebar and NOT gated by
     // check.access/role_access -- protected only by checkLogin (must be a logged-in

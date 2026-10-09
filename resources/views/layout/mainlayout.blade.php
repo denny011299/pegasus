@@ -430,6 +430,10 @@
   }
 </style>
 
+{{-- FAB asisten AI (login saja); setup: docs/AI_ASSISTANT.md --}}
+@if(Session::has('user') && !Route::is('login'))
+@include('components.ai-chat-widget')
+@endif
 @include('layout.partials.footer-scripts')
 <script>
   var token = "{{ csrf_token() }}";
