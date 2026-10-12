@@ -272,7 +272,9 @@ Barang tidak ketemu persis → tool mengembalikan `saran`; AI wajib menawarkan s
 
 Tidak ketemu persis → semua tool memberi `saran` (`Tools/Concerns/FuzzySuggest.php`): kode dokumen mirip (PO567 → PO0567), nama staf/customer/pemasok/bahan mirip. PO harga Rp 0 → `peringatan` (`Tools/Concerns/PriceWarnings.php`) di find_document, trace_document, hutang jatuh tempo, profil pemasok; `data_anomalies` cek `harga nol`.
 
-Dokumentasi lengkap untuk user/admin: **Pengaturan → Dokumentasi AI** (`/settings/ai-docs`, JSON `/settings/ai-docs/data`), dirakit dari `AssistantGuide` (tool, parameter, contoh, katalog penyebab, panduan menu, modul).
+Dokumentasi dirakit dari `AssistantGuide`:
+- **User** → Pengaturan → Dokumentasi AI (`/settings/ai-docs`, hak akses "Dokumentasi AI"): kemampuan + contoh pertanyaan, FAQ (termasuk contoh jawaban kejanggalan), menu yang bisa diakses AI + panduan yang tersedia. Tanpa nama tool/parameter/bobot.
+- **Developer** → `docs/AI_ASSISTANT_TOOLS.md` (generate: `php artisan ai:dev-docs`): tool, parameter, bobot dasar penyebab, sinyal, modul. Jalankan ulang setelah ubah tool/penyebab. Menu baru: tambah di `AssistantGuide::MENUS`.
 
 Panduan input: pertanyaan "cara/gimana/langkah" selalu dapat `<docs>` walau memuat nama modul; retriever mengirim menu teratas utuh dan mengutamakan bagian Alur / Cara input. Tambah bagian "Cara input" di `storage/ai_docs/<menu>.md` lalu `php artisan ai:index-docs --force`.
 

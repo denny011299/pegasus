@@ -129,8 +129,19 @@ class AiAssistantTrackingToolsTest extends BaseTestCase
         $names = app(ToolRegistry::class)->names();
 
         $this->assertEqualsCanonicalizing($names, array_column($guide['kemampuan'], 'tool'));
-        $this->assertNotEmpty($guide['perkiraan_penyebab']);
-        $this->assertNotEmpty($guide['aturan_jawaban']);
+        $this->assertNotEmpty($guide['faq']);
+        $this->assertContains('Pembelian (Purchase Order)', array_column($guide['menu'], 'menu'));
+
+        // Halaman user tidak boleh memuat detail teknis (nama tool / parameter / bobot internal).
+        $json = json_encode([$guide['faq'], $guide['menu'], $guide['ringkasan']]);
+        foreach ($names as $name) {
+            $this->assertStringNotContainsString($name, $json);
+        }
+
+        $dev = app(AssistantGuide::class)->developerMarkdown();
+        foreach ($names as $name) {
+            $this->assertStringContainsString("`{$name}`", $dev);
+        }
     }
 
     private function seedTrackingData(): void
