@@ -2,10 +2,8 @@
 
 namespace App\ExternalApi\Support;
 
-use App\Models\ProductStock;
 use App\Models\ProductVariant;
 use App\Models\Supplies;
-use App\Models\SuppliesStock;
 use App\Models\Unit;
 use App\Support\CustomerReturnCreation;
 use Illuminate\Support\Facades\Schema;
@@ -66,10 +64,8 @@ class ReturnItemResolver
      *
      * $pathPrefix menentukan awalan path galat per baris: 'items' untuk POST /shipments/returns,
      * 'items.%d.goods' (dengan indeks item asli) untuk potongan barang di POST /payments/cash.
-     * $suppliesAwaitWarehouse = true membiarkan baris bahan tanpa gudang_id tetap NULL (staf
-     * memilih gudangnya di halaman Pengembalian) alih-alih default ke gudang utama.
      */
-    public function resolveItems(array $items, string $pathPrefix = 'items', bool $suppliesAwaitWarehouse = false): array
+    public function resolveItems(array $items, string $pathPrefix = 'items'): array
     {
         $refUnitIds = array_values(array_unique(array_map(fn ($item) => (int) $item['satuan_id'], $items)));
         $unitsByRef = Unit::whereIn('ref_unit_id', $refUnitIds)->where('status', 1)
@@ -178,54 +174,23 @@ class ReturnItemResolver
             }
         }
 
-        $this->resolveSupplyWarehouses($supplyDetails, $suppliesAwaitWarehouse);
-        $this->resolveProductWarehouses($productDetails);
+        $this->resolveWarehouses($supplyDetails);
+        $this->resolveWarehouses($productDetails);
 
         return [array_values($supplyDetails), array_values($productDetails)];
     }
 
     /**
-     * Bahan mentah/kemasan tidak punya konsep satuan eceran (beda dari produk jadi, lihat
-     * resolveProductWarehouses()) — jadi aturannya lebih sederhana: pakai items[].gudang_id kalau
-     * dikirim, kalau TIDAK selalu default ke gudang utama (SuppliesStock::resolveWarehouseId(null)),
-     * TIDAK PERNAH dibiarkan NULL. Keputusan final 2026-09-25 (sempat dibalik dua kali hari yang
-     * sama — lihat riwayat commit): percobaan "biarkan semua baris NULL, staf isi manual lewat
-     * admin" dibatalkan karena bahan mentah memang selalu bisa diasumsikan balik ke gudang utama,
-     * tidak ada padanan "gudang eceran" untuknya.
+     * 2026-10-12: retur dari PMO TIDAK lagi auto-default ke gudang utama (bahan maupun produk) —
+     * warehouse_id NULL kecuali items[].gudang_id dikirim. Staf wajib memilih gudang di modal
+     * Edit/Konfirmasi Pengembalian; accept() menolak selama masih ada baris tanpa gudang.
      *
-     * @param  array<string, array<string, mixed>>  $supplyDetails  diubah in-place (by reference).
+     * @param  array<string, array<string, mixed>>  $details  diubah in-place (by reference).
      */
-    private function resolveSupplyWarehouses(array &$supplyDetails, bool $awaitWarehouse): void
+    private function resolveWarehouses(array &$details): void
     {
-        $mainWarehouseId = SuppliesStock::resolveWarehouseId(null);
-        foreach ($supplyDetails as &$detail) {
-            $detail['warehouse_id'] = $detail['_gudang_id'] ?? ($awaitWarehouse ? null : $mainWarehouseId);
-            unset($detail['_gudang_id']);
-        }
-        unset($detail);
-    }
-
-    /**
-     * DIPUTUSKAN ULANG 2026-09-25 (setelah dua kali dibalik hari yang sama) — kembali ke aturan
-     * yang sama dengan yang dikonfirmasi pemilik produk 2026-08-17, PLUS gudang_id sekarang
-     * dihormati untuk baris non-eceran juga (tidak diabaikan seperti versi 2026-08-17):
-     *   - pakai items[].gudang_id KALAU baris itu mengirimnya (baik eceran maupun bukan);
-     *   - kalau tidak dikirim DAN satuannya BUKAN satuan eceran produk itu
-     *     (product_variants.retail_unit) -> default ke gudang utama
-     *     (ProductStock::resolveWarehouseId(null)), SAMA seperti bahan mentah;
-     *   - kalau tidak dikirim DAN satuannya ADALAH satuan eceran -> warehouse_id dibiarkan NULL.
-     *     Baris ini WAJIB diisi manual oleh staf gudang lewat modal approval Pengembalian sebelum
-     *     dokumen bisa di-ACC — TIDAK di-auto-default ke gudang utama, karena barang retur satuan
-     *     eceran belum tentu balik ke gudang utama (bisa balik ke gudang eceran mana saja).
-     * Ini SATU-SATUNYA kasus yang masih bisa menyisakan warehouse_id kosong pada endpoint ini.
-     *
-     * @param  array<string, array<string, mixed>>  $productDetails  diubah in-place (by reference).
-     */
-    private function resolveProductWarehouses(array &$productDetails): void
-    {
-        $mainWarehouseId = ProductStock::resolveWarehouseId(null);
-        foreach ($productDetails as &$detail) {
-            $detail['warehouse_id'] = $detail['_gudang_id'] ?? ($detail['_is_eceran'] ? null : $mainWarehouseId);
+        foreach ($details as &$detail) {
+            $detail['warehouse_id'] = $detail['_gudang_id'] ?? null;
             unset($detail['_gudang_id'], $detail['_is_eceran']);
         }
         unset($detail);

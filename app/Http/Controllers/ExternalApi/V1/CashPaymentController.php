@@ -338,7 +338,7 @@ class CashPaymentController extends Controller
         $resolver = new ReturnItemResolver();
 
         return array_values(array_map(function (array $group) use ($resolver) {
-            [$supplyDetails, $productDetails] = $resolver->resolveItems($group['items'], 'items.%d.goods', true);
+            [$supplyDetails, $productDetails] = $resolver->resolveItems($group['items'], 'items.%d.goods');
             $resolver->assertAgainstCatalog($supplyDetails, $productDetails);
 
             return [

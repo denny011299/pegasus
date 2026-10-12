@@ -283,7 +283,7 @@
             <div id="cr-accept-warning" class="d-none px-4 pb-2">
                 <div class="alert alert-warning d-flex align-items-center gap-2 py-2 px-3 mb-0" style="font-size:12px;border-radius:8px;">
                     <i class="fe fe-alert-triangle"></i>
-                    <span>Masih ada baris yang belum punya gudang tujuan. Buka <strong>Edit</strong> untuk mengisinya sebelum bisa Terima.</span>
+                    <span>Masih ada baris yang belum punya gudang tujuan. Pilih gudang di kolom <strong>Gudang</strong> sebelum bisa Terima.</span>
                 </div>
             </div>
             <div class="modal-footer pg-modal-footer">

@@ -52,11 +52,10 @@ use Illuminate\Validation\ValidationException;
  *       - gudang_id (opsional): warehouses.id LANGSUNG — SAMA seperti gudang_id opsional pada
  *         POST /stock/check dan {gudang_id} pada PUT/DELETE /master/warehouses/{gudang_id}, BUKAN
  *         kolom rujukan eksternal seperti ref_unit_id/ref_product_id (gudang tidak disinkronkan
- *         PMO — lihat catatan StockController::check()). Dihormati untuk SEMUA tipe baris (bahan
- *         maupun produk, eceran maupun bukan) kalau item itu mengirimnya. Kalau TIDAK dikirim,
- *         lihat aturan fallback per tipe baris di resolveSupplyWarehouses()/
- *         resolveProductWarehouses() — bahan mentah & produk non-eceran default ke gudang utama,
- *         produk satuan eceran dibiarkan kosong (wajib diisi manual lewat modal approval admin).
+ *         PMO — lihat catatan StockController::check()). Dihormati untuk SEMUA tipe baris kalau
+ *         item itu mengirimnya. Kalau TIDAK dikirim, warehouse_id dibiarkan NULL (2026-10-12,
+ *         menggantikan aturan default gudang utama di bawah) — staf wajib memilih gudang di
+ *         modal Edit/Konfirmasi Pengembalian sebelum bisa diterima.
  *
  * warehouse_id per baris — keputusan FINAL 2026-09-25 setelah beberapa kali dibalik hari yang sama
  * (lihat riwayat commit): KEMBALI ke aturan yang dikonfirmasi pemilik produk 2026-08-17, dengan
@@ -121,10 +120,7 @@ class ShipmentReturnController extends Controller
         $customer = $this->resolveArmada($data);
 
         [$supplyDetails, $productDetails] = (new ReturnItemResolver())->resolveItems($data['items']);
-        // Cuma baris produk satuan eceran tanpa gudang_id yang bisa lolos sampai sini dengan
-        // warehouse_id NULL -- lihat resolveProductWarehouses() (bahan mentah selalu terisi, lihat
-        // resolveSupplyWarehouses()). Dihitung dari kedua sisi untuk ditampilkan balik ke
-        // pemanggil, supaya kelihatan jelas berapa baris yang masih perlu diisi lewat halaman admin.
+        // Semua baris tanpa gudang_id tetap NULL (2026-10-12, lihat ReturnItemResolver::resolveWarehouses()).
         $pendingWarehouseCount = collect($supplyDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count()
             + collect($productDetails)->filter(fn ($d) => $d['warehouse_id'] === null)->count();
 
@@ -197,7 +193,7 @@ class ShipmentReturnController extends Controller
             'armada_code' => $armadaCode,
             'pending_warehouse_items' => $pendingWarehouseCount,
             'message' => $pendingWarehouseCount > 0
-                ? 'Pengembalian berhasil disimpan. '.$pendingWarehouseCount.' baris produk satuan eceran belum punya gudang tujuan, menunggu diisi lewat halaman admin sebelum bisa diterima.'
+                ? 'Pengembalian berhasil disimpan. '.$pendingWarehouseCount.' baris belum punya gudang tujuan, menunggu dipilih staf gudang sebelum bisa diterima.'
                 : 'Pengembalian berhasil disimpan, gudang tujuan tiap baris sudah ditentukan otomatis.',
         ], $meta, $httpStatus);
     }
