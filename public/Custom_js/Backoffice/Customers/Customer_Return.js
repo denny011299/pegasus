@@ -336,7 +336,7 @@
                 },
                 {
                     data: "return_date",
-                    width: "145px",
+                    width: "120px",
                     className: "text-start align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value;
@@ -356,12 +356,15 @@
                 },
                 {
                     data: "ref_number",
-                    width: "130px",
+                    width: "180px",
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value || "";
                         if (!value || value === "-") return '<span class="text-muted">—</span>';
-                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;" title="' + esc(value) + '">' + esc(value) + "</span>";
+                        // Nomor referensi bisa panjang tanpa spasi (mis. ref_payment_id PMO
+                        // "G987857131020260121390"); .badge bawaan nowrap sehingga meluber ke kolom
+                        // Armada di tabel table-layout:fixed — izinkan terlipat di dalam kolom.
+                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;white-space:normal;word-break:break-all;max-width:100%;line-height:1.4;" title="' + esc(value) + '">' + esc(value) + "</span>";
                     },
                 },
                 {
@@ -390,7 +393,7 @@
                 {
                     data: "acc_by_name",
                     defaultContent: "-",
-                    width: "160px",
+                    width: "135px",
                     className: "text-start align-middle",
                     render: function (data, type) {
                         return type === "display" ? renderStaff(data, true) : data;
