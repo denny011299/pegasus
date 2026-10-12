@@ -3,6 +3,8 @@
 namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
+use App\Services\AiAssistant\Tools\Concerns\PriceWarnings;
 use App\Services\AiAssistant\Tools\Concerns\TrackingHelpers;
 use App\Services\AiAssistant\Vocabulary;
 use InvalidArgumentException;
@@ -15,6 +17,8 @@ use InvalidArgumentException;
  */
 class DocumentTraceTool implements ToolInterface
 {
+    use FuzzySuggest;
+    use PriceWarnings;
     use TrackingHelpers;
 
     public function __construct(protected ReadOnlyDb $db, protected Vocabulary $vocab) {}
@@ -47,9 +51,10 @@ class DocumentTraceTool implements ToolInterface
             throw new InvalidArgumentException('code required');
         }
 
-        $hit = (new FindDocumentTool($this->db, $this->vocab))->locateDocument($code);
+        $finder = new FindDocumentTool($this->db, $this->vocab);
+        $hit = $finder->locateDocument($code);
         if ($hit === null) {
-            return ['ditemukan' => false, 'kode' => $code, 'pesan' => 'Dokumen dengan kode tersebut tidak ditemukan.'];
+            return ['kode' => $code] + $this->notFoundWithSuggestions('Dokumen', $code, $finder->suggestCodes($code));
         }
         [$table, $row] = $this->toRoot(...$hit);
 
@@ -65,8 +70,18 @@ class DocumentTraceTool implements ToolInterface
 
         $missing = array_values(array_map(fn ($s) => $s['Tahap'], array_filter($steps, fn ($s) => ($s['Kode'] ?? null) === null)));
 
+        $warnings = [];
+        $poIds = $table === 'purchase_orders' ? [$row['po_id']]
+            : ($table === 'purchase_order_tts' ? $this->db->table('purchase_orders')->where('tt_id', $row['tt_id'])->pluck('po_id')->all() : []);
+        foreach ($poIds as $poId) {
+            if ($w = $this->purchaseZeroPriceWarning((int) $poId)) {
+                $warnings[] = $w;
+            }
+        }
+
         return array_filter([
             'kode_dicari' => $code,
+            'peringatan' => $warnings ? implode(' ', array_unique($warnings)) : null,
             'alur' => array_values(array_filter($steps, fn ($s) => ($s['Kode'] ?? null) !== null)),
             'tahap_belum_ada' => $missing ?: null,
             'catatan' => $missing ? 'Tahap yang belum ada = belum diproses di menunya (atau belum di-ACC). Sebutkan sebagai kemungkinan operasional.' : null,

@@ -2,9 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Services\AiAssistant\AssistantGuide;
 use App\Services\AiAssistant\ReadOnlyDb;
+use App\Services\AiAssistant\ToolRegistry;
 use App\Services\AiAssistant\Tools\DataAnomaliesTool;
 use App\Services\AiAssistant\Tools\DocumentTraceTool;
+use App\Services\AiAssistant\Tools\FindDocumentTool;
 use App\Services\AiAssistant\Tools\ItemStockTool;
 use App\Services\AiAssistant\Tools\PeriodReportTool;
 use App\Services\AiAssistant\Tools\ReorderTool;
@@ -101,6 +104,33 @@ class AiAssistantTrackingToolsTest extends BaseTestCase
         $result = (new ReorderTool($this->db, $this->vocab))->execute(['item' => 'zz-bahan-tidak-ada']);
 
         $this->assertStringContainsString('tidak ditemukan', $result['pesan']);
+    }
+
+    public function test_unknown_document_code_suggests_similar_codes(): void
+    {
+        $result = (new FindDocumentTool($this->db, $this->vocab))->execute(['code' => 'ZZPR01']);
+
+        $this->assertFalse($result['ditemukan']);
+        $this->assertSame('ZZPR1', $result['saran'][0]['Kode']);
+    }
+
+    public function test_unknown_staff_suggests_similar_names(): void
+    {
+        $name = (string) DB::table('staffs')->value('staff_name');
+        $typo = substr($name, 0, -1).'zq';
+        $result = (new StaffActivityTool($this->db, $this->vocab))->execute(['staff' => $typo]);
+
+        $this->assertContains(trim($name), array_map('trim', $result['saran'] ?? $result['pilihan'] ?? []));
+    }
+
+    public function test_guide_documents_every_registered_tool(): void
+    {
+        $guide = app(AssistantGuide::class)->sections();
+        $names = app(ToolRegistry::class)->names();
+
+        $this->assertEqualsCanonicalizing($names, array_column($guide['kemampuan'], 'tool'));
+        $this->assertNotEmpty($guide['perkiraan_penyebab']);
+        $this->assertNotEmpty($guide['aturan_jawaban']);
     }
 
     private function seedTrackingData(): void

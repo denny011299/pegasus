@@ -24,17 +24,27 @@ class DocRetriever
             return '';
         }
 
-        $scored = $rows->map(fn ($row) => [
-            'row' => $row,
-            'score' => $this->score($row, $terms),
-        ])
+        $howTo = (bool) preg_match('/\b(cara|gimana|bagaimana|langkah|input|isi|buat|bikin|tambah|alur)\b/i', $question);
+        $scored = $rows
+            // Potongan yang isinya cuma judul ("# Pembelian") tidak membantu menjawab.
+            ->reject(fn ($row) => mb_strlen(trim(preg_replace('/^#+.*$/m', '', (string) $row->content) ?? '')) < 20)
+            ->map(fn ($row) => [
+                'row' => $row,
+                'score' => $this->score($row, $terms)
+                    // Pertanyaan "cara input" → utamakan bagian Alur / Cara input / Aturan input.
+                    + ($howTo && preg_match('/alur|cara|langkah|input/i', (string) $row->heading) ? 4 : 0),
+            ])
             ->filter(fn ($item) => $item['score'] > 0)
-            ->sortByDesc('score')
-            ->take($limit);
+            ->sortByDesc('score');
 
         if ($scored->isEmpty()) {
             return '';
         }
+
+        // Menu yang paling cocok dikirim utuh (judul saja sering menang skor tapi tanpa langkah).
+        $topFeature = $scored->first()['row']->feature ?? null;
+        $sameFeature = $scored->filter(fn ($i) => ($i['row']->feature ?? null) === $topFeature)->take($limit);
+        $scored = $sameFeature->concat($scored->reject(fn ($i) => ($i['row']->feature ?? null) === $topFeature))->take($limit);
 
         $parts = [];
         foreach ($scored as $item) {

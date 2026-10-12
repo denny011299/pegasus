@@ -38,6 +38,12 @@ trait CauseEstimates
             'Salah pilih gudang / barang tertukar' => [15, 'Barang dihitung di gudang atau varian yang salah.'],
             'Susut / rusak / hilang' => [10, 'Selisih fisik nyata yang belum dicatat sebagai barang bermasalah.'],
         ],
+        'harga_nol' => [
+            'Harga belum diisi saat input PO (human error)' => [45, 'Kolom harga terlewat; PO tetap tersimpan dengan Rp 0 lalu terbawa ke Tanda Terima, invoice, hutang.'],
+            'Harga menunggu konfirmasi pemasok' => [20, 'PO dibuat dulu untuk ambil barang, harga final belum dikabari pemasok.'],
+            'Barang bonus / sampel dari pemasok' => [20, 'Memang gratis, tapi sebaiknya diberi catatan di PO.'],
+            'Salah pilih varian/satuan yang belum punya harga' => [15, 'Varian atau satuan yang dipilih belum punya harga master.'],
+        ],
         'hutang_jatuh_tempo' => [
             'Memang belum dibayar' => [40, 'Pembayaran tertunda karena jadwal kas.'],
             'Sudah dibayar tapi belum ditandai lunas' => [35, 'Pembayaran sudah dilakukan, status PO di sistem belum diperbarui.'],
@@ -45,6 +51,20 @@ trait CauseEstimates
             'Menunggu tukar faktur / dokumen' => [10, 'Pembayaran menunggu faktur asli atau tanda terima.'],
         ],
     ];
+
+    /** Katalog penyebab + bobot dasar + alasan, untuk halaman dokumentasi AI. */
+    public static function causeCatalog(): array
+    {
+        $out = [];
+        foreach (self::CAUSES as $type => $causes) {
+            $total = array_sum(array_column($causes, 0));
+            foreach ($causes as $cause => [$weight, $reason]) {
+                $out[$type][] = ['penyebab' => $cause, 'bobot_dasar' => (int) round($weight / $total * 100), 'alasan' => $reason];
+            }
+        }
+
+        return $out;
+    }
 
     /**
      * @param  array<string, int>  $boost  penyebab => tambahan bobot dari sinyal data
