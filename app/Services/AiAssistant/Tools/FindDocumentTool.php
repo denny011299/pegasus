@@ -4,6 +4,8 @@ namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
 use App\Services\AiAssistant\Tools\Concerns\BusinessQuery;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
+use App\Services\AiAssistant\Tools\Concerns\PriceWarnings;
 use App\Services\AiAssistant\Vocabulary;
 use InvalidArgumentException;
 
@@ -16,6 +18,8 @@ use InvalidArgumentException;
 class FindDocumentTool implements ToolInterface
 {
     use BusinessQuery;
+    use FuzzySuggest;
+    use PriceWarnings;
 
     public function __construct(protected ReadOnlyDb $db, protected Vocabulary $vocab) {}
 
@@ -55,11 +59,7 @@ class FindDocumentTool implements ToolInterface
 
         $hit = $this->locate($tables, $code);
         if ($hit === null) {
-            return [
-                'ditemukan' => false,
-                'kode' => $code,
-                'pesan' => 'Dokumen dengan kode tersebut tidak ditemukan.',
-            ];
+            return ['kode' => $code] + $this->notFoundWithSuggestions('Dokumen', $code, $this->suggestDocumentCodes($code, $tables));
         }
 
         [$table, $row] = $hit;
@@ -98,6 +98,11 @@ class FindDocumentTool implements ToolInterface
         $movements = $this->stockMovements(array_values(array_unique($codes)));
         if ($movements !== []) {
             $result['pergerakan_stok'] = $movements;
+        }
+
+        $poId = $table === 'purchase_orders' || isset($row['po_id']) && str_starts_with($table, 'purchase_') ? (int) ($row['po_id'] ?? 0) : 0;
+        if ($poId > 0 && ($warning = $this->purchaseZeroPriceWarning($poId))) {
+            $result['peringatan'] = $warning;
         }
 
         return $result;
@@ -167,6 +172,12 @@ class FindDocumentTool implements ToolInterface
     public function locateDocument(string $code): ?array
     {
         return $this->locate($this->tablesForCode(trim($code)), trim($code));
+    }
+
+    /** Saran kode mirip untuk kode yang tidak ketemu; reused by trace_document. */
+    public function suggestCodes(string $code): array
+    {
+        return $this->suggestDocumentCodes($code, $this->tablesForCode(trim($code)));
     }
 
     /**

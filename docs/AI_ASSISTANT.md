@@ -270,6 +270,12 @@ Barang tidak ketemu persis → tool mengembalikan `saran`; AI wajib menawarkan s
 | `partner_insight` | Customer/pemasok teratas, yang berhenti order, lead time PO→PDO, produk bermasalah, hutang; profil satu partner. |
 | `reorder_suggestion` | Saran beli bahan: pemakaian produksi/hari, cukup berapa hari, lead time, titik pesan, saran qty. |
 
+Tidak ketemu persis → semua tool memberi `saran` (`Tools/Concerns/FuzzySuggest.php`): kode dokumen mirip (PO567 → PO0567), nama staf/customer/pemasok/bahan mirip. PO harga Rp 0 → `peringatan` (`Tools/Concerns/PriceWarnings.php`) di find_document, trace_document, hutang jatuh tempo, profil pemasok; `data_anomalies` cek `harga nol`.
+
+Dokumentasi lengkap untuk user/admin: **Pengaturan → Dokumentasi AI** (`/settings/ai-docs`, JSON `/settings/ai-docs/data`), dirakit dari `AssistantGuide` (tool, parameter, contoh, katalog penyebab, panduan menu, modul).
+
+Panduan input: pertanyaan "cara/gimana/langkah" selalu dapat `<docs>` walau memuat nama modul; retriever mengirim menu teratas utuh dan mengutamakan bagian Alur / Cara input. Tambah bagian "Cara input" di `storage/ai_docs/<menu>.md` lalu `php artisan ai:index-docs --force`.
+
 Perkiraan penyebab (`Tools/Concerns/CauseEstimates.php`): bobot dasar per jenis kejanggalan, digeser sinyal data (rasio selisih opname = faktor satuan → salah satuan; log keluar dobel → input dobel/koneksi lambat; umur dokumen). Total selalu 100%, penyebab hanya operasional (human error, salah gudang/satuan, lupa ACC/Terima, koneksi lambat) — tidak pernah "sistem". AI menampilkan persen dulu; `alasan_bila_diminta` baru dijelaskan saat user minta detail.
 
 Tambahan dinamis yang disisipkan `AiChatService` setiap pertanyaan: tanggal & jam hari ini, daftar modul, peta prefix kode dokumen, dan petunjuk `find_document` bila pesan berisi kode dokumen.

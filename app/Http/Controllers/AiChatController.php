@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AiAssistant\AiChatService;
+use App\Services\AiAssistant\AssistantGuide;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,18 @@ class AiChatController extends Controller
     public function page()
     {
         return view('Backoffice.Ai.Chat');
+    }
+
+    /** Pengaturan → Dokumentasi AI: isi dirakit dari kode (AssistantGuide), bukan teks statis. */
+    public function docs(AssistantGuide $guide)
+    {
+        return view('Backoffice.Settings.AiDocs', ['guide' => $guide->sections()]);
+    }
+
+    /** JSON yang sama untuk agent/tim yang mengolah dokumentasi atau tampilan lanjutan. */
+    public function docsData(AssistantGuide $guide)
+    {
+        return response()->json($guide->sections());
     }
 
     public function history(AiChatService $service)

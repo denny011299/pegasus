@@ -102,7 +102,7 @@ class AiAssistantToolGuardTest extends BaseTestCase
             }
         };
 
-        foreach (['stok_minus', 'pending_lama', 'transfer_belum_diterima', 'selisih_opname', 'hutang_jatuh_tempo'] as $type) {
+        foreach (['stok_minus', 'pending_lama', 'transfer_belum_diterima', 'selisih_opname', 'hutang_jatuh_tempo', 'harga_nol'] as $type) {
             $list = $probe->run($type, ['Salah satuan' => 45])['perkiraan_penyebab'];
             $this->assertSame(100, array_sum(array_map(fn ($c) => (int) $c['Peluang'], $list)), $type);
             foreach ($list as $c) {

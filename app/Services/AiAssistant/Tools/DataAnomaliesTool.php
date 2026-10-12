@@ -18,7 +18,7 @@ class DataAnomaliesTool implements ToolInterface
     use CauseEstimates;
     use TrackingHelpers;
 
-    private const CHECKS = ['stok minus', 'pending lama', 'transfer belum diterima', 'selisih opname', 'hutang jatuh tempo'];
+    private const CHECKS = ['stok minus', 'pending lama', 'transfer belum diterima', 'selisih opname', 'hutang jatuh tempo', 'harga nol'];
 
     /** Modul => [tabel, status yang berarti masih menunggu ACC]. */
     private const PENDING = [
@@ -88,6 +88,9 @@ class DataAnomaliesTool implements ToolInterface
         }
         if ($run('hutang jatuh tempo')) {
             $result['hutang_jatuh_tempo'] = $this->overduePayables($limit);
+        }
+        if ($run('harga nol')) {
+            $result['harga_nol'] = $this->zeroPricePurchases($limit);
         }
         $result['catatan'] = 'Fakta data, bukan vonis. Sampaikan perkiraan_penyebab apa adanya (persen). Jangan sebut bug/error sistem. alasan_bila_diminta hanya dijelaskan kalau user minta detail.';
 
@@ -305,10 +308,13 @@ class DataAnomaliesTool implements ToolInterface
         $causes = $this->estimateCauses('hutang_jatuh_tempo', [
             'Sudah dibayar tapi belum ditandai lunas' => (int) round(25 * $veryLate),
         ]);
+        $zero = $rows->filter(fn ($i) => (float) $i->poi_total == 0.0)->count();
 
-        return [
+        return array_filter([
             'jumlah' => $rows->count(),
             'total_nominal' => $this->rupiah($total),
+            // Invoice Rp 0 hampir selalu berasal dari harga PO yang belum diisi.
+            'peringatan' => $zero > 0 ? $zero.' invoice bernominal Rp 0 karena harga di PO-nya Rp 0. Total hutang di atas jadi lebih kecil dari seharusnya; minta admin pembelian lengkapi harga PO.' : null,
             'data' => $rows->take($limit)->map(fn ($i) => [
                 'No. Invoice' => $i->poi_code,
                 'No. PO' => $pos[$i->po_id]->po_number,
@@ -317,7 +323,40 @@ class DataAnomaliesTool implements ToolInterface
                 'Telat' => $this->ageDays($i->poi_due).' hari',
                 'Nominal' => $this->rupiah((float) $i->poi_total),
             ])->all(),
-        ] + $causes;
+        ]) + $causes;
+    }
+
+    /** PO aktif 90 hari terakhir dengan total Rp 0 — sumber nominal 0 di TT, invoice, hutang. */
+    private function zeroPricePurchases(int $limit): array
+    {
+        $q = $this->activeOnly($this->db->table('purchase_orders'), 'purchase_orders')
+            ->where('po_total', 0)
+            ->where('po_date', '>=', now()->subDays(90)->toDateString());
+        $count = (clone $q)->count();
+        if ($count === 0) {
+            return ['jumlah' => 0, 'data' => 'Tidak ada PO bernilai Rp 0 dalam 90 hari terakhir.'];
+        }
+        $bySupplier = (clone $q)->selectRaw('po_supplier, COUNT(*) as n')->groupBy('po_supplier')->orderByDesc('n')->limit(5)->get();
+        $perSupplier = $bySupplier->map(fn ($r) => $this->nameOf('pemasok', $r->po_supplier).': '.$r->n.' PO')->all();
+        $rows = $q->orderByDesc('po_date')->limit($limit)->get(['po_number', 'po_date', 'po_supplier', 'pembayaran', 'created_by'])
+            ->map(fn ($r) => [
+                'No. PO' => $r->po_number,
+                'Tanggal' => substr((string) $r->po_date, 0, 10),
+                'Pemasok' => $this->nameOf('pemasok', $r->po_supplier),
+                'Pembayaran' => (int) $r->pembayaran === 1 ? 'Belum lunas' : 'Lunas',
+                'Dibuat Oleh' => $this->nameOf('staff', $r->created_by),
+            ])->all();
+
+        // Satu pemasok mendominasi = pola kebiasaan input (harga diisi belakangan), bukan kebetulan.
+        $dominant = (int) ($bySupplier->first()->n ?? 0) / $count >= 0.5;
+
+        return [
+            'jumlah' => $count,
+            'periode' => '90 hari terakhir',
+            'dampak' => 'Total PO, Tanda Terima, invoice, dan hutang ikut Rp 0 sehingga laporan hutang/pembelian tidak akurat.',
+            'per_pemasok' => $perSupplier,
+            'data' => $rows,
+        ] + $this->estimateCauses('harga_nol', $dominant ? ['Harga menunggu konfirmasi pemasok' => 15] : []);
     }
 
     private function variantName(int $variantId): string

@@ -4,12 +4,14 @@ namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
 use App\Services\AiAssistant\Tools\Concerns\BusinessQuery;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
 use App\Services\AiAssistant\Tools\Concerns\ItemMatcher;
 use App\Services\AiAssistant\Vocabulary;
 
 class SearchRecordsTool implements ToolInterface
 {
     use BusinessQuery;
+    use FuzzySuggest;
     use ItemMatcher;
 
     public function __construct(protected ReadOnlyDb $db, protected Vocabulary $vocab) {}
@@ -108,9 +110,31 @@ class SearchRecordsTool implements ToolInterface
             ];
         }
 
-        $documentTables = ['sales_orders', 'purchase_orders', 'stock_transfers', 'stock_opnames', 'stock_opname_bahans', 'productions', 'customer_product_returns', 'customer_supply_returns'];
+        // Nama orang/partner: saran nama mirip (salah ketik, singkatan).
+        $nameTables = ['customers' => ['customer_id', ['customer_name', 'customer_notes']], 'suppliers' => ['supplier_id', ['supplier_name']], 'staffs' => ['staff_id', ['staff_name']]];
+        if (isset($nameTables[$table])) {
+            [$pk, $cols] = $nameTables[$table];
+            $labels = [];
+            foreach ($this->db->table($table)->get([$pk, ...$cols]) as $r) {
+                $labels[$r->{$pk}] = trim(implode(' ', array_map(fn ($c) => (string) $r->{$c}, $cols)));
+            }
+            $saran = array_column($this->fuzzyRank($search, $labels), 'label');
+
+            return $saran === [] ? [] : [
+                'pesan' => 'Tidak ada yang cocok persis. Tanyakan "Apakah maksudnya salah satu ini?".',
+                'saran' => $saran,
+            ];
+        }
+
+        $documentTables = ['sales_orders', 'purchase_orders', 'purchase_order_tts', 'stock_transfers', 'stock_opnames', 'stock_opname_bahans', 'productions', 'customer_product_returns', 'customer_supply_returns'];
         if (in_array($table, $documentTables, true)) {
-            return ['catatan' => 'Kata kunci hanya dicari di kode/catatan dokumen, bukan nama barang. Kalau user mencari dokumen berisi barang tertentu, pakai item_activity.'];
+            $codes = $this->suggestDocumentCodes($search, [$table]);
+
+            return array_filter([
+                'catatan' => 'Kata kunci hanya dicari di kode/catatan dokumen, bukan nama barang. Kalau user mencari dokumen berisi barang tertentu, pakai item_activity.',
+                'pesan' => $codes ? 'Mungkin maksudnya kode berikut — tanyakan ke user.' : null,
+                'saran' => $codes ?: null,
+            ]);
         }
 
         return [];

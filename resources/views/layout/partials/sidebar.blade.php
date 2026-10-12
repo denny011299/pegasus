@@ -1335,6 +1335,9 @@
                                     <li><a href="{{ url('settings') }}"
                                         class="{{ Request::is('settings') ? 'active' : '' }}">
                                         Pengaturan Perusahaan</a></li>
+                                    <li><a href="{{ url('settings/ai-docs') }}"
+                                        class="{{ Request::is('settings/ai-docs') ? 'active' : '' }}">
+                                        Dokumentasi AI</a></li>
                                 @endif
                             </ul>
                         </li>

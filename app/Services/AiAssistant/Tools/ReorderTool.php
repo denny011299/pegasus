@@ -3,6 +3,7 @@
 namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
 use App\Services\AiAssistant\Tools\Concerns\TrackingHelpers;
 use App\Services\AiAssistant\Vocabulary;
 
@@ -14,6 +15,7 @@ use App\Services\AiAssistant\Vocabulary;
  */
 class ReorderTool implements ToolInterface
 {
+    use FuzzySuggest;
     use TrackingHelpers;
 
     /** log_stocks: 2 = bahan, kategori 2 = keluar. */
@@ -59,7 +61,12 @@ class ReorderTool implements ToolInterface
             ->when($item !== '', fn ($q) => $q->where('supplies_name', 'like', '%'.str_replace(['%', '_'], ['\%', '\_'], $item).'%'))
             ->get(['supplies_id', 'supplies_name', 'supplies_alert', 'lead_time_days', 'safety_stock', 'supplies_default_unit']);
         if ($supplies->isEmpty()) {
-            return ['pesan' => $item !== '' ? 'Bahan "'.$item.'" tidak ditemukan.' : 'Tidak ada bahan aktif.'];
+            if ($item === '') {
+                return ['pesan' => 'Tidak ada bahan aktif.'];
+            }
+            $all = $this->activeOnly($this->db->table('supplies'), 'supplies')->pluck('supplies_name', 'supplies_id')->all();
+
+            return $this->notFoundWithSuggestions('Bahan', $item, array_column($this->fuzzyRank($item, $all), 'label'));
         }
         $ids = $supplies->pluck('supplies_id')->all();
 

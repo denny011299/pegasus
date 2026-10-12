@@ -3,6 +3,7 @@
 namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
 use App\Services\AiAssistant\Tools\Concerns\TrackingHelpers;
 use App\Services\AiAssistant\Vocabulary;
 
@@ -13,6 +14,7 @@ use App\Services\AiAssistant\Vocabulary;
  */
 class StaffActivityTool implements ToolInterface
 {
+    use FuzzySuggest;
     use TrackingHelpers;
 
     /** Modul dokumen yang dihitung per staf (punya created_by & acc_by). */
@@ -170,7 +172,9 @@ class StaffActivityTool implements ToolInterface
             return ['id' => (int) $rows[0]->staff_id, 'nama' => (string) $rows[0]->staff_name];
         }
         if ($rows->isEmpty()) {
-            return ['pesan' => 'Staf "'.$name.'" tidak ditemukan. Minta user mengecek nama/username.'];
+            $all = $this->db->table('staffs')->pluck('staff_name', 'staff_id')->all();
+
+            return $this->notFoundWithSuggestions('Staf', $name, array_column($this->fuzzyRank($name, $all), 'label'));
         }
 
         return [

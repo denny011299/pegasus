@@ -3,6 +3,7 @@
 namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
+use App\Services\AiAssistant\Tools\Concerns\FuzzySuggest;
 use App\Services\AiAssistant\Tools\Concerns\TrackingHelpers;
 use App\Services\AiAssistant\Vocabulary;
 
@@ -13,6 +14,7 @@ use App\Services\AiAssistant\Vocabulary;
  */
 class PartnerInsightTool implements ToolInterface
 {
+    use FuzzySuggest;
     use TrackingHelpers;
 
     public function __construct(protected ReadOnlyDb $db, protected Vocabulary $vocab) {}
@@ -58,10 +60,17 @@ class PartnerInsightTool implements ToolInterface
 
         if ($name !== '') {
             $ids = $this->findPartner($cfg, $name);
+            if ($ids === []) {
+                $labels = [];
+                foreach ($this->db->table($cfg['partners'])->get([$cfg['pk'], ...$cfg['search']]) as $p) {
+                    $labels[$p->{$cfg['pk']}] = implode(' ', array_map(fn ($c) => (string) $p->{$c}, $cfg['search']));
+                }
+                $saran = array_map(fn ($r) => $this->nameOf($cfg['kind'], $r['id']), $this->fuzzyRank($name, $labels));
+
+                return $this->notFoundWithSuggestions(ucfirst($cfg['kind']), $name, $saran);
+            }
             if (count($ids) !== 1) {
-                return $ids === []
-                    ? ['pesan' => ucfirst($cfg['kind']).' "'.$name.'" tidak ditemukan.']
-                    : ['pesan' => 'Ada beberapa '.$cfg['kind'].' cocok. Tanyakan ke user yang mana.', 'pilihan' => array_map(fn ($id) => $this->nameOf($cfg['kind'], $id), array_slice($ids, 0, 10))];
+                return ['pesan' => 'Ada beberapa '.$cfg['kind'].' cocok. Tanyakan ke user yang mana.', 'pilihan' => array_map(fn ($id) => $this->nameOf($cfg['kind'], $id), array_slice($ids, 0, 10))];
             }
 
             return $this->profile($cfg, $ids[0], $from, $to, $isSupplier);
@@ -74,7 +83,7 @@ class PartnerInsightTool implements ToolInterface
             ->map(fn ($r) => array_filter([
                 ucfirst($cfg['kind']) => $this->nameOf($cfg['kind'], $r->pid),
                 'Dokumen' => (int) $r->n,
-                'Total' => !empty($r->total) ? $this->rupiah((float) $r->total) : null,
+                'Total' => !empty($r->total) ? $this->rupiah((float) $r->total) : ($isSupplier ? 'Rp 0 (harga PO belum diisi)' : null),
                 'Lead Time Rata-rata' => $isSupplier ? $this->leadTime((int) $r->pid, $from, $to) : null,
             ]))->all();
 
@@ -119,7 +128,11 @@ class PartnerInsightTool implements ToolInterface
             $out['produk_bermasalah'] = $poIds === [] ? 0 : $this->activeOnly($this->db->table('product_issues'), 'product_issues')->whereIn('po_id', $poIds)->count();
             // pembayaran 1 = belum lunas (aturan hutang dashboard).
             $unpaid = $docs()->where('pembayaran', 1)->where('status', '>', 0);
-            $out['hutang_belum_lunas'] = (clone $unpaid)->count().' PO ('.$this->rupiah((float) $unpaid->sum('po_total')).')';
+            $out['hutang_belum_lunas'] = (clone $unpaid)->count().' PO ('.$this->rupiah((float) (clone $unpaid)->sum('po_total')).')';
+            $zero = (clone $inPeriod)->where('po_total', 0)->count();
+            if ($zero > 0) {
+                $out['peringatan'] = $zero.' PO pemasok ini bernilai Rp 0 (harga belum diisi). Total pembelian, hutang, dan invoice-nya jadi tidak akurat — minta admin pembelian lengkapi harga.';
+            }
         } else {
             $soIds = (clone $inPeriod)->pluck('so_id')->all();
             $out['barang_terbanyak'] = $soIds === [] ? [] : $this->db->table('sales_order_details')
