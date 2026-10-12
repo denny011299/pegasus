@@ -1,0 +1,34 @@
+---
+description: Saat coding wajib dokumentasi lewat comment (WHY/HOW singkat). Selalu berlaku.
+alwaysApply: true
+---
+
+# SOP: coding + dokumentasi comment
+
+Setiap ubah kode bisnis/flow: **ikutkan comment dokumentasi** di tempat yang relevan. Bukan essay; selaras `pegasus-short-docs`.
+
+## Wajib
+
+- Block baru / cabang aturan tidak jelas dari nama fungsi → **1–3 baris WHY atau aturan bisnis**.
+- Magic number, status code, flag, edge case, workaround → comment singkat.
+- Service/helper non-trivial → docblock singkat (apa yang dilakukan + batasan, bukan ulangi signature).
+
+## Dilarang
+
+- Comment tiap baris / narasi `i++`, `return $x`.
+- Comment yang hanya mengulang nama fungsi.
+- README panjang kecuali user minta.
+
+```php
+// ❌ BAD
+// Loop products
+foreach ($products as $p) { ... }
+
+// ✅ GOOD
+// SKU 1 satuan (retail=default) boleh gudang utama; eceran ≠ default → eceran only.
+if ($isRetailSameAsDefault) { ... }
+```
+
+## Chat ke user
+
+Setelah kerja: 1–3 kalimat apa yang berubah (+ cara pakai jika perlu). Jangan ganti comment di kode dengan penjelasan panjang di chat saja.

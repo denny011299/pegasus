@@ -7,6 +7,8 @@ alwaysApply: true
 
 Setiap kerja: tulis catatan yang **pendek, rapi, bisa dibaca user**. Bukan essay. Tidak mengganti `response-rule` (NO YAP) — docs = 1–2 baris, bukan filler.
 
+Wajib ikut `pegasus-code-comments-sop`: coding flow/aturan bisnis **harus** ada comment WHY/HOW di tempat relevan.
+
 ## Komentar di kode
 
 - Tulis **WHY** atau HOW yang tidak jelas dari kode. Maks 1–2 baris.

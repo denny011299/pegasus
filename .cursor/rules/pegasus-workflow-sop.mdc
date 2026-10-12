@@ -1,5 +1,5 @@
 ---
-description: SOP git fase2 (ruben only; merge main eksplisit) + DataTables server-side + skeleton loading
+description: SOP git fase2 (ruben only; merge main eksplisit; GATE live=mirror server) + DataTables server-side + skeleton loading
 alwaysApply: true
 ---
 
@@ -20,10 +20,24 @@ alwaysApply: true
 - Merge/push ke `fase2/main` **hanya** jika user minta eksplisit (mis. "push ke fase2/main", "merge ke main").
 - Commit **per fitur** (bisa `git revert` satu SHA). Lihat `.cursor/rules/pegasus-git-revert-safe.mdc`.
 
-### Worktree `pegasus-fase2-main`
+### GATE WAJIB — sebelum merge / push / deploy ke `fase2/live`
+
+**`fase2/live` = mirror kode staging + production.** Bukan tempat sprint 2/3 / fitur Ariel QC / fitur besar dari `fase2/main`.
+
+Setiap kali user minta **merge / push / upload / sync / deploy** yang menyentuh `fase2/live` (termasuk "merge main ke live", "push ke live", "naikkan ke staging"), agent **WAJIB berhenti dulu** dan mengingatkan dalam chat (jangan langsung eksekusi):
+
+1. Live harus **mirror server** (cek `deploy/manifest.json` di dump/server, biasanya SHA tip dump).
+2. **Dilarang** push/merge **sprint** (QC/Ops SO, fitur besar main, AI, dll.) ke live tanpa user konfirmasi ulang eksplisit setelah peringatan ini.
+3. Yang boleh ke live: **hotfix staging/production** saja; **hari yang sama** cherry-pick ke `fase2/main`.
+4. Sebelum lanjut: bandingkan singkat — apakah perubahan menyentuh **flow utama** (pengiriman / pengembalian / stok / kas UI) atau **API-only**. Kalau flow utama berubah vs mirror server → sebutkan file/risiko, minta "lanjut" eksplisit.
+5. Jangan `merge fase2/main → fase2/live` utuh. Port **per fitur** (cherry-pick) setelah lolos gate di atas.
+
+Kalau user bilang "lupa / salah langkah / sprint ke live": **jangan force-push** sebelum backup branch + daftar hotfix live-only yang belum di main.
+
+### Worktree `pegasus-fase2-main` / `pegasus-fase2-live`
 
 - Untuk deploy manual user — **bukan** langkah agent rutin.
-- Agent hanya merge/push lewat worktree itu jika user minta eksplisit.
+- Agent hanya merge/push lewat worktree itu jika user minta eksplisit **dan** (untuk live) sudah lolos GATE di atas.
 
 ### Setelah push `fase2/main` (wajib)
 
@@ -37,6 +51,23 @@ git push origin fase2/main
 ```
 
 Jangan selesai push fitur tanpa manifest ikut ke remote. Manifest `commit` menunjuk SHA fitur terakhir (bukan SHA commit manifest sendiri).
+
+### Peran `fase2/main` vs `fase2/live` (aman)
+
+| Branch | Peran |
+|--------|--------|
+| `fase2/main` | Develop / sprint (fitur lengkap: QC SO, API besar, dll.). Sumber fitur baru. |
+| `fase2/live` | **Mirror staging + live server** + hotfix darurat saja. Tip GitHub live ≈ `deploy/manifest.json` di server. **Bukan** tempat sprint. |
+
+**5 baris SOP (yang dipakai sekarang):**
+
+1. Fitur baru / sprint → **`fase2/main`** (branch fitur / `fase2/ruben`), **bukan** live.
+2. Hotfix yang sudah/akan di server → commit di **`fase2/live`**, **hari yang sama** port/cherry-pick ke `fase2/main` (PR kecil, 1 fitur).
+3. Butuh API/bugfix di **kedua** jalur → **port selektif** (cherry-pick / PR), **bukan** merge branch utuh.
+4. **Dilarang** tanpa minta eksplisit + lolos GATE live: `merge live→main` utuh, `merge main→live` utuh, sync/reset yang menimpa, push sprint ke live.
+5. Naik staging/production → deploy **SHA yang = mirror** (biasanya tip live setelah hotfix, atau SHA manifest server), + migrate path-by-path; setelah push `fase2/main` wajib manifest (lihat atas).
+
+Saat “main mau naik ke live” (release): dulu pastikan hotfix live sudah di main → port **per fitur** (bukan merge utuh) di release window + uji pengiriman/kas/pengembalian/External API + **GATE live** di atas.
 
 ### Merge besar (stok/modal)
 

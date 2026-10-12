@@ -65,6 +65,7 @@ pegasuso_pegasus.sql
 
 # Scratch / temp local scripts
 scratch_modals.*
+/tmp/
 
 /database/seeders/snapshots/prod_21082026
 

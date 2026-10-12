@@ -1,0 +1,38 @@
+---
+description: Cara kerja branch aman (personal vs fitur, sinkron main, pindah branch, rule Cursor sama di semua branch)
+alwaysApply: true
+---
+
+# Branch & pindah branch — aman
+
+## Pilih branch
+
+| Kerjaan | Branch |
+|---|---|
+| Fix kecil / UI / hotfix 1–2 hari | `fase2/ruben` (1 commit per fitur) |
+| Fitur besar / rilis beda sprint (produksi, AI, QC) | branch fitur dari `fase2/main`, mis. `fase2/feat-xyz` |
+| Hotfix server | `fase2/live` (lewat GATE di `pegasus-workflow-sop`) |
+
+Jangan campur fitur beda jadwal rilis di satu branch — nanti tidak bisa naik ke main tanpa cherry-pick satu-satu.
+
+## Sinkron
+
+- Sebelum mulai fitur baru: `git fetch` lalu merge `origin/fase2/main` → branch kerja. Konflik: utamakan versi main (ada kerjaan tim), lalu cek baris khusus branch yang hilang.
+- Setelah merge: cek file yang diubah main tetap identik di branch (tidak ada yang hilang).
+
+## Sebelum pindah branch / merge / reset
+
+1. `git status` — WIP harus di-commit atau di-stash **dengan nama**: `git stash push -u -m "wip-<fitur>-<tanggal>" -- . ":(exclude)tmp"`.
+2. Operasi berisiko (rewrite, reset, force) → buat dulu `backup/<branch>-<tanggal>` dan push.
+3. Jangan `stash drop` / hapus branch lokal sebelum isinya terverifikasi ada di branch lain.
+4. `--force` hanya `--force-with-lease` di branch personal, **tidak pernah** di `fase2/main` / `fase2/live` / `main`.
+
+## Rule Cursor (`.cursor/rules`, `.claude/skills`)
+
+- Rule **di-track git**, bukan `.gitignore` — kalau di-ignore, pindah ke branch yang men-track akan menimpa lalu menghapus file rule.
+- Isi rule harus **sama di `fase2/ruben`, `fase2/main`, `fase2/live`**. Ubah rule = 1 commit `chore(cursor): …` terpisah (jangan campur kode), lalu cherry-pick ke main & live (aman: tidak menyentuh runtime server).
+- Cek: `git diff --stat origin/fase2/main origin/fase2/live -- .cursor .claude` harus kosong.
+
+## Folder lokal
+
+- `tmp/` = scratch lokal, di-ignore. Jangan simpan kerjaan penting di sana.
