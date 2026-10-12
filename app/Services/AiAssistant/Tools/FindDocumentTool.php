@@ -160,6 +160,16 @@ class FindDocumentTool implements ToolInterface
     }
 
     /**
+     * Same lookup as execute() without presenting; reused by trace_document.
+     *
+     * @return array{0: string, 1: array<string, mixed>}|null [table, row]
+     */
+    public function locateDocument(string $code): ?array
+    {
+        return $this->locate($this->tablesForCode(trim($code)), trim($code));
+    }
+
+    /**
      * Exact string match only. No cross-module fuzzy fallthrough.
      *
      * @param  list<string>  $tables

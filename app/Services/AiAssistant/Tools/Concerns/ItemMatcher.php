@@ -75,6 +75,33 @@ trait ItemMatcher
             : ['status' => 'saran', 'total' => count($scored), 'items' => array_slice($scored, 0, 5)];
     }
 
+    /**
+     * Standard reply when the keyword does not resolve to usable item(s):
+     * suggestions (saran) or a list to choose from (pilihan). Returns null
+     * when the match can be used as-is.
+     */
+    protected function itemNotFound(string $keyword, array $match, int $maxItems = 10): ?array
+    {
+        if (in_array($match['status'], ['persis', 'cocok'], true) && $match['total'] <= $maxItems) {
+            return null;
+        }
+        $base = ['ditemukan' => false, 'kata_kunci' => $keyword];
+
+        return match (true) {
+            $match['status'] === 'saran' => $base + [
+                'pesan' => 'Barang "'.$keyword.'" tidak ditemukan persis. Tanyakan ke user apakah maksudnya salah satu saran ini, lalu cari ulang dengan SKU-nya.',
+                'saran' => array_map(fn ($c) => $this->presentItem($c), $match['items']),
+            ],
+            $match['status'] === 'kosong' => $base + [
+                'pesan' => 'Barang "'.$keyword.'" tidak ditemukan dan tidak ada nama/SKU yang mirip. Minta user mengecek ejaan atau SKU.',
+            ],
+            default => $base + [
+                'pesan' => $match['total'].' barang cocok dengan "'.$keyword.'". Tanyakan ke user barang yang mana (sebut SKU).',
+                'pilihan' => array_map(fn ($c) => $this->presentItem($c), array_slice($match['items'], 0, 10)),
+            ],
+        };
+    }
+
     /** Candidate in UI wording (no storage keys) for tool output. */
     protected function presentItem(array $c): array
     {

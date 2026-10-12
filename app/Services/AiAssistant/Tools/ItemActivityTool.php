@@ -97,16 +97,8 @@ class ItemActivityTool implements ToolInterface
         $jenis = count($jenisNeeded) === 1 ? $jenisNeeded[0] : 'semua';
 
         $match = $this->matchItems($keyword, $jenis);
-        if (!in_array($match['status'], ['persis', 'cocok'], true)) {
-            return $this->notFound($keyword, $match);
-        }
-        if ($match['total'] > 10) {
-            return [
-                'ditemukan' => false,
-                'kata_kunci' => $keyword,
-                'pesan' => $match['total'].' barang cocok dengan "'.$keyword.'". Tanyakan ke user barang yang mana (sebut SKU).',
-                'pilihan' => array_map(fn ($c) => $this->presentItem($c), $match['items']),
-            ];
+        if (($notFound = $this->itemNotFound($keyword, $match)) !== null) {
+            return $notFound;
         }
 
         $ids = ['produk' => [], 'bahan' => []];
@@ -261,24 +253,6 @@ class ItemActivityTool implements ToolInterface
             ->pluck('supplies_variant_id')
             ->map(fn ($id) => (int) $id)
             ->all();
-    }
-
-    private function notFound(string $keyword, array $match): array
-    {
-        if ($match['status'] === 'saran') {
-            return [
-                'ditemukan' => false,
-                'kata_kunci' => $keyword,
-                'pesan' => 'Barang "'.$keyword.'" tidak ditemukan persis. Tanyakan ke user apakah maksudnya salah satu saran ini, lalu cari ulang dengan SKU-nya.',
-                'saran' => array_map(fn ($c) => $this->presentItem($c), $match['items']),
-            ];
-        }
-
-        return [
-            'ditemukan' => false,
-            'kata_kunci' => $keyword,
-            'pesan' => 'Barang "'.$keyword.'" tidak ditemukan dan tidak ada nama/SKU yang mirip. Minta user mengecek ejaan atau SKU.',
-        ];
     }
 
     /** @param iterable<object{unit_id: mixed, total: mixed}> $rows */
