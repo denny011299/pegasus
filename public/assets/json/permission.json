@@ -94,5 +94,5 @@
     },
     { "Id": 47, "Modules": "Integrasi", "SubModules": "Log API Eksternal" },
 
-    { "Id": 49, "Modules": "Asisten", "SubModules": "Asisten AI" }
+    { "Id": 50, "Modules": "Asisten", "SubModules": "Asisten AI" }
 ]
