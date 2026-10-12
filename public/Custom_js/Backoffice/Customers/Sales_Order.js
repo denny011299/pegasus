@@ -1824,7 +1824,7 @@ function inisialisasi() {
             },
             {
                 data: "so_date",
-                width: "14%",
+                width: "12%",
                 render: function (data) {
                     if (!data || data === "-")
                         return '<span style="color:#64748b;">-</span>';
@@ -1850,12 +1850,13 @@ function inisialisasi() {
             {
                 data: "so_ref_number",
                 defaultContent: "-",
-                width: "10%",
+                width: "14%",
                 className: "text-center",
                 render: function (data) {
                     var raw = (data || "").toString().trim();
                     if (!raw || raw === "-") return "-";
-                    return `<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;">${raw}</span>`;
+                    var safe = $("<div>").text(raw).html();
+                    return `<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;" title="${safe}">${safe}</span>`;
                 },
             },
             {

@@ -352,7 +352,7 @@
                 },
                 {
                     data: "ref_number",
-                    width: "130px",
+                    width: "200px",
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value || "";

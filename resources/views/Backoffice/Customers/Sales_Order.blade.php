@@ -94,11 +94,19 @@
         }
 
         /* DataTable styling — match standard Pegasus / Kanakku theme */
+        /* min-width >= total lebar kolom (JS columns.width) supaya wrapper scroll, bukan menyempit lalu tumpang-tindih */
         #tableSalesOrder,
         #tableCustomerReturn {
             width: 100% !important;
-            min-width: 950px;
             table-layout: fixed;
+        }
+
+        #tableSalesOrder {
+            min-width: 1150px;
+        }
+
+        #tableCustomerReturn {
+            min-width: 1350px;
         }
 
         #tableSalesOrder th,
@@ -109,6 +117,17 @@
             word-wrap: break-word;
             vertical-align: middle;
             box-sizing: border-box;
+            overflow: hidden;
+        }
+
+        #tableSalesOrder tbody td .badge,
+        #tableCustomerReturn tbody td .badge {
+            display: inline-block;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            vertical-align: middle;
         }
 
         #tableSalesOrder tbody td,
@@ -133,6 +152,11 @@
 
         #tableCustomerReturn td:last-child {
             padding: 8px !important;
+        }
+
+        #tableSalesOrder td:last-child,
+        #tableCustomerReturn td:last-child {
+            overflow: visible;
         }
 
         #tableSalesOrder td:last-child a,
