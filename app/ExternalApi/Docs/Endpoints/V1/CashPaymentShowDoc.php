@@ -67,6 +67,7 @@ class CashPaymentShowDoc extends ApiEndpointDoc
             'data' => [
                 [
                     'ref_payment_id' => 'PMO-GROUP-000123',
+                    'ref_payment_number' => 'PB/BUD/290726/001',
                     'payment_id' => 512,
                     'payment_type' => 2,
                     'payment_date' => '2026-07-29',
@@ -86,6 +87,7 @@ class CashPaymentShowDoc extends ApiEndpointDoc
                 ],
                 [
                     'ref_payment_id' => 'PMO-GROUP-000123',
+                    'ref_payment_number' => 'PB/BUD/290726/001',
                     'payment_id' => 513,
                     'payment_type' => 2,
                     'payment_date' => '2026-07-29',

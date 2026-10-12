@@ -216,6 +216,8 @@ class CustomerReturnController extends Controller
                             'customer_id' => $data['customer_id'],
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
+                            // GitHub #216: sisi baru ikut membawa No. Pembayaran PMO dokumennya.
+                            'ref_payment_number' => $bundle['header']['ref_payment_number'] ?? null,
                             'notes' => $data['notes'] ?: null,
                             'proof_path' => $proofPath,
                             'status' => 1,
@@ -255,6 +257,8 @@ class CustomerReturnController extends Controller
                             'customer_id' => $data['customer_id'],
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
+                            // GitHub #216: sisi baru ikut membawa No. Pembayaran PMO dokumennya.
+                            'ref_payment_number' => $bundle['header']['ref_payment_number'] ?? null,
                             'notes' => $data['notes'] ?: null,
                             'proof_path' => $proofPath,
                             'status' => 1,
@@ -705,12 +709,11 @@ class CustomerReturnController extends Controller
 
         $fromSupply = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNotNull('h.return_group')
-            ->distinct()
-            ->pluck('h.return_group');
+            ->whereNotNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($fromSupply, 'd', $warehouseId, $activeIsMain);
+        $fromSupply = $fromSupply->distinct()->pluck('h.return_group');
 
         $fromProduct = DB::table('customer_product_return_details as d')
             ->join('customer_product_returns as h', 'h.return_id', '=', 'd.return_id')
@@ -726,19 +729,20 @@ class CustomerReturnController extends Controller
     /**
      * @return array<int, int>
      */
-    private function standaloneSupplyReturnIdsForWarehouse(int $warehouseId): array
+    private function standaloneSupplyReturnIdsForWarehouse(int $warehouseId, bool $activeIsMain): array
     {
         if ($warehouseId <= 0) {
             return [];
         }
 
-        return DB::table('customer_supply_return_details as d')
+        $query = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNull('h.return_group')
-            ->distinct()
+            ->whereNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($query, 'd', $warehouseId, $activeIsMain);
+
+        return $query->distinct()
             ->pluck('d.return_id')
             ->map(fn ($id) => (int) $id)
             ->all();
@@ -780,6 +784,11 @@ class CustomerReturnController extends Controller
      *   melihat gudang utama ($activeIsMain), TIDAK muncul di gudang eceran manapun. Keputusan
      *   pemilik produk 2026-09-25: baris yang belum ditentukan gudangnya dikelola dari gudang
      *   utama (tempat retur pertama kali "mendarat" secara default), bukan bocor ke semua gudang.
+     * - Dipakai juga untuk baris BAHAN (GitHub #216 follow-up, 2026-10-13): potongan barang dari
+     *   POST /payments/cash sengaja membuat baris bahan dengan warehouse_id NULL supaya staf yang
+     *   memilih gudangnya (utama atau eceran). Sebelumnya filter bahan hanya mencocokkan
+     *   warehouse_id persis, jadi dokumen itu tidak pernah muncul di daftar gudang mana pun dan
+     *   gudangnya tidak bisa dipilih. Aturan tampilannya sama dengan baris produk di atas.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
@@ -803,7 +812,7 @@ class CustomerReturnController extends Controller
         $activeIsMain = ($activeCtx['is_main_warehouse'] ?? 1) === 1;
         $groups = $this->returnGroupsForWarehouse($warehouseId, $activeIsMain);
         $standaloneIds = $alias === 'csr'
-            ? $this->standaloneSupplyReturnIdsForWarehouse($warehouseId)
+            ? $this->standaloneSupplyReturnIdsForWarehouse($warehouseId, $activeIsMain)
             : $this->standaloneProductReturnIdsForWarehouse($warehouseId, $activeIsMain);
 
         if ($groups === [] && $standaloneIds === []) {
@@ -839,6 +848,7 @@ class CustomerReturnController extends Controller
                 'csr.return_date',
                 'csr.ref_number',
                 'csr.ref_shipment_id',
+                'csr.ref_payment_number',
                 'csr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -852,6 +862,7 @@ class CustomerReturnController extends Controller
                     ->orWhere('csr.return_group', 'like', $like)
                     ->orWhere('csr.ref_number', 'like', $like)
                     ->orWhere('csr.ref_shipment_id', 'like', $like)
+                    ->orWhere('csr.ref_payment_number', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -870,6 +881,7 @@ class CustomerReturnController extends Controller
                 'cpr.return_date',
                 'cpr.ref_number',
                 'cpr.ref_shipment_id',
+                'cpr.ref_payment_number',
                 'cpr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -883,6 +895,7 @@ class CustomerReturnController extends Controller
                     ->orWhere('cpr.return_group', 'like', $like)
                     ->orWhere('cpr.ref_number', 'like', $like)
                     ->orWhere('cpr.ref_shipment_id', 'like', $like)
+                    ->orWhere('cpr.ref_payment_number', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -929,6 +942,7 @@ class CustomerReturnController extends Controller
             'return_date' => $row->return_date,
             'ref_number' => $row->ref_number,
             'ref_shipment_id' => $row->ref_shipment_id,
+            'ref_payment_number' => $row->ref_payment_number,
             'customer_name' => $row->customer_name,
             'status' => (int) $row->status,
             'created_by_name' => $row->created_by_name,
@@ -972,6 +986,9 @@ class CustomerReturnController extends Controller
         }
         if ($row->ref_shipment_id) {
             $target['ref_shipment_id'] = $row->ref_shipment_id;
+        }
+        if ($row->ref_payment_number) {
+            $target['ref_payment_number'] = $row->ref_payment_number;
         }
         if ($row->customer_name) {
             $target['customer_name'] = $row->customer_name;
@@ -1164,6 +1181,9 @@ class CustomerReturnController extends Controller
                 // hanya terisi untuk dokumen yang dibuat lewat POST /shipments/returns dengan
                 // ref_shipment_id (App\Http\Controllers\ExternalApi\V1\ShipmentReturnController).
                 'ref_shipment_id' => $supply->ref_shipment_id ?? $product->ref_shipment_id ?? null,
+                // GitHub #216: No. Dokumen Pembayaran PMO, hanya untuk retur dari potongan barang
+                // pada POST /payments/cash.
+                'ref_payment_number' => $supply->ref_payment_number ?? $product->ref_payment_number ?? null,
                 'notes' => $primary->notes,
                 'proof_path' => $primary->proof_path,
                 'status' => $status,

@@ -225,6 +225,8 @@
                                             <th>Status</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
+                                            {{-- GitHub #216: hanya tampil di Dompet Virtual Armada/Sales (diatur JS) --}}
+                                            <th>No. Pembayaran PMO</th>
                                             <th class="text-end">Masuk</th>
                                             <th class="text-end">Keluar</th>
                                             <th>Dibuat Oleh</th>
@@ -235,13 +237,13 @@
                                     <tbody></tbody>
                                     <tfoot>
                                         <tr>
-                                            <td colspan="5" class="fw-bold">Total : </td>
+                                            <td colspan="6" class="fw-bold">Total : </td>
                                             <td class="fw-bold text-end debits text-success">Rp 0</td>
                                             <td class="fw-bold text-end credits text-danger">Rp 0</td>
                                             <td colspan="3"></td>
                                         </tr>
                                         <tr>
-                                            <td colspan="6" class="fw-bold text-end">Sisa Kas : </td>
+                                            <td colspan="7" class="fw-bold text-end">Sisa Kas : </td>
                                             <td class="fw-bold text-end sisa">Rp 0</td>
                                             <td colspan="3"></td>
                                         </tr>

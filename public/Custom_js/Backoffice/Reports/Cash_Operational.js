@@ -118,6 +118,38 @@
         };
     }
 
+    // GitHub #216: No. Dokumen Pembayaran PMO (PB/...), hanya ada di pembayaran dari PMO.
+    // Kolom ini hanya relevan untuk Dompet Virtual Armada/Sales — di Kas Admin/Gudang disembunyikan
+    // (lihat syncRefPaymentNumberColumn()).
+    var REF_PAYMENT_NUMBER_COLUMN = 5;
+
+    function refPaymentNumberColumn() {
+        return {
+            data: 'ref_payment_number',
+            defaultContent: '-',
+            width: '12%',
+            render: function (data) {
+                if (!data) return '<span class="text-muted">-</span>';
+                return $('<div>').text(data).html();
+            },
+        };
+    }
+
+    function syncRefPaymentNumberColumn() {
+        if (!table) return;
+        table.column(REF_PAYMENT_NUMBER_COLUMN).visible(type === 'armada' || type === 'sales', false);
+    }
+
+    function setCashRefPaymentNumber(modal, value) {
+        var $el = $(modal).find('.cash-ref-payment-number');
+        $el.find('span').text(value || '');
+        $el.toggleClass('d-none', !value);
+    }
+
+    $(document).on('hidden.bs.modal', '#add_cash_armada, #add_cash_sales', function () {
+        setCashRefPaymentNumber(this, null);
+    });
+
     function setupCashTypeUi() {
         if (type === 'admin' || type === 'gudang') {
             $('#tableCash thead th').eq(3).text('Staff');
@@ -183,6 +215,7 @@
         beginCashTableLoad();
         collapseCashOperationalChildRows();
         updateCashSearchPlaceholder();
+        syncRefPaymentNumberColumn();
         table.ajax.reload(null, true);
     }
 
@@ -802,6 +835,7 @@
             { data: 'status_text', width: '13%' },
             personColumn(),
             notesColumn(),
+            refPaymentNumberColumn(),
             { data: 'debit_text', className: 'text-end', width: '15%' },
             { data: 'credit_text', className: 'text-end', width: '15%' },
             { data: 'created_by_name', defaultContent: '-', render: function (data) { return typeof renderCreatedByName === 'function' ? renderCreatedByName(data) : data; } },
@@ -850,6 +884,8 @@
                 openCashFromDashboardLink();
             },
         });
+
+        syncRefPaymentNumberColumn();
 
         $('#tableCash')
             .off('preXhr.dt.cashLoad xhr.dt.cashLoad')
@@ -2300,6 +2336,7 @@
         items = [];
         console.log(data);
         $('#add_cash_armada .modal-title').html("Update Aktivitas Armada");
+        setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
@@ -2366,6 +2403,7 @@
         items = [];
         console.log(data);
         $('#add_cash_armada .modal-title').html("Lihat Aktivitas Armada");
+        setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
@@ -2467,6 +2505,7 @@
         items = [];
         console.log(data);
         $('#add_cash_sales .modal-title').html("Update Aktivitas Sales");
+        setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
         $('#add_cash_sales input').empty().val("");
         $('#staff_id_sales').empty(null);
         
@@ -2532,6 +2571,7 @@
         items = [];
         console.log(data);
         $('#add_cash_sales .modal-title').html("Lihat Aktivitas Sales");
+        setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
         $('#add_cash_sales input').empty().val("");
         $('#staff_id_sales').empty(null);
         

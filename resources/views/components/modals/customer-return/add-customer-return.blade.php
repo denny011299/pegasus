@@ -97,6 +97,8 @@
                         <span id="cr-pmo-badge" class="d-none badge ms-2" style="background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;padding:3px 9px;border-radius:10px;font-weight:600;font-size:11px;vertical-align:middle;"><i class="fe fe-truck me-1"></i>Dari PMO</span>
                         <br>
                         <small class="text-muted mb-0 mt-1" style="font-size:13px;">Bahan mentah dan/atau produk jadi dari armada</small>
+                        {{-- GitHub #216: No. Dokumen Pembayaran PMO, hanya untuk retur dari potongan barang --}}
+                        <div id="cr-ref-payment-number" class="d-none text-muted mt-1" style="font-size:12px;">No. Pembayaran PMO: <span class="fw-semibold"></span></div>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

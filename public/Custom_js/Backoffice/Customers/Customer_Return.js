@@ -327,12 +327,16 @@
                         if (row && row.ref_shipment_id) {
                             html += "<br>" + pmoBadge(row.ref_shipment_id);
                         }
+                        // GitHub #216: No. Dokumen Pembayaran PMO (retur dari potongan barang).
+                        if (row && row.ref_payment_number) {
+                            html += '<br><small class="text-muted" title="No. Pembayaran PMO">' + esc(row.ref_payment_number) + "</small>";
+                        }
                         return html;
                     },
                 },
                 {
                     data: "return_date",
-                    width: "145px",
+                    width: "120px",
                     className: "text-start align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value;
@@ -352,12 +356,15 @@
                 },
                 {
                     data: "ref_number",
-                    width: "130px",
+                    width: "300px",
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value || "";
                         if (!value || value === "-") return '<span class="text-muted">—</span>';
-                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;" title="' + esc(value) + '">' + esc(value) + "</span>";
+                        // Nomor referensi bisa panjang tanpa spasi (mis. ref_payment_id PMO
+                        // "G987857131020260121390") — kolomnya dibuat cukup lebar supaya tampil utuh
+                        // satu baris tanpa meluber ke kolom Armada (tabel table-layout:fixed).
+                        return '<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;" title="' + esc(value) + '">' + esc(value) + "</span>";
                     },
                 },
                 {
@@ -386,7 +393,7 @@
                 {
                     data: "acc_by_name",
                     defaultContent: "-",
-                    width: "160px",
+                    width: "135px",
                     className: "text-start align-middle",
                     render: function (data, type) {
                         return type === "display" ? renderStaff(data, true) : data;
@@ -1168,6 +1175,7 @@
         crContext = null;
         crExistingProofUrl = "";
         $("#cr-pmo-badge").addClass("d-none");
+        $("#cr-ref-payment-number").addClass("d-none").find("span").text("");
         $("#cr-doc-key,#cr-ref-number,#cr-notes,#cr-supply-qty,#cr-product-qty").val("");
         // Lokal (WIB), bukan toISOString/UTC — dini hari UTC+7 jangan jadi kemarin.
         $("#cr-date").val(
@@ -1471,6 +1479,8 @@
                 }
                 $("#cr-pmo-badge").toggleClass("d-none", !record.ref_shipment_id)
                     .attr("title", record.ref_shipment_id ? ("ref_shipment_id: " + record.ref_shipment_id) : "");
+                $("#cr-ref-payment-number").toggleClass("d-none", !record.ref_payment_number)
+                    .find("span").text(record.ref_payment_number || "");
 
                 var number = record.return_number || key;
                 if (intent === "edit") {
