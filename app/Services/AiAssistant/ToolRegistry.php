@@ -2,8 +2,11 @@
 
 namespace App\Services\AiAssistant;
 
+use App\Services\AiAssistant\Tools\DashboardSummaryTool;
 use App\Services\AiAssistant\Tools\FindDocumentTool;
 use App\Services\AiAssistant\Tools\FindDuplicatesTool;
+use App\Services\AiAssistant\Tools\FindItemTool;
+use App\Services\AiAssistant\Tools\ItemActivityTool;
 use App\Services\AiAssistant\Tools\RecordHistoryTool;
 use App\Services\AiAssistant\Tools\SearchRecordsTool;
 use App\Services\AiAssistant\Tools\SummarizeRecordsTool;
@@ -26,6 +29,9 @@ class ToolRegistry
             new SummarizeRecordsTool($db, $vocab),
             new FindDuplicatesTool($db, $vocab),
             new RecordHistoryTool($db, $vocab),
+            new FindItemTool($db, $vocab),
+            new ItemActivityTool($db, $vocab),
+            new DashboardSummaryTool(),
         ] as $tool) {
             $this->tools[$tool->name()] = $tool;
         }

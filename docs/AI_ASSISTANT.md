@@ -248,6 +248,16 @@ Isi penuh ada di `config/ai_assistant.php` → `system_prompt`. Intinya:
 - Pakai label UI; jangan sebut table/kolom/database/Ref.
 - Alamat, telepon, email, rekening, saldo tidak tersedia.
 
+### Tool barang & dashboard
+
+| Tool | Untuk |
+|---|---|
+| `find_item` | Cari produk/bahan dari nama, SKU, barcode, atau ketikan salah. Urutan: SKU persis → semua kata terkandung → **saran** mirip (volume disamakan, "1 liter" = "1000 ml"). |
+| `item_activity` | Telusuri 1 barang di pengiriman, transfer stok, stok opname, pembelian, produksi, retur: jumlah dokumen, total qty per satuan, daftar dokumen. Contoh: "berapa transfer stok produk X hari ini". |
+| `dashboard_summary` | Angka halaman Dashboard (KPI, nilai persediaan, widget, top produk, stock aging, peringatan stok, hutang jatuh tempo, antrian ACC, grafik). Memanggil endpoint dashboard yang sama, jadi angkanya identik. |
+
+Barang tidak ketemu persis → tool mengembalikan `saran`; AI wajib menawarkan saran (SKU + nama) dan bertanya, bukan menjawab "data tidak ditemukan".
+
 Tambahan dinamis yang disisipkan `AiChatService` setiap pertanyaan: tanggal & jam hari ini, daftar modul, peta prefix kode dokumen, dan petunjuk `find_document` bila pesan berisi kode dokumen.
 
 ### RAG — cara kerja
