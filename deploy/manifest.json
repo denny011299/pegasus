@@ -1,22 +1,14 @@
 {
-    "generated_at": "2026-10-12T14:27:15+07:00",
-    "commit": "fefb86e14f1293bd6fd25e7d47f7f09a38218e95",
-    "branch": "fase2/ai-access",
+    "generated_at": "2026-10-12T14:49:38+07:00",
+    "commit": "ec97de46d3677afdecf658a86b15e8054e4b9794",
+    "branch": "fase2/main",
     "file_count": 3622,
-    "previous_commit": "5f2fdc90ba5705da9479dca662591772b3aed679",
-    "previous_generated_at": "2026-10-12T14:12:20+07:00",
-    "added": [
-        "database/seeders/RoleAiAssistantAccessSeeder.php"
-    ],
+    "previous_commit": "fefb86e14f1293bd6fd25e7d47f7f09a38218e95",
+    "previous_generated_at": "2026-10-12T14:27:15+07:00",
+    "added": [],
     "removed": [],
     "changed": [
-        "app/Support/WarehouseMenuAccess.php",
-        "database/migrations/2026_09_09_074931_add_product_kind_to_products_table.php",
-        "database/migrations/2026_09_29_100000_add_warehouse_id_to_purchase_orders_table.php",
-        "public/assets/json/permission.json",
-        "resources/views/layout/fullscreen.blade.php",
-        "resources/views/layout/mainlayout.blade.php",
-        "routes/web.php"
+        "public/assets/json/permission.json"
     ],
     "files": {
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
@@ -1912,7 +1904,7 @@
         "public/assets/json/payment-summary.json": "0b8cc97aa9bb5518b9699291db733e73b2c26f48",
         "public/assets/json/paymentlist.json": "1ffe8914e0402593eb277f2cdeb39fb6916d466a",
         "public/assets/json/payments.json": "3277cef4507a6d5ba28b5d56af39ab05ffc0f267",
-        "public/assets/json/permission.json": "bf1733eac5af308a107af1c7c1958c44ac9e9ee2",
+        "public/assets/json/permission.json": "9d40e11274c8a6c041e988b8d9050a6312101cd9",
         "public/assets/json/plan-billing.json": "2daa6c8c97152948c761ebcafb4c9955b6e6942a",
         "public/assets/json/product-list.json": "b782676a42255381c70ef220ef2d3b8596d2698c",
         "public/assets/json/profit-loss-report.json": "ef3a50f34279dc026493a7decec480982204dcc5",
