@@ -111,17 +111,33 @@
             render: function (_data, _type, row) {
                 if (type === 'admin') return row.ca_notes || '';
                 if (type === 'gudang') return row.cg_notes || '';
-                if (type === 'armada') return (row.cr_notes || '') + refPaymentNumberText(row);
-                if (type === 'sales') return (row.cs_notes || '') + refPaymentNumberText(row);
+                if (type === 'armada') return row.cr_notes || '';
+                if (type === 'sales') return row.cs_notes || '';
                 return '';
             },
         };
     }
 
     // GitHub #216: No. Dokumen Pembayaran PMO (PB/...), hanya ada di pembayaran dari PMO.
-    function refPaymentNumberText(row) {
-        if (!row.ref_payment_number) return '';
-        return '<br><small class="text-muted">No. Pembayaran PMO: ' + $('<div>').text(row.ref_payment_number).html() + '</small>';
+    // Kolom ini hanya relevan untuk Dompet Virtual Armada/Sales — di Kas Admin/Gudang disembunyikan
+    // (lihat syncRefPaymentNumberColumn()).
+    var REF_PAYMENT_NUMBER_COLUMN = 5;
+
+    function refPaymentNumberColumn() {
+        return {
+            data: 'ref_payment_number',
+            defaultContent: '-',
+            width: '12%',
+            render: function (data) {
+                if (!data) return '<span class="text-muted">-</span>';
+                return $('<div>').text(data).html();
+            },
+        };
+    }
+
+    function syncRefPaymentNumberColumn() {
+        if (!table) return;
+        table.column(REF_PAYMENT_NUMBER_COLUMN).visible(type === 'armada' || type === 'sales', false);
     }
 
     function setCashRefPaymentNumber(modal, value) {
@@ -199,6 +215,7 @@
         beginCashTableLoad();
         collapseCashOperationalChildRows();
         updateCashSearchPlaceholder();
+        syncRefPaymentNumberColumn();
         table.ajax.reload(null, true);
     }
 
@@ -818,6 +835,7 @@
             { data: 'status_text', width: '13%' },
             personColumn(),
             notesColumn(),
+            refPaymentNumberColumn(),
             { data: 'debit_text', className: 'text-end', width: '15%' },
             { data: 'credit_text', className: 'text-end', width: '15%' },
             { data: 'created_by_name', defaultContent: '-', render: function (data) { return typeof renderCreatedByName === 'function' ? renderCreatedByName(data) : data; } },
@@ -866,6 +884,8 @@
                 openCashFromDashboardLink();
             },
         });
+
+        syncRefPaymentNumberColumn();
 
         $('#tableCash')
             .off('preXhr.dt.cashLoad xhr.dt.cashLoad')
