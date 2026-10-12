@@ -99,8 +99,8 @@
     }
 </script>
 @yield('custom_js')
-{{-- Widget AI sama seperti mainlayout (PP View / fullscreen tetap bisa tanya asisten). --}}
-@if(Session::has('user'))
+{{-- Widget AI: sama gate role seperti mainlayout. --}}
+@if(Session::has('user') && \App\Support\RoleAccess::can(Session::get('user'), 'Asisten AI', 'view'))
 <script>var token = @json(csrf_token());</script>
 @include('components.ai-chat-widget')
 @endif

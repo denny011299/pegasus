@@ -194,7 +194,8 @@ Penutup bila masih rancu: *"Silakan konfirmasi ke tim development untuk pengecek
 **HTTP / UI**
 
 - `app/Http/Controllers/AiChatController.php`
-- `routes/web.php` — `GET /ai`, `GET /ai/history`, `GET /ai/history-image/{id}`, `POST /ai/chat` (+ `throttle:ai-chat`) di dalam group `checkLogin`
+- `routes/web.php` — `GET /ai`, `GET /ai/history`, `GET /ai/history-image/{id}`, `POST /ai/chat` di dalam `checkLogin` + `check.access:Asisten AI|view` (+ `throttle:ai-chat` pada POST)
+- Hak akses: modul **Asisten AI** di `public/assets/json/permission.json` (Peran → Perizinan). Widget FAB hanya tampil jika role punya `view`. Seed awal: `php artisan db:seed --class=RoleAiAssistantAccessSeeder` (Developer/Direksi/Superadmin). Setelah ubah perizinan: logout/login ulang agar session `role_access` segar.
 - `app/Providers/AppServiceProvider.php` — `RateLimiter::for('ai-chat', …)`
 - `resources/views/components/ai-chat-widget.blade.php` — widget melayang; memuat riwayat sesi + ingat panel terbuka/tertutup
 - `resources/views/Backoffice/Ai/Chat.blade.php` — halaman chat penuh (`/ai`), memakai riwayat sesi yang sama
