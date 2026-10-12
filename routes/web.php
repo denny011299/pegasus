@@ -786,9 +786,13 @@ Route::middleware(checkLogin::class)->group(function () {
     Route::middleware('check.access:Pengaturan|view')->group(function () {
         Route::get('/testing', [GeneralController::class, 'testing'])->name('testing');
         Route::get('/settings', [SettingController::class, 'Settings'])->name('settings');
+        Route::post('/getSetting', [SettingController::class, 'getSetting'])->name('getSetting');
+    });
+
+    // Hak akses sendiri ("Dokumentasi AI"), terpisah dari Pengaturan Perusahaan.
+    Route::middleware('check.access:Dokumentasi AI|view')->group(function () {
         Route::get('/settings/ai-docs', [AiChatController::class, 'docs'])->name('settings.ai-docs');
         Route::get('/settings/ai-docs/data', [AiChatController::class, 'docsData'])->name('settings.ai-docs.data');
-        Route::post('/getSetting', [SettingController::class, 'getSetting'])->name('getSetting');
     });
     Route::middleware('check.access:Pengaturan|create')->group(function () {
         Route::post('/insertSetting', [SettingController::class, 'insertSetting'])->name('insertSetting');

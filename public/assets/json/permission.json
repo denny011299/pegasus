@@ -83,6 +83,7 @@
 
     { "Id": 41, "Modules": "Pengaturan", "SubModules": "Profil" },
     { "Id": 42, "Modules": "Pengaturan", "SubModules": "Pengaturan" },
+    { "Id": 51, "Modules": "Pengaturan", "SubModules": "Dokumentasi AI" },
 
     { "Id": 43, "Modules": "Integrasi", "SubModules": "Sinkronisasi" },
     { "Id": 44, "Modules": "Integrasi", "SubModules": "Status API Eksternal" },
