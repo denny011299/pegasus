@@ -58,10 +58,12 @@ class AssistantGuide
 
     /**
      * Menu website → [modul data yang dibaca AI, file panduan input, catatan].
+     * Isi data = kunci modul ai_vocabulary, atau teks bebas untuk data yang dibaca lewat
+     * kemampuan khusus (Dashboard, Laporan). Data kosong = AI hanya punya panduan.
      * Modul/panduan yang belum terpetakan otomatis ditambahkan di akhir.
      */
     private const MENUS = [
-        'Dashboard' => [[], null, 'Angka KPI, persediaan, top produk, hutang, antrian ACC'],
+        'Dashboard' => [['Angka Dashboard: KPI, nilai persediaan, top produk, stock aging, hutang jatuh tempo, antrian ACC'], null, 'Angkanya sama persis dengan halaman Dashboard'],
         'Pengiriman (Sales Order)' => [['pengiriman', 'surat jalan', 'invoice penjualan'], 'pengiriman-sales-order.md', ''],
         'Pembelian (Purchase Order)' => [['pembelian', 'penerimaan pembelian'], 'pembelian-po.md', ''],
         'Tanda Terima PO' => [['tanda terima'], 'tanda-terima-po.md', ''],
@@ -71,7 +73,7 @@ class AssistantGuide
         'Stok Produk' => [['stok produk', 'riwayat stok'], 'stok-produk.md', ''],
         'Stok Bahan Mentah' => [['stok bahan'], 'stok-bahan-mentah.md', ''],
         'Pengelolaan Bahan Mentah' => [['pengelolaan bahan'], 'pengelolaan-bahan.md', ''],
-        'Peringatan Stok' => [[], 'peringatan-stok.md', 'Dibaca lewat Kartu Stok / Saran Beli Bahan'],
+        'Peringatan Stok' => [['Peringatan stok di Dashboard', 'Stok cukup berapa hari (Saran Beli Bahan)'], 'peringatan-stok.md', ''],
         'Stok Opname Produk' => [['opname produk'], 'stok-opname-produk.md', ''],
         'Stok Opname Bahan Mentah' => [['opname bahan'], 'stok-opname-bahan.md', ''],
         'Transfer Stok & Produk Bermasalah' => [['transfer stok', 'produk bermasalah'], 'transfer-stok-dan-produk-bermasalah.md', ''],
@@ -89,9 +91,9 @@ class AssistantGuide
         'Pemasok' => [['pemasok'], 'pemasok.md', 'Alamat, telepon, dan rekening tidak ditampilkan'],
         'Gudang' => [['gudang', 'tipe gudang'], 'gudang.md', ''],
         'Area' => [['area'], null, ''],
-        'Armada' => [[], 'armada.md', ''],
+        'Armada' => [['kas armada'], 'armada.md', 'Data kendaraan sendiri belum dibaca AI; yang terbaca kas armadanya'],
         'Pengguna & Peran' => [['pengguna', 'peran', 'penempatan pengguna', 'aktivitas'], 'pengguna-peran.md', ''],
-        'Laporan' => [[], 'laporan.md', 'Rekap lewat Laporan Periode'],
+        'Laporan' => [['Laporan Periode: rekap semua menu + banding periode sebelumnya'], 'laporan.md', ''],
         'Profil & Pengaturan' => [[], 'profil-pengaturan.md', ''],
     ];
 
@@ -167,14 +169,13 @@ class AssistantGuide
         $out = [];
 
         foreach (self::MENUS as $menu => [$modules, $file, $note]) {
-            $modules = array_values(array_filter($modules, fn ($m) => isset($labels[$m])));
             $usedModules = array_merge($usedModules, $modules);
             if ($file !== null) {
                 $usedGuides[] = $file;
             }
             $out[] = [
                 'menu' => $menu,
-                'data' => array_map(fn ($m) => $labels[$m], $modules),
+                'data' => array_map(fn ($m) => $labels[$m] ?? $m, $modules),
                 'panduan' => $guides[$file]['bagian'] ?? [],
                 'catatan' => $note,
             ];
