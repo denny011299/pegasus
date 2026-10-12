@@ -430,8 +430,8 @@
   }
 </style>
 
-{{-- FAB asisten AI (login saja); setup: docs/AI_ASSISTANT.md --}}
-@if(Session::has('user') && !Route::is('login'))
+{{-- FAB asisten AI: hanya jika role punya view "Asisten AI" (role_id -1 = superadmin bypass). --}}
+@if(Session::has('user') && !Route::is('login') && \App\Support\RoleAccess::can(Session::get('user'), 'Asisten AI', 'view'))
 @include('components.ai-chat-widget')
 @endif
 @include('layout.partials.footer-scripts')
