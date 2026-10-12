@@ -49,7 +49,7 @@ class AiAssistantToolGuardTest extends BaseTestCase
         $names = (new ToolRegistry(new ReadOnlyDb(), $this->vocabulary()))->names();
         sort($names);
         $this->assertSame(
-            ['find_document', 'find_duplicates', 'record_history', 'search_records', 'summarize_records'],
+            ['dashboard_summary', 'find_document', 'find_duplicates', 'find_item', 'item_activity', 'record_history', 'search_records', 'summarize_records'],
             $names,
         );
     }
@@ -62,6 +62,9 @@ class AiAssistantToolGuardTest extends BaseTestCase
             \App\Services\AiAssistant\Tools\SummarizeRecordsTool::class,
             \App\Services\AiAssistant\Tools\FindDuplicatesTool::class,
             \App\Services\AiAssistant\Tools\RecordHistoryTool::class,
+            \App\Services\AiAssistant\Tools\FindItemTool::class,
+            \App\Services\AiAssistant\Tools\ItemActivityTool::class,
+            \App\Services\AiAssistant\Tools\DashboardSummaryTool::class,
         ] as $class) {
             $methods = get_class_methods($class);
             foreach (['insert', 'update', 'delete', 'upsert', 'truncate'] as $write) {

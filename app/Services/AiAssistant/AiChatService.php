@@ -557,6 +557,15 @@ class AiChatService
         foreach ($toolResults as $tr) {
             $result = $tr['result'];
             if (isset($result['pesan'])) {
+                // Saran barang tetap ditampilkan walau model gagal merangkai jawaban.
+                $choices = $result['saran'] ?? $result['pilihan'] ?? [];
+                if ($choices !== []) {
+                    $lines[] = 'Barang "'.($result['kata_kunci'] ?? '').'" tidak ditemukan persis. Apakah yang dimaksud salah satu ini?';
+                    foreach (array_slice($choices, 0, 5) as $c) {
+                        $lines[] = '- '.trim(($c['SKU'] ?? '-').' — '.($c['Nama'] ?? '').' '.($c['Varian'] ?? ''));
+                    }
+                    continue;
+                }
                 $lines[] = $result['pesan'];
                 continue;
             }
@@ -576,6 +585,10 @@ class AiChatService
                     }
                     $lines[] = '- '.implode(' | ', $parts);
                 }
+            }
+            foreach ((array) ($result['rekap'] ?? []) as $r) {
+                $lines[] = '- '.($r['modul'] ?? '').': '.($r['jumlah_dokumen'] ?? 0).' dokumen'
+                    .(isset($r['total_qty']) ? ', total '.$r['total_qty'] : '');
             }
             if (isset($result['nilai'])) {
                 $lines[] = ($result['perhitungan'] ?? 'Hasil').': '.$result['nilai'];
