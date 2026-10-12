@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AiChatController;
 use App\Http\Controllers\AutocompleteController;
 use App\Http\Controllers\ChangelogController;
 use App\Http\Controllers\CustomerController;
@@ -58,6 +59,19 @@ Route::middleware('throttle:5,1')->prefix('deploy')->group(function () {
 
 Route::middleware(checkLogin::class)->group(function () {
     Route::get('/logout', [GeneralController::class, 'logout'])->name('logout');
+
+    // Asisten AI: wajib role_access "Asisten AI"|view (+ throttle chat).
+    Route::middleware('check.access:Asisten AI|view')->group(function () {
+        Route::get('/ai', [AiChatController::class, 'page'])->name('ai.page');
+        Route::get('/ai/history', [AiChatController::class, 'history'])->name('ai.history');
+        // Thumbnail history: hanya staff pemilik baris log (bukan public disk).
+        Route::get('/ai/history-image/{id}', [AiChatController::class, 'historyImage'])
+            ->whereNumber('id')
+            ->name('ai.history-image');
+        Route::post('/ai/chat', [AiChatController::class, 'chat'])
+            ->middleware('throttle:ai-chat')
+            ->name('ai.chat');
+    });
 
     // Internal dev-only pages: intentionally NOT in the sidebar and NOT gated by
     // check.access/role_access -- protected only by checkLogin (must be a logged-in

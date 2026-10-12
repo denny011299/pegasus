@@ -331,10 +331,13 @@ class CustomerReturnController extends Controller
         return response()->json(['success' => true, 'message' => 'Pengembalian berhasil dihapus.']);
     }
 
-    public function accept(string $docKey): JsonResponse
+    public function accept(Request $request, string $docKey): JsonResponse
     {
         $this->authorizeAbility('others');
         abort_unless($this->canConfirmQc(), 403, 'Akses ditolak. Hanya Staf QC & Gudang, Direksi, atau Developer yang boleh konfirmasi.');
+
+        $supplyPicks = $this->parseWarehousePicks($request->input('supply_warehouses'));
+        $productPicks = $this->parseWarehousePicks($request->input('product_warehouses'));
 
         $bundle = $this->resolveBundle($docKey, false);
         if ($bundle) {
@@ -342,7 +345,8 @@ class CustomerReturnController extends Controller
             if ($bundle['supply']) {
                 $supplyWh = CustomerSupplyReturnDetail::where('return_id', $bundle['supply']->return_id)
                     ->where('status', 1)
-                    ->pluck('warehouse_id');
+                    ->pluck('warehouse_id')
+                    ->merge(array_column($supplyPicks, 'warehouse_id'));
                 $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
                     $supplyWh,
                     \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_SUPPLIES
@@ -358,7 +362,8 @@ class CustomerReturnController extends Controller
             if ($bundle['product']) {
                 $productWh = CustomerProductReturnDetail::where('return_id', $bundle['product']->return_id)
                     ->where('status', 1)
-                    ->pluck('warehouse_id');
+                    ->pluck('warehouse_id')
+                    ->merge(array_column($productPicks, 'warehouse_id'));
                 $softBlock = \App\Support\PendingStockSoftBlock::messageIfAnyWarehouseBlocked(
                     $productWh,
                     \App\Support\StockOpname\OpenOpnameGuard::DOMAIN_PRODUCT
@@ -374,13 +379,20 @@ class CustomerReturnController extends Controller
         }
 
         $createdTransferIds = [];
-        DB::transaction(function () use ($docKey, &$createdTransferIds) {
+        DB::transaction(function () use ($docKey, $supplyPicks, $productPicks, &$createdTransferIds) {
             $bundle = $this->resolveBundle($docKey, true);
             if (! $bundle) {
                 throw ValidationException::withMessages(['doc_key' => 'Pengembalian tidak ditemukan.']);
             }
             if ((int) $bundle['status'] !== 1) {
                 throw ValidationException::withMessages(['status' => 'Pengembalian sudah diproses dan tidak dapat di-ACC ulang.']);
+            }
+
+            if ($bundle['supply']) {
+                $this->applyWarehousePicks(CustomerSupplyReturnDetail::class, (int) $bundle['supply']->return_id, $supplyPicks, false);
+            }
+            if ($bundle['product']) {
+                $this->applyWarehousePicks(CustomerProductReturnDetail::class, (int) $bundle['product']->return_id, $productPicks, true);
             }
 
             $customerName = DB::table('customers')
@@ -437,6 +449,67 @@ class CustomerReturnController extends Controller
         return response()->json(['success' => true, 'message' => 'Pengembalian ditolak tanpa perubahan stok.']);
     }
 
+    /**
+     * Pilihan gudang dari modal Konfirmasi: [{return_detail_id, warehouse_id, destination_warehouse_id?}].
+     *
+     * @return array<int, array{return_detail_id:int, warehouse_id:int, destination_warehouse_id:?int}>
+     */
+    private function parseWarehousePicks($raw): array
+    {
+        $rows = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (! is_array($rows)) {
+            return [];
+        }
+        $picks = [];
+        foreach ($rows as $row) {
+            $detailId = (int) ($row['return_detail_id'] ?? 0);
+            $warehouseId = (int) ($row['warehouse_id'] ?? 0);
+            if ($detailId <= 0 || $warehouseId <= 0) {
+                continue;
+            }
+            $destId = (int) ($row['destination_warehouse_id'] ?? 0);
+            $picks[] = [
+                'return_detail_id' => $detailId,
+                'warehouse_id' => $warehouseId,
+                'destination_warehouse_id' => $destId > 0 ? $destId : null,
+            ];
+        }
+
+        return $picks;
+    }
+
+    /**
+     * Simpan pilihan gudang sebelum ACC. Validitas gudang tetap dicek validateSupplyDetails()/
+     * validateProductDetails() di acceptSupply()/acceptProduct() (masih di transaksi yang sama).
+     *
+     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $model
+     */
+    private function applyWarehousePicks(string $model, int $returnId, array $picks, bool $withDestination): void
+    {
+        $hasDest = $withDestination && Schema::hasColumn('customer_product_return_details', 'destination_warehouse_id');
+        foreach ($picks as $pick) {
+            $update = ['warehouse_id' => $pick['warehouse_id']];
+            if ($hasDest) {
+                $update['destination_warehouse_id'] = $pick['destination_warehouse_id'];
+            }
+            $model::where('return_id', $returnId)
+                ->where('return_detail_id', $pick['return_detail_id'])
+                ->where('status', 1)
+                ->update($update);
+        }
+    }
+
+    private function assertWarehousesFilled(array $details, string $field): void
+    {
+        foreach ($details as $index => $detail) {
+            if ((int) ($detail['warehouse_id'] ?? 0) <= 0) {
+                throw ValidationException::withMessages([
+                    "$field.$index.warehouse_id" => 'Gudang tujuan belum dipilih. Pilih gudang di setiap baris sebelum konfirmasi.',
+                ]);
+            }
+        }
+    }
+
     private function acceptSupply(CustomerSupplyReturn $record, string $customerName): void
     {
         $details = CustomerSupplyReturnDetail::where('return_id', $record->return_id)
@@ -449,6 +522,7 @@ class CustomerReturnController extends Controller
                 'warehouse_id' => (int) $detail->warehouse_id,
                 'qty' => (int) $detail->qty,
             ])->all();
+        $this->assertWarehousesFilled($details, 'supply_details');
         $this->validateSupplyDetails($details);
 
         // Follow-up to GitHub #132/#159 (2026-09-07): kembaran persis acceptProduct() di bawah --
@@ -501,6 +575,7 @@ class CustomerReturnController extends Controller
 
                 return $row;
             })->all();
+        $this->assertWarehousesFilled($details, 'product_details');
         $this->validateProductDetails($details);
 
         // GitHub #132 (2026-09-03): kembaran persis CustomerProductReturnController::accept() --
@@ -1475,7 +1550,10 @@ class CustomerReturnController extends Controller
         }
         $context = $this->buildReturnContext();
         $allowed = collect($context['supplies'])->keyBy('supplies_id');
-        $mainWarehouseIds = collect($context['supply_warehouses'])->pluck('id')->map(fn ($id) => (int) $id);
+        // Gudang utama ATAU eceran (PMO issue #28): potongan barang dari POST /payments/cash
+        // (mis. jerigen) datang tanpa gudang dan staf memilih gudang eceran tujuannya.
+        // acceptSupply() sudah membedakan keduanya -- roll-up hanya di gudang utama.
+        $activeWarehouseIds = DB::table('warehouses')->where('status', 1)->pluck('id')->map(fn ($id) => (int) $id);
 
         foreach ($details as $index => $detail) {
             $supply = $allowed->get((int) $detail['supplies_id']);
@@ -1485,8 +1563,8 @@ class CustomerReturnController extends Controller
             if (! collect($supply['units'])->contains(fn ($unit) => (int) $unit['unit_id'] === (int) $detail['unit_id'])) {
                 throw ValidationException::withMessages(["supply_details.$index.unit_id" => 'Satuan tidak aktif untuk bahan yang dipilih.']);
             }
-            if (! $mainWarehouseIds->contains((int) $detail['warehouse_id'])) {
-                throw ValidationException::withMessages(["supply_details.$index.warehouse_id" => 'Gudang tujuan bahan harus gudang utama aktif.']);
+            if (! $activeWarehouseIds->contains((int) $detail['warehouse_id'])) {
+                throw ValidationException::withMessages(["supply_details.$index.warehouse_id" => 'Gudang tujuan bahan harus gudang aktif.']);
             }
         }
     }

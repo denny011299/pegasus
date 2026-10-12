@@ -352,7 +352,7 @@
                 },
                 {
                     data: "ref_number",
-                    width: "130px",
+                    width: "200px",
                     className: "text-center align-middle",
                     render: function (value, type) {
                         if (type !== "display") return value || "";
@@ -846,6 +846,11 @@
         return crMode === "create" || crMode === "edit";
     }
 
+    /** Gudang tetap bisa dipilih di modal Konfirmasi (form lain read-only). */
+    function isCrWarehouseEditable() {
+        return isCrEditable() || crMode === "confirm";
+    }
+
     function qtyCell(type, index, qty, unitName) {
         if (!isCrEditable()) {
             return esc(qty) + (unitName ? " " + esc(unitName) : "");
@@ -885,13 +890,14 @@
     function renderAllLines() {
         var html = "";
         var editable = isCrEditable();
+        var whEditable = isCrWarehouseEditable();
         var colSpan = editable ? 5 : 4;
         supplyLines.forEach(function (line, index) {
             html += "<tr>" +
                 '<td class="px-4">' + lineTypeBadge("supply") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.supplies_name) + '</td>' +
                 "<td>" + qtyCell("supply", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + (line.warehouse_id ? esc(line.warehouse_name) : baseWarehouseCell("supply", index, editable)) + "</td>" +
+                '<td class="px-4">' + (line.warehouse_id && !whEditable ? esc(line.warehouse_name) : baseWarehouseCell("supply", index, whEditable, line)) + "</td>" +
                 lineActionCell("supply", index, editable) +
                 "</tr>";
         });
@@ -900,7 +906,7 @@
                 '<td class="px-4">' + lineTypeBadge("product") + "</td>" +
                 '<td class="fw-semibold" style="max-width:160px;white-space:normal;">' + esc(line.product_label) + '</td>' +
                 "<td>" + qtyCell("product", index, line.qty, line.unit_name) + "</td>" +
-                '<td class="px-4">' + (line.warehouse_id ? productWarehouseCell(line, index, editable) : baseWarehouseCell("product", index, editable)) + "</td>" +
+                '<td class="px-4">' + (line.warehouse_id ? productWarehouseCell(line, index, whEditable) : baseWarehouseCell("product", index, whEditable, line)) + "</td>" +
                 lineActionCell("product", index, editable) +
                 "</tr>";
         });
@@ -926,12 +932,16 @@
      * yang sudah kirim gudang_id) tetap pakai tampilan lama (esc(line.warehouse_name)/
      * productWarehouseCell()), tidak berubah.
      */
-    function baseWarehouseCell(type, index, editable) {
+    function baseWarehouseCell(type, index, editable, line) {
         if (!editable) {
             return '<span class="text-danger small"><i class="fe fe-alert-triangle me-1"></i>Belum diisi</span>';
         }
+        var selectedId = parseInt((line && line.warehouse_id) || 0, 10);
+        var option = selectedId
+            ? '<option value="' + selectedId + '" selected>' + esc(line.warehouse_name || ("Gudang #" + selectedId)) + "</option>"
+            : "";
         return '<select class="form-select form-select-sm cr-base-warehouse" id="cr_base_wh_' + type + '_' + index + '" ' +
-            'data-type="' + type + '" data-index="' + index + '"></select>';
+            'data-type="' + type + '" data-index="' + index + '">' + option + '</select>';
     }
 
     function applyCrBaseWarehouseSelection($select, selectedData) {
@@ -970,7 +980,7 @@
                     placeholder: "Pilih gudang tujuan",
                 });
             }
-            markCrRetailWarehouseSelect($select, true);
+            markCrRetailWarehouseSelect($select, !$select.val());
         });
     }
 
@@ -1145,25 +1155,30 @@
     }
 
     function syncCrSaveEnabled() {
+        syncCrAcceptEnabled();
         var $btn = $("#cr-save");
         if (!$btn.length || $btn.hasClass("d-none") || !isCrEditable()) return;
         $btn.prop("disabled", missingRetailDestinations() || missingBaseWarehouses());
     }
 
-    /**
-     * GitHub #203: tombol Terima juga digembok di sisi klien kalau masih ada baris tanpa gudang
-     * dasar -- sebelumnya cuma digembok server-side (validateSupplyDetails()/validateProductDetails()
-     * di CustomerReturnController menolak dengan 422), yang baru kelihatan SETELAH staf klik Terima.
-     * Dokumen dalam mode "confirm" read-only (lihat openRecord()), jadi staf harus buka Edit dulu
-     * untuk mengisi gudang yang kosong sebelum bisa kembali ke sini dan menerima.
-     */
+    /** Tombol Terima digembok selama masih ada baris tanpa gudang (server juga menolak di accept()). */
     function syncCrAcceptEnabled() {
         var $btn = $("#cr-accept");
         if (!$btn.length || $btn.hasClass("d-none")) return;
         var blocked = missingBaseWarehouses();
         $btn.prop("disabled", blocked);
-        $btn.attr("title", blocked ? "Semua baris harus punya gudang tujuan -- buka Edit untuk mengisinya." : "");
+        $btn.attr("title", blocked ? "Pilih gudang tujuan di setiap baris terlebih dahulu." : "");
         $("#cr-accept-warning").toggleClass("d-none", !blocked);
+    }
+
+    function crWarehousePicks(lines, withDestination) {
+        return lines
+            .filter(function (line) { return line.return_detail_id && parseInt(line.warehouse_id || 0, 10); })
+            .map(function (line) {
+                var pick = { return_detail_id: line.return_detail_id, warehouse_id: parseInt(line.warehouse_id, 10) };
+                if (withDestination) pick.destination_warehouse_id = parseInt(line.destination_warehouse_id || 0, 10) || null;
+                return pick;
+            });
     }
 
     function resetModal() {
@@ -1441,6 +1456,7 @@
                 setCustomer(record.customer_id, record.customer_name);
                 supplyLines = (record.supply_details || []).map(function (detail) {
                     return {
+                        return_detail_id: parseInt(detail.return_detail_id, 10) || null,
                         supplies_id: parseInt(detail.supplies_id, 10),
                         supplies_name: detail.supplies_name,
                         unit_id: parseInt(detail.unit_id, 10),
@@ -1456,6 +1472,7 @@
                     var warehouseName = detail.warehouse_name;
                     var destId = parseInt(detail.destination_warehouse_id, 10) || null;
                     return {
+                        return_detail_id: parseInt(detail.return_detail_id, 10) || null,
                         product_variant_id: parseInt(detail.product_variant_id, 10),
                         product_label: detail.product_label,
                         unit_id: parseInt(detail.unit_id, 10),
@@ -1636,9 +1653,12 @@
         if ($loadingBtn && $loadingBtn.length && typeof LoadingButton === "function") {
             LoadingButton($loadingBtn);
         }
-        $.post("/customerReturns/" + encodeURIComponent(key) + "/" + action, {
-            _token: csrf(),
-        })
+        var payload = { _token: csrf() };
+        if (action === "accept") {
+            payload.supply_warehouses = JSON.stringify(crWarehousePicks(supplyLines, false));
+            payload.product_warehouses = JSON.stringify(crWarehousePicks(productLines, true));
+        }
+        $.post("/customerReturns/" + encodeURIComponent(key) + "/" + action, payload)
             .done(function (response) {
                 if (typeof closeModalConfirm === "function") closeModalConfirm();
                 $("#customer-return-modal").modal("hide");
@@ -2010,6 +2030,15 @@
         });
         $("#cr-accept").off("click.crAccept").on("click.crAccept", function () {
             if (crMode !== "confirm") return;
+            syncBaseWarehousesFromDom();
+            syncRetailDestinationsFromDom();
+            if (missingBaseWarehouses()) {
+                $("#customer-return-modal .cr-base-warehouse, #customer-return-modal .cr-retail-warehouse").each(function () {
+                    markCrRetailWarehouseSelect($(this), !$(this).val());
+                });
+                if (typeof toastr !== "undefined") toastr.error("Gudang tujuan masih kosong. Pilih gudang di setiap baris dulu.");
+                return;
+            }
             processRecord($("#cr-doc-key").val(), "accept", "ACC pengembalian?");
         });
         $("#cr-decline").off("click.crDecline").on("click.crDecline", function () {

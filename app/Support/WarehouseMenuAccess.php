@@ -27,6 +27,8 @@ class WarehouseMenuAccess
         // Global company/user settings — tidak tergantung whitelist menu gudang
         'Pengaturan',
         'Profil',
+        // FAB chat — bukan item sidebar gudang; akses cukup dari role_access
+        'Asisten AI',
         // GitHub #196: "Kas Admin"/"Kas Gudang"/"Kas Armada"/"Kas Sales"/"Kas Operasional" (tanpa
         // akhiran tipe) SEMPAT ada di sini sebagai alias fallback untuk check.access.any di
         // routes/web.php — tapi alias-alias itu (dan modul generiknya) sudah dihapus total dari

@@ -430,6 +430,10 @@
   }
 </style>
 
+{{-- FAB asisten AI: hanya jika role punya view "Asisten AI" (role_id -1 = superadmin bypass). --}}
+@if(Session::has('user') && !Route::is('login') && \App\Support\RoleAccess::can(Session::get('user'), 'Asisten AI', 'view'))
+@include('components.ai-chat-widget')
+@endif
 @include('layout.partials.footer-scripts')
 <script>
   var token = "{{ csrf_token() }}";

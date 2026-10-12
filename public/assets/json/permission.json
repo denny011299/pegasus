@@ -92,5 +92,7 @@
         "Modules": "Integrasi",
         "SubModules": "Dokumentasi API Eksternal"
     },
-    { "Id": 47, "Modules": "Integrasi", "SubModules": "Log API Eksternal" }
+    { "Id": 47, "Modules": "Integrasi", "SubModules": "Log API Eksternal" },
+
+    { "Id": 50, "Modules": "Asisten", "SubModules": "Asisten AI" }
 ]
