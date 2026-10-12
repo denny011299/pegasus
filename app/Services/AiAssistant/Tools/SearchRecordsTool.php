@@ -4,11 +4,13 @@ namespace App\Services\AiAssistant\Tools;
 
 use App\Services\AiAssistant\ReadOnlyDb;
 use App\Services\AiAssistant\Tools\Concerns\BusinessQuery;
+use App\Services\AiAssistant\Tools\Concerns\ItemMatcher;
 use App\Services\AiAssistant\Vocabulary;
 
 class SearchRecordsTool implements ToolInterface
 {
     use BusinessQuery;
+    use ItemMatcher;
 
     public function __construct(protected ReadOnlyDb $db, protected Vocabulary $vocab) {}
 
@@ -86,8 +88,32 @@ class SearchRecordsTool implements ToolInterface
         if ($activeNote !== null) {
             $result['catatan_status'] = $activeNote;
         }
+        if ($total === 0 && is_string($args['search'] ?? null) && trim($args['search']) !== '') {
+            $result += $this->zeroResultHint($table, $args['search']);
+        }
 
         return $result;
+    }
+
+    /** Hasil kosong dari kata kunci: beri saran barang mirip / arahkan ke tool yang tepat. */
+    private function zeroResultHint(string $table, string $search): array
+    {
+        $itemTables = ['products' => 'produk', 'product_variants' => 'produk', 'supplies' => 'bahan', 'supplies_variants' => 'bahan'];
+        if (isset($itemTables[$table])) {
+            $match = $this->matchItems($search, $itemTables[$table], 5);
+
+            return $match['items'] === [] ? [] : [
+                'pesan' => 'Tidak ada yang cocok persis. Tawarkan saran berikut ke user dan tanyakan mana yang dimaksud.',
+                'saran' => array_map(fn ($c) => $this->presentItem($c), $match['items']),
+            ];
+        }
+
+        $documentTables = ['sales_orders', 'purchase_orders', 'stock_transfers', 'stock_opnames', 'stock_opname_bahans', 'productions', 'customer_product_returns', 'customer_supply_returns'];
+        if (in_array($table, $documentTables, true)) {
+            return ['catatan' => 'Kata kunci hanya dicari di kode/catatan dokumen, bukan nama barang. Kalau user mencari dokumen berisi barang tertentu, pakai item_activity.'];
+        }
+
+        return [];
     }
 
     /** @param list<string> $fields */
