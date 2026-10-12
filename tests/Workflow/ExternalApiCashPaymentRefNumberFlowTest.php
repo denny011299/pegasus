@@ -131,12 +131,6 @@ class ExternalApiCashPaymentRefNumberFlowTest extends TestCase
         $this->assertSame([(int) $cash->cr_id], array_column($cashList->json('data'), 'cr_id'));
         $this->assertSame($number, $cashList->json('data.0.ref_payment_number'));
 
-        // Baris bahan dari potongan barang lahir tanpa gudang, dan daftar Pengembalian hanya
-        // menampilkan dokumen yang punya baris di gudang aktif — simulasikan staf sudah memilih
-        // gudangnya supaya dokumen ini masuk daftar.
-        \App\Models\CustomerSupplyReturnDetail::where('return_id', $return->return_id)
-            ->update(['warehouse_id' => $this->mainWarehouseId()]);
-
         $returnList = $this->getJson('/customerReturns?'.http_build_query(['draw' => 1, 'search' => ['value' => $number]]))
             ->assertOk();
         $this->assertCount(1, $returnList->json('data'));

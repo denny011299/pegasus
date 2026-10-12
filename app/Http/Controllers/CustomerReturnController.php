@@ -843,12 +843,11 @@ class CustomerReturnController extends Controller
 
         $fromSupply = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNotNull('h.return_group')
-            ->distinct()
-            ->pluck('h.return_group');
+            ->whereNotNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($fromSupply, 'd', $warehouseId, $activeIsMain);
+        $fromSupply = $fromSupply->distinct()->pluck('h.return_group');
 
         $fromProduct = DB::table('customer_product_return_details as d')
             ->join('customer_product_returns as h', 'h.return_id', '=', 'd.return_id')
@@ -864,19 +863,20 @@ class CustomerReturnController extends Controller
     /**
      * @return array<int, int>
      */
-    private function standaloneSupplyReturnIdsForWarehouse(int $warehouseId): array
+    private function standaloneSupplyReturnIdsForWarehouse(int $warehouseId, bool $activeIsMain): array
     {
         if ($warehouseId <= 0) {
             return [];
         }
 
-        return DB::table('customer_supply_return_details as d')
+        $query = DB::table('customer_supply_return_details as d')
             ->join('customer_supply_returns as h', 'h.return_id', '=', 'd.return_id')
-            ->where('d.warehouse_id', $warehouseId)
             ->where('d.status', '>', 0)
             ->where('h.status', '>', 0)
-            ->whereNull('h.return_group')
-            ->distinct()
+            ->whereNull('h.return_group');
+        $this->applyProductDetailWarehouseFilter($query, 'd', $warehouseId, $activeIsMain);
+
+        return $query->distinct()
             ->pluck('d.return_id')
             ->map(fn ($id) => (int) $id)
             ->all();
@@ -918,6 +918,11 @@ class CustomerReturnController extends Controller
      *   melihat gudang utama ($activeIsMain), TIDAK muncul di gudang eceran manapun. Keputusan
      *   pemilik produk 2026-09-25: baris yang belum ditentukan gudangnya dikelola dari gudang
      *   utama (tempat retur pertama kali "mendarat" secara default), bukan bocor ke semua gudang.
+     * - Dipakai juga untuk baris BAHAN (GitHub #216 follow-up, 2026-10-13): potongan barang dari
+     *   POST /payments/cash sengaja membuat baris bahan dengan warehouse_id NULL supaya staf yang
+     *   memilih gudangnya (utama atau eceran). Sebelumnya filter bahan hanya mencocokkan
+     *   warehouse_id persis, jadi dokumen itu tidak pernah muncul di daftar gudang mana pun dan
+     *   gudangnya tidak bisa dipilih. Aturan tampilannya sama dengan baris produk di atas.
      */
     private function applyProductDetailWarehouseFilter($query, string $alias, int $warehouseId, bool $activeIsMain): void
     {
@@ -941,7 +946,7 @@ class CustomerReturnController extends Controller
         $activeIsMain = ($activeCtx['is_main_warehouse'] ?? 1) === 1;
         $groups = $this->returnGroupsForWarehouse($warehouseId, $activeIsMain);
         $standaloneIds = $alias === 'csr'
-            ? $this->standaloneSupplyReturnIdsForWarehouse($warehouseId)
+            ? $this->standaloneSupplyReturnIdsForWarehouse($warehouseId, $activeIsMain)
             : $this->standaloneProductReturnIdsForWarehouse($warehouseId, $activeIsMain);
 
         if ($groups === [] && $standaloneIds === []) {
