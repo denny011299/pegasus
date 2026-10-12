@@ -41,6 +41,22 @@ class AiAssistantAccessTest extends TestCase
         $this->get('/ai')->assertOk();
     }
 
+    public function test_ai_docs_menu_has_own_permission(): void
+    {
+        $rows = collect(json_decode(file_get_contents(public_path('assets/json/permission.json')), true));
+        $docs = $rows->firstWhere('SubModules', 'Dokumentasi AI');
+
+        $this->assertNotNull($docs, 'modul Dokumentasi AI harus ada di permission.json');
+        $this->assertSame(1, $rows->where('Id', $docs['Id'])->count());
+
+        $this->actingAsStaffWithNoAccess();
+        $this->get('/settings/ai-docs')->assertStatus(403);
+
+        $this->actingAsStaffWithOnlyPermission('Dokumentasi AI');
+        $this->get('/settings/ai-docs')->assertOk();
+        $this->get('/')->assertOk()->assertSee('settings/ai-docs', false);
+    }
+
     public function test_superadmin_can_open_ai_page(): void
     {
         $this->actingAsSuperAdminStaff();

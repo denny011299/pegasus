@@ -1316,7 +1316,8 @@
                     @php
                         $showSetting =
                         $canShow('Profil') ||
-                        $canShow('Pengaturan');
+                        $canShow('Pengaturan') ||
+                        $canShow('Dokumentasi AI');
                     @endphp
 
                     @if ($showSetting)
@@ -1335,8 +1336,11 @@
                                     <li><a href="{{ url('settings') }}"
                                         class="{{ Request::is('settings') ? 'active' : '' }}">
                                         Pengaturan Perusahaan</a></li>
+                                @endif
+
+                                @if ($canShow('Dokumentasi AI'))
                                     <li><a href="{{ url('settings/ai-docs') }}"
-                                        class="{{ Request::is('settings/ai-docs') ? 'active' : '' }}">
+                                        class="{{ Request::is('settings/ai-docs*') ? 'active' : '' }}">
                                         Dokumentasi AI</a></li>
                                 @endif
                             </ul>
