@@ -209,6 +209,8 @@ class CashPaymentController extends Controller
     {
         $data = $request->validate([
             'ref_payment_id' => ['required', 'string', 'max:100'],
+            // No. Dokumen Pembayaran PMO (GitHub #216) — hanya label, tidak unik, bukan kunci idempotensi.
+            'ref_payment_number' => ['nullable', 'string', 'max:64'],
             'payment_type' => ['required', 'integer', Rule::in([self::TYPE_ARMADA, self::TYPE_SALES])],
 
             // armada_code = customer_code (sama shipment); armada_id = PK internal (legacy).
@@ -276,6 +278,14 @@ class CashPaymentController extends Controller
         $data['_return_groups'] = $this->prepareReturnGroups($data);
 
         return $data;
+    }
+
+    /** ref_payment_number kosong ("" / spasi) disimpan sebagai NULL, bukan string kosong. */
+    private function refPaymentNumber(array $data): ?string
+    {
+        $number = trim((string) ($data['ref_payment_number'] ?? ''));
+
+        return $number !== '' ? $number : null;
     }
 
     private function kindOf(array $item): string
@@ -470,6 +480,7 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
+            'ref_payment_number' => $this->refPaymentNumber($data),
             'customer_id' => (int) $customer->customer_id,
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
@@ -521,6 +532,7 @@ class CashPaymentController extends Controller
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
+            'ref_payment_number' => $this->refPaymentNumber($data),
             'staff_id' => (int) $staff->staff_id,
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
@@ -595,6 +607,7 @@ class CashPaymentController extends Controller
                 'created_by' => null,
                 'ref_shipment_id' => $group['ref_shipment_id'],
                 'idempotency_key' => $this->returnIdempotencyKey($data, $group),
+                'ref_payment_number' => $this->refPaymentNumber($data),
             ], $group['supply_details'], $group['product_details']);
 
             $results[] = $this->presentReturn($result, $group);
@@ -801,6 +814,7 @@ class CashPaymentController extends Controller
 
         return [
             'ref_payment_id' => $payment->ref_payment_id,
+            'ref_payment_number' => $payment->ref_payment_number,
             'payment_id' => (int) $id,
             'payment_type' => $paymentType,
             'payment_date' => (string) ($isArmada ? $payment->cr_date : $payment->cs_date),

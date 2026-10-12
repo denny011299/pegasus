@@ -327,6 +327,10 @@
                         if (row && row.ref_shipment_id) {
                             html += "<br>" + pmoBadge(row.ref_shipment_id);
                         }
+                        // GitHub #216: No. Dokumen Pembayaran PMO (retur dari potongan barang).
+                        if (row && row.ref_payment_number) {
+                            html += '<br><small class="text-muted" title="No. Pembayaran PMO">' + esc(row.ref_payment_number) + "</small>";
+                        }
                         return html;
                     },
                 },
@@ -1188,6 +1192,7 @@
         crContext = null;
         crExistingProofUrl = "";
         $("#cr-pmo-badge").addClass("d-none");
+        $("#cr-ref-payment-number").addClass("d-none").find("span").text("");
         $("#cr-doc-key,#cr-ref-number,#cr-notes,#cr-supply-qty,#cr-product-qty").val("");
         // Lokal (WIB), bukan toISOString/UTC — dini hari UTC+7 jangan jadi kemarin.
         $("#cr-date").val(
@@ -1494,6 +1499,8 @@
                 }
                 $("#cr-pmo-badge").toggleClass("d-none", !record.ref_shipment_id)
                     .attr("title", record.ref_shipment_id ? ("ref_shipment_id: " + record.ref_shipment_id) : "");
+                $("#cr-ref-payment-number").toggleClass("d-none", !record.ref_payment_number)
+                    .find("span").text(record.ref_payment_number || "");
 
                 var number = record.return_number || key;
                 if (intent === "edit") {
