@@ -18,6 +18,7 @@ class CustomerSupplyReturn extends Model
         'customer_id',
         'return_date',
         'ref_number',
+        'ref_payment_number',
         'notes',
         'proof_path',
         'status',

@@ -111,12 +111,28 @@
             render: function (_data, _type, row) {
                 if (type === 'admin') return row.ca_notes || '';
                 if (type === 'gudang') return row.cg_notes || '';
-                if (type === 'armada') return row.cr_notes || '';
-                if (type === 'sales') return row.cs_notes || '';
+                if (type === 'armada') return (row.cr_notes || '') + refPaymentNumberText(row);
+                if (type === 'sales') return (row.cs_notes || '') + refPaymentNumberText(row);
                 return '';
             },
         };
     }
+
+    // GitHub #216: No. Dokumen Pembayaran PMO (PB/...), hanya ada di pembayaran dari PMO.
+    function refPaymentNumberText(row) {
+        if (!row.ref_payment_number) return '';
+        return '<br><small class="text-muted">No. Pembayaran PMO: ' + $('<div>').text(row.ref_payment_number).html() + '</small>';
+    }
+
+    function setCashRefPaymentNumber(modal, value) {
+        var $el = $(modal).find('.cash-ref-payment-number');
+        $el.find('span').text(value || '');
+        $el.toggleClass('d-none', !value);
+    }
+
+    $(document).on('hidden.bs.modal', '#add_cash_armada, #add_cash_sales', function () {
+        setCashRefPaymentNumber(this, null);
+    });
 
     function setupCashTypeUi() {
         if (type === 'admin' || type === 'gudang') {
@@ -2300,6 +2316,7 @@
         items = [];
         console.log(data);
         $('#add_cash_armada .modal-title').html("Update Aktivitas Armada");
+        setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
@@ -2366,6 +2383,7 @@
         items = [];
         console.log(data);
         $('#add_cash_armada .modal-title').html("Lihat Aktivitas Armada");
+        setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
         $('#add_cash_armada input').empty().val("");
         $('#customer_id_armada').empty(null);
         
@@ -2467,6 +2485,7 @@
         items = [];
         console.log(data);
         $('#add_cash_sales .modal-title').html("Update Aktivitas Sales");
+        setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
         $('#add_cash_sales input').empty().val("");
         $('#staff_id_sales').empty(null);
         
@@ -2532,6 +2551,7 @@
         items = [];
         console.log(data);
         $('#add_cash_sales .modal-title').html("Lihat Aktivitas Sales");
+        setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
         $('#add_cash_sales input').empty().val("");
         $('#staff_id_sales').empty(null);
         

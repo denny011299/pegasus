@@ -48,6 +48,8 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
         return [
             ['name' => 'ref_payment_id', 'type' => 'string', 'required' => true,
                 'description' => 'Penanda group pembayaran milik sistem pemanggil. Boleh dipakai berulang untuk penerima (armada_code/staff_id) yang berbeda dalam group yang sama — lihat catatan idempotensi.'],
+            ['name' => 'ref_payment_number', 'type' => 'string', 'required' => false,
+                'description' => 'No. Dokumen Pembayaran yang tercetak di dokumen pembayaran sistem pemanggil, mis. PB/BUD/121026/003. Maks. 64 karakter. Opsional dan tidak unik — hanya disimpan dan ditampilkan sebagai "No. Pembayaran PMO", bukan kunci idempotensi.'],
             ['name' => 'payment_type', 'type' => 'integer', 'required' => true,
                 'description' => '1 = Armada, 2 = Sales.'],
             ['name' => 'armada_code', 'type' => 'string', 'required' => false,
@@ -101,6 +103,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return [
             'ref_payment_id' => 'G7913082026154630',
+            'ref_payment_number' => 'PB/BUD/121026/003',
             'payment_type' => 1,
             'armada_code' => 'TRK-01',
             'payment_date' => '2026-10-07',
@@ -128,6 +131,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             'success' => true,
             'data' => [
                 'ref_payment_id' => 'G7913082026154630',
+                'ref_payment_number' => 'PB/BUD/121026/003',
                 'payment_id' => 512,
                 'payment_type' => 1,
                 'payment_date' => '2026-10-07',
@@ -178,6 +182,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
         return [
             'items[].ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya per item, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal tiap item tanpa mem-parsing notes. Satu pembayaran boleh berisi item dari beberapa nota berbeda.',
             'Idempotensi memakai pasangan ref_payment_id + armada_code (payment_type 1) atau ref_payment_id + staff_id (payment_type 2) — BUKAN ref_payment_id sendirian. Ini sengaja: satu group pembayaran Sales bisa mencakup beberapa sales penerima sekaligus, dan PMO mengirimnya sebagai beberapa POST dengan ref_payment_id yang SAMA, satu call per penerima. Mengirim ulang pasangan yang sama dianggap kiriman ulang: pembayaran yang lama dikembalikan apa adanya dengan meta.idempotent_replay bernilai true, dan tidak ada transaksi baru yang dibuat. Isi permintaan tidak dibandingkan — hanya pasangan itu yang menentukan.',
+            'ref_payment_number (No. Dokumen Pembayaran) bersifat opsional dan tidak unik: satu dokumen pembayaran boleh menghasilkan beberapa pembayaran di Pegasus (beberapa group, per penerima, atau per alur kas) dengan nomor yang sama. Nomor ini disimpan di pembayaran beserta dokumen Pengembalian dari potongan barangnya, ditampilkan di halaman Kas Operasional dan Pengembalian, dan dapat dicari di sana. Nilai kosong disimpan sebagai null. Kiriman ulang TIDAK memperbarui nomor yang sudah tersimpan.',
             'staff_id (payment_type=2) adalah external_ref_id sales milik PMO — SAMA nilai staff_id di /master/sales. Bukan PK internal staffs.staff_id. Sales harus sudah terdaftar/tersinkron (status aktif) sebelum POST /payments/cash.',
             'payment_type=1: utamakan armada_code (= customers.customer_code, sama field di /shipments/*). armada_id (PK customer) masih diterima sebagai legacy. Armada harus aktif.',
             'Pembuatan berhasil menjawab 201; kiriman ulang menjawab 200.',

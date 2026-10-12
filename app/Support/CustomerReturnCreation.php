@@ -34,7 +34,7 @@ class CustomerReturnCreation
      * CustomerReturnController::store(), dipindah apa adanya (termasuk urutan create bahan lalu
      * produk) supaya perilaku admin tidak berubah sedikit pun.
      *
-     * @param  array{customer_id:int, return_date:string, ref_number:?string, notes:?string, proof_path:?string, qc_staff_id:?int, created_by:?int, ref_shipment_id?:?string, idempotency_key?:?string}  $header
+     * @param  array{customer_id:int, return_date:string, ref_number:?string, notes:?string, proof_path:?string, qc_staff_id:?int, created_by:?int, ref_shipment_id?:?string, idempotency_key?:?string, ref_payment_number?:?string}  $header
      * @param  array<int, array<string, mixed>>  $supplyDetails  baris siap-simpan (lihat replaceSupplyDetails()), boleh kosong.
      * @param  array<int, array<string, mixed>>  $productDetails  baris siap-simpan (lihat replaceProductDetails()), boleh kosong.
      * @return array{doc_key:string, return_group:string, return_type:string, supply_return_id:?int, product_return_id:?int}
@@ -56,6 +56,7 @@ class CustomerReturnCreation
                     'customer_id' => $header['customer_id'],
                     'return_date' => $header['return_date'],
                     'ref_number' => $header['ref_number'] ?: null,
+                    'ref_payment_number' => $header['ref_payment_number'] ?? null,
                     'notes' => $header['notes'] ?: null,
                     'proof_path' => $header['proof_path'],
                     'status' => 1,
@@ -74,6 +75,7 @@ class CustomerReturnCreation
                     'customer_id' => $header['customer_id'],
                     'return_date' => $header['return_date'],
                     'ref_number' => $header['ref_number'] ?: null,
+                    'ref_payment_number' => $header['ref_payment_number'] ?? null,
                     'notes' => $header['notes'] ?: null,
                     'proof_path' => $header['proof_path'],
                     'status' => 1,

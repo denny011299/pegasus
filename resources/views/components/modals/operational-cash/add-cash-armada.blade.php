@@ -5,6 +5,8 @@
         <div class="modal-header border-0 pb-0">
           <div class="form-header modal-header-title  text-start mb-0">
             <h4 class="mb-0 modal-title">Tambah Aktivitas Armada</h4>
+            {{-- GitHub #216: No. Dokumen Pembayaran PMO, hanya terisi untuk pembayaran dari PMO --}}
+            <small class="cash-ref-payment-number text-muted d-none">No. Pembayaran PMO: <span class="fw-semibold text-dark"></span></small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
           </button>

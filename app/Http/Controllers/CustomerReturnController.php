@@ -216,6 +216,8 @@ class CustomerReturnController extends Controller
                             'customer_id' => $data['customer_id'],
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
+                            // GitHub #216: sisi baru ikut membawa No. Pembayaran PMO dokumennya.
+                            'ref_payment_number' => $bundle['header']['ref_payment_number'] ?? null,
                             'notes' => $data['notes'] ?: null,
                             'proof_path' => $proofPath,
                             'status' => 1,
@@ -255,6 +257,8 @@ class CustomerReturnController extends Controller
                             'customer_id' => $data['customer_id'],
                             'return_date' => $data['return_date'],
                             'ref_number' => $data['ref_number'] ?: null,
+                            // GitHub #216: sisi baru ikut membawa No. Pembayaran PMO dokumennya.
+                            'ref_payment_number' => $bundle['header']['ref_payment_number'] ?? null,
                             'notes' => $data['notes'] ?: null,
                             'proof_path' => $proofPath,
                             'status' => 1,
@@ -839,6 +843,7 @@ class CustomerReturnController extends Controller
                 'csr.return_date',
                 'csr.ref_number',
                 'csr.ref_shipment_id',
+                'csr.ref_payment_number',
                 'csr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -852,6 +857,7 @@ class CustomerReturnController extends Controller
                     ->orWhere('csr.return_group', 'like', $like)
                     ->orWhere('csr.ref_number', 'like', $like)
                     ->orWhere('csr.ref_shipment_id', 'like', $like)
+                    ->orWhere('csr.ref_payment_number', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -870,6 +876,7 @@ class CustomerReturnController extends Controller
                 'cpr.return_date',
                 'cpr.ref_number',
                 'cpr.ref_shipment_id',
+                'cpr.ref_payment_number',
                 'cpr.status',
                 'c.customer_notes as customer_name',
                 'creator.staff_name as created_by_name',
@@ -883,6 +890,7 @@ class CustomerReturnController extends Controller
                     ->orWhere('cpr.return_group', 'like', $like)
                     ->orWhere('cpr.ref_number', 'like', $like)
                     ->orWhere('cpr.ref_shipment_id', 'like', $like)
+                    ->orWhere('cpr.ref_payment_number', 'like', $like)
                     ->orWhere('c.customer_notes', 'like', $like)
                     ->orWhere('creator.staff_name', 'like', $like)
                     ->orWhere('approver.staff_name', 'like', $like);
@@ -929,6 +937,7 @@ class CustomerReturnController extends Controller
             'return_date' => $row->return_date,
             'ref_number' => $row->ref_number,
             'ref_shipment_id' => $row->ref_shipment_id,
+            'ref_payment_number' => $row->ref_payment_number,
             'customer_name' => $row->customer_name,
             'status' => (int) $row->status,
             'created_by_name' => $row->created_by_name,
@@ -972,6 +981,9 @@ class CustomerReturnController extends Controller
         }
         if ($row->ref_shipment_id) {
             $target['ref_shipment_id'] = $row->ref_shipment_id;
+        }
+        if ($row->ref_payment_number) {
+            $target['ref_payment_number'] = $row->ref_payment_number;
         }
         if ($row->customer_name) {
             $target['customer_name'] = $row->customer_name;
@@ -1164,6 +1176,9 @@ class CustomerReturnController extends Controller
                 // hanya terisi untuk dokumen yang dibuat lewat POST /shipments/returns dengan
                 // ref_shipment_id (App\Http\Controllers\ExternalApi\V1\ShipmentReturnController).
                 'ref_shipment_id' => $supply->ref_shipment_id ?? $product->ref_shipment_id ?? null,
+                // GitHub #216: No. Dokumen Pembayaran PMO, hanya untuk retur dari potongan barang
+                // pada POST /payments/cash.
+                'ref_payment_number' => $supply->ref_payment_number ?? $product->ref_payment_number ?? null,
                 'notes' => $primary->notes,
                 'proof_path' => $primary->proof_path,
                 'status' => $status,
