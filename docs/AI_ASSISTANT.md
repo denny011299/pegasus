@@ -258,6 +258,20 @@ Isi penuh ada di `config/ai_assistant.php` → `system_prompt`. Intinya:
 
 Barang tidak ketemu persis → tool mengembalikan `saran`; AI wajib menawarkan saran (SKU + nama) dan bertanya, bukan menjawab "data tidak ditemukan".
 
+### Tool tracking & laporan
+
+| Tool | Untuk |
+|---|---|
+| `item_stock` | Kartu stok satu barang: stok sekarang per gudang, rekap masuk/keluar per sumber, mutasi terakhir. |
+| `data_anomalies` | Stok minus, pending ACC lama, transfer belum diterima, selisih opname, hutang jatuh tempo — plus `perkiraan_penyebab` (%). |
+| `staff_activity` | Aktivitas satu staf (menu, dokumen dibuat/di-ACC) atau peringkat staf teraktif. |
+| `trace_document` | Rantai dokumen: SO→invoice→surat jalan→retur, PO→TT→PDO→invoice→PI/retur, produksi→transfer. Tahap kosong ditandai. |
+| `period_report` | Rekap semua modul per periode + banding periode sebelumnya (bulan vs bulan lalu, minggu vs minggu lalu, tahun vs tahun lalu). |
+| `partner_insight` | Customer/pemasok teratas, yang berhenti order, lead time PO→PDO, produk bermasalah, hutang; profil satu partner. |
+| `reorder_suggestion` | Saran beli bahan: pemakaian produksi/hari, cukup berapa hari, lead time, titik pesan, saran qty. |
+
+Perkiraan penyebab (`Tools/Concerns/CauseEstimates.php`): bobot dasar per jenis kejanggalan, digeser sinyal data (rasio selisih opname = faktor satuan → salah satuan; log keluar dobel → input dobel/koneksi lambat; umur dokumen). Total selalu 100%, penyebab hanya operasional (human error, salah gudang/satuan, lupa ACC/Terima, koneksi lambat) — tidak pernah "sistem". AI menampilkan persen dulu; `alasan_bila_diminta` baru dijelaskan saat user minta detail.
+
 Tambahan dinamis yang disisipkan `AiChatService` setiap pertanyaan: tanggal & jam hari ini, daftar modul, peta prefix kode dokumen, dan petunjuk `find_document` bila pesan berisi kode dokumen.
 
 ### RAG — cara kerja

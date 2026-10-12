@@ -3,12 +3,19 @@
 namespace App\Services\AiAssistant;
 
 use App\Services\AiAssistant\Tools\DashboardSummaryTool;
+use App\Services\AiAssistant\Tools\DataAnomaliesTool;
+use App\Services\AiAssistant\Tools\DocumentTraceTool;
 use App\Services\AiAssistant\Tools\FindDocumentTool;
 use App\Services\AiAssistant\Tools\FindDuplicatesTool;
 use App\Services\AiAssistant\Tools\FindItemTool;
 use App\Services\AiAssistant\Tools\ItemActivityTool;
+use App\Services\AiAssistant\Tools\ItemStockTool;
+use App\Services\AiAssistant\Tools\PartnerInsightTool;
+use App\Services\AiAssistant\Tools\PeriodReportTool;
 use App\Services\AiAssistant\Tools\RecordHistoryTool;
+use App\Services\AiAssistant\Tools\ReorderTool;
 use App\Services\AiAssistant\Tools\SearchRecordsTool;
+use App\Services\AiAssistant\Tools\StaffActivityTool;
 use App\Services\AiAssistant\Tools\SummarizeRecordsTool;
 use App\Services\AiAssistant\Tools\ToolInterface;
 use InvalidArgumentException;
@@ -32,6 +39,13 @@ class ToolRegistry
             new FindItemTool($db, $vocab),
             new ItemActivityTool($db, $vocab),
             new DashboardSummaryTool(),
+            new ItemStockTool($db, $vocab),
+            new DataAnomaliesTool($db, $vocab),
+            new StaffActivityTool($db, $vocab),
+            new DocumentTraceTool($db, $vocab),
+            new PeriodReportTool($db, $vocab),
+            new PartnerInsightTool($db, $vocab),
+            new ReorderTool($db, $vocab),
         ] as $tool) {
             $this->tools[$tool->name()] = $tool;
         }

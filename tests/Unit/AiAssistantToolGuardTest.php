@@ -49,7 +49,11 @@ class AiAssistantToolGuardTest extends BaseTestCase
         $names = (new ToolRegistry(new ReadOnlyDb(), $this->vocabulary()))->names();
         sort($names);
         $this->assertSame(
-            ['dashboard_summary', 'find_document', 'find_duplicates', 'find_item', 'item_activity', 'record_history', 'search_records', 'summarize_records'],
+            [
+                'dashboard_summary', 'data_anomalies', 'find_document', 'find_duplicates', 'find_item', 'item_activity',
+                'item_stock', 'partner_insight', 'period_report', 'record_history', 'reorder_suggestion', 'search_records',
+                'staff_activity', 'summarize_records', 'trace_document',
+            ],
             $names,
         );
     }
@@ -65,12 +69,49 @@ class AiAssistantToolGuardTest extends BaseTestCase
             \App\Services\AiAssistant\Tools\FindItemTool::class,
             \App\Services\AiAssistant\Tools\ItemActivityTool::class,
             \App\Services\AiAssistant\Tools\DashboardSummaryTool::class,
+            \App\Services\AiAssistant\Tools\ItemStockTool::class,
+            \App\Services\AiAssistant\Tools\DataAnomaliesTool::class,
+            \App\Services\AiAssistant\Tools\StaffActivityTool::class,
+            \App\Services\AiAssistant\Tools\DocumentTraceTool::class,
+            \App\Services\AiAssistant\Tools\PeriodReportTool::class,
+            \App\Services\AiAssistant\Tools\PartnerInsightTool::class,
+            \App\Services\AiAssistant\Tools\ReorderTool::class,
         ] as $class) {
             $methods = get_class_methods($class);
             foreach (['insert', 'update', 'delete', 'upsert', 'truncate'] as $write) {
                 $this->assertNotContains($write, $methods, "{$class} must not expose {$write}()");
             }
         }
+    }
+
+    /** Persentase penyebab selalu total 100 dan hanya penyebab operasional. */
+    public function test_cause_estimates_sum_to_100_and_never_blame_system(): void
+    {
+        $probe = new class
+        {
+            use \App\Services\AiAssistant\Tools\Concerns\CauseEstimates;
+
+            public function run(string $type, array $boost = []): array
+            {
+                return $this->estimateCauses($type, $boost);
+            }
+
+            public function rowBoost(float $p, float $s): array
+            {
+                return $this->opnameRowBoost($p, $s);
+            }
+        };
+
+        foreach (['stok_minus', 'pending_lama', 'transfer_belum_diterima', 'selisih_opname', 'hutang_jatuh_tempo'] as $type) {
+            $list = $probe->run($type, ['Salah satuan' => 45])['perkiraan_penyebab'];
+            $this->assertSame(100, array_sum(array_map(fn ($c) => (int) $c['Peluang'], $list)), $type);
+            foreach ($list as $c) {
+                $this->assertDoesNotMatchRegularExpression('/bug|error sistem|kesalahan sistem|glitch/i', $c['Penyebab']);
+            }
+        }
+
+        $this->assertSame(['Salah satuan' => 45], $probe->rowBoost(1000, 1));
+        $this->assertArrayHasKey('Salah hitung / salah ketik qty (human error)', $probe->rowBoost(10000, 43));
     }
 
     public function test_answers_never_expose_storage_wording(): void
