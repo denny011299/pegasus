@@ -1,0 +1,31 @@
+---
+description: Semua pekerjaan agent wajib hemat token (baca, tool call, output, chat)
+alwaysApply: true
+---
+
+# Hemat Token
+
+## Baca & cari
+- Grep/Glob dulu, baru Read bagian yang perlu (`offset`/`limit`). Jangan baca file utuh kalau cukup 30 baris.
+- Jangan baca ulang file yang isinya sudah diketahui di percakapan.
+- Gabungkan pencarian independen dalam satu batch paralel.
+
+## Tool & shell
+- Satu Shell call untuk perintah berurutan (`;` / `&&`); filter output (`Select-String`, `--stat`, `--oneline`, `-q`).
+- Jangan jalankan full test suite kalau cukup test file/`--filter` yang relevan.
+- Jangan ulang perintah gagal tanpa info baru.
+
+## Edit
+- StrReplace bagian yang berubah; Write ulang file hanya jika file baru atau berubah total.
+
+## Chat
+- Langsung hasil: 1–5 kalimat atau tabel kecil. Tanpa intro/penutup/ringkasan ulang.
+- Jangan tempel kode panjang yang sudah ada di file; rujuk `path:line`.
+- Tanya klarifikasi singkat (AskQuestion) daripada menebak lalu kerja ulang.
+
+```text
+❌ Read seluruh 1.500 baris controller untuk cari 1 method
+✅ Grep "function updateX" -A 30
+❌ "Tentu! Berikut penjelasan lengkap... Semoga membantu!"
+✅ "Fix di X.php:120 — filter gudang null. Test lulus."
+```
