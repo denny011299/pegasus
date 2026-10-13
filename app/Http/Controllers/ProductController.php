@@ -19,6 +19,7 @@ use App\Models\SuppliesUnit;
 use App\Models\SuppliesVariant;
 use App\Models\Unit;
 use App\Models\Variant;
+use App\Support\Feature;
 use App\Support\RoleAccess;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -1257,6 +1258,12 @@ class ProductController extends Controller
         $data['lead_time_days'] = max(0, (int) ($data['lead_time_days'] ?? 0));
         $data['safety_stock'] = max(0, (int) ($data['safety_stock'] ?? 0));
         if (Supplies::hasKindColumn()) {
+            if (! Feature::on('supplies_trading')) {
+                // Trading belum rilis: abaikan input jenis dari FE. Edit mempertahankan jenis tersimpan, bahan baru selalu supply.
+                $before = ! empty($data['supplies_id']) ? Supplies::find($data['supplies_id']) : null;
+                $data['supplies_kind'] = $before->supplies_kind ?? Supplies::KIND_SUPPLY;
+                $data['trading_product_variant_id'] = $before->trading_product_variant_id ?? 0;
+            }
             $data['supplies_kind'] = Supplies::normalizeKind($data['supplies_kind'] ?? Supplies::KIND_SUPPLY);
             $data['trading_product_variant_id'] = Supplies::isTradingKind($data['supplies_kind'])
                 ? (int) ($data['trading_product_variant_id'] ?? 0)

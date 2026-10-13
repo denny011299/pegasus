@@ -63,6 +63,9 @@ class AppServiceProvider extends ServiceProvider
             return RoleAccess::canAny(Session::get('user'), $modules, strtolower($ability));
         });
 
+        // @feature('x') ... @endfeature — config/features.php
+        Blade::if('feature', fn (string $name) => \App\Support\Feature::on($name));
+
         // Sinkronkan role_access session dari tabel roles
         if (Session::has('user')) {
             $sessionUser = Session::get('user');

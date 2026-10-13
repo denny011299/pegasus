@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'check.access' => \App\Http\Middleware\checkAccess::class,
+            'feature' => \App\Http\Middleware\EnsureFeatureEnabled::class,
             'check.access.any' => \App\Http\Middleware\checkAccessAny::class,
             'external.api.auth' => \App\Http\Middleware\AuthenticateExternalApi::class,
         ]);
