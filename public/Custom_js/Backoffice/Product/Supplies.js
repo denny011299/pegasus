@@ -1,8 +1,8 @@
     var mode=1;
     var table;
     var idUnits = [];
-    // true = Jenis Trading + filter + relasi produk tampil di master Bahan.
-    var SUPPLIES_TRADING_UI = true;
+    // Jenis Trading + filter + relasi produk di master Bahan — flag FEATURE_SUPPLIES_TRADING (.env), bukan hardcode.
+    var SUPPLIES_TRADING_UI = !!(window.PG_FEATURES && window.PG_FEATURES.supplies_trading);
     $(document).ready(function(){
         inisialisasi();
         autocompleteUnit("#supplies_unit","#add_supplies .modal-content");

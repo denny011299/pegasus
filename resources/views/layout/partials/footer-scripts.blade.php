@@ -1,3 +1,5 @@
+<!-- Feature flag (config/features.php) untuk page JS: window.PG_FEATURES.supplies_trading, dst. -->
+<script>window.PG_FEATURES = @json(\App\Support\Feature::all());</script>
 <!-- jQuery -->
 <script src="{{ URL::asset('/assets/js/jquery-3.7.1.min.js') }}"></script>
 
