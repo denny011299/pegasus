@@ -1573,7 +1573,7 @@ function prepareRetailUnitForTransfer(item, promptAfterLoad, done) {
     };
     item._retail_setup_request = request;
 
-    $.ajax({
+    stAjax({
         url: "/getTransferRetailUnitSetup",
         method: "post",
         data: {
@@ -1623,9 +1623,10 @@ function applyRetailSetupResult(item, context, res) {
 function applyRetailSetupError(item, context, xhr) {
     if (!isCurrentRetailContext(context)) return;
     item.retail_invalid = true;
-    item.retail_error =
-        (xhr && xhr.responseJSON && xhr.responseJSON.message) ||
-        "Gagal memeriksa satuan eceran";
+    item.retail_error = friendlyTransferAjaxMessage(
+        xhr,
+        "Gagal memeriksa satuan eceran (koneksi server sibuk). Coba lagi."
+    );
 }
 
 function finishRetailSetupRequest(item, request, context) {
@@ -1665,7 +1666,7 @@ function prepareRetailUnitsForTransferBatch(items, done) {
     if (!entries.length) return;
 
     var first = entries[0].context;
-    $.ajax({
+    stAjax({
         url: "/getTransferRetailUnitSetupBatch",
         method: "post",
         data: {
@@ -1963,6 +1964,101 @@ function isAjaxAbort(xhr, textStatus) {
     return textStatus === "abort" || (xhr && xhr.statusText === "abort");
 }
 
+// Hosting menolak koneksi DB saat banyak request paralel (SQLSTATE[HY000] [2002]) — revalidasi
+// per baris bisa menembak 3 request x N baris. Semua cek stok/satuan lewat antrean: maks 2 paralel,
+// gagal koneksi diulang 2x. stAjax mengembalikan handle mirip jqXHR (readyState, abort, responseJSON).
+var ST_AJAX_MAX_PARALLEL = 2;
+var ST_AJAX_RETRIES = 2;
+var stAjaxActive = 0;
+var stAjaxQueue = [];
+
+function isTransientServerError(xhr) {
+    if (!xhr) return false;
+    if ([0, 429, 502, 503, 504].indexOf(xhr.status) !== -1) return true;
+    var text = (xhr.responseJSON && xhr.responseJSON.message) || xhr.responseText || "";
+    return xhr.status === 500 && /SQLSTATE\[HY000\] \[2002\]|Too many connections|server has gone away/i.test(text);
+}
+
+function friendlyTransferAjaxMessage(xhr, fallback) {
+    var msg = xhr && xhr.responseJSON && xhr.responseJSON.message;
+    if (!msg || /SQLSTATE|Connection:|select \* from/i.test(msg)) return fallback;
+    return msg;
+}
+
+function stAjax(opts) {
+    var handle = { readyState: 0, status: 0, statusText: "", responseJSON: undefined, responseText: "" };
+    var aborted = false;
+    var attempt = 0;
+    var current = null;
+
+    function copy(xhr) {
+        handle.status = xhr.status;
+        handle.statusText = xhr.statusText;
+        handle.responseJSON = xhr.responseJSON;
+        handle.responseText = xhr.responseText;
+    }
+    function finish(textStatus, res, isError) {
+        if (handle.readyState === 4) return;
+        handle.readyState = 4;
+        if (textStatus === "abort") handle.statusText = "abort";
+        if (isError) {
+            if (opts.error) opts.error(handle, textStatus);
+        } else if (opts.success) {
+            opts.success(res, textStatus, handle);
+        }
+        if (opts.complete) opts.complete(handle, textStatus);
+    }
+    function release() {
+        current = null;
+        stAjaxActive = Math.max(0, stAjaxActive - 1);
+        var next = stAjaxQueue.shift();
+        if (next) next();
+    }
+    function run() {
+        stAjaxActive++;
+        handle.readyState = 1;
+        current = $.ajax($.extend({}, opts, { success: null, error: null, complete: null }))
+            .done(function (res, textStatus, xhr) {
+                copy(xhr);
+                release();
+                finish(textStatus, res, false);
+            })
+            .fail(function (xhr, textStatus) {
+                copy(xhr);
+                release();
+                if (!aborted && textStatus !== "abort" && attempt < ST_AJAX_RETRIES && isTransientServerError(xhr)) {
+                    attempt++;
+                    setTimeout(function () {
+                        if (!aborted) enqueue();
+                    }, 400 * attempt);
+                    return;
+                }
+                finish(aborted ? "abort" : textStatus, null, true);
+            });
+    }
+    function enqueue() {
+        if (stAjaxActive < ST_AJAX_MAX_PARALLEL) run();
+        else stAjaxQueue.push(run);
+    }
+
+    handle.abort = function () {
+        if (handle.readyState === 4) return;
+        aborted = true;
+        var idx = stAjaxQueue.indexOf(run);
+        if (idx !== -1) stAjaxQueue.splice(idx, 1);
+        if (current) {
+            try {
+                current.abort();
+            } catch (e) {}
+            return;
+        }
+        finish("abort", null, true);
+    };
+
+    enqueue();
+    return handle;
+}
+
 function fetchSourceStock(productVariantId, done, item) {
     var warehouseId = $("#transfer_from_warehouse_id").val();
     if (!warehouseId || !productVariantId) {
@@ -1977,7 +2073,7 @@ function fetchSourceStock(productVariantId, done, item) {
         }
         item._source_stock_xhr = null;
     }
-    var xhr = $.ajax({
+    var xhr = stAjax({
         url: "/getTransferSourceStock",
         method: "get",
         data: {
@@ -2171,7 +2267,7 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
                 item._check_stock_xhr.abort();
             } catch (e) {}
         }
-        item._check_stock_xhr = $.ajax({
+        item._check_stock_xhr = stAjax({
             url: "/checkTransferStock",
             method: "post",
             data: {
@@ -2257,9 +2353,7 @@ function validateOptimisticTransferRow(item, showToast, promptRetailSetup) {
             },
             error: function (xhr, textStatus) {
                 if (isAjaxAbort(xhr, textStatus) || !isCurrent()) return;
-                var errMsg =
-                    (xhr.responseJSON && xhr.responseJSON.message) ||
-                    "Stok gagal divalidasi. Coba lagi.";
+                var errMsg = friendlyTransferAjaxMessage(xhr, "Stok gagal divalidasi. Coba lagi.");
                 if (rejectInsufficientTransferRow(item, errMsg)) {
                     return;
                 }
@@ -2464,7 +2558,7 @@ function reloadTransferRowStocks(done) {
     }
 
     // 1 request untuk semua varian (dulu 1 request per varian → burst koneksi DB).
-    $.ajax({
+    stAjax({
         url: "/getTransferSourceStockBatch",
         method: "post",
         data: {
@@ -2583,7 +2677,7 @@ function validateCurrentTransferMatrix(done, showToast) {
     });
     stockValidationPending = 1;
     syncTransferSaveButton();
-    $.ajax({
+    stAjax({
         url: "/checkTransferStock",
         method: "post",
         data: {
