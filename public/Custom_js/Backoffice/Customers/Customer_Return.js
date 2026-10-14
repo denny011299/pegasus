@@ -6,6 +6,8 @@
     var productLines = [];
     var crContext = null;
     var crMode = "create";
+    // Mode asal (view/confirm) saat Edit dibuka dari dalam modal — Batal/Simpan kembali ke sini.
+    var crEditReturnIntent = null;
     var crExistingProofUrl = "";
     var crXhr = null;
     var crScanMode = false;
@@ -253,19 +255,15 @@
         var canDelete = pending && can("delete");
         var key = esc(row.doc_key);
 
-        // Lihat selalu tersedia (read-only). Konfirmasi terpisah — jangan else-if
-        // supaya klik mata tidak jatuh ke mode ACC (bug #4 / pola Sales_Order intent).
+        // Ringkas seperti Production Planning: satu tombol buka modal (Konfirmasi
+        // bila boleh ACC, selain itu Lihat); Edit pindah ke toggle di dalam modal.
         if (canConfirm) {
             html += '<a class="btn-action-icon cr-confirm btn-action-approve" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Konfirmasi"><i class="fe fe-check-circle" style="font-size:14px;"></i></a>';
-        }
-        if (canView) {
+        } else if (canView || canEdit) {
             html += '<a class="btn-action-icon cr-view btn-action-view" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
         }
         if (status === 2) {
             html += '<a class="btn-action-icon cr-print" data-key="' + key + '" href="javascript:void(0);" style="background:#f8fafc;border:1px solid #cbd5e1;color:#334155;" data-bs-toggle="tooltip" title="Print"><i class="fe fe-printer" style="font-size:14px;"></i></a>';
-        }
-        if (canEdit) {
-            html += '<a class="btn-action-icon cr-edit btn-action-edit" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Edit"><i class="fe fe-edit-2" style="font-size:14px;"></i></a>';
         }
         if (canDelete) {
             html += '<a class="btn-action-icon cr-delete btn-action-delete" data-key="' + key + '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Hapus"><i class="fe fe-trash-2" style="font-size:14px;"></i></a>';
@@ -1207,7 +1205,7 @@
         $("#cr-add-strip,#cr-save").removeClass("d-none");
         $("#cr-save").text("Simpan").prop("disabled", false);
         $("#cr-btn-upload-proof").removeClass("d-none border-danger text-danger");
-        $("#cr-accept,#cr-decline,#cr-print").addClass("d-none");
+        $("#cr-accept,#cr-decline,#cr-print,#cr-edit-toggle").addClass("d-none");
         $("#cr_scan_barcode").val("");
         $("#cr_scan_qty").val(1);
         setCrProductScanMode(false);
@@ -1402,9 +1400,10 @@
         $("#customer-return-modal").toggleClass("is-loading", !!isLoading);
     }
 
-    function openRecord(key, intent) {
+    function openRecord(key, intent, fromToggle) {
         // Normalize like Sales_Order openSalesOrderDetailModal(intent)
         if (intent !== "confirm" && intent !== "edit") intent = "view";
+        if (!fromToggle) crEditReturnIntent = null;
         crMode = intent;
         hideCrAccButtons();
         setCrModalLoading(true);
@@ -1488,6 +1487,9 @@
                     $("#cr-save").text("Update");
                     $("#cr-btn-upload-proof").removeClass("d-none");
                     hideCrAccButtons();
+                    if (crEditReturnIntent) {
+                        $("#cr-edit-toggle").removeClass("d-none").html('<i class="fe fe-x me-1"></i>Batal Edit');
+                    }
                 } else {
                     // view atau confirm (read-only form)
                     $("#customer-return-modal input, #customer-return-modal textarea").prop("disabled", true);
@@ -1495,6 +1497,9 @@
                     $("#cr-btn-upload-proof").addClass("d-none");
                     $("#cr-add-strip,#cr-save").addClass("d-none");
                     $("#cr-print").toggleClass("d-none", status !== 2);
+                    if (status === 1 && can("edit")) {
+                        $("#cr-edit-toggle").removeClass("d-none").html('<i class="fe fe-edit me-1"></i>Edit');
+                    }
                     if (confirmMode) {
                         showCrAccButtons();
                         $("#customer-return-modal .modal-title").text("Konfirmasi Pengembalian " + number);
@@ -1596,9 +1601,14 @@
         $("#cr-save").prop("disabled", true);
         $.ajax({ url: url, method: "POST", data: form, processData: false, contentType: false })
             .done(function (response) {
-                $("#customer-return-modal").modal("hide");
                 if (typeof toastr !== "undefined") toastr.success(response.message || "Pengembalian berhasil disimpan.");
                 window.setTimeout(refreshCustomerReturn, 200);
+                if (crMode === "edit" && crEditReturnIntent) {
+                    // Edit dibuka dari modal Lihat/Konfirmasi → kembali ke mode itu
+                    openRecord(key, crEditReturnIntent);
+                    return;
+                }
+                $("#customer-return-modal").modal("hide");
             })
             .fail(notifyError)
             .always(function () { $("#cr-save").prop("disabled", false); });
@@ -2023,6 +2033,17 @@
                     if (typeof toastr !== "undefined") toastr.success(response.message);
                     refreshCustomerReturn();
                 }).fail(notifyError);
+        });
+        $("#cr-edit-toggle").off("click.crEditToggle").on("click.crEditToggle", function () {
+            var key = $("#cr-doc-key").val();
+            if (!key) return;
+            if (crMode === "edit") {
+                // Batal Edit → muat ulang data tersimpan di mode asal
+                openRecord(key, crEditReturnIntent || "view");
+                return;
+            }
+            crEditReturnIntent = crMode;
+            openRecord(key, "edit", true);
         });
         $("#cr-accept").off("click.crAccept").on("click.crAccept", function () {
             if (crMode !== "confirm") return;
