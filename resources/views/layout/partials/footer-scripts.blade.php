@@ -1395,6 +1395,40 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
+  // No. Pengiriman PMO (status belum dikirim / berjalan) — Keterangan detail Kas Gudang.
+  function autocompletePengirimanPmo(id, modalParent = null) {
+    if ($(id).hasClass('select2-hidden-accessible')) {
+      $(id).select2('destroy');
+    }
+
+    $(id).select2({
+      ajax: {
+        url: "/autocompletePengirimanPmo",
+        dataType: "json",
+        type: "post",
+        delay: 250,
+        data: function data(params) {
+          return {
+            "keyword": params.term,
+            '_token': $('meta[name="csrf-token"]').attr('content')
+          };
+        },
+        processResults: function processResults(data) {
+          return {
+            results: $.map(data.data, function(item) {
+              return item;
+            }),
+          };
+        },
+      },
+      placeholder: "Pilih No. Pengiriman",
+      closeOnSelect: true,
+      allowClear: true,
+      width: "100%",
+      dropdownParent: modalParent ? $(modalParent) : "",
+    });
+  }
+
   function autocompleteStaffSales(id, modalParent = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
