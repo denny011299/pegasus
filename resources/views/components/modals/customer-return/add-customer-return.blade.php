@@ -290,6 +290,7 @@
             </div>
             <div class="modal-footer pg-modal-footer">
                 <button type="button" data-bs-dismiss="modal" class="btn pg-btn-cancel">Batal</button>
+                <button type="button" class="btn d-none" id="cr-edit-toggle"><i class="fe fe-edit me-1"></i>Edit</button>
                 <button type="button" class="btn pg-btn-decline d-none" id="cr-decline"><i class="fe fe-x me-1"></i>Tolak</button>
                 <button type="button" class="btn pg-btn-print d-none" id="cr-print"><i class="fe fe-printer me-1"></i>Print</button>
                 <button type="button" class="btn pg-btn-accept d-none" id="cr-accept"><i class="fe fe-check-circle me-1"></i>Terima</button>
@@ -302,6 +303,29 @@
 </div>
 
 <style>
+    /* Toggle Konfirmasi <-> Edit di footer (pola Production Planning) */
+    #customer-return-modal #cr-edit-toggle {
+        align-items: center;
+        gap: 6px;
+        background: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 9px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        transition: all 0.18s ease-in-out;
+    }
+    #customer-return-modal #cr-edit-toggle:not(.d-none) {
+        display: inline-flex;
+    }
+    #customer-return-modal #cr-edit-toggle:hover {
+        background: #f8fafc;
+        border-color: #94a3b8;
+        color: #0f172a;
+    }
+
     /* Scoped underline nav-tabs for Bahan | Produk toggle */
     #customer-return-modal .cr-item-type-tabs {
         border-bottom: 1px solid #e2e8f0;
