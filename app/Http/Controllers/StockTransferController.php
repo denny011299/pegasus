@@ -1194,6 +1194,32 @@ class StockTransferController extends Controller
         return response()->json($snapshot);
     }
 
+    /**
+     * Batch versi getTransferSourceStock: 1 request untuk semua varian di modal,
+     * supaya validasi tidak menembak N request paralel (di production burst
+     * request gagal konek DB: SQLSTATE[HY000] [2002]).
+     */
+    public function getTransferSourceStockBatch(Request $req)
+    {
+        $variantIds = collect((array) $req->input('product_variant_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $result = [];
+        foreach ($variantIds as $variantId) {
+            $sub = new Request([
+                'warehouse_id' => $req->warehouse_id,
+                'product_variant_id' => $variantId,
+                'to_warehouse_id' => $req->to_warehouse_id,
+            ]);
+            $result[$variantId] = $this->getTransferSourceStock($sub)->getData(true);
+        }
+
+        return response()->json(['items' => (object) $result]);
+    }
+
     public function getTransferRetailUnitSetup(Request $req)
     {
         $this->authorizeRetailUnitSetup();
@@ -1249,6 +1275,31 @@ class StockTransferController extends Controller
                 ? 'Produk ini belum memiliki satuan produk yang valid untuk dijadikan satuan eceran'
                 : null,
         ]);
+    }
+
+    /**
+     * Batch versi getTransferRetailUnitSetup (lihat getTransferSourceStockBatch).
+     */
+    public function getTransferRetailUnitSetupBatch(Request $req)
+    {
+        $this->authorizeRetailUnitSetup();
+        $variantIds = collect((array) $req->input('product_variant_ids', []))
+            ->map(fn ($id) => (int) $id)
+            ->filter(fn ($id) => $id > 0)
+            ->unique()
+            ->values();
+
+        $result = [];
+        foreach ($variantIds as $variantId) {
+            $sub = new Request([
+                'product_variant_id' => $variantId,
+                'from_warehouse_id' => $req->from_warehouse_id,
+                'to_warehouse_id' => $req->to_warehouse_id,
+            ]);
+            $result[$variantId] = $this->getTransferRetailUnitSetup($sub)->getData(true);
+        }
+
+        return response()->json(['status' => 1, 'items' => (object) $result]);
     }
 
     public function saveTransferRetailUnit(Request $req)
