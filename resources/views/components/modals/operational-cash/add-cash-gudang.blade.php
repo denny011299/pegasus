@@ -95,10 +95,9 @@
                         </div>
                       </div>
                       <div class="col-12 col-lg-6 add">
-                        <div class="input-block mb-3">
-                          <label>Keterangan<span class="text-danger">*</span></label>
-                          <input type="text" class="form-control fill_catatan" id="cgd_notes"
-                            placeholder="Contoh: Kas Harian">
+                        <div class="input-block mb-3" id="row-pengiriman">
+                          <label>No. Pengiriman<span class="text-danger">*</span></label>
+                          <select class="form-select" id="cgd_notes"></select>
                         </div>
                       </div>
                       <div class="col-12 col-lg-6 add">
@@ -139,7 +138,7 @@
                           <tr>
                             <th>No</th>
                             <th>Armada</th>
-                            <th style="width: 25%">Nama</th>
+                            <th style="width: 25%">No. Pengiriman</th>
                             <th class="text-end">Nominal</th>
                             <th class="no-sort text-center col-aksi">Aksi</th>
                           </tr>

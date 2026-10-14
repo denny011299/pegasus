@@ -131,6 +131,25 @@ class PmoApi
         return static::client()->fetchCollection(PmoEndpoints::resolve('armada'));
     }
 
+    /**
+     * Ambil No. Pengiriman dari PMO (many-get, /getPengirimanNo — denny011299/PMO#32).
+     * Baris berupa {pengiriman_id, pengiriman_no, status}, urut post_date DESC.
+     * $statuses = enum mentah oms_delivery.status (onschedule, onprocess, pending,
+     * success, canceled), dikirim comma-separated; kosong = semua status.
+     *
+     * @param  array<int, string>  $statuses
+     *
+     * @throws PmoException
+     */
+    public static function getPengirimanNo(array $statuses = []): PmoResponse
+    {
+        return static::client()->fetchCollection(
+            PmoEndpoints::resolve('pengiriman_no'),
+            $statuses ? ['status' => implode(',', $statuses)] : [],
+            PmoEndpoints::itemsKey('pengiriman_no'),
+        );
+    }
+
     private static function client(): PmoClient
     {
         return app(PmoClient::class);

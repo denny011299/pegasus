@@ -23,6 +23,8 @@ use App\Models\Unit;
 use App\Models\Variant;
 use App\Models\Warehouse;
 use App\Models\WarehouseType;
+use App\Synchronization\Pmo\PmoApi;
+use App\Synchronization\Pmo\PmoException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
@@ -444,6 +446,38 @@ class AutocompleteController extends Controller
         echo json_encode(array(
             "data" => $data_city
         ));
+    }
+
+    /**
+     * Dropdown "Keterangan" detail Kas Gudang: No. Pengiriman PMO yang masih
+     * belum dikirim (onschedule) atau sedang berjalan (onprocess). PMO tidak
+     * punya filter keyword, jadi pencarian dilakukan di sini. id = text =
+     * pengiriman_no (string) supaya yang tersimpan di cgd_notes tetap nomornya
+     * dan tidak kena masalah presisi id 16 digit PMO di JS.
+     */
+    public function autocompletePengirimanPmo(Request $req)
+    {
+        $keyword = mb_strtolower(trim((string) ($req->keyword ?? '')));
+
+        try {
+            $rows = PmoApi::getPengirimanNo(['onschedule', 'onprocess'])->rows;
+        } catch (PmoException $e) {
+            return response()->json(["data" => [], "message" => $e->getMessage()]);
+        }
+
+        $data = [];
+        foreach ($rows as $r) {
+            $no = (string) ($r['pengiriman_no'] ?? '');
+            if ($no === '' || ($keyword !== '' && ! str_contains(mb_strtolower($no), $keyword))) continue;
+            $data[] = [
+                "id" => $no,
+                "text" => $no,
+                "pengiriman_id" => (string) ($r['pengiriman_id'] ?? ''),
+                "status" => $r['status'] ?? null,
+            ];
+        }
+
+        return response()->json(["data" => $data]);
     }
 
     public function autocompleteSupplier(Request $req)

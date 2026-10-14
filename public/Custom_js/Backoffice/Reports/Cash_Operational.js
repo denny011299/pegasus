@@ -625,6 +625,8 @@
             $('#jenis_input_gudang').val("operasional").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
             autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
+            autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body');
+            $('#cgd_notes').empty(null);
             
             if(sessionUser) {
                 let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
@@ -1396,6 +1398,11 @@
             $('#row-gudang .select2-selection--single').addClass('is-invalids');
         }
 
+        if(!$('#cgd_notes').val()){
+            valid=-1;
+            $('#row-pengiriman .select2-selection--single').addClass('is-invalids');
+        }
+
         if(valid==-1){
             notifikasi('error', "Gagal Insert", 'Silahkan cek kembali inputan anda');
             ResetLoadingButton('.btn-save-gudang', mode == 1?"Tambah Aktivitas" : "Update Aktivitas"); 
@@ -1422,7 +1429,7 @@
         pgPopupTableScrollToEdge($('#tableDetailGudang').closest('.pg-popup-table-scroll'));
 
         $('#customer_id').empty(null);
-        $('#cgd_notes').val("");
+        $('#cgd_notes').empty(null).trigger('change');
         $('#cgd_nominal').val("").attr('disabled', true);
         $('.input_nominal').hide();
         $('#jenis_nominal').val("").trigger('change');
@@ -2202,6 +2209,9 @@
         $('#add_cash_gudang .modal-title').html("Update Aktivitas Gudang");
         $('#add_cash_gudang input').empty().val("");
         $('#staff_id_gudang').empty(null);
+        autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
+        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body');
+        $('#customer_id, #cgd_notes').empty(null);
         
         if (data.detail?.length) {
             $('#jenis_input').val("operasional").trigger('change').attr('disabled', true);

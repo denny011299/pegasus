@@ -51,6 +51,8 @@ return [
         'shipments' => '/getShipments',
         'armada' => '/getArmada',
         'units' => '/getUnits',
+        // Daftar No. Pengiriman (denny011299/PMO#32) — dipakai dropdown Keterangan Kas Gudang.
+        'pengiriman_no' => '/getPengirimanNo',
     ],
 
     /*
@@ -67,6 +69,7 @@ return [
     'endpoint_items_keys' => [
         'armada' => 'data',
         'units' => 'data',
+        'pengiriman_no' => 'data',
     ],
 
     /*
