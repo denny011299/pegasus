@@ -1583,48 +1583,113 @@ function prepareRetailUnitForTransfer(item, promptAfterLoad, done) {
             _token: token || $('meta[name="csrf-token"]').attr("content"),
         },
         success: function (res) {
-            if (!isCurrentRetailContext(context)) return;
-            if (!res || res.status !== 1) {
-                item.retail_invalid = true;
-                item.retail_error = (res && res.message) || "Gagal memeriksa satuan eceran";
-                return;
-            }
-            if (!res.requires_setup) {
-                item.retail_unit = res.retail_unit_id || null;
-                item.retail_invalid = false;
-                item.retail_unit_options = [];
-                item.retail_error = null;
-                return;
-            }
-            item.retail_unit = null;
-            item.retail_invalid = true;
-            item.retail_unit_options = Array.isArray(res.units) ? res.units : [];
-            item.retail_error =
-                res.message ||
-                (item.retail_unit_options.length
-                    ? "Satuan eceran wajib dilengkapi"
-                    : "Satuan produk yang valid tidak tersedia");
-            refreshTransferItemsTable();
-            syncTransferSaveButton();
+            applyRetailSetupResult(item, context, res);
         },
         error: function (xhr) {
-            if (!isCurrentRetailContext(context)) return;
-            item.retail_invalid = true;
-            item.retail_error =
-                (xhr.responseJSON && xhr.responseJSON.message) ||
-                "Gagal memeriksa satuan eceran";
+            applyRetailSetupError(item, context, xhr);
         },
         complete: function () {
-            if (item._retail_setup_request !== request) return;
-            delete item._retail_setup_request;
-            if (!isCurrentRetailContext(context)) return;
-            refreshTransferItemsTable();
-            syncTransferSaveButton();
-            if (request.prompt && item.retail_invalid) {
-                promptRetailUnitForTransfer(item, context);
-            }
-            request.callbacks.forEach(function (callback) {
-                callback(!item.retail_invalid);
+            finishRetailSetupRequest(item, request, context);
+        },
+    });
+}
+
+function applyRetailSetupResult(item, context, res) {
+    if (!isCurrentRetailContext(context)) return;
+    if (!res || res.status !== 1) {
+        item.retail_invalid = true;
+        item.retail_error = (res && res.message) || "Gagal memeriksa satuan eceran";
+        return;
+    }
+    if (!res.requires_setup) {
+        item.retail_unit = res.retail_unit_id || null;
+        item.retail_invalid = false;
+        item.retail_unit_options = [];
+        item.retail_error = null;
+        return;
+    }
+    item.retail_unit = null;
+    item.retail_invalid = true;
+    item.retail_unit_options = Array.isArray(res.units) ? res.units : [];
+    item.retail_error =
+        res.message ||
+        (item.retail_unit_options.length
+            ? "Satuan eceran wajib dilengkapi"
+            : "Satuan produk yang valid tidak tersedia");
+    refreshTransferItemsTable();
+    syncTransferSaveButton();
+}
+
+function applyRetailSetupError(item, context, xhr) {
+    if (!isCurrentRetailContext(context)) return;
+    item.retail_invalid = true;
+    item.retail_error =
+        (xhr && xhr.responseJSON && xhr.responseJSON.message) ||
+        "Gagal memeriksa satuan eceran";
+}
+
+function finishRetailSetupRequest(item, request, context) {
+    if (item._retail_setup_request !== request) return;
+    delete item._retail_setup_request;
+    if (!isCurrentRetailContext(context)) return;
+    refreshTransferItemsTable();
+    syncTransferSaveButton();
+    if (request.prompt && item.retail_invalid) {
+        promptRetailUnitForTransfer(item, context);
+    }
+    request.callbacks.forEach(function (callback) {
+        callback(!item.retail_invalid);
+    });
+}
+
+/**
+ * Cek satuan eceran banyak baris sekaligus dalam 1 request
+ * (dulu 1 request per baris → burst koneksi DB gagal di production).
+ */
+function prepareRetailUnitsForTransferBatch(items, done) {
+    var entries = [];
+    items.forEach(function (item) {
+        var context = transferRetailContext(item);
+        if (!context.variantId || !context.fromId || !context.toId) {
+            if (typeof done === "function") done(item, false);
+            return;
+        }
+        var request = {
+            routeRun: context.routeRun,
+            prompt: false,
+            callbacks: typeof done === "function" ? [function (ok) { done(item, ok); }] : [],
+        };
+        item._retail_setup_request = request;
+        entries.push({ item: item, context: context, request: request });
+    });
+    if (!entries.length) return;
+
+    var first = entries[0].context;
+    $.ajax({
+        url: "/getTransferRetailUnitSetupBatch",
+        method: "post",
+        data: {
+            product_variant_ids: entries.map(function (e) {
+                return e.context.variantId;
+            }),
+            from_warehouse_id: first.fromId,
+            to_warehouse_id: first.toId,
+            _token: token || $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: function (res) {
+            var results = (res && res.items) || {};
+            entries.forEach(function (e) {
+                applyRetailSetupResult(e.item, e.context, results[e.context.variantId]);
+            });
+        },
+        error: function (xhr) {
+            entries.forEach(function (e) {
+                applyRetailSetupError(e.item, e.context, xhr);
+            });
+        },
+        complete: function () {
+            entries.forEach(function (e) {
+                finishRetailSetupRequest(e.item, e.request, e.context);
             });
         },
     });
@@ -2398,13 +2463,30 @@ function reloadTransferRowStocks(done) {
         return;
     }
 
-    var pending = variantIds.length;
-    variantIds.forEach(function (variantId) {
-        fetchSourceStock(variantId, function (stock) {
-            patchTransferItemStock(variantId, stock || { units: [] });
-            pending--;
-            if (pending === 0 && typeof done === "function") done();
-        });
+    // 1 request untuk semua varian (dulu 1 request per varian → burst koneksi DB).
+    $.ajax({
+        url: "/getTransferSourceStockBatch",
+        method: "post",
+        data: {
+            warehouse_id: $("#transfer_from_warehouse_id").val(),
+            to_warehouse_id: $("#transfer_to_warehouse_id").val() || null,
+            product_variant_ids: variantIds,
+            _token: token || $('meta[name="csrf-token"]').attr("content"),
+        },
+        success: function (res) {
+            var results = (res && res.items) || {};
+            variantIds.forEach(function (variantId) {
+                patchTransferItemStock(variantId, results[variantId] || { stock_text: "0", units: [] });
+            });
+        },
+        error: function () {
+            variantIds.forEach(function (variantId) {
+                patchTransferItemStock(variantId, { stock_text: "-", units: [] });
+            });
+        },
+        complete: function () {
+            if (typeof done === "function") done();
+        },
     });
 }
 
@@ -2457,9 +2539,7 @@ function validateRetailUnitsForTransferRows() {
         }
     }
 
-    missingItems.forEach(function (item) {
-        prepareRetailUnitForTransfer(item, false, finishRow);
-    });
+    prepareRetailUnitsForTransferBatch(missingItems, finishRow);
 }
 
 function validateCurrentTransferMatrix(done, showToast) {

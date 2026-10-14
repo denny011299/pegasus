@@ -254,6 +254,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/getStockTransfer', [StockTransferController::class, 'getStockTransfer'])->name('getStockTransfer');
         Route::get('/getStockTransferDetail', [StockTransferController::class, 'getStockTransferDetail'])->name('getStockTransferDetail');
         Route::get('/getTransferSourceStock', [StockTransferController::class, 'getTransferSourceStock'])->name('getTransferSourceStock');
+        Route::post('/getTransferSourceStockBatch', [StockTransferController::class, 'getTransferSourceStockBatch'])->name('getTransferSourceStockBatch');
         Route::get('/getStockTransferLogs', [StockTransferController::class, 'getStockTransferLogs'])->name('getStockTransferLogs');
         Route::post('/checkTransferStock', [StockTransferController::class, 'checkTransferStock'])->name('checkTransferStock');
         // QC/Ops approve + reject retail: gate di controller (actor role / pemohon), bukan permission others
@@ -261,6 +262,7 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/rejectStockTransfer', [StockTransferController::class, 'rejectStockTransfer'])->name('rejectStockTransfer');
     });
     Route::post('/getTransferRetailUnitSetup', [StockTransferController::class, 'getTransferRetailUnitSetup'])->name('getTransferRetailUnitSetup');
+    Route::post('/getTransferRetailUnitSetupBatch', [StockTransferController::class, 'getTransferRetailUnitSetupBatch'])->name('getTransferRetailUnitSetupBatch');
     Route::post('/saveTransferRetailUnit', [StockTransferController::class, 'saveTransferRetailUnit'])->name('saveTransferRetailUnit');
     Route::middleware('check.access:Stock Transfer|create')->group(function () {
         Route::post('/insertStockTransfer', [StockTransferController::class, 'insertStockTransfer'])->name('insertStockTransfer');
