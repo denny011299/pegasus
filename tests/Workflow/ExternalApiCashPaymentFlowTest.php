@@ -223,6 +223,99 @@ class ExternalApiCashPaymentFlowTest extends TestCase
         $this->assertSame(3, \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->count());
     }
 
+    /**
+     * Feedback PMO: arah yang ditambahkan belakangan (Masuk sudah tersinkron, lalu Pengeluaran
+     * ditambah) dibuat, bukan ditelan sebagai replay; arah yang sudah ada tidak dibuat ulang.
+     */
+    public function test_a_direction_added_later_is_created_and_the_existing_one_is_replayed(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
+        $ref = 'TEST-ADD-'.uniqid();
+        $masuk = ['amount' => 100000, 'type' => 1, 'notes' => 'Setoran'];
+
+        $base = [
+            'ref_payment_id' => $ref,
+            'payment_type' => 1,
+            'armada_code' => $customer->customer_code,
+            'payment_date' => now()->toDateString(),
+        ];
+
+        $this->postJson('/api/external/v1/payments/cash', $base + ['items' => [$masuk]], $headers)
+            ->assertStatus(201)->assertJsonCount(1, 'data');
+
+        $this->postJson('/api/external/v1/payments/cash', $base + ['items' => [
+            $masuk,
+            ['amount' => 30000, 'type' => 2, 'notes' => 'Solar'],
+        ]], $headers)
+            ->assertStatus(201)
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.items.0.type', 1)
+            ->assertJsonPath('data.1.items.0.type', 2)
+            ->assertJsonPath('meta.replayed_types', [1]);
+
+        $this->assertSame(2, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
+    }
+
+    /** Arah yang sudah ada dengan isi berbeda, atau yang tidak ikut dikirim lagi, ditolak 409. */
+    public function test_changed_or_missing_stored_direction_is_rejected_with_409(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
+        $ref = 'TEST-CONF-'.uniqid();
+
+        $base = [
+            'ref_payment_id' => $ref,
+            'payment_type' => 1,
+            'armada_code' => $customer->customer_code,
+            'payment_date' => now()->toDateString(),
+        ];
+
+        $this->postJson('/api/external/v1/payments/cash', $base + ['items' => [
+            ['amount' => 100000, 'type' => 1],
+            ['amount' => 30000, 'type' => 2],
+        ]], $headers)->assertStatus(201);
+
+        $this->postJson('/api/external/v1/payments/cash', $base + ['items' => [
+            ['amount' => 120000, 'type' => 1],
+            ['amount' => 30000, 'type' => 2],
+        ]], $headers)
+            ->assertStatus(409)
+            ->assertJsonPath('error.code', 'PAYMENT_CONTENT_MISMATCH')
+            ->assertJsonPath('error.details.type', 1);
+
+        $this->postJson('/api/external/v1/payments/cash', $base + ['items' => [
+            ['amount' => 100000, 'type' => 1],
+        ]], $headers)
+            ->assertStatus(409)
+            ->assertJsonPath('error.details.type', 2);
+
+        $this->assertSame(2, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
+    }
+
+    /** payment_amount opsional; kalau dikirim tetap harus sama dengan total item. */
+    public function test_payment_amount_is_optional_but_checked_when_sent(): void
+    {
+        $headers = $this->externalApiHeaders();
+        $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
+
+        $payload = [
+            'ref_payment_id' => 'TEST-AMT-'.uniqid(),
+            'payment_type' => 1,
+            'armada_code' => $customer->customer_code,
+            'payment_date' => now()->toDateString(),
+            'items' => [['amount' => 40000, 'type' => 1], ['amount' => 15000, 'type' => 2]],
+        ];
+
+        $this->postJson('/api/external/v1/payments/cash', $payload + ['payment_amount' => 99], $headers)
+            ->assertStatus(422);
+
+        $this->postJson('/api/external/v1/payments/cash', $payload, $headers)
+            ->assertStatus(201)
+            ->assertJsonPath('data.0.payment_amount', 40000)
+            ->assertJsonPath('data.1.payment_amount', 15000);
+    }
+
     private function makeStaffWithExternalRef(string $externalRefId): Staff
     {
         $staff = new Staff();
