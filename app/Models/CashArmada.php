@@ -118,6 +118,9 @@ class CashArmada extends Model
         $t = new CashArmada();
         // Hanya terisi bila pembayaran datang lewat External API.
         $t->ref_payment_id = $data["ref_payment_id"] ?? null;
+        // Arah rincian baris API (lihat migration add_ref_direction), bagian kunci idempotensi.
+        $t->ref_direction = $data["ref_direction"] ?? null;
+        $t->ref_payload_hash = $data["ref_payload_hash"] ?? null;
         // No. Dokumen Pembayaran PMO (GitHub #216) — opsional, juga hanya dari External API.
         $t->ref_payment_number = $data["ref_payment_number"] ?? null;
         $t->customer_id = $data["customer_id"];

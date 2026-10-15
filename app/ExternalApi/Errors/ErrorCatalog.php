@@ -75,6 +75,9 @@ final class ErrorCatalog
 
     public const PAYMENT_NOT_ACCEPTABLE = 'PAYMENT_NOT_ACCEPTABLE';
 
+    /** POST /payments/cash — kunci yang sama sudah tersimpan dengan rincian berbeda (endpoint create-only). */
+    public const PAYMENT_CONTENT_MISMATCH = 'PAYMENT_CONTENT_MISMATCH';
+
     /* ---------------------------------------------------------------- */
     /* Shipment                                                           */
     /* ---------------------------------------------------------------- */
