@@ -71,6 +71,11 @@ use Illuminate\Validation\Rule;
  * Dokumen retur ikut idempoten lewat idempotency_key yang diturunkan dari kunci pembayaran
  * (lihat returnIdempotencyKey()).
  *
+ * ITEM CAMPURAN ARAH (2026-10-15): items[].type boleh campuran Masuk/Keluar/Keluar 1. Satu baris
+ * kas hanya bisa satu arah, jadi store() membuat satu baris per type dalam satu transaksi; arah
+ * disimpan di ref_direction dan ikut kunci idempotensi (ref_payment_id + penerima + arah). POST
+ * menjawab data berupa array pembayaran, dokumen Pengembalian di meta.returns.
+ *
  * Endpoint ini hanya melayani transaksi "operasional" (pengeluaran/setoran
  * berbutir dengan rincian). Penambahan saldo ("saldo") tetap lewat halaman
  * admin karena bentuknya berbeda dan tidak ada dalam kontrak API.
@@ -91,23 +96,26 @@ class CashPaymentController extends Controller
 
     /**
      * POST /api/external/v1/payments/cash
+     *
+     * Item boleh campuran arah (Masuk / Keluar / Keluar 1). Satu baris kas hanya bisa mencatat
+     * satu arah (catatan, cr_type/cs_transaction diturunkan dari situ), jadi item dikelompokkan
+     * per type dan dibuat SATU baris kas per kelompok, dalam satu transaksi DB. Karena itu data
+     * respons selalu array pembayaran; dokumen Pengembalian (milik seluruh kiriman, bukan satu
+     * baris) dikembalikan di meta.returns.
      */
     public function store(Request $request): JsonResponse
     {
         $data = $this->validatePayload($request);
+        $groups = $this->directionGroups($data['items']);
 
         // --- Idempotensi -------------------------------------------------
-        // Kunci idempotensi BUKAN ref_payment_id sendirian (lihat catatan kelas soal #208):
-        // ref_payment_id + customer_id (armada) atau ref_payment_id + staff_id (sales). Kalau
-        // pasangan itu sudah pernah dipakai, permintaan ini diperlakukan sebagai pengiriman
-        // ulang dan pembayaran yang lama dikembalikan apa adanya.
+        // Kunci idempotensi: ref_payment_id + penerima + arah (lihat catatan kelas soal #208 dan
+        // migration add_ref_direction). Seluruh kelompok dibuat dalam satu transaksi, jadi kalau
+        // salah satu sudah ada, kiriman ini diperlakukan sebagai pengiriman ulang.
         $existing = $this->findExisting($data);
 
-        if ($existing !== null) {
-            return ApiResponse::success(
-                $this->present($existing['payment'], $existing['type']) + ['returns' => $this->findReturns($data)],
-                ['idempotent_replay' => true],
-            );
+        if ($existing->isNotEmpty()) {
+            return $this->replay($existing, $data);
         }
 
         $photos = new PaymentPhotoStore();
@@ -115,14 +123,21 @@ class CashPaymentController extends Controller
         $returns = [];
 
         try {
-            $payment = DB::transaction(function () use ($data, $photos, &$returnProofs, &$returns) {
-                $payment = $data['payment_type'] === self::TYPE_ARMADA
-                    ? $this->createArmada($data, $photos)
-                    : $this->createSales($data, $photos);
+            $payments = DB::transaction(function () use ($data, $groups, $photos, &$returnProofs, &$returns) {
+                $photoNames = ! empty($data['photos'])
+                    ? $photos->store($data['photos'], $data['payment_type'] === self::TYPE_ARMADA ? 'armada' : 'sales')
+                    : [];
+
+                $payments = [];
+                foreach ($groups as $direction => $items) {
+                    $payments[] = $data['payment_type'] === self::TYPE_ARMADA
+                        ? $this->createArmada($data, $direction, $items, $photoNames)
+                        : $this->createSales($data, $direction, $items, $photoNames);
+                }
 
                 $returns = $this->createReturns($data, $returnProofs);
 
-                return $payment;
+                return $payments;
             });
         } catch (\InvalidArgumentException $e) {
             // Foto yang formatnya tidak sah adalah kesalahan pemanggil, bukan
@@ -144,11 +159,8 @@ class CashPaymentController extends Controller
             // ulang biasa — yang penting kasnya hanya satu, bukan dua.
             $raced = $this->findExisting($data);
 
-            if ($raced !== null) {
-                return ApiResponse::success(
-                    $this->present($raced['payment'], $raced['type']) + ['returns' => $this->findReturns($data)],
-                    ['idempotent_replay' => true],
-                );
+            if ($raced->isNotEmpty()) {
+                return $this->replay($raced, $data);
             }
 
             throw $e;
@@ -162,16 +174,46 @@ class CashPaymentController extends Controller
         }
 
         if (! empty($data['auto_accept'])) {
-            $failure = $this->accept($payment, $data['payment_type']);
+            foreach ($payments as $i => $payment) {
+                $failure = $this->accept($payment, $data['payment_type']);
 
-            if ($failure !== null) {
-                return $failure;
+                if ($failure !== null) {
+                    return $failure;
+                }
+
+                $payments[$i] = $this->reload($payment, $data['payment_type']);
             }
-
-            $payment = $this->reload($payment, $data['payment_type']);
         }
 
-        return ApiResponse::success($this->present($payment, $data['payment_type']) + ['returns' => $returns], [], 201);
+        return ApiResponse::success(
+            array_map(fn ($payment) => $this->present($payment, $data['payment_type']), $payments),
+            ['returns' => $returns],
+            201,
+        );
+    }
+
+    /** Jawaban kiriman ulang: seluruh baris kas yang sudah ada untuk kunci ini, apa adanya. */
+    private function replay(Collection $existing, array $data): JsonResponse
+    {
+        return ApiResponse::success(
+            $existing->map(fn ($payment) => $this->present($payment, $data['payment_type']))->all(),
+            ['idempotent_replay' => true, 'returns' => $this->findReturns($data)],
+        );
+    }
+
+    /**
+     * Kelompokkan item per type (arah), urut sesuai kemunculan pertama, indeks item asli dibuang.
+     *
+     * @return array<int, array<int, array>>
+     */
+    private function directionGroups(array $items): array
+    {
+        $groups = [];
+        foreach ($items as $item) {
+            $groups[(int) $item['type']][] = $item;
+        }
+
+        return $groups;
     }
 
     /**
@@ -273,7 +315,6 @@ class CashPaymentController extends Controller
             $data['_sales_staff_id'] = (int) $this->resolveSalesStaff($data['staff_id'])->staff_id;
         }
 
-        $this->assertItemsShareOneDirection($data['items']);
         $this->assertAmountMatchesItems($data);
         $data['_return_groups'] = $this->prepareReturnGroups($data);
 
@@ -424,27 +465,10 @@ class CashPaymentController extends Controller
         return Staff::where('external_ref_id', $ref)->where('status', 1)->first();
     }
 
-    /**
-     * Seluruh rincian harus searah.
-     *
-     * Bukan aturan baru: implementasi yang ada menentukan jenis dan catatan
-     * SATU transaksi dari item pertama saja (`$item[0]['crd_type']`), sehingga
-     * campuran masuk-keluar dalam satu pembayaran akan tercatat keliru. Di
-     * halaman admin hal itu dicegah tampilan; di sini harus dinyatakan tegas.
-     */
-    private function assertItemsShareOneDirection(array $items): void
-    {
-        $types = array_unique(array_map(static fn ($item) => (int) $item['type'], $items));
-
-        if (count($types) > 1) {
-            $this->fail('items', 'Seluruh item harus memiliki type yang sama dalam satu pembayaran.');
-        }
-    }
-
     /** payment_amount wajib sama dengan jumlah seluruh item. */
     private function assertAmountMatchesItems(array $data): void
     {
-        $total = array_sum(array_map(static fn ($item) => (int) $item['amount'], $data['items']));
+        $total = $this->sumAmount($data['items']);
 
         if ((int) $data['payment_amount'] !== $total) {
             $this->fail(
@@ -452,6 +476,11 @@ class CashPaymentController extends Controller
                 'payment_amount ('.$data['payment_amount'].') tidak sama dengan jumlah item ('.$total.').'
             );
         }
+    }
+
+    private function sumAmount(array $items): int
+    {
+        return array_sum(array_map(static fn ($item) => (int) $item['amount'], $items));
     }
 
     private function fail(string $field, string $message): void
@@ -469,22 +498,23 @@ class CashPaymentController extends Controller
      * Nilai turunan (catatan, jenis, nominal, cr_aksi, cash_id) disusun persis
      * seperti ReportController::insertCashArmada pada cabang "operasional".
      */
-    private function createArmada(array $data, PaymentPhotoStore $photos): CashArmada
+    private function createArmada(array $data, int $direction, array $items, array $photoNames): CashArmada
     {
         $customer = $this->resolveArmadaCustomer($data);
         if ($customer === null) {
             $this->fail('armada_code', 'Armada tidak ditemukan.');
         }
 
-        $isMasuk = (int) $data['items'][0]['type'] === self::DIRECTION_MASUK;
+        $isMasuk = $direction === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
+            'ref_direction' => $direction,
             'ref_payment_number' => $this->refPaymentNumber($data),
             'customer_id' => (int) $customer->customer_id,
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
-            'cr_nominal' => (int) $data['payment_amount'],
+            'cr_nominal' => $this->sumAmount($items),
             'cr_notes' => ($isMasuk ? 'Setoran armada ' : 'Pengeluaran armada ').$customer->customer_notes,
             'cr_aksi' => 2,
             'status' => 1,
@@ -494,13 +524,13 @@ class CashPaymentController extends Controller
             $row['cr_type'] = 1;
         }
 
-        if (! empty($data['photos'])) {
-            $row['cr_img'] = json_encode($photos->store($data['photos'], 'armada'));
+        if ($photoNames !== []) {
+            $row['cr_img'] = json_encode($photoNames);
         }
 
         $crId = (new CashArmada())->insertCashArmada($row);
 
-        foreach ($data['items'] as $item) {
+        foreach ($items as $item) {
             (new CashArmadaDetail())->insertCashArmadaDetail([
                 'cr_id' => $crId,
                 'crd_nominal' => (int) $item['amount'],
@@ -519,7 +549,7 @@ class CashPaymentController extends Controller
      *
      * Mengikuti ReportController::insertCashSales pada cabang "operasional".
      */
-    private function createSales(array $data, PaymentPhotoStore $photos): CashSales
+    private function createSales(array $data, int $direction, array $items, array $photoNames): CashSales
     {
         $staff = $this->resolveSalesStaff($data['staff_id']);
         if ($staff === null) {
@@ -527,32 +557,32 @@ class CashPaymentController extends Controller
             $this->fail('staff_id', 'Sales dengan staff_id (external_ref_id) '.$data['staff_id'].' tidak ditemukan.');
         }
 
-        $direction = (int) $data['items'][0]['type'];
         $isMasuk = $direction === self::DIRECTION_MASUK;
 
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_payment_number' => $this->refPaymentNumber($data),
+            'ref_direction' => $direction,
             'staff_id' => (int) $staff->staff_id,
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
             // transaksi operasional; kolomnya sendiri berdefault 0.
             'bank_id' => 0,
             'cs_date' => $data['payment_date'],
-            'cs_nominal' => (int) $data['payment_amount'],
+            'cs_nominal' => $this->sumAmount($items),
             'cs_notes' => ($isMasuk ? 'Setoran sales ' : 'Pengeluaran sales ').$staff->staff_name,
             'cs_type' => 2,
             'cs_transaction' => $direction,
             'status' => 1,
         ];
 
-        if (! empty($data['photos'])) {
-            $row['cs_img'] = json_encode($photos->store($data['photos'], 'sales'));
+        if ($photoNames !== []) {
+            $row['cs_img'] = json_encode($photoNames);
         }
 
         $csId = (new CashSales())->insertCashSales($row);
 
-        foreach ($data['items'] as $item) {
+        foreach ($items as $item) {
             (new CashSalesDetail())->insertCashSalesDetail([
                 'cs_id' => $csId,
                 'csd_nominal' => (int) $item['amount'],
@@ -713,26 +743,24 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * Cari SATU pembayaran memakai kunci idempotensi lengkap (ref_payment_id + penerima yang
-     * sudah diresolusi validatePayload()) — dipakai store() untuk memutuskan replay atau baru.
+     * Cari baris kas milik kunci idempotensi ini (ref_payment_id + penerima yang sudah diresolusi
+     * validatePayload()), satu per arah — dipakai store() untuk memutuskan replay atau baru.
      *
-     * @return array{payment:mixed, type:int}|null
+     * @return Collection<int, CashArmada|CashSales>
      */
-    private function findExisting(array $data): ?array
+    private function findExisting(array $data): Collection
     {
         if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
-            $armada = CashArmada::where('ref_payment_id', '=', $data['ref_payment_id'])
+            return CashArmada::where('ref_payment_id', '=', $data['ref_payment_id'])
                 ->where('customer_id', '=', $data['_armada_customer_id'])
-                ->first();
-
-            return $armada ? ['payment' => $armada, 'type' => self::TYPE_ARMADA] : null;
+                ->orderBy('cr_id')
+                ->get();
         }
 
-        $sales = CashSales::where('ref_payment_id', '=', $data['ref_payment_id'])
+        return CashSales::where('ref_payment_id', '=', $data['ref_payment_id'])
             ->where('staff_id', '=', $data['_sales_staff_id'])
-            ->first();
-
-        return $sales ? ['payment' => $sales, 'type' => self::TYPE_SALES] : null;
+            ->orderBy('cs_id')
+            ->get();
     }
 
     /**

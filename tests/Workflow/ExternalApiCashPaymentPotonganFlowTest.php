@@ -108,16 +108,16 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
         ], $headers);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.payment_amount', 1720000)
-            ->assertJsonPath('data.items.0.kind', 'cash')
-            ->assertJsonPath('data.items.1.kind', 'potongan')
-            ->assertJsonPath('data.items.2.kind', 'potongan_barang')
-            ->assertJsonCount(2, 'data.returns')
-            ->assertJsonPath('data.returns.0.armada_code', $armada->customer_code)
-            ->assertJsonPath('data.returns.0.ref_shipment_id', 'SHP-A')
-            ->assertJsonPath('data.returns.0.pending_warehouse_items', 1)
-            ->assertJsonPath('data.returns.1.armada_code', $otherCode)
-            ->assertJsonPath('data.returns.1.ref_shipment_id', 'SHP-B');
+            ->assertJsonPath('data.0.payment_amount', 1720000)
+            ->assertJsonPath('data.0.items.0.kind', 'cash')
+            ->assertJsonPath('data.0.items.1.kind', 'potongan')
+            ->assertJsonPath('data.0.items.2.kind', 'potongan_barang')
+            ->assertJsonCount(2, 'meta.returns')
+            ->assertJsonPath('meta.returns.0.armada_code', $armada->customer_code)
+            ->assertJsonPath('meta.returns.0.ref_shipment_id', 'SHP-A')
+            ->assertJsonPath('meta.returns.0.pending_warehouse_items', 1)
+            ->assertJsonPath('meta.returns.1.armada_code', $otherCode)
+            ->assertJsonPath('meta.returns.1.ref_shipment_id', 'SHP-B');
 
         $cash = CashArmada::where('ref_payment_id', $ref)->firstOrFail();
         $this->assertSame(1720000, (int) $cash->cr_nominal);
@@ -129,7 +129,7 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
         // Armada baru dibuat dari armadas[].
         $this->assertTrue(Customer::where('customer_code', $otherCode)->where('status', 1)->exists());
 
-        $firstReturn = CustomerSupplyReturn::findOrFail($response->json('data.returns.0.supply_return_id'));
+        $firstReturn = CustomerSupplyReturn::findOrFail($response->json('meta.returns.0.supply_return_id'));
         $this->assertSame((int) $armada->customer_id, (int) $firstReturn->customer_id);
         $this->assertSame($ref, $firstReturn->ref_number);
         $this->assertSame(1, (int) $firstReturn->status);
@@ -164,7 +164,7 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
         $this->postJson(self::URL, $payload, $headers)
             ->assertStatus(200)
             ->assertJsonPath('meta.idempotent_replay', true)
-            ->assertJsonPath('data.returns.0.return_number', $first->json('data.returns.0.return_number'));
+            ->assertJsonPath('meta.returns.0.return_number', $first->json('meta.returns.0.return_number'));
 
         $this->assertSame($returnsBefore, CustomerSupplyReturn::count());
     }
@@ -195,8 +195,8 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
 
         $this->postJson(self::URL, $payload, $headers)
             ->assertStatus(201)
-            ->assertJsonPath('data.staff_id', $staff->external_ref_id)
-            ->assertJsonPath('data.returns.0.armada_code', $armada->customer_code);
+            ->assertJsonPath('data.0.staff_id', $staff->external_ref_id)
+            ->assertJsonPath('meta.returns.0.armada_code', $armada->customer_code);
     }
 
     public function test_unknown_bahan_rejects_the_whole_payment(): void
@@ -248,9 +248,9 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
             ],
         ], $headers)
             ->assertStatus(201)
-            ->assertJsonPath('data.items.1.kind', 'potongan')
-            ->assertJsonPath('data.items.2.type', 2)
-            ->assertJsonCount(1, 'data.returns');
+            ->assertJsonPath('data.0.items.1.kind', 'potongan')
+            ->assertJsonPath('data.0.items.2.type', 2)
+            ->assertJsonCount(1, 'meta.returns');
 
         $return = CustomerSupplyReturn::where('ref_number', $ref)->firstOrFail();
         $this->assertSame(3, (int) CustomerSupplyReturnDetail::where('return_id', $return->return_id)->value('qty'));
@@ -292,7 +292,7 @@ class ExternalApiCashPaymentPotonganFlowTest extends TestCase
             ],
         ], $headers)
             ->assertStatus(201)
-            ->assertJsonPath('data.items.0.kind', 'cash')
-            ->assertJsonPath('data.returns', []);
+            ->assertJsonPath('data.0.items.0.kind', 'cash')
+            ->assertJsonPath('meta.returns', []);
     }
 }

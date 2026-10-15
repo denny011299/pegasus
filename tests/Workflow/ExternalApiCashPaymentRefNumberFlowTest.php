@@ -109,12 +109,12 @@ class ExternalApiCashPaymentRefNumberFlowTest extends TestCase
             ],
         ], $headers);
 
-        $response->assertStatus(201)->assertJsonPath('data.ref_payment_number', $number);
+        $response->assertStatus(201)->assertJsonPath('data.0.ref_payment_number', $number);
 
         $cash = CashArmada::where('ref_payment_id', $ref)->firstOrFail();
         $this->assertSame($number, $cash->ref_payment_number);
 
-        $return = CustomerSupplyReturn::findOrFail($response->json('data.returns.0.supply_return_id'));
+        $return = CustomerSupplyReturn::findOrFail($response->json('meta.returns.0.supply_return_id'));
         $this->assertSame($number, $return->ref_payment_number);
         $this->assertSame($ref, $return->ref_number, 'ref_number tetap ref_payment_id seperti sebelumnya');
 
@@ -136,7 +136,7 @@ class ExternalApiCashPaymentRefNumberFlowTest extends TestCase
         $this->assertCount(1, $returnList->json('data'));
         $this->assertSame($number, $returnList->json('data.0.ref_payment_number'));
 
-        $this->getJson('/customerReturns/'.urlencode($response->json('data.returns.0.return_number')))
+        $this->getJson('/customerReturns/'.urlencode($response->json('meta.returns.0.return_number')))
             ->assertOk()
             ->assertJsonPath('ref_payment_number', $number);
     }
@@ -156,7 +156,7 @@ class ExternalApiCashPaymentRefNumberFlowTest extends TestCase
                 'items' => [['type' => 1, 'amount' => 10000]],
             ] + $extra, $headers)
                 ->assertStatus(201)
-                ->assertJsonPath('data.ref_payment_number', null);
+                ->assertJsonPath('data.0.ref_payment_number', null);
 
             $this->assertNull(CashSales::where('ref_payment_id', $ref)->value('ref_payment_number'));
         }
@@ -189,7 +189,7 @@ class ExternalApiCashPaymentRefNumberFlowTest extends TestCase
         $this->postJson(self::URL, $payload($staffA, 'PB/RFN/OTHER/001'), $headers)
             ->assertOk()
             ->assertJsonPath('meta.idempotent_replay', true)
-            ->assertJsonPath('data.ref_payment_number', $number);
+            ->assertJsonPath('data.0.ref_payment_number', $number);
         $this->assertSame(2, CashSales::where('ref_payment_number', $number)->count());
     }
 
