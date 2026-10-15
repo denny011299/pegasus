@@ -4,6 +4,7 @@ namespace App\Http\Controllers\ExternalApi\V1;
 
 use App\ExternalApi\Errors\ErrorCatalog;
 use App\ExternalApi\Http\ApiResponse;
+use App\ExternalApi\Support\AbortWithResponse;
 use App\ExternalApi\Support\PaymentPhotoStore;
 use App\ExternalApi\Support\ReturnItemResolver;
 use App\Http\Controllers\Controller;
@@ -78,6 +79,12 @@ use Illuminate\Validation\Rule;
  * itu 409 PAYMENT_CONTENT_MISMATCH). POST menjawab data berupa array pembayaran, dokumen
  * Pengembalian di meta.returns. payment_amount opsional (dicek hanya bila dikirim).
  *
+ * EXACTLY-ONCE untuk retry PMO (2026-10-16): PMO mengirim ulang payload identik sampai mendapat
+ * jawaban. Pembanding "isi sama" adalah ref_payload_hash (sidik jari item kiriman pertama per
+ * arah), BUKAN rincian saat ini — ACC/tolak/hapus oleh staf tidak membuat retry jadi 409. Ref
+ * lama berakhiran -K/-K1 ikut dikenali (findExisting). auto_accept berjalan di dalam transaksi,
+ * jadi kegagalan apa pun tidak meninggalkan sisa. Test: ExternalApiCashPaymentRetryReplayFlowTest.
+ *
  * Endpoint ini hanya melayani transaksi "operasional" (pengeluaran/setoran
  * berbutir dengan rincian). Penambahan saldo ("saldo") tetap lewat halaman
  * admin karena bentuknya berbeda dan tidak ada dalam kontrak API.
@@ -125,7 +132,7 @@ class CashPaymentController extends Controller
         $groups = array_diff_key($groups, $existing->all());
 
         if ($groups === []) {
-            return $this->replay($existing, $data);
+            return $this->replay($existing, $data, $order);
         }
 
         $photos = new PaymentPhotoStore();
@@ -147,8 +154,27 @@ class CashPaymentController extends Controller
 
                 $returns = $this->createReturns($data, array_keys($groups), $returnProofs);
 
+                // Di dalam transaksi: ACC yang ditolak membatalkan seluruh kiriman, supaya retry
+                // berikutnya bisa membuat data dengan bersih (tidak ada baris pending yang tersisa).
+                if (! empty($data['auto_accept'])) {
+                    foreach ($payments as $i => $payment) {
+                        $failure = $this->accept($payment, $data['payment_type']);
+
+                        if ($failure !== null) {
+                            throw new AbortWithResponse($failure);
+                        }
+
+                        $payments[$i] = $this->reload($payment, $data['payment_type']);
+                    }
+                }
+
                 return $payments;
             });
+        } catch (AbortWithResponse $e) {
+            $photos->cleanup();
+            $this->deleteReturnProofs($returnProofs);
+
+            return $e->response;
         } catch (\InvalidArgumentException $e) {
             // Foto yang formatnya tidak sah adalah kesalahan pemanggil, bukan
             // kegagalan server — jadi dijawab 422 seperti validasi lainnya,
@@ -170,8 +196,10 @@ class CashPaymentController extends Controller
             $raced = $this->findExisting($data);
 
             if ($raced->isNotEmpty()) {
+                // Seluruh kiriman satu transaksi, jadi pemenang balapan sudah membuat semua arah
+                // yang tadinya belum ada: cukup cek konflik isi lalu replay.
                 return $this->contentConflict($raced, $this->directionGroups($data['items']))
-                    ?? $this->replay($raced, $data);
+                    ?? $this->replay($raced, $data, $order);
             }
 
             throw $e;
@@ -184,18 +212,6 @@ class CashPaymentController extends Controller
             throw $e;
         }
 
-        if (! empty($data['auto_accept'])) {
-            foreach ($payments as $i => $payment) {
-                $failure = $this->accept($payment, $data['payment_type']);
-
-                if ($failure !== null) {
-                    return $failure;
-                }
-
-                $payments[$i] = $this->reload($payment, $data['payment_type']);
-            }
-        }
-
         // Arah yang sudah tersimpan ikut dikembalikan, supaya data selalu mencakup seluruh item
         // kiriman ini; replayed_types menandai arah mana yang tidak dibuat ulang.
         $all = $existing->values()->concat($payments)
@@ -204,17 +220,22 @@ class CashPaymentController extends Controller
 
         return ApiResponse::success(
             $all->map(fn ($payment) => $this->present($payment, $data['payment_type']))->all(),
-            ['returns' => array_merge($this->findReturns($data, $existing->keys()->all()), $returns), 'replayed_types' => $existing->keys()->values()->all()],
+            ['returns' => array_merge($this->findReturns($data, $existing), $returns), 'replayed_types' => $existing->keys()->values()->all()],
             201,
         );
     }
 
-    /** Jawaban kiriman ulang: seluruh baris kas yang sudah ada untuk kunci ini, apa adanya. */
-    private function replay(Collection $existing, array $data): JsonResponse
+    /**
+     * Jawaban kiriman ulang: seluruh baris kas yang sudah ada untuk kunci ini, apa adanya (status
+     * terkini, mis. sudah di-ACC), urut sesuai type pada kiriman — sama dengan saat pertama dibuat.
+     */
+    private function replay(Collection $existing, array $data, array $order): JsonResponse
     {
+        $rows = $existing->sortBy(fn ($payment, $direction) => array_search($direction, $order, true))->values();
+
         return ApiResponse::success(
-            $existing->values()->map(fn ($payment) => $this->present($payment, $data['payment_type']))->all(),
-            ['idempotent_replay' => true, 'returns' => $this->findReturns($data, $existing->keys()->all())],
+            $rows->map(fn ($payment) => $this->present($payment, $data['payment_type']))->all(),
+            ['idempotent_replay' => true, 'returns' => $this->findReturns($data, $existing)],
         );
     }
 
@@ -244,9 +265,8 @@ class CashPaymentController extends Controller
     {
         foreach ($existing as $direction => $payment) {
             $sent = $groups[$direction] ?? null;
-            $stored = $this->storedItems($payment);
 
-            if ($sent === null || $this->normalizeItems($sent) !== $stored) {
+            if ($sent === null || ! $this->sameContent($payment, $sent)) {
                 return ApiResponse::error(
                     ErrorCatalog::PAYMENT_CONTENT_MISMATCH,
                     'Pembayaran dengan ref_payment_id "'.$payment->ref_payment_id.'" untuk penerima ini sudah tersimpan dengan rincian type '
@@ -260,13 +280,36 @@ class CashPaymentController extends Controller
         return null;
     }
 
-    /** Rincian tersimpan dalam bentuk yang sama dengan normalizeItems(), untuk dibandingkan. */
+    /**
+     * Isi kiriman sama dengan yang dulu membuat baris ini? Dibandingkan dengan sidik jari kiriman
+     * asli (ref_payload_hash), bukan rincian saat ini — ACC/tolak/hapus oleh staf IPM tidak boleh
+     * membuat retry yang sah jadi 409. Baris lama tanpa sidik jari dibandingkan lewat rinciannya.
+     */
+    private function sameContent($payment, array $sent): bool
+    {
+        if ($payment->ref_payload_hash !== null) {
+            return hash_equals($payment->ref_payload_hash, $this->payloadHash($sent));
+        }
+
+        return $this->normalizeItems($sent, false) === $this->storedItems($payment);
+    }
+
+    /** sha256 item satu arah (termasuk goods) dalam bentuk ternormalisasi. */
+    private function payloadHash(array $items): string
+    {
+        return hash('sha256', json_encode($this->normalizeItems($items, true)));
+    }
+
+    /**
+     * Rincian tersimpan dalam bentuk yang sama dengan normalizeItems(), untuk baris lama tanpa
+     * ref_payload_hash. Semua status ikut (hapus pembayaran men-nonaktifkan rinciannya), urut id.
+     */
     private function storedItems($payment): array
     {
         $isArmada = $payment instanceof CashArmada;
         $details = $isArmada
-            ? CashArmadaDetail::where('cr_id', '=', $payment->cr_id)->where('status', '=', 1)->orderBy('crd_id')->get()
-            : CashSalesDetail::where('cs_id', '=', $payment->cs_id)->where('status', '=', 1)->orderBy('csd_id')->get();
+            ? CashArmadaDetail::where('cr_id', '=', $payment->cr_id)->orderBy('crd_id')->get()
+            : CashSalesDetail::where('cs_id', '=', $payment->cs_id)->orderBy('csd_id')->get();
 
         return $this->normalizeItems($details->map(fn ($d) => [
             'amount' => $isArmada ? $d->crd_nominal : $d->csd_nominal,
@@ -274,20 +317,41 @@ class CashPaymentController extends Controller
             'kind' => $isArmada ? $d->crd_kind : $d->csd_kind,
             'notes' => $isArmada ? $d->crd_notes : $d->csd_notes,
             'ref_nota_id' => $d->ref_nota_id,
-        ])->all());
+        ])->all(), false);
     }
 
-    private function normalizeItems(array $items): array
+    /**
+     * Bentuk pembanding item: null = "" = spasi, teks di-trim, kind kosong = cash, angka jadi
+     * integer, id (ref_id/satuan_id) tetap string supaya id 16 digit tidak berubah.
+     */
+    private function normalizeItems(array $items, bool $withGoods): array
     {
-        $blankToNull = static fn ($v) => ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
+        $text = static fn ($v) => ($v === null || trim((string) $v) === '') ? null : trim((string) $v);
 
-        return array_map(fn ($item) => [
-            (int) $item['amount'],
-            (int) $item['type'],
-            ($item['kind'] ?? null) ?: self::KIND_CASH,
-            $blankToNull($item['notes'] ?? null),
-            $blankToNull($item['ref_nota_id'] ?? null),
-        ], array_values($items));
+        return array_map(function ($item) use ($text, $withGoods) {
+            $row = [
+                (int) $item['amount'],
+                (int) $item['type'],
+                $text($item['kind'] ?? null) ?? self::KIND_CASH,
+                $text($item['notes'] ?? null),
+                $text($item['ref_nota_id'] ?? null),
+            ];
+
+            if ($withGoods) {
+                $goods = $item['goods'] ?? null;
+                $code = $goods === null ? null : $text($goods['armada_code'] ?? null);
+                $row[] = $goods === null ? null : [
+                    (int) $goods['item_type'],
+                    $text($goods['ref_id'] ?? null),
+                    (int) $goods['qty'],
+                    $text($goods['satuan_id'] ?? null),
+                    $code === null ? null : mb_strtoupper($code),
+                    $text($goods['ref_shipment_id'] ?? null),
+                ];
+            }
+
+            return $row;
+        }, array_values($items));
     }
 
     /**
@@ -593,6 +657,7 @@ class CashPaymentController extends Controller
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_direction' => $direction,
+            'ref_payload_hash' => $this->payloadHash($items),
             'ref_payment_number' => $this->refPaymentNumber($data),
             'customer_id' => (int) $customer->customer_id,
             'cash_id' => 0,
@@ -646,6 +711,7 @@ class CashPaymentController extends Controller
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_payment_number' => $this->refPaymentNumber($data),
             'ref_direction' => $direction,
+            'ref_payload_hash' => $this->payloadHash($items),
             'staff_id' => (int) $staff->staff_id,
             'cash_id' => 0,
             // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
@@ -734,15 +800,19 @@ class CashPaymentController extends Controller
      * Dokumen retur milik arah pembayaran yang sudah ada — dipakai saat kiriman ulang. Dokumen dari
      * sebelum pemecahan per arah memakai kunci tanpa arah, jadi kunci itu dicoba sebagai cadangan.
      */
-    private function findReturns(array $data, array $directions): array
+    private function findReturns(array $data, Collection $payments): array
     {
         $results = [];
         foreach ($data['_return_groups'] as $group) {
-            if (! in_array($group['direction'], $directions, true)) {
+            $payment = $payments->get($group['direction']);
+            if ($payment === null) {
                 continue;
             }
-            $existing = CustomerReturnCreation::findByIdempotencyKey($this->returnIdempotencyKey($data, $group))
-                ?? CustomerReturnCreation::findByIdempotencyKey($this->returnIdempotencyKey($data, $group, false));
+            // Kunci memakai ref baris kasnya sendiri, supaya dokumen milik baris lama "<ref>-K"
+            // juga ketemu.
+            $ref = $payment->ref_payment_id;
+            $existing = CustomerReturnCreation::findByIdempotencyKey($this->returnIdempotencyKey($data, $group, true, $ref))
+                ?? CustomerReturnCreation::findByIdempotencyKey($this->returnIdempotencyKey($data, $group, false, $ref));
             if ($existing !== null) {
                 $results[] = $this->presentReturn($existing, $group);
             }
@@ -755,7 +825,7 @@ class CashPaymentController extends Controller
      * Kunci idempotensi dokumen retur = kunci pembayaran (ref_payment_id + penerima) + kelompoknya.
      * Diawali penanda sumber supaya tidak pernah bertabrakan dengan kunci dari /shipments/returns.
      */
-    private function returnIdempotencyKey(array $data, array $group, bool $withDirection = true): string
+    private function returnIdempotencyKey(array $data, array $group, bool $withDirection = true, ?string $ref = null): string
     {
         $recipient = (int) $data['payment_type'] === self::TYPE_ARMADA
             ? 'armada:'.$data['_armada_customer_id']
@@ -763,7 +833,7 @@ class CashPaymentController extends Controller
 
         $key = [
             'source' => 'payments/cash',
-            'ref_payment_id' => $data['ref_payment_id'],
+            'ref_payment_id' => $ref ?? $data['ref_payment_id'],
             'recipient' => $recipient,
             'armada_code' => mb_strtoupper($group['armada_code']),
             'ref_shipment_id' => $group['ref_shipment_id'],
@@ -839,27 +909,46 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
+     * Akhiran ref lama per arah. Sebelum POST ini menerima item campuran, PMO mengirim pengeluaran
+     * dokumen yang sama sebagai ref terpisah: "<ref>-K" (Keluar) dan "<ref>-K1" (Keluar 1). PMO
+     * sekarang mengirim ref tanpa akhiran untuk dokumen lama juga, jadi baris lama itu harus ikut
+     * dikenali — kalau tidak, pengeluaran dokumen lama tercatat dua kali.
+     */
+    private const LEGACY_REF_SUFFIX = [2 => '-K', 3 => '-K1'];
+
+    /**
      * Cari baris kas milik kunci idempotensi ini (ref_payment_id + penerima yang sudah diresolusi
      * validatePayload()), dikunci ref_direction — dipakai store() untuk memutuskan arah mana yang
-     * sudah ada (replay/409) dan mana yang baru dibuat.
+     * sudah ada (replay/409) dan mana yang baru dibuat. Arah Keluar/Keluar 1 yang tidak ada di ref
+     * ini dicari juga di ref lama berakhiran -K/-K1 (lihat LEGACY_REF_SUFFIX).
+     *
+     * protected (bukan private) hanya supaya test balapan bisa mensimulasikan pemeriksaan awal
+     * yang belum melihat baris pemenang.
      *
      * @return Collection<int, CashArmada|CashSales>
      */
-    private function findExisting(array $data): Collection
+    protected function findExisting(array $data): Collection
     {
-        if ((int) $data['payment_type'] === self::TYPE_ARMADA) {
-            return CashArmada::where('ref_payment_id', '=', $data['ref_payment_id'])
-                ->where('customer_id', '=', $data['_armada_customer_id'])
-                ->orderBy('cr_id')
-                ->get()
-                ->keyBy(fn ($row) => (int) $row->ref_direction);
+        $isArmada = (int) $data['payment_type'] === self::TYPE_ARMADA;
+        $refs = [$data['ref_payment_id']];
+        foreach (self::LEGACY_REF_SUFFIX as $suffix) {
+            $refs[] = $data['ref_payment_id'].$suffix;
         }
 
-        return CashSales::where('ref_payment_id', '=', $data['ref_payment_id'])
-            ->where('staff_id', '=', $data['_sales_staff_id'])
-            ->orderBy('cs_id')
-            ->get()
-            ->keyBy(fn ($row) => (int) $row->ref_direction);
+        $rows = $isArmada
+            ? CashArmada::whereIn('ref_payment_id', $refs)->where('customer_id', '=', $data['_armada_customer_id'])->orderBy('cr_id')->get()
+            : CashSales::whereIn('ref_payment_id', $refs)->where('staff_id', '=', $data['_sales_staff_id'])->orderBy('cs_id')->get();
+
+        $found = $rows->where('ref_payment_id', $data['ref_payment_id'])->keyBy(fn ($row) => (int) $row->ref_direction);
+
+        foreach (self::LEGACY_REF_SUFFIX as $direction => $suffix) {
+            $legacy = $rows->firstWhere('ref_payment_id', $data['ref_payment_id'].$suffix);
+            if (! $found->has($direction) && $legacy !== null && (int) $legacy->ref_direction === $direction) {
+                $found->put($direction, $legacy);
+            }
+        }
+
+        return $found;
     }
 
     /**

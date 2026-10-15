@@ -16,6 +16,11 @@ return new class extends Migration
      * ref_direction hanya terisi untuk baris dari External API (baris admin tetap NULL, dan
      * ref_payment_id-nya juga NULL, jadi tidak tersentuh unique index). Baris API lama diisi dari
      * tipe rincian pertamanya — sebelum perubahan ini seluruh rinciannya dijamin searah.
+     *
+     * ref_payload_hash: sidik jari item kiriman PMO untuk arah itu (sha256), disimpan saat dibuat.
+     * Kiriman ulang dibandingkan dengan sidik jari ini, BUKAN dengan rincian saat ini — staf IPM
+     * boleh ACC/tolak/hapus pembayaran tanpa membuat retry PMO yang sah jadi 409. Baris lama tetap
+     * NULL (dibandingkan lewat rinciannya, tanpa goods).
      */
     private array $tables = [
         // fallback: arah dari header bila baris tidak punya rincian aktif sama sekali, supaya tidak
@@ -38,6 +43,8 @@ return new class extends Migration
             Schema::table($tableName, function (Blueprint $table) {
                 $table->tinyInteger('ref_direction')->nullable()->after('ref_payment_id')
                     ->comment('Arah rincian (1 Masuk, 2 Keluar, 3 Keluar 1) — hanya baris External API');
+                $table->char('ref_payload_hash', 64)->nullable()->after('ref_direction')
+                    ->comment('sha256 item kiriman External API untuk arah ini, pembanding kiriman ulang');
             });
 
             DB::statement("
@@ -64,10 +71,19 @@ return new class extends Migration
                 continue;
             }
 
-            Schema::table($tableName, function (Blueprint $table) use ($t) {
-                $table->dropUnique($t['new_unique']);
-                $table->unique(['ref_payment_id', $t['recipient']], $t['old_unique']);
-                $table->dropColumn('ref_direction');
+            $uniques = collect(DB::select("SHOW INDEX FROM {$tableName} WHERE Non_unique = 0"))->pluck('Key_name')->unique();
+
+            Schema::table($tableName, function (Blueprint $table) use ($t, $tableName, $uniques) {
+                if ($uniques->contains($t['new_unique'])) {
+                    $table->dropUnique($t['new_unique']);
+                }
+                if (! $uniques->contains($t['old_unique'])) {
+                    $table->unique(['ref_payment_id', $t['recipient']], $t['old_unique']);
+                }
+                $table->dropColumn(array_values(array_filter(
+                    ['ref_direction', 'ref_payload_hash'],
+                    fn ($column) => Schema::hasColumn($tableName, $column),
+                )));
             });
         }
     }
