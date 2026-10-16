@@ -1416,13 +1416,14 @@
             .done(function (record) {
                 resetModal();
                 var status = parseInt(record.status, 10);
-                // Confirm hanya untuk pending + akses others; ACC/ditolak selalu read-only view
+                // Confirm: pending + Pengiriman|others. Edit: pending + Pengiriman|edit.
+                // Tanpa hak → fallback view (tombol Acc/Edit juga di-hide di bawah).
                 var confirmMode =
                     intent === "confirm" && status === 1 && can("others");
                 if (intent === "confirm" && !confirmMode) {
                     intent = "view";
                 }
-                if (intent === "edit" && status !== 1) {
+                if (intent === "edit" && (status !== 1 || !can("edit"))) {
                     intent = "view";
                 }
                 crMode = intent;
@@ -2042,15 +2043,16 @@
                 openRecord(key, crEditReturnIntent || "view");
                 return;
             }
+            if (!can("edit")) return;
             crEditReturnIntent = crMode;
             openRecord(key, "edit", true);
         });
         $("#cr-accept").off("click.crAccept").on("click.crAccept", function () {
-            if (crMode !== "confirm") return;
+            if (crMode !== "confirm" || !can("others")) return;
             processRecord($("#cr-doc-key").val(), "accept", "ACC pengembalian?");
         });
         $("#cr-decline").off("click.crDecline").on("click.crDecline", function () {
-            if (crMode !== "confirm") return;
+            if (crMode !== "confirm" || !can("others")) return;
             processRecord($("#cr-doc-key").val(), "decline", "Tolak pengembalian?");
         });
     });
