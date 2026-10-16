@@ -126,7 +126,12 @@ class CashOperasionalDataTable
         $dt = DataTableParams::from($data);
         $user = Session::get('user');
 
-        $base = CashArmada::query()->where('status', '>=', 1);
+        // ref_direction=3 = marker API Keluar 1 (sudah di Kas Besar) — jangan tampil di list operasional.
+        // Baris manual ref_direction NULL, tidak tersentuh.
+        $base = CashArmada::query()->where('status', '>=', 1)
+            ->where(function ($q) {
+                $q->whereNull('ref_direction')->orWhere('ref_direction', '<>', 3);
+            });
         if ($data['customer_id']) {
             $base->where('customer_id', '=', $data['customer_id']);
         }
@@ -138,7 +143,11 @@ class CashOperasionalDataTable
         }
         self::applyDateFilter($base, 'cr_date', $data['dates']);
 
-        $recordsTotal = CashArmada::where('status', '>=', 1)->count();
+        $recordsTotal = CashArmada::where('status', '>=', 1)
+            ->where(function ($q) {
+                $q->whereNull('ref_direction')->orWhere('ref_direction', '<>', 3);
+            })
+            ->count();
         $filtered = clone $base;
         self::applyArmadaSearch($filtered, $dt['search']);
         $recordsFiltered = (clone $filtered)->count('cr_id');
@@ -184,7 +193,11 @@ class CashOperasionalDataTable
         $dt = DataTableParams::from($data);
         $user = Session::get('user');
 
-        $base = CashSales::query()->where('status', '>=', 1);
+        // Sama Armada: sembunyikan marker API Keluar 1 (ref_direction=3); manual tetap NULL.
+        $base = CashSales::query()->where('status', '>=', 1)
+            ->where(function ($q) {
+                $q->whereNull('ref_direction')->orWhere('ref_direction', '<>', 3);
+            });
         self::applyStaffFilter($base, 'staff_id', $data['staff_id']);
         if ($data['cash_id']) {
             $base->where('cash_id', '=', $data['cash_id']);
@@ -194,7 +207,11 @@ class CashOperasionalDataTable
         }
         self::applyDateFilter($base, 'cs_date', $data['dates']);
 
-        $recordsTotal = CashSales::where('status', '>=', 1)->count();
+        $recordsTotal = CashSales::where('status', '>=', 1)
+            ->where(function ($q) {
+                $q->whereNull('ref_direction')->orWhere('ref_direction', '<>', 3);
+            })
+            ->count();
         $filtered = clone $base;
         self::applySalesSearch($filtered, $dt['search']);
         $recordsFiltered = (clone $filtered)->count('cs_id');

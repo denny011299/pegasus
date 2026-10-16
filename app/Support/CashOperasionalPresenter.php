@@ -204,6 +204,15 @@ class CashOperasionalPresenter
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
+        // Hanya baris External API (ref_payment_id): net signed di kolom Masuk. Manual tidak berubah.
+        $isApiOperasional = ! empty($row->ref_payment_id) && (int) ($row->ref_direction ?? 0) === 1;
+        if ($isApiOperasional) {
+            $debit = $nominal >= 0
+                ? 'Rp '.self::money($nominal)
+                : '(Rp '.self::money($nominal).')';
+            $credit = 'Rp 0';
+        }
+
         $action = '';
         $hideView = (int) $row->status === 2 && (int) $row->cr_type === 1;
         if (!$hideView && self::can($user, 'view', 'armada')) {
@@ -218,12 +227,16 @@ class CashOperasionalPresenter
             $action = '<span class="text-muted small">—</span>';
         }
 
+        $debitClass = ($isApiOperasional && $nominal < 0) ? 'text-danger' : 'text-success';
+
         return self::baseRow($row, [
             'cr_id' => (int) $row->cr_id,
             'cash_id' => (int) ($row->cash_id ?? 0),
             'cr_date' => $row->cr_date,
             'cr_notes' => $row->cr_notes ?? '',
+            'ref_payment_id' => $row->ref_payment_id ?? null,
             'ref_payment_number' => $row->ref_payment_number ?? null,
+            'ref_direction' => isset($row->ref_direction) ? (int) $row->ref_direction : null,
             'cr_type' => (int) ($row->cr_type ?? 0),
             'cr_aksi' => (int) ($row->cr_aksi ?? 0),
             'cr_nominal' => $nominal,
@@ -234,7 +247,7 @@ class CashOperasionalPresenter
             'status_text' => self::statusBadge((int) $row->status),
             'debit' => $debit,
             'credit' => $credit,
-            'debit_text' => "<label class='text-success'>{$debit}</label>",
+            'debit_text' => "<label class='{$debitClass}'>{$debit}</label>",
             'credit_text' => "<label class='text-danger'>{$credit}</label>",
             'action' => $action,
         ]);
@@ -257,11 +270,24 @@ class CashOperasionalPresenter
         $debit = $isDebit ? 'Rp ' . self::money($nominal) : 'Rp 0';
         $credit = $isDebit ? 'Rp 0' : '(Rp ' . self::money($nominal) . ')';
 
+        // Hanya External API operasional: net signed di kolom Masuk. Manual tidak berubah.
+        $isApiOperasional = ! empty($row->ref_payment_id) && (int) ($row->ref_direction ?? 0) === 1;
+        if ($isApiOperasional) {
+            $debit = $nominal >= 0
+                ? 'Rp '.self::money($nominal)
+                : '(Rp '.self::money($nominal).')';
+            $credit = 'Rp 0';
+        }
+
         $action = '';
         if (self::can($user, 'view', 'sales')) {
             $action .= '<a class="me-2 btn-action-icon btn-action-view p-2 btn_view_sales" data-id="' . (int) $row->cs_id . '" data-bs-target="#view-cash"><i class="fe fe-eye"></i></a>';
         }
-        if ((int) $row->status === 1 && (int) ($row->cs_aksi ?? 0) === 1 && self::can($user, 'others', 'sales')) {
+        // Manual: ACC hanya cs_aksi=1 (saldo). API operasional (ref_direction=1): juga perlu ACC.
+        $showSalesAcc = (int) $row->status === 1
+            && self::can($user, 'others', 'sales')
+            && ($isApiOperasional || (int) ($row->cs_aksi ?? 0) === 1);
+        if ($showSalesAcc) {
             // GitHub #117/#130: see the same note in adminRow() above.
             $action .= '<a class="me-2 btn-action-icon btn-action-approve p-2 btn_acc" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Terima" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-check"></i></a>';
             $action .= '<a class="me-2 btn-action-icon btn-action-reject p-2 btn_decline" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tolak" cash_id="' . (int) $row->cash_id . '"><i class="fe fe-x"></i></a>';
@@ -270,12 +296,16 @@ class CashOperasionalPresenter
             $action = '<span class="text-muted small">—</span>';
         }
 
+        $debitClass = ($isApiOperasional && $nominal < 0) ? 'text-danger' : 'text-success';
+
         return self::baseRow($row, [
             'cs_id' => (int) $row->cs_id,
             'cash_id' => (int) ($row->cash_id ?? 0),
             'cs_date' => $row->cs_date,
             'cs_notes' => $row->cs_notes ?? '',
+            'ref_payment_id' => $row->ref_payment_id ?? null,
             'ref_payment_number' => $row->ref_payment_number ?? null,
+            'ref_direction' => isset($row->ref_direction) ? (int) $row->ref_direction : null,
             'cs_type' => (int) ($row->cs_type ?? 0),
             'cs_transaction' => (int) ($row->cs_transaction ?? 0),
             'cs_aksi' => (int) ($row->cs_aksi ?? 0),
@@ -288,7 +318,7 @@ class CashOperasionalPresenter
             'status_text' => self::statusBadge((int) $row->status),
             'debit' => $debit,
             'credit' => $credit,
-            'debit_text' => "<label class='text-success'>{$debit}</label>",
+            'debit_text' => "<label class='{$debitClass}'>{$debit}</label>",
             'credit_text' => "<label class='text-danger'>{$credit}</label>",
             'action' => $action,
         ]);

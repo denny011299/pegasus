@@ -9,6 +9,7 @@ use App\ExternalApi\Support\PaymentPhotoStore;
 use App\ExternalApi\Support\ReturnItemResolver;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\ReportController;
+use App\Models\Cash;
 use App\Models\CashArmada;
 use App\Models\CashArmadaDetail;
 use App\Models\CashSales;
@@ -72,12 +73,12 @@ use Illuminate\Validation\Rule;
  * Dokumen retur ikut idempoten lewat idempotency_key yang diturunkan dari kunci pembayaran
  * (lihat returnIdempotencyKey()).
  *
- * ITEM CAMPURAN ARAH (2026-10-15): items[].type boleh campuran Masuk/Keluar/Keluar 1. Satu baris
- * kas hanya bisa satu arah, jadi store() membuat satu baris per type dalam satu transaksi; arah
- * disimpan di ref_direction dan ikut kunci idempotensi (ref_payment_id + penerima + arah). Arah
- * yang belum ada boleh dikirim belakangan (dibuat), arah yang sudah ada harus sama persis (selain
- * itu 409 PAYMENT_CONTENT_MISMATCH). POST menjawab data berupa array pembayaran, dokumen
- * Pengembalian di meta.returns. payment_amount opsional (dicek hanya bila dikirim).
+ * ITEM CAMPURAN ARAH (revisi 2026-10-16): items[].type boleh campuran.
+ *   - type 1+2 → SATU dokumen Kas Operasional (ref_direction=1), nominal net = masuk−keluar,
+ *     rincian tetap per type; ACC dompet wajib (kecuali auto_accept).
+ *   - type 3 → langsung Kas Besar kolom Keluar 1 (cash_type=3, status aktif), tanpa ACC;
+ *     marker idempotensi di cash_armadas/cash_sales ref_direction=3 (disembunyikan di list operasional).
+ * Kunci idempotensi: ref_payment_id + penerima + ref_direction (1 atau 3).
  *
  * EXACTLY-ONCE untuk retry PMO (2026-10-16): PMO mengirim ulang payload identik sampai mendapat
  * jawaban. Pembanding "isi sama" adalah ref_payload_hash (sidik jari item kiriman pertama per
@@ -95,8 +96,9 @@ class CashPaymentController extends Controller
     private const TYPE_ARMADA = 1;
     private const TYPE_SALES = 2;
 
-    /** Arah rincian kas, sesuai crd_type/csd_type yang sudah dipakai UI. */
-    private const DIRECTION_MASUK = 1;
+    /** Bucket idempotensi: 1 = Kas Operasional (item type 1+2), 3 = Kas Besar Keluar 1. */
+    private const DIRECTION_OPERASIONAL = 1;
+    private const DIRECTION_KELUAR1 = 3;
 
     /** Jenis item pembayaran (crd_kind/csd_kind). */
     private const KIND_CASH = 'cash';
@@ -106,11 +108,8 @@ class CashPaymentController extends Controller
     /**
      * POST /api/external/v1/payments/cash
      *
-     * Item boleh campuran arah (Masuk / Keluar / Keluar 1). Satu baris kas hanya bisa mencatat
-     * satu arah (catatan, cr_type/cs_transaction diturunkan dari situ), jadi item dikelompokkan
-     * per type dan dibuat SATU baris kas per kelompok, dalam satu transaksi DB. Karena itu data
-     * respons selalu array pembayaran; dokumen Pengembalian (satu per arah + armada + pengiriman)
-     * dikembalikan di meta.returns.
+     * Item boleh campuran. type 1+2 digabung satu dokumen operasional; type 3 ke Kas Besar
+     * Keluar 1. Respons data = array pembayaran (0–2 elemen per call).
      */
     public function store(Request $request): JsonResponse
     {
@@ -118,10 +117,7 @@ class CashPaymentController extends Controller
         $groups = $this->directionGroups($data['items']);
 
         // --- Idempotensi -------------------------------------------------
-        // Kunci idempotensi: ref_payment_id + penerima + arah (lihat catatan kelas soal #208 dan
-        // migration add_ref_direction). Arah yang sudah tersimpan harus sama persis isinya dengan
-        // kiriman ini (selain itu 409 — endpoint ini create-only, tidak bisa mengubah data); arah
-        // yang belum ada dibuat. Kalau semua arah sudah ada, kiriman ini murni kiriman ulang.
+        // Kunci: ref_payment_id + penerima + bucket (1 operasional / 3 keluar 1).
         $existing = $this->findExisting($data);
 
         if ($conflict = $this->contentConflict($existing, $groups)) {
@@ -154,10 +150,13 @@ class CashPaymentController extends Controller
 
                 $returns = $this->createReturns($data, array_keys($groups), $returnProofs);
 
-                // Di dalam transaksi: ACC yang ditolak membatalkan seluruh kiriman, supaya retry
-                // berikutnya bisa membuat data dengan bersih (tidak ada baris pending yang tersisa).
+                // ACC hanya untuk dokumen operasional (bucket 1). Keluar 1 sudah status aktif di Kas Besar.
                 if (! empty($data['auto_accept'])) {
                     foreach ($payments as $i => $payment) {
+                        if ((int) ($payment->ref_direction ?? 0) === self::DIRECTION_KELUAR1) {
+                            continue;
+                        }
+
                         $failure = $this->accept($payment, $data['payment_type']);
 
                         if ($failure !== null) {
@@ -240,15 +239,28 @@ class CashPaymentController extends Controller
     }
 
     /**
-     * Kelompokkan item per type (arah), urut sesuai kemunculan pertama, indeks item asli dibuang.
+     * Bucket item API: type 1+2 → ref_direction 1 (Kas Operasional), type 3 → ref_direction 3 (Kas Besar).
      *
      * @return array<int, array<int, array>>
      */
     private function directionGroups(array $items): array
     {
-        $groups = [];
+        $operasional = [];
+        $keluar1 = [];
         foreach ($items as $item) {
-            $groups[(int) $item['type']][] = $item;
+            if ((int) $item['type'] === self::DIRECTION_KELUAR1) {
+                $keluar1[] = $item;
+            } else {
+                $operasional[] = $item;
+            }
+        }
+
+        $groups = [];
+        if ($operasional !== []) {
+            $groups[self::DIRECTION_OPERASIONAL] = $operasional;
+        }
+        if ($keluar1 !== []) {
+            $groups[self::DIRECTION_KELUAR1] = $keluar1;
         }
 
         return $groups;
@@ -511,9 +523,10 @@ class CashPaymentController extends Controller
             }
 
             $refNotaId = (string) ($item['ref_nota_id'] ?? '');
-            // Per arah juga: tiap dokumen retur milik satu baris kas, supaya arah yang dikirim
-            // belakangan tidak bertabrakan dengan dokumen arah yang sudah ada.
-            $direction = (int) $item['type'];
+            // Bucket sama store(): type 1+2 → operasional (1), type 3 → keluar 1 (3).
+            $direction = (int) $item['type'] === self::DIRECTION_KELUAR1
+                ? self::DIRECTION_KELUAR1
+                : self::DIRECTION_OPERASIONAL;
             $key = $direction.'|'.mb_strtoupper($armadaCode).'|'.$refShipmentId;
             $groups[$key]['direction'] = $direction;
             $groups[$key]['armada_code'] = $armadaCode;
@@ -640,10 +653,7 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * Kas armada operasional.
-     *
-     * Nilai turunan (catatan, jenis, nominal, cr_aksi, cash_id) disusun persis
-     * seperti ReportController::insertCashArmada pada cabang "operasional".
+     * type 1+2 → satu dokumen Kas Operasional (pending ACC); type 3 → Kas Besar Keluar 1 langsung.
      */
     private function createArmada(array $data, int $direction, array $items, array $photoNames): CashArmada
     {
@@ -652,32 +662,98 @@ class CashPaymentController extends Controller
             $this->fail('armada_code', 'Armada tidak ditemukan.');
         }
 
-        $isMasuk = $direction === self::DIRECTION_MASUK;
+        if ($direction === self::DIRECTION_KELUAR1) {
+            return $this->createArmadaKeluar1($data, $customer, $items, $photoNames);
+        }
 
+        $net = $this->operasionalNet($items);
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
-            'ref_direction' => $direction,
+            'ref_direction' => self::DIRECTION_OPERASIONAL,
             'ref_payload_hash' => $this->payloadHash($items),
             'ref_payment_number' => $this->refPaymentNumber($data),
             'customer_id' => (int) $customer->customer_id,
             'cash_id' => 0,
             'cr_date' => $data['payment_date'],
-            'cr_nominal' => $this->sumAmount($items),
-            'cr_notes' => ($isMasuk ? 'Setoran armada ' : 'Pengeluaran armada ').$customer->customer_notes,
+            // Net signed: ACC cr_type=1 memakai += jadi masuk/keluar ikut net.
+            'cr_nominal' => $net,
+            'cr_notes' => $this->operasionalNotes('armada', $customer->customer_notes, $items),
+            'cr_type' => 1,
             'cr_aksi' => 2,
             'status' => 1,
         ];
-
-        if ($isMasuk) {
-            $row['cr_type'] = 1;
-        }
 
         if ($photoNames !== []) {
             $row['cr_img'] = json_encode($photoNames);
         }
 
         $crId = (new CashArmada())->insertCashArmada($row);
+        $this->insertArmadaDetails($crId, $items);
 
+        return CashArmada::find($crId);
+    }
+
+    /**
+     * Judul header Kas Besar untuk Keluar 1 API — singkat; rincian item ada di anakan.
+     * Contoh: "Pembayaran Dokumen PB/NAJ/161026/001 — Nanang Joko Suwarno"
+     */
+    private function keluar1HeaderNotes(array $data, string $penerimaLabel): string
+    {
+        $number = $this->refPaymentNumber($data);
+        $doc = $number !== '' ? $number : (string) ($data['ref_payment_id'] ?? '');
+        $label = trim($penerimaLabel);
+
+        return mb_substr(
+            'Pembayaran Dokumen'.($doc !== '' ? ' '.$doc : '').($label !== '' ? ' - '.$label : ''),
+            0,
+            255
+        );
+    }
+
+    /** Marker idempotensi + baris Kas Besar cash_type=3 status aktif (tanpa ACC). */
+    private function createArmadaKeluar1(array $data, Customer $customer, array $items, array $photoNames): CashArmada
+    {
+        $amount = $this->sumAmount($items);
+        $number = $this->refPaymentNumber($data);
+        $desc = $this->keluar1HeaderNotes($data, (string) $customer->customer_notes);
+
+        // Sama input manual /cash Keluar 1: status 2 = langsung aktif, tanpa ACC.
+        $cashId = (new Cash())->insertCash([
+            'person_id' => (int) $customer->customer_id,
+            'cash_date' => $data['payment_date'],
+            'cash_description' => $desc,
+            'cash_nominal' => $amount,
+            'cash_type' => 3,
+            'cash_tujuan' => 3,
+            'status' => 2,
+        ]);
+
+        $row = [
+            'ref_payment_id' => $data['ref_payment_id'],
+            'ref_direction' => self::DIRECTION_KELUAR1,
+            'ref_payload_hash' => $this->payloadHash($items),
+            'ref_payment_number' => $number,
+            'customer_id' => (int) $customer->customer_id,
+            'cash_id' => $cashId,
+            'cr_date' => $data['payment_date'],
+            'cr_nominal' => $amount,
+            'cr_notes' => $desc,
+            'cr_type' => 3,
+            'cr_aksi' => 2,
+            'status' => 2,
+        ];
+        if ($photoNames !== []) {
+            $row['cr_img'] = json_encode($photoNames);
+        }
+
+        $crId = (new CashArmada())->insertCashArmada($row);
+        $this->insertArmadaDetails($crId, $items);
+
+        return CashArmada::find($crId);
+    }
+
+    private function insertArmadaDetails(int $crId, array $items): void
+    {
         foreach ($items as $item) {
             (new CashArmadaDetail())->insertCashArmadaDetail([
                 'cr_id' => $crId,
@@ -688,40 +764,34 @@ class CashPaymentController extends Controller
                 'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
-
-        return CashArmada::find($crId);
     }
 
-    /**
-     * Kas sales operasional.
-     *
-     * Mengikuti ReportController::insertCashSales pada cabang "operasional".
-     */
     private function createSales(array $data, int $direction, array $items, array $photoNames): CashSales
     {
         $staff = $this->resolveSalesStaff($data['staff_id']);
         if ($staff === null) {
-            // Sudah dicek di assertReferencedRecordExists — jaring pengaman race.
             $this->fail('staff_id', 'Sales dengan staff_id (external_ref_id) '.$data['staff_id'].' tidak ditemukan.');
         }
 
-        $isMasuk = $direction === self::DIRECTION_MASUK;
+        if ($direction === self::DIRECTION_KELUAR1) {
+            return $this->createSalesKeluar1($data, $staff, $items, $photoNames);
+        }
 
+        $net = $this->operasionalNet($items);
         $row = [
             'ref_payment_id' => $data['ref_payment_id'],
             'ref_payment_number' => $this->refPaymentNumber($data),
-            'ref_direction' => $direction,
+            'ref_direction' => self::DIRECTION_OPERASIONAL,
             'ref_payload_hash' => $this->payloadHash($items),
             'staff_id' => (int) $staff->staff_id,
             'cash_id' => 0,
-            // bank_id tidak punya nilai bawaan di model dan tidak dipakai pada
-            // transaksi operasional; kolomnya sendiri berdefault 0.
             'bank_id' => 0,
             'cs_date' => $data['payment_date'],
-            'cs_nominal' => $this->sumAmount($items),
-            'cs_notes' => ($isMasuk ? 'Setoran sales ' : 'Pengeluaran sales ').$staff->staff_name,
+            'cs_nominal' => $net,
+            'cs_notes' => $this->operasionalNotes('sales', $staff->staff_name, $items),
             'cs_type' => 2,
-            'cs_transaction' => $direction,
+            // 1 = jalur Masuk di ACC (+= nominal signed).
+            'cs_transaction' => 1,
             'status' => 1,
         ];
 
@@ -730,7 +800,54 @@ class CashPaymentController extends Controller
         }
 
         $csId = (new CashSales())->insertCashSales($row);
+        $this->insertSalesDetails($csId, $items);
 
+        return CashSales::find($csId);
+    }
+
+    private function createSalesKeluar1(array $data, Staff $staff, array $items, array $photoNames): CashSales
+    {
+        $amount = $this->sumAmount($items);
+        $number = $this->refPaymentNumber($data);
+        $desc = $this->keluar1HeaderNotes($data, (string) $staff->staff_name);
+
+        $cashId = (new Cash())->insertCash([
+            'person_id' => (int) $staff->staff_id,
+            'cash_date' => $data['payment_date'],
+            'cash_description' => $desc,
+            'cash_nominal' => $amount,
+            'cash_type' => 3,
+            'cash_tujuan' => 4,
+            'status' => 2,
+        ]);
+
+        $row = [
+            'ref_payment_id' => $data['ref_payment_id'],
+            'ref_payment_number' => $number,
+            'ref_direction' => self::DIRECTION_KELUAR1,
+            'ref_payload_hash' => $this->payloadHash($items),
+            'staff_id' => (int) $staff->staff_id,
+            'cash_id' => $cashId,
+            'bank_id' => 0,
+            'cs_date' => $data['payment_date'],
+            'cs_nominal' => $amount,
+            'cs_notes' => $desc,
+            'cs_type' => 2,
+            'cs_transaction' => 3,
+            'status' => 2,
+        ];
+        if ($photoNames !== []) {
+            $row['cs_img'] = json_encode($photoNames);
+        }
+
+        $csId = (new CashSales())->insertCashSales($row);
+        $this->insertSalesDetails($csId, $items);
+
+        return CashSales::find($csId);
+    }
+
+    private function insertSalesDetails(int $csId, array $items): void
+    {
         foreach ($items as $item) {
             (new CashSalesDetail())->insertCashSalesDetail([
                 'cs_id' => $csId,
@@ -741,8 +858,30 @@ class CashPaymentController extends Controller
                 'ref_nota_id' => $item['ref_nota_id'] ?? null,
             ]);
         }
+    }
 
-        return CashSales::find($csId);
+    /** Net Kas Operasional: sum(type 1) − sum(type 2). */
+    private function operasionalNet(array $items): int
+    {
+        $net = 0;
+        foreach ($items as $item) {
+            $amount = (int) $item['amount'];
+            $net += (int) $item['type'] === 2 ? -$amount : $amount;
+        }
+
+        return $net;
+    }
+
+    private function operasionalNotes(string $kind, string $who, array $items): string
+    {
+        $types = collect($items)->pluck('type')->unique()->sort()->values()->all();
+        $prefix = match (true) {
+            $types === [1] => $kind === 'armada' ? 'Setoran armada ' : 'Setoran sales ',
+            $types === [2] => $kind === 'armada' ? 'Pengeluaran armada ' : 'Pengeluaran sales ',
+            default => $kind === 'armada' ? 'Pembayaran armada ' : 'Pembayaran sales ',
+        };
+
+        return $prefix.$who;
     }
 
     /* ------------------------------------------------------------------ */
