@@ -37,6 +37,11 @@ class CashGudangDetail extends Model
         $t->customer_id = $data['customer_id'];
         $t->cgd_nominal = $data["cgd_nominal"];
         $t->cgd_notes = $data["cgd_notes"];
+        // Opsional: No./id pengiriman PMO (API atau form terima armada). Kosong = baris lama/non-pengiriman.
+        if (array_key_exists('ref_shipment_id', $data)) {
+            $ref = trim((string) ($data['ref_shipment_id'] ?? ''));
+            $t->ref_shipment_id = $ref !== '' ? $ref : null;
+        }
         $t->save();
         return $t->cgd_id;
     }
@@ -48,6 +53,10 @@ class CashGudangDetail extends Model
         $t->customer_id = $data['customer_id'];
         $t->cgd_nominal = $data["cgd_nominal"];
         $t->cgd_notes = $data["cgd_notes"];
+        if (array_key_exists('ref_shipment_id', $data)) {
+            $ref = trim((string) ($data['ref_shipment_id'] ?? ''));
+            $t->ref_shipment_id = $ref !== '' ? $ref : null;
+        }
         $t->save();
         return $t->cgd_id;
     }

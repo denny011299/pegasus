@@ -5,8 +5,12 @@
         <div class="modal-header border-0 pb-0">
           <div class="form-header modal-header-title  text-start mb-0">
             <h4 class="mb-0 modal-title">Tambah Aktivitas Sales</h4>
-            {{-- GitHub #216: No. Dokumen Pembayaran PMO, hanya terisi untuk pembayaran dari PMO --}}
-            <small class="cash-ref-payment-number text-muted d-none">No. Pembayaran PMO: <span class="fw-semibold text-dark"></span></small>
+            {{-- GitHub #216: ref dokumen pembayaran API (PB/…), hanya terisi dari PMO --}}
+            <small class="cash-ref-payment-number text-muted d-none">
+                Ref. Pembayaran
+                <i class="fe fe-info ms-1" style="font-size:11px;cursor:help" data-bs-toggle="tooltip" data-bs-placement="top" title="Referensi dari dokumen pembayaran Pegasus Management Order (PMO)."></i>:
+                <span class="fw-semibold text-dark"></span>
+            </small>
           </div>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Tutup">
           </button>

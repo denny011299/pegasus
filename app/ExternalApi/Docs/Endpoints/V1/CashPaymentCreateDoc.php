@@ -36,12 +36,12 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
 
     public function description(): string
     {
-        return 'Mencatat transaksi kas operasional atas nama armada atau sales, beserta rinciannya. '
-            .'Item boleh campuran Masuk/Keluar/Keluar 1: Pegasus membuat satu pembayaran per type, '
-            .'sehingga data respons berupa array. Hanya create, tidak pernah mengubah pembayaran tersimpan. Idempoten per ref_payment_id + penerima '
-            .'(armada_code atau staff_id) — bukan per ref_payment_id sendirian. Potongan (nominal maupun '
-            .'barang) ikut dicatat di pembayaran yang sama; potongan barang otomatis membuat dokumen '
-            .'Pengembalian, sehingga tidak perlu memanggil POST /shipments/returns terpisah.';
+        return 'Mencatat pembayaran kas dari sistem eksternal (armada/sales). '
+            .'Tunai dikirim KOTOR (gross); potongan/jerigen/diskon memakai type=2 (Keluar) amount positif — '
+            .'bukan tunai bersih (hindari potongan dobel). Type 1+2 digabung satu dokumen Kas Operasional '
+            .'(net = Σ type1 − Σ type2, perlu ACC). Type 3 langsung Kas Besar Keluar 1 tanpa ACC. '
+            .'Respons data = array (0–2 elemen). Idempoten per ref_payment_id + penerima + bucket (1 atau 3). '
+            .'Potongan barang membuat dokumen Pengembalian otomatis.';
     }
 
     public function bodyParameters(): array
@@ -66,15 +66,15 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             ['name' => 'items', 'type' => 'array', 'required' => true,
                 'description' => 'Rincian transaksi, minimal satu baris.'],
             ['name' => 'items[].amount', 'type' => 'integer', 'required' => true,
-                'description' => 'Nominal satu rincian.'],
+                'description' => 'Nominal ≥ 0 (jangan negatif). Tanda plus/minus dihitung dari type, bukan dari tanda amount.'],
             ['name' => 'items[].type', 'type' => 'integer', 'required' => true,
-                'description' => '1 = Masuk (setoran), 2 = Keluar, 3 = Keluar 1. Boleh campuran dalam satu permintaan — item dikelompokkan per type dan tiap kelompok menjadi satu pembayaran tersendiri.'],
+                'description' => '1 = Masuk (tunai kotor), 2 = Keluar (potongan/jerigen/diskon ATAU pengeluaran kas operasional seperti Solar — bedakan lewat kind), 3 = Keluar 1 (Kas Besar langsung). Type 1+2 → satu dokumen Kas Operasional (net = Σ1 − Σ2, ACC). Type 3 → Kas Besar tanpa ACC.'],
             ['name' => 'items[].notes', 'type' => 'string', 'required' => false,
                 'description' => 'Keterangan rincian, maksimal 255 karakter.'],
             ['name' => 'items[].ref_nota_id', 'type' => 'string', 'required' => false,
                 'description' => 'Id nota/faktur milik sistem pemanggil yang menjadi asal item ini, maksimal 100 karakter. Disimpan apa adanya dan ikut dikembalikan per item di response, tidak divalidasi ke data lain. Satu pembayaran boleh menggabungkan item dari beberapa nota berbeda.'],
             ['name' => 'items[].kind', 'type' => 'string', 'required' => false,
-                'description' => 'Jenis item: cash (uang tunai, bawaan bila tidak dikirim), potongan (potongan nominal, mis. cash diskon 3%), potongan_barang (potongan berupa barang yang dikembalikan armada, mis. jerigen). Potongan boleh pada alur kas mana pun (type 1, 2, atau 3); potongan_barang tetap membuat dokumen Pengembalian.'],
+                'description' => 'cash (default) | potongan | potongan_barang. Tidak mengubah rumus net (yang menentukan ± hanya type). kind membedakan Solar (cash type 2) dari diskon/jerigen (potongan type 2). potongan_barang + goods → dokumen Pengembalian. Kontrak PMO: potongan/jerigen pakai type=2, tunai kotor type=1.'],
             ['name' => 'items[].goods', 'type' => 'object', 'required' => false,
                 'description' => 'Wajib bila kind = potongan_barang, dan hanya boleh dikirim untuk kind itu. Barang yang dikembalikan.'],
             ['name' => 'items[].goods.item_type', 'type' => 'integer', 'required' => true,
@@ -96,12 +96,14 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             ['name' => 'photos', 'type' => 'array', 'required' => false,
                 'description' => 'Bukti transaksi sebagai data URI base64. Hanya PNG dan JPEG. Foto pertama juga dipakai sebagai bukti dokumen Pengembalian dari potongan barang.'],
             ['name' => 'auto_accept', 'type' => 'boolean', 'required' => false,
-                'description' => 'Bila true, seluruh pembayaran yang terbentuk langsung disetujui satu per satu dan saldo armada/sales ikut disesuaikan.'],
+                'description' => 'Bila true, hanya dokumen operasional (type 1+2) yang di-ACC dan saldo disesuaikan. Type 3 (Keluar 1) sudah aktif di Kas Besar dan diabaikan.'],
         ];
     }
 
     public function requestExample(): ?array
     {
+        // Tunai KOTOR type=1; potongan/jerigen type=2; Solar type=2 kind=cash.
+        // payment_amount = sum mentah; net ACC = 1_000_000 − 40_000 − 30_000 − 100_000 = 830_000.
         return [
             'ref_payment_id' => 'G7913082026154630',
             'ref_payment_number' => 'PB/BUD/121026/003',
@@ -109,18 +111,13 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             'armada_code' => 'TRK-01',
             'payment_date' => '2026-10-07',
             'ref_shipment_id' => '5429092026170947263',
-            'payment_amount' => 1720000,
-            'armadas' => [
-                ['code' => 'TRK-02', 'nomor_polisi' => 'B 5678 YY', 'category' => 'Truk Engkel'],
-            ],
+            'payment_amount' => 1170000,
             'items' => [
-                ['kind' => 'cash', 'type' => 1, 'amount' => 1500000, 'notes' => 'Pelunasan INV/001', 'ref_nota_id' => '4328012026102327'],
-                ['kind' => 'potongan', 'type' => 1, 'amount' => 45000, 'notes' => 'Cash Diskon 3%', 'ref_nota_id' => '4328012026102327'],
-                ['kind' => 'potongan_barang', 'type' => 1, 'amount' => 105000, 'notes' => 'Jerigen 25kg', 'ref_nota_id' => '4328012026102327',
-                    'goods' => ['item_type' => 1, 'ref_id' => '242', 'qty' => 5, 'satuan_id' => 9506012026014616]],
-                ['kind' => 'potongan_barang', 'type' => 1, 'amount' => 70000, 'notes' => 'Jerigen 35kg', 'ref_nota_id' => '4328012026102400',
-                    'goods' => ['item_type' => 1, 'ref_id' => '241', 'qty' => 2, 'satuan_id' => 9506012026014616,
-                        'armada_code' => 'TRK-02', 'ref_shipment_id' => '5429092026170947300']],
+                ['kind' => 'cash', 'type' => 1, 'amount' => 1000000, 'notes' => 'Pelunasan INV/001 (kotor)', 'ref_nota_id' => '4328012026102327'],
+                ['kind' => 'potongan_barang', 'type' => 2, 'amount' => 40000, 'notes' => 'Jerigen', 'ref_nota_id' => '4328012026102327',
+                    'goods' => ['item_type' => 1, 'ref_id' => '242', 'qty' => 1, 'satuan_id' => 9506012026014616]],
+                ['kind' => 'potongan', 'type' => 2, 'amount' => 30000, 'notes' => 'Cash Diskon 3%', 'ref_nota_id' => '4328012026102327'],
+                ['kind' => 'cash', 'type' => 2, 'amount' => 100000, 'notes' => 'Solar'],
             ],
         ];
     }
@@ -137,17 +134,18 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
                     'payment_id' => 512,
                     'payment_type' => 1,
                     'payment_date' => '2026-10-07',
-                    'payment_amount' => 1720000,
-                    'notes' => 'Setoran armada B 1234 XX',
+                    // payment_amount di response = net header (Σ1−Σ2) = 830000, bukan sum mentah 1170000.
+                    'payment_amount' => 830000,
+                    'notes' => 'Pembayaran armada B 1234 XX',
                     'armada_code' => 'TRK-01',
                     'armada_id' => 4,
                     'staff_id' => null,
                     'status' => 'pending',
                     'items' => [
-                        ['amount' => 1500000, 'notes' => 'Pelunasan INV/001', 'type' => 1, 'kind' => 'cash', 'ref_nota_id' => '4328012026102327'],
-                        ['amount' => 45000, 'notes' => 'Cash Diskon 3%', 'type' => 1, 'kind' => 'potongan', 'ref_nota_id' => '4328012026102327'],
-                        ['amount' => 105000, 'notes' => 'Jerigen 25kg', 'type' => 1, 'kind' => 'potongan_barang', 'ref_nota_id' => '4328012026102327'],
-                        ['amount' => 70000, 'notes' => 'Jerigen 35kg', 'type' => 1, 'kind' => 'potongan_barang', 'ref_nota_id' => '4328012026102400'],
+                        ['amount' => 1000000, 'notes' => 'Pelunasan INV/001 (kotor)', 'type' => 1, 'kind' => 'cash', 'ref_nota_id' => '4328012026102327'],
+                        ['amount' => 40000, 'notes' => 'Jerigen', 'type' => 2, 'kind' => 'potongan_barang', 'ref_nota_id' => '4328012026102327'],
+                        ['amount' => 30000, 'notes' => 'Cash Diskon 3%', 'type' => 2, 'kind' => 'potongan', 'ref_nota_id' => '4328012026102327'],
+                        ['amount' => 100000, 'notes' => 'Solar', 'type' => 2, 'kind' => 'cash'],
                     ],
                     'photos' => [],
                     'created_at' => '2026-10-07T03:15:00+07:00',
@@ -158,8 +156,6 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
                 'returns' => [
                     ['armada_code' => 'TRK-01', 'ref_shipment_id' => '5429092026170947263', 'return_number' => 'PKR0087',
                         'supply_return_id' => 88, 'product_return_id' => null, 'pending_warehouse_items' => 1],
-                    ['armada_code' => 'TRK-02', 'ref_shipment_id' => '5429092026170947300', 'return_number' => 'PKR0088',
-                        'supply_return_id' => 89, 'product_return_id' => null, 'pending_warehouse_items' => 1],
                 ],
             ],
         ];
@@ -187,7 +183,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return [
             'items[].ref_nota_id bersifat opsional dan tidak divalidasi ke data lain — hanya disimpan dan dikembalikan apa adanya per item, untuk membantu rekonsiliasi keuangan menelusuri balik ke nota/faktur asal tiap item tanpa mem-parsing notes. Satu pembayaran boleh berisi item dari beberapa nota berbeda.',
-            'Endpoint ini hanya untuk create — pembayaran yang sudah tersimpan tidak pernah diubah. Kunci idempotensi: ref_payment_id + penerima (armada_code untuk payment_type 1, staff_id untuk payment_type 2) + type. ref_payment_id sendirian bukan kunci: satu dokumen pembayaran boleh dikirim sebagai beberapa POST dengan ref_payment_id yang SAMA, satu call per penerima.',
+            'Endpoint ini hanya untuk create — pembayaran yang sudah tersimpan tidak pernah diubah. Kunci idempotensi: ref_payment_id + penerima + bucket (1 = operasional type1+2, 3 = Keluar 1). ref_payment_id sendirian bukan kunci: satu PB boleh beberapa POST (satu per penerima).',
             'ATURAN RETRY (exactly-once): kalau respons tidak diterima (timeout, jaringan putus) atau tidak yakin data sudah masuk, kirim ulang payload yang SAMA PERSIS dengan ref_payment_id yang sama — boleh berkali-kali. Jawaban Pegasus menjadi penanda: 201 = baru dibuat sekarang; 200 dengan meta.idempotent_replay = true = sudah tercatat sebelumnya, tidak ada yang dibuat lagi; 409 PAYMENT_CONTENT_MISMATCH = kunci itu sudah tercatat dengan isi lain. Pembayaran tetap tercatat tepat satu kali, termasuk bila dua kiriman identik datang bersamaan (yang kalah balapan mendapat replay 200).',
             'Replay (200) mengembalikan data dan meta.returns yang sama dengan saat pertama dibuat — kecuali status, yang selalu status terkini (mis. accepted setelah di-ACC staf). Replay tetap 200 walaupun pembayaran sudah di-ACC, ditolak, atau dihapus staf Pegasus: tindakan staf tidak pernah membuat retry yang sah jadi 409, dan pembayaran yang dihapus staf tidak dibuat ulang.',
             'Yang DIBANDINGKAN saat kiriman ulang, per type: isi items untuk type itu — amount, type, kind, notes, ref_nota_id, goods (item_type, ref_id, qty, satuan_id, armada_code, ref_shipment_id), dan urutannya. Pembanding memakai isi kiriman pertama, bukan data saat ini di Pegasus. Normalisasi: null, "" dan teks kosong dianggap sama; spasi di tepi diabaikan; kind kosong = cash; amount/qty dibandingkan sebagai angka; armada_code tidak peka huruf besar-kecil.',
@@ -200,14 +196,14 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             'Pembuatan berhasil menjawab 201; kiriman ulang menjawab 200.',
             'Istilah "armada": di Pegasus, armada dicatat sebagai data pelanggan (customer_code + nomor polisi di keterangan), bukan tabel armada tersendiri.',
             'payment_amount opsional. Bila dikirim dan tidak sama dengan jumlah seluruh items[].amount, permintaan ditolak 422 dan tidak ada yang tersimpan.',
-            'Item campuran type: satu pembayaran di Pegasus hanya bisa mencatat satu arah kas, jadi item dikelompokkan per type (urutan sesuai kemunculan pertama) dan tiap kelompok menjadi satu pembayaran dengan payment_amount = jumlah item kelompok itu. Type boleh ditambahkan belakangan lewat kiriman berikutnya dengan ref_payment_id + penerima yang sama (lihat catatan idempotensi). data selalu berupa array pembayaran — berisi satu elemen bila seluruh item bertype sama. Semua kelompok tersimpan dalam satu transaksi: berhasil semua atau gagal semua.',
-            'Potongan: semua item (cash, potongan, potongan_barang) dihitung di payment_amount dan tercatat sebagai rincian kas, sehingga total terbayar sama dengan sistem pemanggil. items[].kind membedakan tunai dari potongan di laporan. Payload tanpa kind tetap valid dan diperlakukan sebagai tunai.',
-            'Potongan barang: Pegasus membuat SATU dokumen Pengembalian per type + pasangan (goods.armada_code, goods.ref_shipment_id), dalam transaksi yang sama dengan kas — bila satu baris barang ditolak, pembayaran juga tidak tersimpan. Dokumen berstatus Pending; ref_number berisi ref_payment_id. Daftar dokumen dikembalikan di meta.returns (array kosong bila tidak ada potongan barang).',
+            'Item campuran (revisi): type 1+2 → SATU baris Kas Operasional (ref_direction=1), nominal header = Σ(type1)−Σ(type2), detail menyimpan type+kind asli; ACC menyesuaikan saldo dengan net. Type 3 → Kas Besar cash_type=3 status aktif langsung (tanpa ACC); marker ref_direction=3 disembunyikan di list operasional. data = array 0–2 elemen. Form manual tidak memakai aturan ini.',
+            'KONTRAK PMO (tunai kotor): items[].amount tunai = nilai nota SEBELUM potongan (type=1 kind=cash). Potongan/jerigen/diskon = type=2 amount positif (kind=potongan / potongan_barang). Jangan kirim tunai bersih lalu potongan type=2 — potongan terhitung dua kali. Pengeluaran kas (Solar) juga type=2 kind=cash; bedanya dari potongan hanya di kind. payment_amount = sum mentah semua amount (bukan net).',
+            'Potongan barang: SATU dokumen Pengembalian per pasangan (goods.armada_code, goods.ref_shipment_id) dalam transaksi yang sama — gagal satu gagal semua. Status Pending; ref_number = ref_payment_id. meta.returns berisi daftarnya (kosong bila tidak ada potongan_barang).',
             'Gudang tujuan barang dari potongan barang tidak dikirim pemanggil: petugas gudang memilihnya (gudang utama atau eceran) di halaman Pengembalian sebelum dokumen diterima. pending_warehouse_items menunjukkan jumlah baris yang menunggu pilihan gudang.',
             'Kiriman ulang tidak pernah membuat dokumen Pengembalian kedua; meta.returns berisi dokumen yang sudah ada (return_number, supply_return_id, product_return_id).',
             'Endpoint ini hanya untuk transaksi operasional (pengeluaran atau setoran berbutir). Penambahan saldo tetap dilakukan lewat halaman admin.',
             'Seluruh penyimpanan berjalan dalam satu transaksi database, termasuk persetujuan otomatis (auto_accept). Bila ada bagian yang gagal — validasi goods, foto rusak, atau persetujuan ditolak — tidak ada baris kas, rincian, dokumen Pengembalian, maupun berkas foto yang tertinggal, sehingga retry berikutnya membuat data dengan bersih.',
-            'auto_accept = true menjalankan persetujuan yang sama dengan tombol ACC di halaman admin, termasuk penyesuaian saldo armada atau sales. Pemakaian tanpa auto_accept menyisakan pembayaran berstatus pending untuk disetujui petugas.',
+            'auto_accept = true hanya ACC dokumen operasional (type 1+2). Type 3 (Keluar 1) sudah aktif di Kas Besar dan diabaikan auto_accept. Tanpa auto_accept, operasional tetap pending sampai ACC petugas.',
             'Pembayaran yang dibuat lewat API tidak memiliki pembuat internal (created_by kosong), karena tidak ada pengguna yang login. Jejaknya tersedia di Log API Eksternal, lengkap dengan aplikasi dan kunci yang memanggil.',
         ];
     }

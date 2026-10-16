@@ -45,19 +45,20 @@
         }
 
         .child-left {
-            flex: 0 0 50%;
-            padding-left: 0.8rem
+            flex: 1 1 auto;
+            min-width: 0;
+            padding-left: 0.8rem;
         }
 
         .child-right {
-            flex: 0 0 34%;
+            flex: 0 0 12rem;
             text-align: right;
-            padding-right: 12rem;
+            padding-right: 2rem;
         }
 
         .child-left-total {
-            flex: 0 0 50%;
-            padding-left: 6.8rem
+            flex: 1 1 auto;
+            padding-left: 6.8rem;
         }
 
         .left-row {
@@ -71,7 +72,9 @@
         }
 
         .notes {
-            max-width: 30rem;
+            max-width: 44rem;
+            flex: 1 1 auto;
+            min-width: 0;
             white-space: normal;
             word-break: break-word;
         }
@@ -225,8 +228,15 @@
                                             <th>Status</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
-                                            {{-- GitHub #216: hanya tampil di Dompet Virtual Armada/Sales (diatur JS) --}}
-                                            <th>No. Pembayaran PMO</th>
+                                            {{-- GitHub #216: ref dokumen pembayaran API (PB/…); hanya Armada/Sales --}}
+                                            <th>
+                                                Ref. Pembayaran
+                                                <i class="fe fe-info text-muted ms-1"
+                                                   style="font-size:12px;cursor:help"
+                                                   data-bs-toggle="tooltip"
+                                                   data-bs-placement="top"
+                                                   title="Referensi dari dokumen pembayaran Pegasus Management Order (PMO)."></i>
+                                            </th>
                                             <th class="text-end">Masuk</th>
                                             <th class="text-end">Keluar</th>
                                             <th>Dibuat Oleh</th>

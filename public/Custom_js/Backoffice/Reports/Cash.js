@@ -293,6 +293,26 @@
         if (operasional && operasional.length > 0) {
 
             operasional.forEach((d) => {
+                // API Keluar 1: tiap baris detail jadi anakan (bukan 1 ringkasan + tombol list).
+                var isApiKeluar1 = !!(d.ref_payment_id) && parseInt(d.ref_direction, 10) === 3
+                    && Array.isArray(d.detail_armada) && d.detail_armada.length > 0;
+                if (isApiKeluar1) {
+                    d.detail_armada.forEach(function (line) {
+                        var n = parseInt(line.crd_nominal, 10) || 0;
+                        total -= n;
+                        html += `
+                            <div class="child-item">
+                                <div class="child-left d-flex g-3">
+                                    <div class="date me-3">${moment(d.cr_date).format('D MMM YYYY')}</div>
+                                    <div class="notes">${line.crd_notes || 'Keluar 1'}</div>
+                                </div>
+                                <div class="child-right text-end" style="color:#e8bd10">- Rp ${formatRupiahMinus(n)}</div>
+                            </div>
+                        `;
+                    });
+                    return;
+                }
+
                 if (d.cr_type == 1) total += parseInt(d.cr_nominal);
                 else if (d.cr_type >= 2) total -= parseInt(d.cr_nominal);
     
@@ -397,6 +417,26 @@
         if (operasional && operasional.length > 0) {
 
             operasional.forEach((d) => {
+                // API Keluar 1: tiap baris detail jadi anakan (bukan 1 ringkasan + tombol list).
+                var isApiKeluar1 = !!(d.ref_payment_id) && parseInt(d.ref_direction, 10) === 3
+                    && Array.isArray(d.detail_armada) && d.detail_armada.length > 0;
+                if (isApiKeluar1) {
+                    d.detail_armada.forEach(function (line) {
+                        var n = parseInt(line.csd_nominal, 10) || 0;
+                        total -= n;
+                        html += `
+                            <div class="child-item">
+                                <div class="child-left d-flex g-3">
+                                    <div class="date me-3">${moment(d.cs_date).format('D MMM YYYY')}</div>
+                                    <div class="notes">${line.csd_notes || 'Keluar 1'}</div>
+                                </div>
+                                <div class="child-right text-end" style="color:#e8bd10">- Rp ${formatRupiahMinus(n)}</div>
+                            </div>
+                        `;
+                    });
+                    return;
+                }
+
                 if (d.cs_transaction == 1) total += parseInt(d.cs_nominal);
                 else if (d.cs_transaction >= 2) total -= parseInt(d.cs_nominal);
     

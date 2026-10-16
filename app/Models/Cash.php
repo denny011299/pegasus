@@ -55,8 +55,9 @@ class Cash extends Model
             return;
         }
 
+        // cash_type 3 = Keluar 1 (API/manual setor) — ikut diload supaya accordion anakan bisa diisi.
         $armadaCustomerIds = $result
-            ->filter(fn ($row) => in_array($row->cash_type, [1, 2], true) && (int) $row->cash_tujuan === 3)
+            ->filter(fn ($row) => in_array((int) $row->cash_type, [1, 2, 3], true) && (int) $row->cash_tujuan === 3)
             ->pluck('person_id')
             ->map(fn ($id) => (int) $id)
             ->filter()
@@ -120,8 +121,24 @@ class Cash extends Model
 
         foreach ($result as $key => $value) {
             // Armada
-            if (in_array($value->cash_type, [1, 2]) && $value->cash_tujuan == 3){
+            if (in_array((int) $value->cash_type, [1, 2, 3], true) && (int) $value->cash_tujuan === 3) {
                 $rows = $armadaByCustomer->get((int) $value->person_id, collect());
+
+                // Header+anakan Keluar 1 HANYA External API (satu dokumen pembayaran:
+                // ref_payment_id + ref_direction=3). Manual Keluar 1 tetap baris polos.
+                if ((int) $value->cash_type === 3) {
+                    $linked = $rows->first(
+                        fn ($row) => (int) $row->cash_id === (int) $value->cash_id
+                            && (int) $row->status === 2
+                            && ! empty($row->ref_payment_id)
+                            && (int) ($row->ref_direction ?? 0) === 3
+                    );
+                    if ($linked) {
+                        $value->armada_penyerahan = collect();
+                        $value->armada_operasional = collect([$linked]);
+                    }
+                    continue;
+                }
 
                 $pengembalianIni = $rows->first(
                     fn ($row) => (int) $row->cash_id === (int) $value->cash_id && (int) $row->cr_aksi === 1
@@ -202,8 +219,24 @@ class Cash extends Model
             }
 
             // Sales
-            else if (in_array($value->cash_type, [1, 2, 3]) && $value->cash_tujuan == 4){
+            else if (in_array((int) $value->cash_type, [1, 2, 3], true) && (int) $value->cash_tujuan === 4) {
                 $rows = $salesByStaff->get((int) $value->person_id, collect());
+
+                // Header+anakan Keluar 1 HANYA External API (satu dokumen pembayaran:
+                // ref_payment_id + ref_direction=3). Manual Keluar 1 tetap baris polos.
+                if ((int) $value->cash_type === 3) {
+                    $linked = $rows->first(
+                        fn ($row) => (int) $row->cash_id === (int) $value->cash_id
+                            && (int) $row->status === 2
+                            && ! empty($row->ref_payment_id)
+                            && (int) ($row->ref_direction ?? 0) === 3
+                    );
+                    if ($linked) {
+                        $value->sales_penyerahan = collect();
+                        $value->sales_operasional = collect([$linked]);
+                    }
+                    continue;
+                }
 
                 $pengembalianIni = $rows->first(
                     fn ($row) => (int) $row->cash_id === (int) $value->cash_id

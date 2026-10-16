@@ -1395,8 +1395,9 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     });
   }
 
-  // No. Pengiriman PMO (status belum dikirim / berjalan) — Keterangan detail Kas Gudang.
-  function autocompletePengirimanPmo(id, modalParent = null) {
+  // No. Pengiriman PMO (onschedule/onprocess) — filter opsional per armada (#customer_id Kas Gudang).
+  // Backend resolve: ref_armada_id dulu, baru customer_code; armada_code di payload hanya fallback.
+  function autocompletePengirimanPmo(id, modalParent = null, armadaSelect = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
     }
@@ -1408,14 +1409,26 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
         type: "post",
         delay: 250,
         data: function data(params) {
-          return {
+          var payload = {
             "keyword": params.term,
             '_token': $('meta[name="csrf-token"]').attr('content')
           };
+          if (armadaSelect) {
+            var $arm = $(armadaSelect);
+            payload.customer_id = $arm.val() || '';
+            var row = ($arm.select2('data') || [])[0];
+            // Fallback saja; server tetap utamakan ref_armada_id dari customer_id.
+            if (row && row.ref_armada_id) {
+              payload.armada_code = String(row.ref_armada_id);
+            } else if (row && row.customer_code) {
+              payload.armada_code = row.customer_code;
+            }
+          }
+          return payload;
         },
         processResults: function processResults(data) {
           return {
-            results: $.map(data.data, function(item) {
+            results: $.map(data.data || [], function(item) {
               return item;
             }),
           };
