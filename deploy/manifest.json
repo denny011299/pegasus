@@ -1,18 +1,13 @@
 {
-    "generated_at": "2026-10-16T17:43:03+07:00",
-    "commit": "1826132033a7ca4d30da9151df71500395405bd1",
+    "generated_at": "2026-10-16T17:53:01+07:00",
+    "commit": "c676c1db7e1742a010e1120b402f3373027ada6e",
     "branch": "fase2/main",
     "file_count": 3645,
-    "previous_commit": "2629f75c4ce2d951b632b205ae08198f8715b168",
-    "previous_generated_at": "2026-10-16T17:42:37+07:00",
+    "previous_commit": "1826132033a7ca4d30da9151df71500395405bd1",
+    "previous_generated_at": "2026-10-16T17:43:03+07:00",
     "added": [],
     "removed": [],
-    "changed": [
-        "resources/views/Backoffice/Reports/Cash_Operational.blade.php",
-        "resources/views/components/modals/customer-return/add-customer-return.blade.php",
-        "resources/views/components/modals/operational-cash/add-cash-armada.blade.php",
-        "resources/views/components/modals/operational-cash/add-cash-sales.blade.php"
-    ],
+    "changed": [],
     "files": {
         "app/Console/Commands/AiDevDocsCommand.php": "75954fd4c44006a8a567db8552dd64b7fe53640d",
         "app/Console/Commands/AppMaintenanceCommand.php": "62483068306c6ab5e85d2c163d09a96739245c7f",
