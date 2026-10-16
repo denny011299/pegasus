@@ -449,18 +449,35 @@ class AutocompleteController extends Controller
     }
 
     /**
-     * Dropdown "Keterangan" detail Kas Gudang: No. Pengiriman PMO yang masih
-     * belum dikirim (onschedule) atau sedang berjalan (onprocess). PMO tidak
-     * punya filter keyword, jadi pencarian dilakukan di sini. id = text =
-     * pengiriman_no (string) supaya yang tersimpan di cgd_notes tetap nomornya
-     * dan tidak kena masalah presisi id 16 digit PMO di JS.
+     * Dropdown No. Pengiriman PMO (Kas Gudang). Status onschedule/onprocess.
+     * Armada opsional: kosong = semua; terisi = filter di PMO (query armada_id).
+     * Prioritas filter: customers.ref_armada_id (oms_vehicle.id) → customer_code;
+     * armada_code dari request hanya fallback bila customer_id kosong.
      */
     public function autocompletePengirimanPmo(Request $req)
     {
         $keyword = mb_strtolower(trim((string) ($req->keyword ?? '')));
+        $armadaFilter = '';
+        if (! empty($req->customer_id)) {
+            $customer = Customer::where('customer_id', (int) $req->customer_id)
+                ->first(['ref_armada_id', 'customer_code']);
+            if ($customer) {
+                // PMO armada_id = oms_vehicle.id (= ref_armada_id); kode hanya bila belum tersinkron.
+                $armadaFilter = $customer->ref_armada_id !== null && $customer->ref_armada_id !== ''
+                    ? (string) $customer->ref_armada_id
+                    : trim((string) ($customer->customer_code ?? ''));
+            }
+        }
+        if ($armadaFilter === '') {
+            $armadaFilter = trim((string) ($req->armada_code ?? ''));
+        }
 
         try {
-            $rows = PmoApi::getPengirimanNo(['onschedule', 'onprocess'])->rows;
+            // Filter armada di PMO (bukan load semua lalu filter PHP) supaya tetap ringan.
+            $rows = PmoApi::getPengirimanNo(
+                ['onschedule', 'onprocess'],
+                $armadaFilter !== '' ? $armadaFilter : null
+            )->rows;
         } catch (PmoException $e) {
             return response()->json(["data" => [], "message" => $e->getMessage()]);
         }
@@ -468,7 +485,9 @@ class AutocompleteController extends Controller
         $data = [];
         foreach ($rows as $r) {
             $no = (string) ($r['pengiriman_no'] ?? '');
-            if ($no === '' || ($keyword !== '' && ! str_contains(mb_strtolower($no), $keyword))) continue;
+            if ($no === '' || ($keyword !== '' && ! str_contains(mb_strtolower($no), $keyword))) {
+                continue;
+            }
             $data[] = [
                 "id" => $no,
                 "text" => $no,

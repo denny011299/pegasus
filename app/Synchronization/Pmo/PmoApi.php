@@ -136,16 +136,27 @@ class PmoApi
      * Baris berupa {pengiriman_id, pengiriman_no, status}, urut post_date DESC.
      * $statuses = enum mentah oms_delivery.status (onschedule, onprocess, pending,
      * success, canceled), dikirim comma-separated; kosong = semua status.
+     * $armadaId = oms_vehicle.id ATAU kode armada (PMO query armada_id) — filter pengiriman
+     * milik armada itu (opsional).
      *
      * @param  array<int, string>  $statuses
      *
      * @throws PmoException
      */
-    public static function getPengirimanNo(array $statuses = []): PmoResponse
+    public static function getPengirimanNo(array $statuses = [], ?string $armadaId = null): PmoResponse
     {
+        $query = [];
+        if ($statuses !== []) {
+            $query['status'] = implode(',', $statuses);
+        }
+        $armada = trim((string) ($armadaId ?? ''));
+        if ($armada !== '') {
+            $query['armada_id'] = $armada;
+        }
+
         return static::client()->fetchCollection(
             PmoEndpoints::resolve('pengiriman_no'),
-            $statuses ? ['status' => implode(',', $statuses)] : [],
+            $query,
             PmoEndpoints::itemsKey('pengiriman_no'),
         );
     }

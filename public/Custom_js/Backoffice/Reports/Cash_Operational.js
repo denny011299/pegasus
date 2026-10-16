@@ -625,8 +625,9 @@
             $('#jenis_input_gudang').val("operasional").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
             autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
-            autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body');
-            $('#cgd_notes').empty(null);
+            // No. Pengiriman difilter PMO per armada (#customer_id).
+            autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
+            $('#cgd_notes').empty(null).trigger('change');
             
             if(sessionUser) {
                 let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
@@ -816,6 +817,12 @@
             $('#cgd_nominal').val(formatRupiahMinus($(this).val())).attr('disabled', true);
             $('.input_nominal').hide();
         }
+    })
+
+    // Ganti armada → clear No. Pengiriman + re-init Select2 (hindari cache ajax list armada lama).
+    $(document).on('change', '#add_cash_gudang #customer_id', function(){
+        $('#cgd_notes').empty(null).trigger('change');
+        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
     })
 
     $(document).on('change', '#filter_customer_id', function(){
@@ -1010,26 +1017,25 @@
         }
 
         let total = 0;
+        var dateStr = detailData.cg_date ? moment(detailData.cg_date).format('D MMM YYYY') : '';
 
         let html = `<div class="px-5">`;
         detailData.forEach((d) => {
-            total += parseInt(d.cgd_nominal);
+            total += parseInt(d.cgd_nominal, 10) || 0;
+            // No. Pengiriman: utamakan ref_shipment_id (API/kolom baru); fallback cgd_notes form terima armada.
+            var pengiriman = (d.ref_shipment_id || d.cgd_notes || '').toString().trim();
 
             html += `
                 <div class="child-item">
-                    <div class="child-left d-flex g-3">
-                        <div class="date me-3">
-                            ${moment(detailData.cg_date).format('D MMM YYYY')}
-                        </div>
-                        <div class="notes">
-                            ${d.customer_notes}
-                        </div>
+                    <div class="child-left d-flex g-3 flex-wrap">
+                        <div class="date me-3">${dateStr}</div>
+                        <div class="notes me-3">${d.customer_notes || ''}</div>
+                        ${pengiriman ? `<div class="notes text-muted"><span class="me-1">No. Pengiriman</span>${$('<div>').text(pengiriman).html()}</div>` : ''}
                     </div>
                     <div class="child-right text-end">
                         Rp ${formatRupiahMinus(d.cgd_nominal)}
                     </div>
                 </div>
-
             `;
         });
 
@@ -1047,7 +1053,28 @@
         html += `</div>`;
         return html;
     }
-    function formatArmada(detailData) {
+    /** Child signed +/− hanya untuk baris External API (ref_payment_id). Manual tetap Rp biasa. */
+    function formatApiSignedDetailLine(notes, amount, typeVal, dateStr) {
+        var n = parseInt(amount, 10) || 0;
+        var isKeluar = parseInt(typeVal, 10) === 2 || parseInt(typeVal, 10) === 3;
+        var signed = isKeluar ? -n : n;
+        var label = isKeluar ? '−' : '+';
+        var cls = isKeluar ? 'text-danger' : 'text-success';
+        var typeName = parseInt(typeVal, 10) === 1 ? 'Masuk' : (parseInt(typeVal, 10) === 3 ? 'Keluar 1' : 'Keluar');
+        return `
+            <div class="child-item">
+                <div class="child-left d-flex g-3">
+                    <div class="date me-3">${dateStr}</div>
+                    <div class="notes"><span class="text-muted me-1">${typeName}</span>${notes || ''}</div>
+                </div>
+                <div class="child-right text-end ${cls}">
+                    ${label} Rp ${formatRupiahMinus(Math.abs(n))}
+                </div>
+            </div>
+        `;
+    }
+
+    function formatArmada(detailData, isApiRow) {
         if (!detailData || detailData.length === 0) {
             return `
                 <div class="p-3">
@@ -1057,44 +1084,44 @@
         }
 
         let total = 0;
-
         let html = `<div class="px-5">`;
-        detailData.forEach((d) => {
-            total += parseInt(d.crd_nominal);
+        const dateStr = moment(detailData.cr_date).format('D MMM YYYY');
 
+        detailData.forEach((d) => {
+            var n = parseInt(d.crd_nominal, 10) || 0;
+            if (isApiRow) {
+                total += (parseInt(d.crd_type, 10) === 2 || parseInt(d.crd_type, 10) === 3) ? -n : n;
+                html += formatApiSignedDetailLine(d.crd_notes, n, d.crd_type, dateStr);
+                return;
+            }
+            total += n;
             html += `
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
-                        <div class="date me-3">
-                            ${moment(detailData.cr_date).format('D MMM YYYY')}
-                        </div>
-                        <div class="notes">
-                            ${d.crd_notes}
-                        </div>
+                        <div class="date me-3">${dateStr}</div>
+                        <div class="notes">${d.crd_notes}</div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiahMinus(d.crd_nominal)}
+                        Rp ${formatRupiahMinus(n)}
                     </div>
                 </div>
-
             `;
         });
 
+        var totalCls = isApiRow && total < 0 ? 'text-danger' : (isApiRow ? 'text-success' : '');
+        var totalLabel = isApiRow
+            ? `${total < 0 ? '−' : '+'} Rp ${formatRupiahMinus(Math.abs(total))}`
+            : `Rp ${formatRupiahMinus(total)}`;
+
         html += `
             <div class="child-item fw-semibold pt-3 border-0">
-                <div class="child-left-total">
-                    Total
-                </div>
-                <div class="child-right text-end">
-                    Rp ${formatRupiahMinus(total)}
-                </div>
+                <div class="child-left-total">Total</div>
+                <div class="child-right text-end ${totalCls}">${totalLabel}</div>
             </div>
-        `;
-
-        html += `</div>`;
+        </div>`;
         return html;
     }
-    function formatSales(detailData) {
+    function formatSales(detailData, isApiRow) {
         if (!detailData || detailData.length === 0) {
             return `
                 <div class="p-3">
@@ -1104,42 +1131,41 @@
         }
 
         let total = 0;
-
         let html = `<div class="px-5">`;
-        detailData.forEach((d) => {
-            console.log(d)
-            total += parseInt(d.csd_nominal);
+        const dateStr = moment(detailData.cs_date).format('D MMM YYYY');
 
+        detailData.forEach((d) => {
+            var n = parseInt(d.csd_nominal, 10) || 0;
+            if (isApiRow) {
+                total += (parseInt(d.csd_type, 10) === 2 || parseInt(d.csd_type, 10) === 3) ? -n : n;
+                html += formatApiSignedDetailLine(d.csd_notes, n, d.csd_type, dateStr);
+                return;
+            }
+            total += n;
             html += `
                 <div class="child-item">
                     <div class="child-left d-flex g-3">
-                        <div class="date me-3">
-                            ${moment(detailData.cs_date).format('D MMM YYYY')}
-                        </div>
-                        <div class="notes">
-                            ${d.csd_notes}
-                        </div>
+                        <div class="date me-3">${dateStr}</div>
+                        <div class="notes">${d.csd_notes}</div>
                     </div>
                     <div class="child-right text-end">
-                        Rp ${formatRupiahMinus(d.csd_nominal)}
+                        Rp ${formatRupiahMinus(n)}
                     </div>
                 </div>
-
             `;
         });
 
+        var totalCls = isApiRow && total < 0 ? 'text-danger' : (isApiRow ? 'text-success' : '');
+        var totalLabel = isApiRow
+            ? `${total < 0 ? '−' : '+'} Rp ${formatRupiahMinus(Math.abs(total))}`
+            : `Rp ${formatRupiahMinus(total)}`;
+
         html += `
             <div class="child-item fw-semibold pt-3 border-0">
-                <div class="child-left-total">
-                    Total
-                </div>
-                <div class="child-right text-end">
-                    Rp ${formatRupiahMinus(total)}
-                </div>
+                <div class="child-left-total">Total</div>
+                <div class="child-right text-end ${totalCls}">${totalLabel}</div>
             </div>
-        `;
-
-        html += `</div>`;
+        </div>`;
         return html;
     }
 
@@ -1168,11 +1194,12 @@
         }
         else if (type == "armada") {
             detail.cr_date = row.data().cr_date;
-            row.child(formatArmada(detail)).show();
+            // Signed child hanya bila baris dari External API.
+            row.child(formatArmada(detail, !!row.data().ref_payment_id)).show();
         }
         else if (type == "sales") {
             detail.cs_date = row.data().cs_date;
-            row.child(formatSales(detail)).show();
+            row.child(formatSales(detail, !!row.data().ref_payment_id)).show();
         }
         tr.addClass('shown');
         $icon.removeClass('fe-plus-circle').addClass('fe-minus-circle');
@@ -1410,11 +1437,18 @@
         };
 
         var temp = $('#customer_id').select2("data")[0];
+        var shipRow = ($('#cgd_notes').select2('data') || [])[0] || {};
+        var pengirimanNo = $('#cgd_notes').val() || '';
+        // ref_shipment_id = id PMO bila ada; else No. Pengiriman. Kolom nullable — kosong di baris non-pengiriman.
+        var refShipment = (shipRow.pengiriman_id != null && String(shipRow.pengiriman_id) !== '')
+            ? String(shipRow.pengiriman_id)
+            : pengirimanNo;
 
         var data  = {
             "customer_id": $('#customer_id').val(),
             "customer_notes": temp.customer_notes,
-            "cgd_notes": $('#cgd_notes').val(),
+            "cgd_notes": pengirimanNo,
+            "ref_shipment_id": refShipment,
             "cgd_nominal": convertToAngkaMinus($('#cgd_nominal').val()),
         };
         pgPopupTableInsert(items, data);
@@ -2210,7 +2244,7 @@
         $('#add_cash_gudang input').empty().val("");
         $('#staff_id_gudang').empty(null);
         autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
-        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body');
+        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
         $('#customer_id, #cgd_notes').empty(null);
         
         if (data.detail?.length) {
@@ -2223,6 +2257,7 @@
                     "customer_notes" : e.customer_notes,
                     "cgd_id" : e.cgd_id,
                     "cgd_notes" : e.cgd_notes,
+                    "ref_shipment_id" : e.ref_shipment_id || null,
                     "cgd_nominal" : e.cgd_nominal,
                 };
                 items.push(temp);
@@ -2275,6 +2310,7 @@
                     "customer_notes" : e.customer_notes,
                     "cgd_id" : e.cgd_id,
                     "cgd_notes" : e.cgd_notes,
+                    "ref_shipment_id" : e.ref_shipment_id || null,
                     "cgd_nominal" : e.cgd_nominal,
                 };
                 items.push(temp);
