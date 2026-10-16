@@ -98,7 +98,11 @@
                         <br>
                         <small class="text-muted mb-0 mt-1" style="font-size:13px;">Bahan mentah dan/atau produk jadi dari armada</small>
                         {{-- GitHub #216: ref dokumen pembayaran API, hanya retur potongan barang --}}
-                        <div id="cr-ref-payment-number" class="d-none text-muted mt-1" style="font-size:12px;">Ref. Pembayaran: <span class="fw-semibold"></span></div>
+                        <div id="cr-ref-payment-number" class="d-none text-muted mt-1" style="font-size:12px;">
+                            Ref. Pembayaran
+                            <i class="fe fe-info ms-1" style="font-size:11px;cursor:help" data-bs-toggle="tooltip" data-bs-placement="top" title="Referensi dari dokumen pembayaran Pegasus Management Order (PMO)."></i>:
+                            <span class="fw-semibold"></span>
+                        </div>
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>

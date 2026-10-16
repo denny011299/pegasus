@@ -226,7 +226,14 @@
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
                                             {{-- GitHub #216: ref dokumen pembayaran API (PB/…); hanya Armada/Sales --}}
-                                            <th>Ref. Pembayaran</th>
+                                            <th>
+                                                Ref. Pembayaran
+                                                <i class="fe fe-info text-muted ms-1"
+                                                   style="font-size:12px;cursor:help"
+                                                   data-bs-toggle="tooltip"
+                                                   data-bs-placement="top"
+                                                   title="Referensi dari dokumen pembayaran Pegasus Management Order (PMO)."></i>
+                                            </th>
                                             <th class="text-end">Masuk</th>
                                             <th class="text-end">Keluar</th>
                                             <th>Dibuat Oleh</th>
