@@ -107,7 +107,8 @@
     function notesColumn() {
         return {
             data: null,
-            width: '22%',
+            // Sedikit lebih lebar: deskripsi detail/parent sering panjang (faktur / No. Pengiriman).
+            width: '28%',
             render: function (_data, _type, row) {
                 if (type === 'admin') return row.ca_notes || '';
                 if (type === 'gudang') return row.cg_notes || '';
@@ -1029,7 +1030,7 @@
                     <div class="child-left d-flex g-3 flex-wrap">
                         <div class="date me-3">${dateStr}</div>
                         <div class="notes me-3">${d.customer_notes || ''}</div>
-                        ${pengiriman ? `<div class="notes text-muted"><span class="me-1">No. Pengiriman</span>${$('<div>').text(pengiriman).html()}</div>` : ''}
+                        ${pengiriman ? `<div class="notes text-dark"><span class="fw-semibold me-1">No. Pengiriman</span>${$('<div>').text(pengiriman).html()}</div>` : ''}
                     </div>
                     <div class="child-right text-end">
                         Rp ${formatRupiahMinus(d.cgd_nominal)}
@@ -1064,7 +1065,7 @@
             <div class="child-item">
                 <div class="child-left d-flex g-3">
                     <div class="date me-3">${dateStr}</div>
-                    <div class="notes"><span class="text-muted me-1">${typeName}</span>${notes || ''}</div>
+                    <div class="notes"><span class="fw-bold text-dark me-1">${typeName}</span>${notes || ''}</div>
                 </div>
                 <div class="child-right text-end ${cls}">
                     ${label} Rp ${formatRupiahMinus(Math.abs(n))}
