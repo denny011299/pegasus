@@ -225,8 +225,8 @@
                                             <th>Status</th>
                                             <th>Staff</th>
                                             <th>Deskripsi</th>
-                                            {{-- GitHub #216: hanya tampil di Dompet Virtual Armada/Sales (diatur JS) --}}
-                                            <th>No. Pembayaran PMO</th>
+                                            {{-- GitHub #216: ref dokumen pembayaran API (PB/…); hanya Armada/Sales --}}
+                                            <th>Ref. Pembayaran</th>
                                             <th class="text-end">Masuk</th>
                                             <th class="text-end">Keluar</th>
                                             <th>Dibuat Oleh</th>

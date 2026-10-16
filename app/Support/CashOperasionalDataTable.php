@@ -319,7 +319,7 @@ class CashOperasionalDataTable
         $like = '%' . $search . '%';
         $query->where(function ($q) use ($like) {
             $q->where('cr_notes', 'like', $like)
-                // GitHub #216: No. Pembayaran PMO (PB/...) bisa dicari.
+                // GitHub #216: Ref. Pembayaran (PB/…) bisa dicari.
                 ->orWhere('ref_payment_number', 'like', $like)
                 ->orWhereExists(function ($sq) use ($like) {
                     $sq->select(DB::raw(1))
@@ -339,7 +339,7 @@ class CashOperasionalDataTable
         $like = '%' . $search . '%';
         $query->where(function ($q) use ($like) {
             $q->where('cs_notes', 'like', $like)
-                // GitHub #216: No. Pembayaran PMO (PB/...) bisa dicari.
+                // GitHub #216: Ref. Pembayaran (PB/…) bisa dicari.
                 ->orWhere('ref_payment_number', 'like', $like)
                 ->orWhereExists(function ($sq) use ($like) {
                     $sq->select(DB::raw(1))

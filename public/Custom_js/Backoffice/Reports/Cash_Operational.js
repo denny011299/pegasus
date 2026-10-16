@@ -118,9 +118,8 @@
         };
     }
 
-    // GitHub #216: No. Dokumen Pembayaran PMO (PB/...), hanya ada di pembayaran dari PMO.
-    // Kolom ini hanya relevan untuk Dompet Virtual Armada/Sales — di Kas Admin/Gudang disembunyikan
-    // (lihat syncRefPaymentNumberColumn()).
+    // GitHub #216: Ref. Pembayaran (PB/… dari API). Hanya Dompet Virtual Armada/Sales;
+    // Kas Admin/Gudang disembunyikan (syncRefPaymentNumberColumn).
     var REF_PAYMENT_NUMBER_COLUMN = 5;
 
     function refPaymentNumberColumn() {
