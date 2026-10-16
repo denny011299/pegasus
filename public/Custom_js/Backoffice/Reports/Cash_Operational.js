@@ -2573,8 +2573,8 @@
             
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
-            $('#btn-lihat-bukti-sales').show();
             var img = parseCashPhotoList(data.cs_img);
+            $('#btn-lihat-bukti-sales').show().prop('disabled', !img.length);
             list_photo = img;
             console.log(list_photo);
 
@@ -2639,8 +2639,8 @@
             
             $('.foto').show();
             $('#btn-foto-bukti-sales').hide();
-            $('#btn-lihat-bukti-sales').show();
             var img = parseCashPhotoList(data.cs_img);
+            $('#btn-lihat-bukti-sales').show().prop('disabled', !img.length);
             list_photo = img;
             console.log(list_photo);
 
