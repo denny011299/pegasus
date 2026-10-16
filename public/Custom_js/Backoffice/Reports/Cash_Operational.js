@@ -2127,7 +2127,7 @@
 
             $('#oc_date').val(data.ca_date).attr('disabled', false);
             $('#btn-foto-bukti').hide();
-            $('#btn-lihat-bukti').show();
+            $('#btn-lihat-bukti').show().prop('disabled', !parseCashPhotoList(data.ca_img).length);
             $('#bukti').val(data.ca_img);
             $('#check_foto').show();
             imageValue(data.ca_img);
@@ -2182,7 +2182,7 @@
 
             $('#oc_date').val(data.ca_date).attr('disabled', true);
             $('#btn-foto-bukti').hide();
-            $('#btn-lihat-bukti').show();
+            $('#btn-lihat-bukti').show().prop('disabled', !parseCashPhotoList(data.ca_img).length);
             $('#bukti').val(data.ca_img);
             $('#check_foto').show();
             imageValue(data.ca_img);
@@ -2268,7 +2268,7 @@
 
             $('#oc_date_gudang').val(data.cg_date).attr('disabled', false);
             $('#btn-foto-bukti-gudang').hide();
-            $('#btn-lihat-bukti-gudang').show();
+            $('#btn-lihat-bukti-gudang').show().prop('disabled', !parseCashPhotoList(data.cg_img).length);
             $('#bukti_gudang').val(data.cg_img);
             $('#check_foto_gudang').show();
             $('#jenis_nominal').val("").trigger('change');
@@ -2321,7 +2321,7 @@
 
             $('#oc_date_gudang').val(data.cg_date).attr('disabled', true);
             $('#btn-foto-bukti-gudang').hide();
-            $('#btn-lihat-bukti-gudang').show();
+            $('#btn-lihat-bukti-gudang').show().prop('disabled', !parseCashPhotoList(data.cg_img).length);
             $('#bukti_gudang').val(data.cg_img);
             $('#check_foto_gudang').show();
             imageValue(data.cg_img);
@@ -2405,8 +2405,8 @@
             $('#oc_date_armada').val(data.cr_date).attr('disabled', false);
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
-            $('#btn-lihat-bukti-armada').show();
             var img = parseCashPhotoList(data.cr_img);
+            $('#btn-lihat-bukti-armada').show().prop('disabled', !img.length);
             list_photo = img;
             console.log(list_photo);
 
@@ -2472,8 +2472,8 @@
             $('#oc_date_armada').val(data.cr_date).attr('disabled', true);
             $('.foto').show();
             $('#btn-foto-bukti-armada').hide();
-            $('#btn-lihat-bukti-armada').show();
             var img = parseCashPhotoList(data.cr_img);
+            $('#btn-lihat-bukti-armada').show().prop('disabled', !img.length);
             list_photo = img;
             console.log(list_photo);
 
