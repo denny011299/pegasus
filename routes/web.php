@@ -373,6 +373,9 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::get('/salesOrderDetail/{id}', [CustomerController::class, 'SalesOrderDetail'])->name('salesOrderDetail');
         Route::get('/getSoDelivery', [CustomerController::class, 'getSoDelivery'])->name('getSoDelivery');
         Route::get('/getSoInvoice', [CustomerController::class, 'getSoInvoice'])->name('getSoInvoice');
+        Route::get('/shipmentShortage/{soId}/print', [CustomerController::class, 'printShipmentShortage'])
+            ->whereNumber('soId')
+            ->name('shipmentShortage.print');
         Route::get('/customerSupplyReturns', [CustomerSupplyReturnController::class, 'index'])->name('customerSupplyReturns.index');
         Route::get('/customerSupplyReturns/context', [CustomerSupplyReturnController::class, 'context'])->name('customerSupplyReturns.context');
         Route::get('/customerSupplyReturns/{returnId}', [CustomerSupplyReturnController::class, 'show'])->name('customerSupplyReturns.show');
