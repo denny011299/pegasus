@@ -1392,6 +1392,12 @@ class ReportController extends Controller
         }
 
         if ($data['jenis_input'] == "operasional"){
+            // Guard: No. Pengiriman PMO yang sudah terdaftar di Kas Gudang tidak boleh dipakai lagi.
+            $dup = $this->cashGudangDuplicateShipmentError($item);
+            if ($dup !== null) {
+                return response()->json($dup);
+            }
+
             $data['oc_transaksi'] = 0;
             $data['cg_type'] = 2;
             $cg_id = (new CashGudang())->insertCashGudang($data);
@@ -1512,6 +1518,18 @@ class ReportController extends Controller
             $total = 0;
             $item = json_decode($data['items'], true);
 
+            // Guard: exclude cgd_id yang tetap di dokumen ini (edit baris yang sama boleh).
+            $keepCgdIds = [];
+            foreach ($item as $value) {
+                if (! empty($value['cgd_id'])) {
+                    $keepCgdIds[] = (int) $value['cgd_id'];
+                }
+            }
+            $dup = $this->cashGudangDuplicateShipmentError($item, $keepCgdIds);
+            if ($dup !== null) {
+                return response()->json($dup);
+            }
+
             foreach ($item as $key => $value) {
                 $value['cg_id'] = $data['cg_id'];
 
@@ -1525,6 +1543,52 @@ class ReportController extends Controller
             }
             CashGudangDetail::where('cg_id', '=', $data["cg_id"])->whereNotIn("cgd_id", $id)->update(["status" => 0]);
         }
+    }
+
+    /**
+     * Cek duplikat ref_shipment_id dalam payload + vs DB (detail Kas Gudang aktif).
+     * Return array error JSON-ready, atau null jika aman.
+     *
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, int>  $exceptCgdIds
+     * @return array{status:int, header:string, message:string}|null
+     */
+    private function cashGudangDuplicateShipmentError(array $items, array $exceptCgdIds = []): ?array
+    {
+        $seenInPayload = [];
+        foreach ($items as $value) {
+            $ref = trim((string) ($value['ref_shipment_id'] ?? ''));
+            if ($ref === '') {
+                continue;
+            }
+            if (isset($seenInPayload[$ref])) {
+                $label = trim((string) ($value['cgd_notes'] ?? $ref));
+
+                return [
+                    'status' => -2,
+                    'header' => 'Gagal Simpan',
+                    'message' => 'No. Pengiriman "'.$label.'" dipakai lebih dari sekali dalam dokumen yang sama.',
+                ];
+            }
+            $seenInPayload[$ref] = true;
+        }
+
+        if ($seenInPayload === []) {
+            return null;
+        }
+
+        $used = CashGudangDetail::usedRefShipmentMap($exceptCgdIds);
+        foreach ($seenInPayload as $ref => $_) {
+            if (isset($used[$ref])) {
+                return [
+                    'status' => -2,
+                    'header' => 'Gagal Simpan',
+                    'message' => 'No. Pengiriman sudah terdaftar di Kas Gudang lain dan tidak bisa dipakai lagi.',
+                ];
+            }
+        }
+
+        return null;
     }
 
     function deleteCashGudang(Request $req)

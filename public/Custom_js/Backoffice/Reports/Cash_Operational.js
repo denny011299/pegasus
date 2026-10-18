@@ -1444,6 +1444,14 @@
             ? String(shipRow.pengiriman_id)
             : pengirimanNo;
 
+        // Satu No. Pengiriman tidak boleh dobel dalam dokumen yang sama (server juga guard vs DB).
+        if (refShipment && items.some(function (row) {
+            return String(row.ref_shipment_id || '') === String(refShipment);
+        })) {
+            notifikasi('error', 'Gagal Insert', 'No. Pengiriman "' + pengirimanNo + '" sudah ada di daftar baris ini.');
+            return false;
+        }
+
         var data  = {
             "customer_id": $('#customer_id').val(),
             "customer_notes": temp.customer_notes,

@@ -6,6 +6,7 @@ use App\Models\Area;
 use App\Models\Bank;
 use App\Models\Bom;
 use App\Models\CashCategory;
+use App\Models\CashGudangDetail;
 use App\Models\Category;
 use App\Models\Cities;
 use App\Models\Customer;
@@ -453,6 +454,8 @@ class AutocompleteController extends Controller
      * Armada opsional: kosong = semua; terisi = filter di PMO (query armada_id).
      * Prioritas filter: customers.ref_armada_id (oms_vehicle.id) → customer_code;
      * armada_code dari request hanya fallback bila customer_id kosong.
+     * Setelah PMO: buang yang sudah ada di cash_gudang_details.ref_shipment_id (status=1) —
+     * PMO tidak tahu pemakaian Kas Gudang, jadi exclude dilakukan di IPM.
      */
     public function autocompletePengirimanPmo(Request $req)
     {
@@ -482,16 +485,25 @@ class AutocompleteController extends Controller
             return response()->json(["data" => [], "message" => $e->getMessage()]);
         }
 
+        // Satu dokumen pengiriman hanya boleh satu baris Kas Gudang aktif.
+        $usedRefs = CashGudangDetail::usedRefShipmentMap();
+
         $data = [];
         foreach ($rows as $r) {
             $no = (string) ($r['pengiriman_no'] ?? '');
+            $pengirimanId = (string) ($r['pengiriman_id'] ?? '');
             if ($no === '' || ($keyword !== '' && ! str_contains(mb_strtolower($no), $keyword))) {
+                continue;
+            }
+            // Match id PMO ATAU no (fallback simpan: ref_shipment_id = pengiriman_no bila id kosong).
+            if (($pengirimanId !== '' && isset($usedRefs[$pengirimanId]))
+                || ($no !== '' && isset($usedRefs[$no]))) {
                 continue;
             }
             $data[] = [
                 "id" => $no,
                 "text" => $no,
-                "pengiriman_id" => (string) ($r['pengiriman_id'] ?? ''),
+                "pengiriman_id" => $pengirimanId,
                 "status" => $r['status'] ?? null,
             ];
         }

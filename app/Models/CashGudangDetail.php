@@ -67,4 +67,33 @@ class CashGudangDetail extends Model
         $t->status = 0;
         $t->save();
     }
+
+    /**
+     * Ref pengiriman PMO yang sudah terpakai di detail Kas Gudang aktif (status=1).
+     * Dipakai dropdown + guard simpan supaya satu dokumen tidak dipakai dua kali.
+     *
+     * @param  array<int, int>  $exceptCgdIds  cgd_id yang diabaikan (baris yang sedang diedit)
+     * @return array<string, true>  map ref => true (O(1) lookup)
+     */
+    public static function usedRefShipmentMap(array $exceptCgdIds = []): array
+    {
+        $q = static::query()
+            ->where('status', 1)
+            ->whereNotNull('ref_shipment_id')
+            ->where('ref_shipment_id', '!=', '');
+
+        if ($exceptCgdIds !== []) {
+            $q->whereNotIn('cgd_id', $exceptCgdIds);
+        }
+
+        $map = [];
+        foreach ($q->pluck('ref_shipment_id') as $ref) {
+            $key = trim((string) $ref);
+            if ($key !== '') {
+                $map[$key] = true;
+            }
+        }
+
+        return $map;
+    }
 }
