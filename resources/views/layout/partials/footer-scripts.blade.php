@@ -1399,7 +1399,9 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
 
   // No. Pengiriman PMO (onschedule/onprocess) — filter opsional per armada (#customer_id Kas Gudang).
   // Backend resolve: ref_armada_id dulu, baru customer_code; armada_code di payload hanya fallback.
-  function autocompletePengirimanPmo(id, modalParent = null, armadaSelect = null) {
+  // excludeKeysFn (opsional): return array string (pengiriman_no / pengiriman_id) yang sudah di tabel
+  // modal — disembunyikan sampai baris itu dihapus dari daftar (belum tentu sudah ke DB).
+  function autocompletePengirimanPmo(id, modalParent = null, armadaSelect = null, excludeKeysFn = null) {
     if ($(id).hasClass('select2-hidden-accessible')) {
       $(id).select2('destroy');
     }
@@ -1428,12 +1430,34 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
           }
           return payload;
         },
+        transport: function (params, success, failure) {
+          // Tanpa armada: jangan tembak PMO — hasil kosong (nilai terpilih juga harus di-clear caller).
+          if (armadaSelect && !$(armadaSelect).val()) {
+            success({ data: [] });
+            return { abort: function () {} };
+          }
+          var $req = $.ajax(params);
+          $req.then(success).fail(failure);
+          return $req;
+        },
         processResults: function processResults(data) {
-          return {
-            results: $.map(data.data || [], function(item) {
-              return item;
-            }),
-          };
+          var exclude = {};
+          if (typeof excludeKeysFn === 'function') {
+            (excludeKeysFn() || []).forEach(function (k) {
+              var key = String(k || '').trim();
+              if (key !== '') exclude[key] = true;
+            });
+          }
+          var rows = [];
+          $.each(data.data || [], function (_, item) {
+            var no = String(item.id || item.text || '').trim();
+            var pid = String(item.pengiriman_id || '').trim();
+            if ((no !== '' && exclude[no]) || (pid !== '' && exclude[pid])) {
+              return;
+            }
+            rows.push(item);
+          });
+          return { results: rows };
         },
       },
       placeholder: "Pilih No. Pengiriman",

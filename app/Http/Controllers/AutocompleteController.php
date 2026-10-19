@@ -475,11 +475,16 @@ class AutocompleteController extends Controller
             $armadaFilter = trim((string) ($req->armada_code ?? ''));
         }
 
+        // Tanpa armada: jangan tampilkan daftar apa pun (hindari pilih no. pengiriman lintas armada / yang sudah di tabel).
+        if ($armadaFilter === '') {
+            return response()->json(["data" => []]);
+        }
+
         try {
             // Filter armada di PMO (bukan load semua lalu filter PHP) supaya tetap ringan.
             $rows = PmoApi::getPengirimanNo(
                 ['onschedule', 'onprocess'],
-                $armadaFilter !== '' ? $armadaFilter : null
+                $armadaFilter
             )->rows;
         } catch (PmoException $e) {
             return response()->json(["data" => [], "message" => $e->getMessage()]);

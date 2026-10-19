@@ -625,9 +625,8 @@
             $('#jenis_input_gudang').val("operasional").attr('disabled', false).trigger('change');
             autocompleteStaff('#staff_id_gudang', '#add_cash_gudang .modal-body');
             autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
-            // No. Pengiriman difilter PMO per armada (#customer_id).
-            autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
-            $('#cgd_notes').empty(null).trigger('change');
+            initCashGudangPengirimanSelect();
+            clearCashGudangPengirimanSelect();
             
             if(sessionUser) {
                 let option = new Option(sessionUser.staff_name, sessionUser.staff_id, true, true);
@@ -819,10 +818,37 @@
         }
     })
 
+    // No. Pengiriman yang sudah di tabel modal (belum/sudah save) tidak boleh muncul lagi di dropdown.
+    function cashGudangPengirimanExcludeKeys() {
+        var keys = [];
+        (items || []).forEach(function (row) {
+            if (row.cgd_notes) keys.push(String(row.cgd_notes));
+            if (row.ref_shipment_id) keys.push(String(row.ref_shipment_id));
+        });
+        return keys;
+    }
+
+    function initCashGudangPengirimanSelect() {
+        autocompletePengirimanPmo(
+            '#cgd_notes',
+            '#add_cash_gudang .modal-body',
+            '#customer_id',
+            cashGudangPengirimanExcludeKeys
+        );
+        // Tanpa armada: field No. Pengiriman dikunci (list kosong dari server/transport).
+        var hasArmada = !!$('#customer_id').val();
+        $('#cgd_notes').prop('disabled', !hasArmada);
+    }
+
+    function clearCashGudangPengirimanSelect() {
+        var $ship = $('#cgd_notes');
+        $ship.val(null).empty().trigger('change');
+    }
+
     // Ganti armada → clear No. Pengiriman + re-init Select2 (hindari cache ajax list armada lama).
     $(document).on('change', '#add_cash_gudang #customer_id', function(){
-        $('#cgd_notes').empty(null).trigger('change');
-        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
+        clearCashGudangPengirimanSelect();
+        initCashGudangPengirimanSelect();
     })
 
     $(document).on('change', '#filter_customer_id', function(){
@@ -1022,8 +1048,9 @@
         let html = `<div class="px-5">`;
         detailData.forEach((d) => {
             total += parseInt(d.cgd_nominal, 10) || 0;
-            // No. Pengiriman: utamakan ref_shipment_id (API/kolom baru); fallback cgd_notes form terima armada.
-            var pengiriman = (d.ref_shipment_id || d.cgd_notes || '').toString().trim();
+            // Tampilkan no. dokumen (cgd_notes = pengiriman_no, mis. 00041/FLMNT/10/2026).
+            // ref_shipment_id = id internal PMO (angka) — jangan dipakai sebagai label.
+            var pengiriman = (d.cgd_notes || d.ref_shipment_id || '').toString().trim();
 
             html += `
                 <div class="child-item">
@@ -1445,8 +1472,9 @@
             : pengirimanNo;
 
         // Satu No. Pengiriman tidak boleh dobel dalam dokumen yang sama (server juga guard vs DB).
-        if (refShipment && items.some(function (row) {
-            return String(row.ref_shipment_id || '') === String(refShipment);
+        if (items.some(function (row) {
+            return (refShipment && String(row.ref_shipment_id || '') === String(refShipment))
+                || (pengirimanNo && String(row.cgd_notes || '') === String(pengirimanNo));
         })) {
             notifikasi('error', 'Gagal Insert', 'No. Pengiriman "' + pengirimanNo + '" sudah ada di daftar baris ini.');
             return false;
@@ -1470,8 +1498,9 @@
         addRowGudang();
         pgPopupTableScrollToEdge($('#tableDetailGudang').closest('.pg-popup-table-scroll'));
 
-        $('#customer_id').empty(null);
-        $('#cgd_notes').empty(null).trigger('change');
+        $('#customer_id').val(null).empty().trigger('change');
+        clearCashGudangPengirimanSelect();
+        initCashGudangPengirimanSelect();
         $('#cgd_nominal').val("").attr('disabled', true);
         $('.input_nominal').hide();
         $('#jenis_nominal').val("").trigger('change');
@@ -2252,8 +2281,9 @@
         $('#add_cash_gudang input').empty().val("");
         $('#staff_id_gudang').empty(null);
         autocompleteCustomer('#customer_id', '#add_cash_gudang .modal-body');
-        autocompletePengirimanPmo('#cgd_notes', '#add_cash_gudang .modal-body', '#customer_id');
-        $('#customer_id, #cgd_notes').empty(null);
+        initCashGudangPengirimanSelect();
+        $('#customer_id').val(null).empty().trigger('change');
+        clearCashGudangPengirimanSelect();
         
         if (data.detail?.length) {
             $('#jenis_input').val("operasional").trigger('change').attr('disabled', true);

@@ -77,6 +77,7 @@ class CashGudangDetail extends Model
      */
     public static function usedRefShipmentMap(array $exceptCgdIds = []): array
     {
+        // Hanya baris yang punya tautan pengiriman (ref terisi) — cgd_notes bebas (uang jalan, dll.) tidak di-exclude.
         $q = static::query()
             ->where('status', 1)
             ->whereNotNull('ref_shipment_id')
@@ -87,10 +88,15 @@ class CashGudangDetail extends Model
         }
 
         $map = [];
-        foreach ($q->pluck('ref_shipment_id') as $ref) {
-            $key = trim((string) $ref);
-            if ($key !== '') {
-                $map[$key] = true;
+        foreach ($q->get(['ref_shipment_id', 'cgd_notes']) as $row) {
+            $ref = trim((string) ($row->ref_shipment_id ?? ''));
+            if ($ref !== '') {
+                $map[$ref] = true;
+            }
+            // Juga kunci no. dokumen (pengiriman_no di cgd_notes) supaya dropdown cocok id ATAU no.
+            $no = trim((string) ($row->cgd_notes ?? ''));
+            if ($no !== '') {
+                $map[$no] = true;
             }
         }
 
