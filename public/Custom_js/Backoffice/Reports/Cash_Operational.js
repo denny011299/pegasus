@@ -6,6 +6,7 @@
     // crd_type, jadi tampilkan bertanda (+ hijau / − merah) dan total = neto. Input
     // manual TIDAK memakai mode ini (nominal manual sudah bertanda dari input user).
     var armadaSignedDetail = false;
+    var salesSignedDetail = false; // sama seperti armada, khusus record API Sales
     var sisa_kas = 0;
     var dates = null;
     var cashLoadXhr = null;
@@ -688,6 +689,7 @@
             autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-body');
             autocompleteCashCategory('#cc_id_sales', '#add_cash_sales .modal-body');
             autocompleteRekening('#bank_account', '#add_cash_sales .modal-body');
+            salesSignedDetail = false; // input manual selalu mode lama
             $('.total_sales').html("Rp 0");
 
             $('#btn-foto-bukti-sales').show();
@@ -1944,11 +1946,7 @@
             }
         }
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.csd_nominal;
-        });
-        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
 
         addRowSales();
         pgPopupTableScrollToEdge($('#tableDetailSales').closest('.pg-popup-table-scroll'));
@@ -1957,6 +1955,18 @@
         $('#cc_id_sales').empty(null);
         $('#csd_nominal').val("");
     })
+
+    // Total detail sales — pasangan armadaItemsTotal() untuk field csd_*.
+    function salesItemsTotal() {
+        var total = 0;
+        items.forEach(function (element) {
+            var nominal = parseInt(element.csd_nominal, 10) || 0;
+            total += salesSignedDetail
+                ? (element.csd_type == 1 ? Math.abs(nominal) : -Math.abs(nominal))
+                : nominal;
+        });
+        return total;
+    }
 
     function addRowSales() {
         $('#tableDetailSales tbody').html("");
@@ -1969,12 +1979,20 @@
             if (e.csd_type == 1) type = "Masuk"
             else if (e.csd_type == 2) type = "Keluar"
             else if (e.csd_type == 3) type = "Keluar 1"
+            // Mode bertanda khusus record API: Keluar tampil − merah, Masuk + hijau.
+            var nominalHtml = `Rp ${formatRupiahMinus(e.csd_nominal)}`;
+            if (salesSignedDetail) {
+                var absNominal = Math.abs(parseInt(e.csd_nominal, 10) || 0);
+                nominalHtml = e.csd_type == 1
+                    ? `<span style="color:#059669;font-weight:600;">+ Rp ${formatRupiahMinus(absNominal)}</span>`
+                    : `<span style="color:#dc2626;font-weight:600;">- Rp ${formatRupiahMinus(absNominal)}</span>`;
+            }
             $('#tableDetailSales tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
+                    <td class="text-end">${nominalHtml}</td>
                     <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
@@ -1994,12 +2012,7 @@
 
         items.splice(index, 1);
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.csd_nominal;
-        });
-        console.log(total);
-        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
 
         addRowSales();
     });
@@ -2603,6 +2616,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        salesSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_sales .modal-title').html("Update Aktivitas Sales");
         setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
@@ -2611,18 +2626,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_sales').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "csd_id" : e.csd_id,
                     "csd_notes" : e.csd_notes,
                     "csd_nominal" : e.csd_nominal,
                     "csd_type" : e.csd_type
-                };
-                items.push(temp);
-                total += parseInt(e.csd_nominal);
+                });
             })
-            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
             addRowSales();
             
             $('.foto').show();
@@ -2669,6 +2681,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=3;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        salesSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_sales .modal-title').html("Lihat Aktivitas Sales");
         setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
@@ -2677,18 +2691,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_sales').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "csd_id" : e.csd_id,
                     "csd_notes" : e.csd_notes,
                     "csd_nominal" : e.csd_nominal,
                     "csd_type" : e.csd_type
-                };
-                items.push(temp);
-                total += parseInt(e.csd_nominal);
+                });
             })
-            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
             addRowSales();
             
             $('.foto').show();
