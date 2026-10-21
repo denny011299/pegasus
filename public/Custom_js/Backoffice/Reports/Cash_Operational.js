@@ -2,6 +2,10 @@
     var table;
     var type, list_photo;
     var items = [];
+    // Khusus record dari API (PMO): detail campuran Masuk+Keluar disimpan absolut per
+    // crd_type, jadi tampilkan bertanda (+ hijau / − merah) dan total = neto. Input
+    // manual TIDAK memakai mode ini (nominal manual sudah bertanda dari input user).
+    var armadaSignedDetail = false;
     var sisa_kas = 0;
     var dates = null;
     var cashLoadXhr = null;
@@ -653,6 +657,7 @@
             $('#jenis_input_armada').val("operasional").attr('disabled', false).trigger('change');
             autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-body');
             autocompleteCashCategory('#cc_id', '#add_cash_armada .modal-body');
+            armadaSignedDetail = false; // input manual selalu mode lama
             $('.total_armada').html("Rp 0");
             $("#oc_date_armada").val(todayStr).attr('disabled', false);
 
@@ -1709,11 +1714,7 @@
             }
         }
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.crd_nominal;
-        });
-        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
 
         addRowArmada();
         pgPopupTableScrollToEdge($('#tableDetailArmada').closest('.pg-popup-table-scroll'));
@@ -1722,6 +1723,20 @@
         $('#cc_id').empty(null);
         $('#crd_nominal').val("");
     })
+
+    // Total detail armada. Mode API bertanda: Masuk +, Keluar/Keluar 1 − (nominal DB
+    // absolut per crd_type) → neto sama dengan cr_nominal header. Mode manual: jumlah
+    // apa adanya seperti sebelumnya (nominal sudah bertanda dari input).
+    function armadaItemsTotal() {
+        var total = 0;
+        items.forEach(function (element) {
+            var nominal = parseInt(element.crd_nominal, 10) || 0;
+            total += armadaSignedDetail
+                ? (element.crd_type == 1 ? Math.abs(nominal) : -Math.abs(nominal))
+                : nominal;
+        });
+        return total;
+    }
 
     function addRowArmada() {
         $('#tableDetailArmada tbody').html("");
@@ -1736,12 +1751,20 @@
             else if (e.crd_type == 3) type = "Keluar 1"
             console.log(e.crd_nominal)
             console.log(formatRupiahMinus(e.crd_nominal))
+            // Mode bertanda khusus record API: Keluar tampil − merah, Masuk + hijau.
+            var nominalHtml = `Rp ${formatRupiahMinus(e.crd_nominal)}`;
+            if (armadaSignedDetail) {
+                var absNominal = Math.abs(parseInt(e.crd_nominal, 10) || 0);
+                nominalHtml = e.crd_type == 1
+                    ? `<span style="color:#059669;font-weight:600;">+ Rp ${formatRupiahMinus(absNominal)}</span>`
+                    : `<span style="color:#dc2626;font-weight:600;">- Rp ${formatRupiahMinus(absNominal)}</span>`;
+            }
             $('#tableDetailArmada tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
+                    <td class="text-end">${nominalHtml}</td>
                     <td class="text-center d-flex align-items-center col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
@@ -1761,12 +1784,7 @@
 
         items.splice(index, 1);
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.crd_nominal;
-        });
-        console.log(total);
-        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
 
         addRowArmada();
     });
@@ -2418,6 +2436,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        armadaSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_armada .modal-title').html("Update Aktivitas Armada");
         setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
@@ -2426,18 +2446,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
                     "crd_type" : e.crd_type
-                };
-                items.push(temp);
-                total += parseInt(e.crd_nominal);
+                });
             })
-            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
             addRowArmada();
             
             $('#oc_date_armada').val(data.cr_date).attr('disabled', false);
@@ -2485,6 +2502,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=3;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        armadaSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_armada .modal-title').html("Lihat Aktivitas Armada");
         setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
@@ -2493,18 +2512,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
                     "crd_type" : e.crd_type
-                };
-                items.push(temp);
-                total += parseInt(e.crd_nominal);
+                });
             })
-            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
             addRowArmada();
             
             $('#oc_date_armada').val(data.cr_date).attr('disabled', true);
