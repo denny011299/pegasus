@@ -1287,7 +1287,7 @@
                     <td>${index+1}</td>
                     <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1526,7 +1526,7 @@
                     <td>${e.customer_notes}</td>
                     <td style="width: 25%">${e.cgd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1767,7 +1767,7 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
                     <td class="text-end">${nominalHtml}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1993,7 +1993,7 @@
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
                     <td class="text-end">${nominalHtml}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
