@@ -93,10 +93,14 @@ class ReturnItemResolver
         if ($hasRetailCol) {
             $variantCols[] = 'retail_unit';
         }
+        // SKU case-insensitive (sama pola ChecksStockAvailability): MySQL collation
+        // sering CI, tapi Collection::keyBy di PHP case-sensitive — "Aahk1500ml" vs
+        // "AAHK1500ML" lolos query lalu gagal di get() (log #96).
         $variantsBySku = $skus === []
             ? collect()
             : ProductVariant::whereIn('product_variant_sku', $skus)->where('status', 1)
-                ->get($variantCols)->keyBy('product_variant_sku');
+                ->get($variantCols)
+                ->keyBy(static fn ($v) => mb_strtoupper(trim((string) $v->product_variant_sku)));
 
         $supplyDetails = [];
         $productDetails = [];
@@ -144,7 +148,7 @@ class ReturnItemResolver
                 }
             } else {
                 $sku = (string) $item['ref_id'];
-                $variant = $variantsBySku->get($sku);
+                $variant = $variantsBySku->get(mb_strtoupper(trim($sku)));
                 if ($variant === null) {
                     throw ValidationException::withMessages([
                         $this->path($pathPrefix, $index, 'ref_id') => 'Produk dengan SKU "'.$sku.'" tidak ditemukan atau tidak aktif.',
