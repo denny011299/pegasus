@@ -2778,22 +2778,79 @@
         });
     });
 
+    // Proyeksi saldo setelah ACC — mirror rumus acceptCashSales / acceptCashArmada
+    // di ReportController (per staff / per customer, bukan agregat semua).
+    function projectedSaldoAfterAcceptSales(row) {
+        var saldo = parseInt(row.staff_saldo, 10) || 0;
+        var nominal = parseInt(row.cs_nominal, 10) || 0;
+        var csType = parseInt(row.cs_type, 10) || 0;
+        var csAksi = parseInt(row.cs_aksi, 10) || 0;
+        var csTrx = parseInt(row.cs_transaction, 10) || 0;
+        if ((csType === 1 && csAksi === 1) || (csType === 2 && csTrx === 1)) {
+            return saldo + nominal;
+        }
+        return saldo - nominal;
+    }
+
+    function projectedSaldoAfterAcceptArmada(row) {
+        var saldo = parseInt(row.customer_saldo, 10) || 0;
+        var nominal = parseInt(row.cr_nominal, 10) || 0;
+        var crType = parseInt(row.cr_type, 10) || 0;
+        if (crType === 1) return saldo + nominal;
+        if (crType >= 2) return saldo - nominal;
+        return saldo;
+    }
+
+    function bindAcceptKasAttrs(row) {
+        $('#btn-accept-kas').attr("cash_id", row.cash_id);
+        if (type == "admin") $('#btn-accept-kas').attr("ca_id", row.ca_id);
+        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", row.cg_id);
+        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", row.cr_id);
+        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", row.cs_id);
+    }
+
+    // Snapshot baris ACC — dipakai cek saldo minus di langkah 2 (modal merah).
+    var pendingAcceptCashRow = null;
+    var acceptKasNegWarnDone = false;
+
     // --------- ACC KAS OPERASIONAL ---------
+    // Alur 2 langkah: (1) modal hijau SOP → (2) bila Sales/Armada akan minus, modal merah.
     $(document).on('click', '.btn_acc', function(){
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        pendingAcceptCashRow = data;
+        acceptKasNegWarnDone = false;
         showModalKonfirmasi(
             "Apakah yakin ingin Approve pengajuan ini?",
             "btn-accept-kas"
         );
-        $('#btn-accept-kas').attr("cash_id", data.cash_id);
-        if (type == "admin") $('#btn-accept-kas').attr("ca_id", data.ca_id);
-        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", data.cg_id);
-        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", data.cr_id);
-        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", data.cs_id);
+        bindAcceptKasAttrs(data);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
+        // Setelah konfirmasi hijau: cek proyeksi saldo per sales / per armada.
+        if (!acceptKasNegWarnDone && pendingAcceptCashRow && (type === 'sales' || type === 'armada')) {
+            var row = pendingAcceptCashRow;
+            var willGoNegative = type === 'sales'
+                ? projectedSaldoAfterAcceptSales(row) < 0
+                : projectedSaldoAfterAcceptArmada(row) < 0;
+            if (willGoNegative) {
+                var ownerLabel = type === 'sales'
+                    ? (row.staff_name ? (' sales <b>' + row.staff_name + '</b>') : ' sales terkait')
+                    : (row.customer_notes ? (' armada <b>' + row.customer_notes + '</b>') : ' armada terkait');
+                var dangerText = 'Apakah Anda yakin ingin melanjutkan persetujuan transaksi ini? '
+                    + 'Transaksi tersebut akan mengakibatkan saldo kas' + ownerLabel + ' menjadi negatif.';
+                acceptKasNegWarnDone = true;
+                // Tunggu modal hijau tutup dulu supaya backdrop tidak dobel.
+                $('#modalKonfirmasi').one('hidden.bs.modal', function () {
+                    showModalDanger(dangerText, 'btn-accept-kas');
+                    bindAcceptKasAttrs(row);
+                });
+                closeModalConfirm();
+                return;
+            }
+        }
+
         LoadingButton(this);
         let url = "";
         if (type == "admin") {
@@ -2834,6 +2891,8 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                pendingAcceptCashRow = null;
+                acceptKasNegWarnDone = false;
                 $('.modal').modal("hide");
                 if (e.status == -2){
                     notifikasi('error', e.header, e.message);
