@@ -63,3 +63,15 @@ Semua tabel DataTables baru atau refactor **wajib**:
 
 - Load semua baris ke client (`serverSide: false`) untuk list operasional.
 - Tampilkan tabel kosong tanpa skeleton saat first load atau reload ajax.
+- `scrollX: true` di DataTables bila blade sudah punya wrapper `.table-responsive` + `table-layout: fixed` (pola Pengembalian di `Sales_Order.blade.php`) — header/body terpecah jadi 2 tabel dan desync saat scroll. Pakai `scrollX: false`, lebar kolom tetap (px) di `columns.width`, `min-width` tabel >= total lebar kolom; scroll ditangani wrapper.
+
+## Modal: terbuka instan, loading di dalam
+
+Modal yang datanya diambil via AJAX **wajib terbuka langsung saat klik** — jangan menunggu response dulu baru `.modal('show')`.
+
+1. Klik → reset modal ke state loading (judul sementara, tombol aksi footer disembunyikan/disable) → `.modal('show')` → baru tembak AJAX.
+2. Selama menunggu: spinner/skeleton **di area konten modal** (mis. baris spinner di tabel item), bukan modal tertunda/blank.
+3. Response datang → isi modal seperti biasa. Gagal → tutup modal atau tampilkan error di dalam modal + `notifikasi`.
+4. Guard token urutan klik bila modal dipakai ulang (klik baris lain membatalkan callback lama).
+
+Referensi: `loadSalesOrderIntoModal()` di `public/Custom_js/Backoffice/Customers/Sales_Order.js` (Pengiriman).

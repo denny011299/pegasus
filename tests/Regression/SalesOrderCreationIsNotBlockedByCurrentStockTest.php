@@ -156,7 +156,7 @@ class SalesOrderCreationIsNotBlockedByCurrentStockTest extends TestCase
         // stage, same point SalesOrderApproval::confirm() has always checked it.
         $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
         $this->withActiveWarehouse(self::WAREHOUSE_ID);
-        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc'])->assertStatus(200)->assertJson(['status' => 1]);
+        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc', 'confirm_items' => $this->shipmentConfirmItems($soId)])->assertStatus(200)->assertJson(['status' => 1]);
 
         $refused = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
         $refused->assertStatus(200);

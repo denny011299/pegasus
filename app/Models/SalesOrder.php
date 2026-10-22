@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Support\BatchLookup;
+use App\Support\RoleAccess;
 use App\Support\SalesOrderStock;
 use App\Support\ShipmentApproval;
 use Illuminate\Database\Eloquent\Model;
@@ -122,23 +123,24 @@ class SalesOrder extends Model
             }
         }
 
-        // can_approve_qc/can_approve_ops — sama persis dengan getSalesOrderDataTable() (dipakai
-        // openSalesOrderDetailModal() saat membuka modal konfirmasi dari /getSalesOrder single-row),
-        // supaya tombol Terima/Tolak di modal tidak pernah lepas dari guard approveShipment()/
-        // rejectShipment() di CustomerController.
-        if (Schema::hasColumn($this->getTable(), 'qc_approved_by')) {
-            $approvalWh = SalesOrderStock::mainWarehouseId();
-            $approvalUser = Session::get('user');
-            $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
-            foreach ($result as $value) {
-                $value->can_approve_qc = false;
-                $value->can_approve_ops = false;
-                if ((int) $value->status === 1 && $approvalWh > 0 && $approvalUser) {
-                    $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $value);
-                    $value->can_approve_qc = $actorRole === 'qc';
-                    $value->can_approve_ops = $actorRole === 'ops'
-                        && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh);
-                }
+        // Flag aksi untuk USER login — pola Stock Transfer (RoleAccess + actor QC/Ops).
+        // Dipakai openSalesOrderDetailModal() dari /getSalesOrder single-row.
+        $approvalUser = Session::get('user');
+        $canViewAccess = RoleAccess::can($approvalUser, 'Pengiriman', 'view');
+        $canDeleteAccess = RoleAccess::can($approvalUser, 'Pengiriman', 'delete');
+        $hasApprovalCols = Schema::hasColumn($this->getTable(), 'qc_approved_by');
+        $approvalWh = $hasApprovalCols ? SalesOrderStock::mainWarehouseId() : 0;
+        $activeWh = (int) (Session::get('active_warehouse_id') ?? 0);
+        foreach ($result as $value) {
+            $value->can_view = $canViewAccess;
+            $value->can_delete = $canDeleteAccess && (int) $value->status === 1;
+            $value->can_approve_qc = false;
+            $value->can_approve_ops = false;
+            if ($hasApprovalCols && $canViewAccess && (int) $value->status === 1 && $approvalWh > 0 && $approvalUser) {
+                $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $value);
+                $value->can_approve_qc = $actorRole === 'qc';
+                $value->can_approve_ops = $actorRole === 'ops'
+                    && ShipmentApproval::isAtWarehouseForApproval($approvalUser, $approvalWh, $activeWh);
             }
         }
 
@@ -322,7 +324,10 @@ class SalesOrder extends Model
         // terakhir mengikuti active_warehouse_id SESI staf yang sedang membuka tabel ini (bisa
         // gudang eceran), padahal gudang approval selalu gudang utama sungguhan.
         $approvalWh = $hasApprovalCols ? SalesOrderStock::mainWarehouseId() : 0;
-        $approvalUser = $hasApprovalCols ? Session::get('user') : null;
+        $approvalUser = Session::get('user');
+        // RoleAccess dihitung SEKALI per request (pola StockTransferController list).
+        $canViewAccess = RoleAccess::can($approvalUser, 'Pengiriman', 'view');
+        $canDeleteAccess = RoleAccess::can($approvalUser, 'Pengiriman', 'delete');
         $approverIdSet = [];
         if ($hasApprovalCols) {
             foreach ($rows as $row) {
@@ -339,8 +344,21 @@ class SalesOrder extends Model
         }
         $approverNames = $approverIdSet !== [] ? BatchLookup::staffNames(array_keys($approverIdSet)) : collect();
 
+        // Dokumen Form Kekurangan Barang per SO (untuk tombol print di list) — 1 query per halaman.
+        $shortageDocSoIds = [];
+        if ($rows->isNotEmpty() && Schema::hasTable('shipment_shortage_documents')) {
+            $shortageDocSoIds = ShipmentShortageDocument::query()
+                ->where('status', 1)
+                ->whereIn('so_id', $rows->pluck('so_id')->all())
+                ->pluck('so_id')
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->all();
+        }
+
         $dataOut = [];
         foreach ($rows as $row) {
+            $status = (int) $row->status;
             $item = [
                 'so_id' => (int) $row->so_id,
                 'so_number' => $row->so_number,
@@ -349,7 +367,7 @@ class SalesOrder extends Model
                 'so_date' => $row->so_date,
                 'so_invoice_no' => $row->so_invoice_no,
                 'so_ref_number' => $row->so_ref_number,
-                'status' => (int) $row->status,
+                'status' => $status,
                 'created_by_name' => $hasCreatedBy ? ($row->created_by_name ?: '-') : '-',
                 'acc_by_name' => $hasAccBy ? ($row->acc_by_name ?: '-') : '-',
                 // Penanda "dibuat lewat External API" untuk renderCreatedBySync() —
@@ -357,6 +375,12 @@ class SalesOrder extends Model
                 // atau /shipments/shipped SELALU punya ref_shipment_id (lihat
                 // ShipmentController), baris buatan admin biasa selalu null.
                 'ref_shipment_id' => $row->ref_shipment_id,
+                'has_shortage_doc' => in_array((int) $row->so_id, $shortageDocSoIds, true),
+                // Hak akses modul — server-side supaya tombol list tidak mengandalkan JS saja.
+                'can_view' => $canViewAccess,
+                'can_delete' => $canDeleteAccess && $status === 1,
+                'can_approve_qc' => false,
+                'can_approve_ops' => false,
             ];
             if ($hasRetailWh) {
                 $rid = (int) ($row->retail_warehouse_id ?? 0);
@@ -379,17 +403,9 @@ class SalesOrder extends Model
                 $item['reject_stage'] = $row->reject_stage;
                 $item['reject_reason'] = $row->reject_reason;
 
-                // Flag "bisa approve/tolak tahap X" untuk USER YANG SEDANG LOGIN — dihitung di
-                // server (bukan JS) supaya tombol yang tampil selalu konsisten dengan guard
-                // approveShipment()/rejectShipment() di CustomerController.
-                //
-                // Wajib gudang aktif = gudang utama HANYA untuk tahap Ops (DIPUTUSKAN 2026-09-23,
-                // koreksi dari keputusan awal yang mewajibkan kedua tahap) — tahap QC boleh
-                // approve dari gudang aktif mana pun, resolveActorRole() sendiri sudah membatasi
-                // lewat penugasan staff_warehouses (data assignment, bukan sesi gudang aktif).
-                $item['can_approve_qc'] = false;
-                $item['can_approve_ops'] = false;
-                if ((int) $row->status === 1 && $approvalWh > 0 && $approvalUser) {
+                // Approve QC/Ops: actor role (ShipmentApproval) + wajib punya Pengiriman|view.
+                // Tidak memakai "others" — sama keputusan route approveShipment (mirror Stock Transfer).
+                if ($canViewAccess && $status === 1 && $approvalWh > 0 && $approvalUser) {
                     $actorRole = ShipmentApproval::resolveActorRole($approvalUser, $approvalWh, $row);
                     $item['can_approve_qc'] = $actorRole === 'qc';
                     $item['can_approve_ops'] = $actorRole === 'ops'

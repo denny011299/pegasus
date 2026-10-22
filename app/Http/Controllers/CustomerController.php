@@ -17,6 +17,7 @@ use App\Models\SalesOrderDeliveryDetail;
 use App\Models\SalesOrderDetail;
 use App\Models\Staff;
 use App\Models\Warehouse;
+use App\Support\ProductUnitStock;
 use App\Support\SalesOrderApproval;
 use App\Support\SalesOrderStock;
 use App\Support\ShipmentApproval;
@@ -837,6 +838,20 @@ class CustomerController extends Controller
             ]);
         }
 
+        // QC = cek fisik buta: jumlah/satuan yang diinput staf harus cocok dengan data
+        // pengiriman (dibandingkan setelah konversi satuan) sebelum approval dicatat.
+        if ($type === 'qc') {
+            $check = $this->validateShipmentConfirmItems($soId, $req->input('confirm_items'));
+            if (! ($check['ok'] ?? false)) {
+                return response()->json([
+                    'status' => -1,
+                    'message' => $check['message'],
+                    'confirm_invalid_sod_ids' => $check['invalid_sod_ids'],
+                    'confirm_mismatch_sod_ids' => $check['mismatch_sod_ids'],
+                ]);
+            }
+        }
+
         $confirmResult = ['ok' => true];
         try {
             DB::transaction(function () use ($soId, $type, $staffId, &$confirmResult) {
@@ -895,6 +910,114 @@ class CustomerController extends Controller
             : 'Approval ' . $label . ' berhasil. Menunggu approval Kepala Operasional.';
 
         return response()->json(['status' => 1, 'message' => $message]);
+    }
+
+    /**
+     * Validasi input konfirmasi QC (jumlah + satuan hasil hitung fisik) terhadap
+     * sales_order_details. Qty dibandingkan setelah konversi ke satuan data asli,
+     * jadi satuan ekuivalen (mis. Pcs vs Dus) tetap dianggap sesuai.
+     *
+     * @param  mixed  $raw  array item {sod_id, qty, unit_id} atau JSON string
+     * @return array{ok: bool, message: string, invalid_sod_ids: array<int, int>, mismatch_sod_ids: array<int, int>}
+     */
+    private function validateShipmentConfirmItems(int $soId, mixed $raw): array
+    {
+        $fail = static fn (string $message, array $invalid = [], array $mismatch = []): array => [
+            'ok' => false,
+            'message' => $message,
+            'invalid_sod_ids' => array_values($invalid),
+            'mismatch_sod_ids' => array_values($mismatch),
+        ];
+
+        if (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $raw = is_array($decoded) ? $decoded : null;
+        }
+        if (! is_array($raw) || $raw === []) {
+            return $fail('Semua jumlah dan satuan konfirmasi wajib diisi terlebih dahulu.');
+        }
+
+        $details = SalesOrderDetail::where('so_id', $soId)
+            ->where('status', 1)
+            ->orderBy('sod_id')
+            ->get();
+        if ($details->isEmpty()) {
+            return $fail('Item pengiriman tidak ditemukan.');
+        }
+
+        $submitted = [];
+        foreach ($raw as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+            $sodId = (int) ($item['sod_id'] ?? 0);
+            if ($sodId <= 0) {
+                continue;
+            }
+            // Duplikat baris yang sama = payload tidak valid.
+            if (isset($submitted[$sodId])) {
+                return $fail('Data konfirmasi memiliki baris item yang sama lebih dari sekali.');
+            }
+            $submitted[$sodId] = [
+                'qty' => isset($item['qty']) && is_numeric($item['qty']) ? (float) $item['qty'] : 0.0,
+                'unit_id' => (int) ($item['unit_id'] ?? 0),
+            ];
+        }
+
+        $label = static function ($detail): string {
+            $name = trim((string) ($detail->sod_nama ?? 'Item'));
+            $sku = trim((string) ($detail->sod_sku ?? ''));
+
+            return $sku !== '' ? $name.' ('.$sku.')' : $name;
+        };
+
+        $invalid = [];
+        $invalidLabels = [];
+        $mismatch = [];
+        $mismatchLabels = [];
+
+        foreach ($details as $detail) {
+            $sodId = (int) $detail->sod_id;
+            $input = $submitted[$sodId] ?? null;
+            if ($input === null || $input['qty'] <= 0 || $input['unit_id'] <= 0) {
+                $invalid[] = $sodId;
+                $invalidLabels[] = $label($detail);
+                continue;
+            }
+
+            $converted = ProductUnitStock::convertQty(
+                $input['qty'],
+                $input['unit_id'],
+                (int) $detail->unit_id,
+                (int) $detail->product_variant_id
+            );
+            if ($converted <= 0 || abs($converted - (float) $detail->sod_qty) > 0.001) {
+                $mismatch[] = $sodId;
+                $mismatchLabels[] = $label($detail);
+            }
+        }
+
+        // Item yang dikirim tapi sudah tidak ada di data pengiriman.
+        $knownIds = $details->pluck('sod_id')->map(static fn ($id) => (int) $id)->all();
+        if (array_diff(array_keys($submitted), $knownIds) !== []) {
+            return $fail('Data pengiriman sudah berubah. Muat ulang halaman lalu konfirmasi kembali.');
+        }
+
+        if ($invalid !== []) {
+            return $fail(
+                'Semua jumlah dan satuan konfirmasi wajib diisi dengan benar untuk: '.implode(', ', $invalidLabels).'.',
+                $invalid
+            );
+        }
+        if ($mismatch !== []) {
+            return $fail(
+                'Jumlah/satuan konfirmasi tidak sesuai data pengiriman untuk: '.implode(', ', $mismatchLabels).'. Periksa kembali hasil hitung fisik.',
+                [],
+                $mismatch
+            );
+        }
+
+        return ['ok' => true, 'message' => '', 'invalid_sod_ids' => [], 'mismatch_sod_ids' => []];
     }
 
     /**
