@@ -60,10 +60,13 @@ pegasuso_pegasus.sql
 /*.sql
 /database/*.sql
 
-# Local issue screenshot dumps (jangan commit foto baru)
+# Local issue / uji screenshot dumps (jangan commit foto baru)
 /public/issue/photo_*.png
+/public/issue/photo_*.jpg
+/public/kas_admin/**/photo_*
 
-# Scratch / temp local scripts
+# Scratch lokal (script banding dump, AI staging, zip workspace, dll.)
+/tmp/
 scratch_modals.*
 
 /database/seeders/snapshots/prod_21082026

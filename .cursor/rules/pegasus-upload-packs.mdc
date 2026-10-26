@@ -1,0 +1,35 @@
+---
+description: Satu folder upload per env (DEV/staging), jangan pecah per tanggal; mapping branch fase2
+alwaysApply: true
+---
+
+# Pegasus Upload Packs
+
+Saat user minta “siapkan file upload” / pack untuk server: **satu folder per environment**, ditimpa/ditambah isinya — **jangan** buat `upload-YYYY-MM-DD-*` baru kecuali user eksplisit minta pack sekali-pakai.
+
+## Folder (di `PMI/`, sibling repo)
+
+| Env | Branch sumber | Folder pack | Server tipikal |
+|-----|---------------|-------------|----------------|
+| DEV | `fase2/main` | `PMI/upload-fase2-dev/` | `/home/pegasuso/dev.mypegasus.online` |
+| Staging | `fase2/live` | `PMI/upload-fase2-staging/` | staging / pre-live (ikuti path user) |
+| Live/prod (opsional) | hanya jika user minta | `PMI/upload-fase2-live/` | `/home/pegasuso/mypegasus.online` |
+
+Di dalam tiap folder: mirror path repo (`app/...`, `public/...`, …) + `BACA-DULU.txt` (migrate/clear yang relevan).
+
+## Cara kerja agent
+
+1. Ambil file dari worktree/branch yang benar (`fase2/main` → pack DEV, `fase2/live` → pack staging).
+2. **Salin/timpa** ke folder pack env itu (update in place). Jangan folder baru per fitur/tanggal.
+3. Isi `BACA-DULU.txt`: daftar file penting + perintah migrate `--path=...` + clear cache.
+4. Skip: `tests/`, `tmp/`, `.cursor/`, `docs/fase2-snapshots/`, foto uji `public/kas_admin/`, `vendor/`, `node_modules/`, `.env`.
+5. Kalau user minta “semua sejak Ariel/fase2”: bedakan **full diff vs `main`** (besar, ~1k+ file) vs **delta `fase2/live...fase2/main`** (DEV ahead). Default saat “siapkan keduanya”:  
+   - staging = diff `merge-base(main,live)..fase2/live`  
+   - DEV = diff `merge-base(main,fase2/main)..fase2/main`  
+   Pakai `git archive` / checkout-index — jangan baca isi tiap file ke chat.
+
+## Jangan
+
+- `upload-2026-10-23-pengiriman-...` terpisah per hari untuk rutinitas.
+- Campur isi DEV dan staging dalam satu folder.
+- Pack test/foto/cache sebagai bagian deploy.
