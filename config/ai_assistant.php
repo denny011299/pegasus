@@ -119,6 +119,12 @@ return [
             'operasional' => ['petty cash', 'kas operasional'],
             'gudang' => ['warehouse', 'cabang'],
             'produksi' => ['production'],
+            'production planning' => ['pp', 'perencanaan produksi', 'rencana produksi'],
+            'pp' => ['production planning', 'perencanaan produksi'],
+            'work order' => ['wo', 'spk', 'work order produksi'],
+            'wo' => ['work order', 'spk'],
+            'stb' => ['ambil bahan', 'acc bahan', 'material issue'],
+            'ambil bahan' => ['stb', 'acc bahan'],
             'resep' => ['bom'],
             'acc' => ['approve', 'setuju', 'persetujuan'],
             'setuju' => ['acc', 'approve', 'persetujuan'],
@@ -231,11 +237,18 @@ return [
         'purchase_delivery_orders' => ['pk' => 'pdo_id', 'columns' => ['pdo_id', 'po_id', 'pdo_number', 'pdo_receiver', 'staff_id', 'pdo_date', 'pdo_desc', 'status', 'created_at', 'updated_at']],
         'purchase_delivery_orders_details' => ['pk' => 'pdod_id', 'columns' => ['pdod_id', 'pdo_id', 'supplies_variant_id', 'pdod_sku', 'pdod_qty', 'status', 'created_at', 'updated_at']],
 
-        // produksi
+        // produksi (lama) + production planning (baru)
         'boms' => ['pk' => 'bom_id', 'columns' => ['bom_id', 'product_id', 'bom_qty', 'unit_id', 'status', 'created_by', 'created_at', 'updated_at']],
         'bom_details' => ['pk' => 'bom_detail_id', 'columns' => ['bom_detail_id', 'bom_id', 'supplies_id', 'bom_detail_qty', 'unit_id', 'status', 'created_by', 'created_at', 'updated_at']],
         'productions' => ['pk' => 'production_id', 'columns' => ['production_id', 'production_code', 'production_date', 'production_desc', 'production_created_by', 'warehouse_id', 'notes', 'cancel_requested_by', 'status', 'acc_by', 'resolved_by_system', 'created_at', 'updated_at']],
         'production_details' => ['pk' => 'pd_id', 'columns' => ['pd_id', 'production_id', 'product_variant_id', 'pd_qty', 'unit_id', 'destination_warehouse_id', 'bom_id', 'status', 'created_by', 'created_at', 'updated_at']],
+        'production_plannings' => ['pk' => 'production_planning_id', 'columns' => ['production_planning_id', 'pp_number', 'pp_date', 'warehouse_id', 'pp_status', 'shipment_shortage_document_id', 'so_id', 'notes', 'approved_by', 'approved_at', 'status', 'created_by', 'updated_by', 'created_at', 'updated_at']],
+        'production_planning_items' => ['pk' => 'ppi_id', 'columns' => ['ppi_id', 'production_planning_id', 'product_variant_id', 'sku', 'product_name', 'qty', 'actual_qty', 'unit_id', 'unit_label', 'production_skala_id', 'armada_customer_id', 'pic_staff_id', 'production_work_order_id', 'status', 'created_at', 'updated_at']],
+        'production_work_orders' => ['pk' => 'production_work_order_id', 'columns' => ['production_work_order_id', 'production_planning_id', 'warehouse_id', 'pic_staff_id', 'wo_number', 'wo_date', 'execution_status', 'production_line', 'production_completed_at', 'closed_at', 'status', 'created_by', 'updated_by', 'created_at', 'updated_at']],
+        'production_skalas' => ['pk' => 'production_skala_id', 'columns' => ['production_skala_id', 'code', 'name', 'combo_label', 'status', 'created_by', 'updated_by', 'created_at', 'updated_at']],
+        'production_execution_documents' => ['pk' => 'id', 'columns' => ['id', 'production_work_order_id', 'warehouse_id', 'type', 'number', 'request_id', 'document_status', 'notes', 'created_by', 'confirmed_at', 'ops_approved_by', 'ops_approved_at', 'qc_approved_by', 'qc_approved_at', 'warehouse_at', 'tally_number', 'created_at', 'updated_at']],
+        'production_output_reports' => ['pk' => 'id', 'columns' => ['id', 'production_work_order_id', 'request_id', 'created_by', 'confirmed_at', 'created_at', 'updated_at']],
+        'production_execution_events' => ['pk' => 'id', 'columns' => ['id', 'production_work_order_id', 'document_id', 'action', 'staff_id', 'occurred_at']],
 
         // opname
         'stock_opnames' => ['pk' => 'sto_id', 'columns' => ['sto_id', 'sto_code', 'sto_date', 'staff_id', 'sto_staff_name', 'category_id', 'warehouse_id', 'sto_notes', 'is_draft', 'is_old_version', 'status', 'created_by', 'acc_by', 'sto_acc_name', 'sto_decided_at', 'created_at', 'updated_at']],

@@ -31,7 +31,8 @@ Updated: 2026-10-04
 | Pembelian | Purchase Order | purchase_orders*, invoices, tts (delivery PO mati) |
 | Tanda Terima PO | TT | purchase_order_tts |
 | Resep Bahan Mentah | BOM | boms, bom_details (1 aktif/produk) |
-| Produksi | Production | productions* |
+| Produksi | Production (lama) | productions* |
+| Production Planning | PP / WO / STB (flag FEATURE_PRODUCTION_PLANNING) | production_plannings*, production_work_orders, production_execution_documents — docs: production-planning.md |
 | Kas | Kas besar | cashes, petty_cashes |
 | Kas Operasional * | Petty per role | cash_admins/gudangs/armadas/sales |
 | Kategori Kas / Bank Account | Master cash | cash_categories, banks |
@@ -45,7 +46,8 @@ Updated: 2026-10-04
 | Pengguna / Peran | Users | staffs, roles (1 role/orang) |
 
 ## Status cheat sheet (confirmed)
-- **Produksi:** 1=Pending, 2=Berhasil, 3=Tolak, 4=Menunggu batal
+- **Produksi (lama):** 1=Pending, 2=Berhasil, 3=Tolak, 4=Menunggu batal
+- **Production Planning:** `pp_status` draft/released/work_order/inprod/done; dokumen eksekusi `awaiting_qc` → `awaiting_ops` → `approved` (ACC QC dulu, lalu Kepala Ops)
 - **SO:** 1=antrean, 2=ACC, 3=tolak/hapus (sengaja sama agar hapus tetap tampil)
 - **PO status:** 1=Created, 2=ACC, 0=hapus, -1=tolak; **pembayaran:** 1=belum, 3=proses/TT, 2=lunas
 - **Stock Opname:** is_draft + 1=Menunggu, 2=Disetujui, 3=Ditolak, 0=hapus; freeze → 1 orang input

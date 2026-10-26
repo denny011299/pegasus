@@ -143,6 +143,10 @@ class FindDocumentTool implements ToolInterface
         'PDO' => ['purchase_delivery_orders'],
         'PBJ' => ['customer_product_returns'],
         'PBM' => ['customer_supply_returns'],
+        // STB sebelum ST — jangan ketarik ke stock_transfers.
+        'STB' => ['production_execution_documents'],
+        'PP' => ['production_plannings'],
+        'WO' => ['production_work_orders'],
         'SO' => ['sales_orders'],
         'PO' => ['purchase_orders'],
         'TT' => ['purchase_order_tts'],

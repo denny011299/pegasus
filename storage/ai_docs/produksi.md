@@ -1,5 +1,7 @@
 # Produksi
 
+> Modul **Produksi lama** (tabel `productions`, No. Produksi). Untuk rencana produksi baru (PP / WO / STB) lihat `production-planning.md` — jangan dicampur.
+
 ## Tujuan
 Mencatat produksi produk jadi dari resep, memotong stok bahan, menambah stok produk setelah ACC.
 
