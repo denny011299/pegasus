@@ -44,6 +44,7 @@
 
     { "Id": 22, "Modules": "Produksi", "SubModules": "Resep Bahan Mentah" },
     { "Id": 23, "Modules": "Produksi", "SubModules": "Produksi" },
+    { "Id": 52, "Modules": "Produksi", "SubModules": "Production Planning" },
 
     { "Id": 24, "Modules": "Akuntansi", "SubModules": "Bank Account" },
     { "Id": 25, "Modules": "Akuntansi", "SubModules": "Hutang" },

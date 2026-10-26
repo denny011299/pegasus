@@ -8,10 +8,15 @@ use App\Models\LogStock;
 use App\Models\Production;
 use App\Models\ProductionDetails;
 use App\Models\ProductionPhoto;
+use App\Models\ProductionPlanning;
+use App\Models\ProductionSkala;
+use App\Models\ProductionWorkOrder;
 use App\Models\ProductRelation;
 use App\Models\ProductStock;
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\SalesOrder;
+use App\Models\ShipmentShortageDocument;
 use App\Models\Staff;
 use App\Models\StockTransfer;
 use App\Models\StockTransferDetail;
@@ -24,6 +29,7 @@ use App\Models\Warehouse;
 use App\Support\ProductionPendingStockRestorer;
 use App\Support\ProductUnitStock;
 use App\Support\UnitRollUp;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -111,6 +117,1091 @@ class ProductionController extends Controller
     public function production()
     {
         return view('Backoffice.Production.Production');
+    }
+
+    /** Production Planning FE shell — refine via /productionPlanning. */
+    public function productionPlanning()
+    {
+        return view('Backoffice.Production.Production_Planning');
+    }
+
+    /** Mode View: PP mode fullscreen tanpa sidebar & navbar. */
+    public function productionPlanningView()
+    {
+        return view('Backoffice.Production.Production_Planning', [
+            'ppFullscreen' => true,
+        ]);
+    }
+
+    // ── Master Skala ───────────────────────────────────────────────
+    public function productionSkala()
+    {
+        return view('Backoffice.Production.Production_Skala');
+    }
+
+    function getProductionSkala(Request $req)
+    {
+        $data = (new ProductionSkala())->getProductionSkala([
+            'code' => $req->code,
+            'name' => $req->name,
+        ]);
+
+        return response()->json($data);
+    }
+
+    function insertProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->insertProductionSkala($req->all());
+    }
+
+    function updateProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->updateProductionSkala($req->all());
+    }
+
+    function deleteProductionSkala(Request $req)
+    {
+        return (new ProductionSkala())->deleteProductionSkala($req->all());
+    }
+
+    // ── Production Planning CRUD ─────────────────────────────────
+    function getProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->paginateList($req->all()));
+    }
+
+    /** Polling ringan KPI + badge tab (tanpa payload DataTables). */
+    function getProductionPlanningLive()
+    {
+        return response()->json(ProductionPlanning::liveSummary());
+    }
+
+    /** 4 kartu stage bawah — 1 request, ikut filter tanggal. */
+    function getProductionPlanningStageCards(Request $req)
+    {
+        return response()->json(ProductionPlanning::stageMiniCards($req->all()));
+    }
+
+    function getProductionPlanningDetail(Request $req)
+    {
+        $detail = (new ProductionPlanning())->getDetail($req->production_planning_id ?? $req->id);
+        if (! $detail) {
+            return response()->json(['status' => -1, 'message' => 'Planning tidak ditemukan'], 404);
+        }
+
+        return response()->json($detail);
+    }
+
+    /**
+     * Cek stok gudang (FG multi-satuan) + bahan mentah untuk Release draft.
+     * Satu batch snapshot + satu validateProductionItems — untuk modal async.
+     */
+    function checkProductionPlanningRelease(Request $req)
+    {
+        $ppId = (int) $req->input('production_planning_id', $req->input('id', 0));
+        $whId = (int) (ProductionPlanning::activeWarehouseId() ?: 0);
+        if ($ppId <= 0 || $whId <= 0) {
+            return response()->json([
+                'status' => -1,
+                'can_release' => false,
+                'message' => 'Planning / gudang aktif tidak valid',
+                'items' => [],
+                'shortages' => [],
+            ]);
+        }
+
+        $pp = ProductionPlanning::query()
+            ->where('production_planning_id', $ppId)
+            ->where('warehouse_id', $whId)
+            ->where('status', 1)
+            ->first();
+        if (! $pp || $pp->pp_status !== 'draft') {
+            return response()->json([
+                'status' => -1,
+                'can_release' => false,
+                'message' => 'Hanya draft yang dicek untuk Release',
+                'materials' => [],
+                'shortages' => [],
+            ]);
+        }
+
+        $built = $this->buildReleaseStockCheckItems($ppId);
+        if (isset($built['error'])) {
+            $err = $built['error'];
+
+            return response()->json([
+                'status' => (int) ($err['status'] ?? 0),
+                'can_release' => false,
+                'header' => $err['header'] ?? 'Tidak bisa Release',
+                'message' => $err['message'] ?? 'Validasi gagal',
+                'code' => $err['code'] ?? null,
+                'shortages' => $err['shortages'] ?? [],
+                'materials' => [],
+            ]);
+        }
+
+        $checkItems = $built['items'];
+        $destinationValidation = $this->normalizeProductionDestinations($checkItems);
+        if (! $destinationValidation['ok']) {
+            return response()->json([
+                'status' => 0,
+                'can_release' => false,
+                'header' => 'Gudang Tidak Valid',
+                'message' => $destinationValidation['message'],
+                'shortages' => [],
+                'materials' => [],
+            ]);
+        }
+
+        // Preview modal: agregat + per produk (tanpa validateProductionItems penuh).
+        $recipeBlock = $this->validateProductionRecipeGates($checkItems);
+        $bundle = $this->summarizeProductionMaterialsBundle($checkItems);
+        $materials = $bundle['materials'];
+        $itemMaterials = $bundle['items'];
+        if ($recipeBlock !== null) {
+            return response()->json([
+                'status' => (int) ($recipeBlock['status'] ?? 0),
+                'can_release' => false,
+                'header' => $recipeBlock['header'] ?? 'Resep Tidak Valid',
+                'message' => $recipeBlock['message'] ?? 'Validasi resep gagal',
+                'code' => $recipeBlock['code'] ?? null,
+                'bom_id' => $recipeBlock['bom_id'] ?? null,
+                'shortages' => [],
+                'materials' => $materials,
+                'items' => $itemMaterials,
+            ]);
+        }
+
+        $shortages = $this->materialsToShortages($materials);
+        $allOk = $shortages === [];
+
+        return response()->json([
+            'status' => $allOk ? 1 : -1,
+            'can_release' => $allOk,
+            'header' => $allOk ? null : 'Stock Tidak Mencukupi',
+            'message' => $allOk ? null : 'Stok bahan mentah tidak mencukupi untuk Release.',
+            'shortages' => $shortages,
+            'materials' => $materials,
+            'items' => $itemMaterials,
+        ]);
+    }
+
+        // Helper PP dari backup — dipakai cek stok/shortage PP.
+/** Agregasi detail kekurangan bahan untuk response checkProductionStock / insert. */
+    private function mergeProductionShortage(
+        array &$shortages,
+        int $suppliesId,
+        string $name,
+        int $unitId,
+        float $needed,
+        float $available
+    ): void {
+        $unitName = '';
+        if ($unitId > 0) {
+            $unit = Unit::find($unitId);
+            $unitName = (string) ($unit->unit_short_name ?? $unit->unit_name ?? '');
+        }
+        $needed = max(0, $needed);
+        $available = max(0, $available);
+        $shortage = max(0, $needed - $available);
+        if (isset($shortages[$suppliesId])) {
+            // Ambil kekurangan terburuk (butuh terbesar / stok tersisa terkecil)
+            $shortages[$suppliesId]['needed'] = max($shortages[$suppliesId]['needed'], $needed);
+            $shortages[$suppliesId]['available'] = min($shortages[$suppliesId]['available'], $available);
+            $shortages[$suppliesId]['shortage'] = max(
+                0,
+                $shortages[$suppliesId]['needed'] - $shortages[$suppliesId]['available']
+            );
+
+            return;
+        }
+        $shortages[$suppliesId] = [
+            'supplies_id' => $suppliesId,
+            'supplies_name' => $name,
+            'unit_id' => $unitId,
+            'unit_name' => $unitName,
+            'needed' => $needed,
+            'available' => $available,
+            'shortage' => $shortage,
+        ];
+    }
+
+    private function formatShortageQty(float $qty): string
+    {
+        $rounded = round($qty, 2);
+        if (abs($rounded - (int) $rounded) < 0.001) {
+            return (string) (int) $rounded;
+        }
+
+        return rtrim(rtrim(number_format($rounded, 2, '.', ''), '0'), '.');
+    }
+
+    private function convertSuppliesQtyBetweenUnitsFromRelations(
+        float $qty,
+        int $fromUnitId,
+        int $toUnitId,
+        $relations
+    ): float {
+        if ((int) $fromUnitId === (int) $toUnitId) {
+            return $qty;
+        }
+
+        $smallestQty = $this->convertSuppliesQtyToSmallestUnitFromRelations($qty, $fromUnitId, $relations);
+        $toMultiplier = $this->convertSuppliesQtyToSmallestUnitFromRelations(1, $toUnitId, $relations);
+        if ($toMultiplier <= 0) {
+            return $qty;
+        }
+
+        return $smallestQty / $toMultiplier;
+    }
+
+/** Batch-count tanpa query — pakai ProductRelation yang sudah di-load. */
+    private function getBatchCountFromRelations(
+        int $pdQty,
+        int $pdUnitId,
+        int $bomQty,
+        int $bomUnitId,
+        $relations
+    ): int {
+        $pdSmallest = $this->convertQtyToSmallestUnitFromRelations($pdQty, $pdUnitId, $relations);
+        $bomSmallest = $this->convertQtyToSmallestUnitFromRelations($bomQty, $bomUnitId, $relations);
+
+        if ($bomSmallest <= 0) {
+            return $pdQty > 0 ? 1 : 0;
+        }
+
+        return (int) ($pdSmallest / $bomSmallest);
+    }
+
+private function convertQtyToSmallestUnitFromRelations(int $qty, int $unitId, $relations): int
+    {
+        $multiplier = 1;
+        $currentUnit = $unitId;
+        $guard = 0;
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (! $rel) {
+                break;
+            }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
+        }
+
+        return $qty * $multiplier;
+    }
+
+private function convertQtyBetweenUnitsFromRelations(int $qty, int $fromUnitId, int $toUnitId, $relations): int
+    {
+        if ($fromUnitId === $toUnitId) {
+            return $qty;
+        }
+
+        $multiplier = 1;
+        $currentUnit = $fromUnitId;
+        $guard = 0;
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->pr_unit_id_1 === (int) $currentUnit);
+            if (! $rel) {
+                return $qty;
+            }
+            $multiplier *= (int) $rel->pr_unit_value_2;
+            $currentUnit = (int) $rel->pr_unit_id_2;
+            if ($currentUnit === $toUnitId) {
+                return $qty * $multiplier;
+            }
+        }
+
+        return $qty;
+    }
+
+private function getTotalSuppliesStockInUnitFromRelations(int $targetUnitId, $ss, $relations): float
+    {
+        $total = 0.0;
+        foreach ($ss as $stok) {
+            $total += $this->convertSuppliesQtyBetweenUnitsFromRelations(
+                (float) $stok->ss_stock,
+                (int) $stok->unit_id,
+                $targetUnitId,
+                $relations
+            );
+        }
+
+        return $total;
+    }
+
+private function convertSuppliesQtyToSmallestUnitFromRelations(float $qty, int $unitId, $relations): float
+    {
+        $multiplier = 1.0;
+        $currentUnit = $unitId;
+        $guard = 0;
+        while ($guard < 20) {
+            $guard++;
+            $rel = $relations->first(fn ($r) => (int) $r->su_id_1 === (int) $currentUnit);
+            if (! $rel) {
+                break;
+            }
+            $multiplier *= (float) $rel->sr_value_2;
+            $currentUnit = (int) $rel->su_id_2;
+        }
+
+        return $qty * $multiplier;
+    }
+
+/**
+     * @param  array<int, array<string, mixed>>  $materials
+     * @return array<int, array<string, mixed>>
+     */
+    private function materialsToShortages(array $materials): array
+    {
+        $shortages = [];
+        foreach ($materials as $m) {
+            if (! empty($m['ok'])) {
+                continue;
+            }
+            $shortages[] = [
+                'supplies_id' => $m['supplies_id'],
+                'supplies_name' => $m['supplies_name'],
+                'unit_id' => $m['unit_id'],
+                'unit_name' => $m['unit_name'],
+                'needed' => $m['needed'],
+                'needed_text' => $m['needed_text'] ?? null,
+                'available' => $m['available'],
+                'available_text' => $m['available_text'] ?? null,
+                'shortage' => $m['shortage'],
+            ];
+        }
+
+        return $shortages;
+    }
+
+    /**
+     * Gate resep ringan (tanpa simulasi bongkar stok) — untuk preview Release yang cepat.
+     *
+     * @param  array<int, array<string, mixed>>  $item
+     * @return array<string, mixed>|null
+     */
+    private function validateProductionRecipeGates(array $item): ?array
+    {
+        $bahan_satuan_tidak_aktif = $this->validateProductionBomActiveUnits($item);
+        if (count($bahan_satuan_tidak_aktif) > 0) {
+            return [
+                'status' => 0,
+                'header' => 'Satuan Resep Tidak Aktif',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithInactiveUnits($item),
+                'message' => 'Satuan bahan pada resep sudah tidak aktif. Perbarui resep terlebih dahulu: '
+                    .implode(', ', $bahan_satuan_tidak_aktif),
+            ];
+        }
+
+        $bahan_bukan_satuan_terkecil = $this->validateBomSuppliesSmallestUnit($item);
+        if (count($bahan_bukan_satuan_terkecil) > 0) {
+            return [
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithNonSmallestSupplyUnit($item),
+                'message' => 'Satuan bahan mentah pada resep bukan satuan terkecil sesuai relasi. Perbarui resep terlebih dahulu: '
+                    .implode(', ', $bahan_bukan_satuan_terkecil),
+            ];
+        }
+
+        $bom_satuan_produk_bukan_terkecil = $this->validateBomProductSmallestUnit($item);
+        if (count($bom_satuan_produk_bukan_terkecil) > 0) {
+            return [
+                'status' => 0,
+                'header' => 'Gagal Insert',
+                'code' => 'recipe_needs_update',
+                'bom_id' => $this->firstBomIdWithNonSmallestProductUnit($item),
+                'message' => 'Satuan produk pada resep bukan satuan terkecil sesuai relasi produk. Perbarui resep terlebih dahulu: '
+                    .implode(', ', $bom_satuan_produk_bukan_terkecil),
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Agregat kebutuhan bahan mentah + stok (batch query, read-only, tanpa insert stok kosong).
+     *
+     * @param  array<int, array<string, mixed>>  $item
+     * @return array<int, array<string, mixed>>
+     */
+    private function summarizeProductionMaterials(array $item): array
+    {
+        return $this->summarizeProductionMaterialsBundle($item)['materials'];
+    }
+
+    /**
+     * Bundle: agregat (penentu Release) + bahan per produk (untuk accordion UI).
+     *
+     * @param  array<int, array<string, mixed>>  $item
+     * @return array{materials: array<int, array<string, mixed>>, items: array<int, array<string, mixed>>}
+     */
+    private function summarizeProductionMaterialsBundle(array $item): array
+    {
+        if ($item === []) {
+            return ['materials' => [], 'items' => []];
+        }
+
+        $bomIds = collect($item)->pluck('bom_id')->map(fn ($id) => (int) $id)->unique()->filter()->values()->all();
+        $boms = Bom::query()->whereIn('bom_id', $bomIds)->where('status', 1)->get()->keyBy('bom_id');
+        $detailsByBom = BomDetail::query()
+            ->whereIn('bom_id', $bomIds)
+            ->where('status', 1)
+            ->get()
+            ->groupBy('bom_id');
+
+        $variantIds = collect($item)->pluck('product_variant_id')->map(fn ($id) => (int) $id)->unique()->filter()->values()->all();
+        $packRels = ProductRelation::query()
+            ->whereIn('product_variant_id', $variantIds)
+            ->where('status', 1)
+            ->get()
+            ->groupBy('product_variant_id');
+
+        $aggregated = [];
+        $perItemParts = [];
+        foreach ($item as $idx => $value) {
+            $bomId = (int) ($value['bom_id'] ?? 0);
+            $bom = $boms->get($bomId);
+            if (! $bom) {
+                continue;
+            }
+            $variantId = (int) $value['product_variant_id'];
+            $rels = $packRels->get($variantId, collect());
+            $batchCount = $this->getBatchCountFromRelations(
+                (int) $value['pd_qty'],
+                (int) $value['unit_id'],
+                (int) $bom->bom_qty,
+                (int) $bom->unit_id,
+                $rels
+            );
+            $rows = $detailsByBom->get($bomId, collect());
+            $perItemParts[$idx] = [
+                'meta' => $value,
+                'parts' => [],
+            ];
+            foreach ($rows as $bd) {
+                $id = (int) $bd->supplies_id;
+                $part = [
+                    'supplies_id' => $id,
+                    'unit_id' => (int) $bd->unit_id,
+                    'qty_line' => (float) $bd->bom_detail_qty,
+                    'batch' => $batchCount,
+                    'variant_id' => $variantId,
+                    'pd_qty' => (int) $value['pd_qty'],
+                    'unit_id_pd' => (int) $value['unit_id'],
+                    'bom_unit_id' => (int) $bom->unit_id,
+                ];
+                $perItemParts[$idx]['parts'][] = $part;
+                if (! isset($aggregated[$id])) {
+                    $aggregated[$id] = [
+                        'supplies_id' => $id,
+                        'unit_id' => (int) $bd->unit_id,
+                        'needed' => 0.0,
+                        'needed_parts' => [],
+                    ];
+                }
+                $aggregated[$id]['needed_parts'][] = [
+                    'qty_line' => $part['qty_line'],
+                    'batch' => $part['batch'],
+                    'variant_id' => $part['variant_id'],
+                    'pd_qty' => $part['pd_qty'],
+                    'unit_id' => $part['unit_id_pd'],
+                    'bom_unit_id' => $part['bom_unit_id'],
+                ];
+            }
+        }
+
+        if ($aggregated === []) {
+            return ['materials' => [], 'items' => []];
+        }
+
+        $supplyIds = array_keys($aggregated);
+        $supplyCols = ['supplies_id', 'supplies_name'];
+        if (Supplies::hasKindColumn()) {
+            $supplyCols[] = 'supplies_kind';
+            if (Schema::hasColumn('supplies', 'trading_product_variant_id')) {
+                $supplyCols[] = 'trading_product_variant_id';
+            }
+        }
+        $supplies = Supplies::query()->whereIn('supplies_id', $supplyIds)->get($supplyCols)->keyBy('supplies_id');
+        $unitIds = collect($aggregated)->pluck('unit_id')->unique()->filter()->values()->all();
+        $units = Unit::query()->whereIn('unit_id', $unitIds)->get()->keyBy('unit_id');
+        $supplyRels = SuppliesRelation::query()
+            ->whereIn('supplies_id', $supplyIds)
+            ->where('status', 1)
+            ->get()
+            ->groupBy('supplies_id');
+        $stocksBySupply = SuppliesStock::query()
+            ->whereIn('supplies_id', $supplyIds)
+            ->where('status', 1)
+            ->get()
+            ->groupBy('supplies_id');
+        $whId = (int) (SuppliesStock::resolveWarehouseId() ?: 0);
+        $hasTradingCol = Supplies::hasKindColumn();
+
+        $availableBySupply = [];
+        $nameBySupply = [];
+        $unitNameBySupply = [];
+        foreach ($aggregated as $suppliesId => $row) {
+            $reqUnitId = (int) $row['unit_id'];
+            $supply = $supplies->get($suppliesId);
+            $name = (string) ($supply->supplies_name ?? ('Bahan #'.$suppliesId));
+            $nameBySupply[$suppliesId] = $name;
+            $unit = $units->get($reqUnitId);
+            $unitNameBySupply[$suppliesId] = (string) ($unit->unit_short_name ?? $unit->unit_name ?? '');
+            $isTrading = $hasTradingCol && $supply && Supplies::isTradingKind($supply->supplies_kind ?? null);
+            if ($isTrading) {
+                $pvId = Schema::hasColumn('supplies', 'trading_product_variant_id')
+                    ? (int) ($supply->trading_product_variant_id ?? 0)
+                    : 0;
+                $availableBySupply[$suppliesId] = ($whId > 0 && $pvId > 0)
+                    ? ProductUnitStock::totalAvailable($whId, $pvId, $reqUnitId, false, true)
+                    : 0.0;
+            } else {
+                $ss = $stocksBySupply->get($suppliesId, collect());
+                $rels = $supplyRels->get($suppliesId, collect());
+                $availableBySupply[$suppliesId] = $ss->isEmpty()
+                    ? 0.0
+                    : $this->getTotalSuppliesStockInUnitFromRelations($reqUnitId, $ss, $rels);
+            }
+        }
+
+        $calcNeeded = function (array $parts, string $name) use ($packRels): float {
+            $isKemasanBesar = (bool) preg_match('/dos|pack/i', $name);
+            $needed = 0.0;
+            foreach ($parts as $part) {
+                if ($isKemasanBesar) {
+                    $rels = $packRels->get($part['variant_id'], collect());
+                    $relasiKonversi = $rels->first(fn ($r) => (int) $r->pr_unit_id_2 === (int) $part['bom_unit_id']);
+                    $nilaiIsiDos = $relasiKonversi ? (float) $relasiKonversi->pr_unit_value_2 : 1.0;
+                    $totalPcs = $this->convertQtyBetweenUnitsFromRelations(
+                        (int) $part['pd_qty'],
+                        (int) $part['unit_id'],
+                        (int) $part['bom_unit_id'],
+                        $rels
+                    );
+                    $jumlahDos = floor($totalPcs / max(1.0, $nilaiIsiDos));
+                    $needed += $jumlahDos * (float) $part['qty_line'];
+                } else {
+                    $needed += (float) $part['qty_line'] * (float) $part['batch'];
+                }
+            }
+
+            return $needed;
+        };
+
+        $materials = [];
+        foreach ($aggregated as $suppliesId => $row) {
+            $name = $nameBySupply[$suppliesId];
+            $needed = $calcNeeded($row['needed_parts'], $name);
+            $available = (float) ($availableBySupply[$suppliesId] ?? 0);
+            $unitName = $unitNameBySupply[$suppliesId] ?? '';
+            $ok = $needed <= 0 || $available >= $needed;
+            $materials[] = [
+                'supplies_id' => (int) $suppliesId,
+                'supplies_name' => $name,
+                'unit_id' => (int) $row['unit_id'],
+                'unit_name' => $unitName,
+                'needed' => $needed,
+                'needed_text' => $this->formatShortageQty($needed).($unitName !== '' ? ' '.$unitName : ''),
+                'available' => $available,
+                'available_text' => $this->formatShortageQty($available).($unitName !== '' ? ' '.$unitName : ''),
+                'shortage' => max(0, $needed - $available),
+                'ok' => $ok,
+            ];
+        }
+        usort($materials, fn ($a, $b) => strcmp((string) $a['supplies_name'], (string) $b['supplies_name']));
+
+        $itemGroups = [];
+        foreach ($perItemParts as $pack) {
+            $meta = $pack['meta'];
+            $bySupply = [];
+            foreach ($pack['parts'] as $part) {
+                $sid = (int) $part['supplies_id'];
+                if (! isset($bySupply[$sid])) {
+                    $bySupply[$sid] = [
+                        'unit_id' => (int) $part['unit_id'],
+                        'parts' => [],
+                    ];
+                }
+                $bySupply[$sid]['parts'][] = [
+                    'qty_line' => $part['qty_line'],
+                    'batch' => $part['batch'],
+                    'variant_id' => $part['variant_id'],
+                    'pd_qty' => $part['pd_qty'],
+                    'unit_id' => $part['unit_id_pd'],
+                    'bom_unit_id' => $part['bom_unit_id'],
+                ];
+            }
+            $mats = [];
+            $itemOk = true;
+            foreach ($bySupply as $sid => $block) {
+                $name = $nameBySupply[$sid] ?? ('Bahan #'.$sid);
+                $needed = $calcNeeded($block['parts'], $name);
+                $available = (float) ($availableBySupply[$sid] ?? 0);
+                $unitName = $unitNameBySupply[$sid] ?? '';
+                $ok = $needed <= 0 || $available >= $needed;
+                if (! $ok) {
+                    $itemOk = false;
+                }
+                $mats[] = [
+                    'supplies_id' => (int) $sid,
+                    'supplies_name' => $name,
+                    'unit_id' => (int) $block['unit_id'],
+                    'unit_name' => $unitName,
+                    'needed' => $needed,
+                    'needed_text' => $this->formatShortageQty($needed).($unitName !== '' ? ' '.$unitName : ''),
+                    'available' => $available,
+                    'available_text' => $this->formatShortageQty($available).($unitName !== '' ? ' '.$unitName : ''),
+                    'shortage' => max(0, $needed - $available),
+                    'ok' => $ok,
+                ];
+            }
+            usort($mats, function ($a, $b) {
+                $ao = ! empty($a['ok']) ? 1 : 0;
+                $bo = ! empty($b['ok']) ? 1 : 0;
+                if ($ao !== $bo) {
+                    return $ao <=> $bo;
+                }
+
+                return strcmp((string) $a['supplies_name'], (string) $b['supplies_name']);
+            });
+
+            $itemGroups[] = [
+                'ppi_id' => (int) ($meta['ppi_id'] ?? 0),
+                'product_variant_id' => (int) ($meta['product_variant_id'] ?? 0),
+                'product_name' => (string) ($meta['product_name'] ?? 'Produk'),
+                'sku' => (string) ($meta['sku'] ?? ''),
+                'qty' => (int) ($meta['pd_qty'] ?? 0),
+                'unit_name' => (string) ($meta['unit_name'] ?? ''),
+                'ok' => $itemOk,
+                'materials' => $mats,
+            ];
+        }
+
+        // Produk kurang di atas
+        usort($itemGroups, function ($a, $b) {
+            $ao = ! empty($a['ok']) ? 1 : 0;
+            $bo = ! empty($b['ok']) ? 1 : 0;
+
+            return $ao <=> $bo;
+        });
+
+        return ['materials' => $materials, 'items' => $itemGroups];
+    }
+
+    function insertProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->insertDraft($req->all()));
+    }
+
+    function updateProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->updateDraft($req->all()));
+    }
+
+    function approveProductionPlanning(Request $req)
+    {
+        // Cek ulang stok bahan di backend saat klik Release (bisa kepotong proses lain).
+        // Tidak mutasi stok di release (hanya status PP).
+        $ppId = (int) $req->input('production_planning_id', 0);
+        $built = $this->buildReleaseStockCheckItems($ppId);
+        if (isset($built['error'])) {
+            $err = $built['error'];
+            $err['materials'] = $err['materials'] ?? [];
+
+            return response()->json($err);
+        }
+
+        $items = $built['items'];
+        $destinationValidation = $this->normalizeProductionDestinations($items);
+        if (! $destinationValidation['ok']) {
+            return response()->json([
+                'status' => 0,
+                'header' => 'Gudang Tidak Valid',
+                'message' => $destinationValidation['message'],
+                'materials' => $this->summarizeProductionMaterials($items),
+            ]);
+        }
+
+        // Fail-fast: gate resep + agregat stok (ringan) sebelum simulasi bongkar penuh.
+        $materials = $this->summarizeProductionMaterials($items);
+        $recipeBlock = $this->validateProductionRecipeGates($items);
+        if ($recipeBlock !== null) {
+            $recipeBlock['materials'] = $materials;
+
+            return response()->json($recipeBlock);
+        }
+        $shortages = $this->materialsToShortages($materials);
+        if ($shortages !== []) {
+            return response()->json([
+                'status' => -1,
+                'header' => 'Stock Tidak Mencukupi',
+                'message' => 'Stok bahan mentah tidak mencukupi untuk Release.',
+                'shortages' => $shortages,
+                'materials' => $materials,
+            ]);
+        }
+
+        // Simulasi konversi/bongkar (edge case) — hanya jika preview stok sudah OK.
+        $validation = $this->validateProductionItems($items);
+        if ($validation) {
+            $validation['materials'] = $materials;
+
+            return response()->json($validation);
+        }
+
+        return response()->json((new ProductionPlanning())->approveDraft($req->all()));
+    }
+
+    /**
+     * Susun payload mirip insertProduction dari item PP draft (resolve bom per varian).
+     *
+     * @return array{items: array<int, array<string, mixed>>}|array{error: array<string, mixed>}
+     */
+    private function buildReleaseStockCheckItems(int $ppId): array
+    {
+        $whId = (int) (ProductionPlanning::activeWarehouseId() ?: 0);
+        if ($ppId <= 0 || $whId <= 0) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak ditemukan di gudang aktif',
+                ],
+            ];
+        }
+
+        $pp = ProductionPlanning::query()
+            ->where('production_planning_id', $ppId)
+            ->where('warehouse_id', $whId)
+            ->where('status', 1)
+            ->first();
+        if (! $pp) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak ditemukan di gudang aktif',
+                ],
+            ];
+        }
+        if ($pp->pp_status !== 'draft') {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Hanya draft yang bisa di-release',
+                ],
+            ];
+        }
+
+        $rows = \App\Models\ProductionPlanningItem::query()
+            ->where('production_planning_id', $pp->production_planning_id)
+            ->where('status', 1)
+            ->orderBy('ppi_id')
+            ->get();
+        if ($rows->isEmpty()) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Planning tidak punya item',
+                ],
+            ];
+        }
+
+        $ppWhId = (int) ($pp->warehouse_id ?: $whId);
+        $items = [];
+        $missingBom = [];
+        $missingVariant = [];
+
+        // 1 query BOM untuk semua varian (ambil bom_id terbaru per product_id).
+        $variantIds = $rows->pluck('product_variant_id')->map(fn ($id) => (int) $id)->filter()->unique()->values()->all();
+        $bomByVariant = [];
+        if ($variantIds !== []) {
+            $bomRows = Bom::query()
+                ->whereIn('product_id', $variantIds)
+                ->where('status', 1)
+                ->orderByDesc('bom_id')
+                ->get(['bom_id', 'product_id']);
+            foreach ($bomRows as $bom) {
+                $pid = (int) $bom->product_id;
+                if (! isset($bomByVariant[$pid])) {
+                    $bomByVariant[$pid] = (int) $bom->bom_id;
+                }
+            }
+        }
+
+        foreach ($rows as $row) {
+            $variantId = (int) ($row->product_variant_id ?? 0);
+            if ($variantId <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: $row->sku ?: 'Item #'.$row->ppi_id));
+                continue;
+            }
+            // boms.product_id = product_variant_id (pola master resep)
+            $bomId = (int) ($bomByVariant[$variantId] ?? 0);
+            if ($bomId <= 0) {
+                $missingBom[] = trim((string) ($row->product_name ?: $row->sku ?: 'Varian #'.$variantId));
+                continue;
+            }
+            $qty = (int) round((float) $row->qty);
+            if ($qty <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: 'Item #'.$row->ppi_id)).' (qty invalid)';
+                continue;
+            }
+            $unitId = (int) ($row->unit_id ?? 0);
+            if ($unitId <= 0) {
+                $missingVariant[] = trim((string) ($row->product_name ?: 'Item #'.$row->ppi_id)).' (satuan kosong)';
+                continue;
+            }
+
+            $items[] = [
+                'ppi_id' => (int) ($row->ppi_id ?? 0),
+                'product_variant_id' => $variantId,
+                'product_name' => $row->product_name,
+                'sku' => $row->sku,
+                'pd_qty' => $qty,
+                'unit_id' => $unitId,
+                'unit_name' => $row->unit_label,
+                'bom_id' => $bomId,
+                'destination_warehouse_id' => $ppWhId > 0 ? $ppWhId : null,
+            ];
+        }
+
+        if ($missingVariant !== []) {
+            return [
+                'error' => [
+                    'status' => 0,
+                    'header' => 'Item Planning Tidak Valid',
+                    'message' => 'Item planning belum lengkap (varian/satuan/qty): '.implode(', ', $missingVariant),
+                ],
+            ];
+        }
+        if ($missingBom !== []) {
+            return [
+                'error' => [
+                    'status' => 0,
+                    'header' => 'Resep Tidak Ditemukan',
+                    'code' => 'recipe_needs_update',
+                    'message' => 'Produk belum punya resep bahan mentah aktif. Buat/perbarui resep dulu: '.implode(', ', $missingBom),
+                ],
+            ];
+        }
+        if ($items === []) {
+            return [
+                'error' => [
+                    'status' => -1,
+                    'message' => 'Tidak ada item valid untuk dicek stok.',
+                ],
+            ];
+        }
+
+        return ['items' => $items];
+    }
+
+    function deleteProductionPlanning(Request $req)
+    {
+        return response()->json((new ProductionPlanning())->deletePlanning($req->all()));
+    }
+
+    function assignProductionPlanningWorkOrder(Request $req)
+    {
+        try {
+            return response()->json((new ProductionPlanning())->assignWorkOrder($req->all()));
+        } catch (\Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => -1,
+                'message' => 'Gagal simpan Work Order: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function printProductionPlanning(int $id)
+    {
+        $planning = (new ProductionPlanning())->getDetail($id);
+        if (! $planning) {
+            abort(404, 'Planning tidak ditemukan di gudang aktif');
+        }
+        if (! in_array($planning['pp_status'], ['released', 'work_order', 'inprod', 'done'], true)) {
+            abort(422, 'Surat Perintah Kerja dapat dicetak setelah Release to Production');
+        }
+
+        $settings = (new \App\Models\Setting())->getSetting([
+            'select' => ['company_name', 'company_address', 'logo', 'company_logo'],
+        ]);
+        // Dibuat Oleh = staff yang create PP (created_by); fallback user login jika data lama kosong.
+        $createdByName = trim((string) ($planning['created_by'] ?? ''));
+        if ($createdByName === '' || $createdByName === '-') {
+            $u = session()->get('user') ?? Session::get('user');
+            $createdByName = $u ? ($u->staff_name ?? $u->name ?? '') : '';
+            if ($createdByName !== '') {
+                $planning['created_by'] = $createdByName;
+            }
+        }
+        $payload = [
+            'planning' => $planning,
+            'company_name' => $settings['company_name'] ?? 'Pegasus Hikari Group',
+            'company_address' => $settings['company_address'] ?? '',
+            'logo_base64' => ProductionWorkOrder::resolveCompanyLogoBase64($settings['logo'] ?? $settings['company_logo'] ?? null),
+            'skalas' => ProductionSkala::where('status', 1)->orderBy('code')->get(),
+        ];
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) $planning['pp_number']);
+
+        return Pdf::loadView('Backoffice.PDF.ProductionPlanningOrder', $payload)
+            ->setPaper('a5', 'landscape')
+            ->stream('Surat_Perintah_Kerja_'.$safeName.'.pdf');
+    }
+
+    /** Print FORM-OPS-09 — DomPDF stream, 1 lembar per PIC (SPV). */
+    public function printProductionWorkOrder(int $id)
+    {
+        $payload = ProductionWorkOrder::printPayload($id);
+        if (! $payload) {
+            abort(404, 'Work Order tidak ditemukan di gudang aktif');
+        }
+
+        $u = session()->get('user') ?? Session::get('user');
+        if ($u) {
+            $payload['printed_by'] = $u->staff_name ?? $u->name ?? 'Admin';
+        }
+        $payload['printed_at'] = now()->translatedFormat('d F Y H:i');
+
+        $safeName = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($payload['wo_number'] ?? 'WO'));
+        $pdf = Pdf::loadView('Backoffice.PDF.WorkOrderProduction', $payload)
+            ->setPaper('a6', 'landscape');
+
+        return $pdf->stream('Work_Order_'.$safeName.'.pdf');
+    }
+
+    /**
+     * Dokumen Form Kekurangan aktif — prefill item di modal Buat PP.
+     * Nama produk = product_name + variasi (lookup SKU).
+     */
+    public function shortageDocsForPlanning()
+    {
+        $docs = ShipmentShortageDocument::query()
+            ->where('status', 1)
+            ->orderByDesc('id')
+            ->limit(80)
+            ->get(['id', 'doc_number', 'so_id', 'ref_shipment_id', 'items', 'created_at']);
+
+        $soIds = $docs->pluck('so_id')->filter()->unique()->values()->all();
+        $soById = $soIds === []
+            ? collect()
+            : SalesOrder::query()
+                ->whereIn('so_id', $soIds)
+                ->get(['so_id', 'so_number', 'so_date'])
+                ->keyBy('so_id');
+
+        $allSkus = [];
+        $allUnitIds = [];
+        foreach ($docs as $doc) {
+            foreach ($doc->items ?? [] as $row) {
+                $sku = trim((string) ($row['sku'] ?? ''));
+                if ($sku !== '') {
+                    $allSkus[$sku] = true;
+                }
+                if (isset($row['unit_id']) && $row['unit_id'] !== '' && $row['unit_id'] !== null) {
+                    $allUnitIds[(int) $row['unit_id']] = true;
+                }
+            }
+        }
+        $skuList = array_keys($allSkus);
+        $unitIdList = array_keys($allUnitIds);
+
+        $namesBySku = $skuList === []
+            ? collect()
+            : ProductVariant::query()
+                ->join('products as pr', 'pr.product_id', '=', 'product_variants.product_id')
+                ->whereIn('product_variants.product_variant_sku', $skuList)
+                ->get([
+                    'product_variants.product_variant_id',
+                    'product_variants.product_variant_sku',
+                    'pr.product_name',
+                    'product_variants.product_variant_name',
+                ])
+                ->mapWithKeys(function ($v) {
+                    $label = trim(($v->product_name ?? '') . ' ' . ($v->product_variant_name ?? ''));
+
+                    return [(string) $v->product_variant_sku => [
+                        'product_variant_id' => (int) $v->product_variant_id,
+                        'product' => $label !== '' ? $label : (string) $v->product_variant_sku,
+                    ]];
+                });
+
+        $unitsByRef = collect();
+        $unitsById = collect();
+        if ($unitIdList !== []) {
+            $unitRows = Unit::query()
+                ->where(function ($q) use ($unitIdList) {
+                    $q->whereIn('ref_unit_id', $unitIdList)->orWhereIn('unit_id', $unitIdList);
+                })
+                ->get(['unit_id', 'ref_unit_id', 'unit_name', 'unit_short_name']);
+            foreach ($unitRows as $u) {
+                $label = trim((string) ($u->unit_short_name ?: $u->unit_name)) ?: '—';
+                $unitsById->put((int) $u->unit_id, $label);
+                if ($u->ref_unit_id !== null && $u->ref_unit_id !== '') {
+                    $unitsByRef->put((int) $u->ref_unit_id, $label);
+                }
+            }
+        }
+
+        $payload = [];
+        foreach ($docs as $doc) {
+            $so = $soById->get($doc->so_id);
+            $items = [];
+            foreach ($doc->items ?? [] as $row) {
+                $sku = trim((string) ($row['sku'] ?? ''));
+                $meta = $namesBySku->get($sku);
+                $unitKey = isset($row['unit_id']) ? (int) $row['unit_id'] : null;
+                $unitLabel = '—';
+                if ($unitKey !== null) {
+                    $unitLabel = $unitsByRef->get($unitKey)
+                        ?: $unitsById->get($unitKey)
+                        ?: '—';
+                }
+                $shortage = (int) ($row['shortage'] ?? 0);
+                if ($shortage <= 0) {
+                    continue;
+                }
+                $items[] = [
+                    'sku' => $sku !== '' ? $sku : '—',
+                    'product' => $meta['product'] ?? ($sku !== '' ? $sku : '—'),
+                    'product_variant_id' => $meta['product_variant_id'] ?? null,
+                    'unit_id' => $unitKey,
+                    'unit' => $unitLabel,
+                    'shortage' => $shortage,
+                    'requested' => (int) ($row['requested'] ?? 0),
+                    'available' => (int) ($row['available'] ?? 0),
+                    'qty' => $shortage,
+                ];
+            }
+            if ($items === []) {
+                continue;
+            }
+            $payload[] = [
+                'id' => (int) $doc->id,
+                'doc_number' => $doc->doc_number,
+                'so_id' => (int) $doc->so_id,
+                'so_number' => $so->so_number ?? null,
+                'so_date' => $so->so_date ?? null,
+                'ref_shipment_id' => $doc->ref_shipment_id,
+                'item_count' => count($items),
+                'label' => trim(
+                    ($doc->doc_number ?? '')
+                    . ' · '
+                    . ($so->so_number ?? ('SO#' . $doc->so_id))
+                    . ' · '
+                    . count($items) . ' item kurang'
+                ),
+                'items' => $items,
+            ];
+        }
+
+        return response()->json(['status' => 1, 'data' => $payload]);
     }
 
     function getProduction(Request $req)

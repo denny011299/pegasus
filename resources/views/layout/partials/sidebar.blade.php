@@ -889,6 +889,13 @@
                                         <li><a href="{{ url('variant') }}"
                                             class="{{ Request::is('variant') ? 'active' : '' }}">Variasi</a></li>
                                     @endif
+
+                                    @feature('production_planning')
+                                        @if ($canShow('Satuan'))
+                                            <li><a href="{{ url('productionSkala') }}"
+                                                class="{{ Request::is('productionSkala') ? 'active' : '' }}">Skala</a></li>
+                                        @endif
+                                    @endfeature
                                 </ul>
                             </li>
                         @endif
@@ -1060,7 +1067,7 @@
                     @endif
                     {{-- /Ordering --}}
 
-                    @if ($canShow('Resep Bahan Mentah') || $canShow('Produksi'))
+                    @if ($canShow('Resep Bahan Mentah') || $canShow('Produksi') || $canShow('Production Planning'))
                         <li class="menu-title"><span>Produksi</span></li>
                         <li class="submenu">
                             @if ($canShow('Resep Bahan Mentah'))
@@ -1068,6 +1075,16 @@
                                     <a class="{{ Request::is('bom') ? 'active' : '' }}" href="/bom"><i
                                         class="fe fe-file-text"></i> <span>Resep Bahan Mentah</span></a>
                                 </li>
+                            @endif
+
+                            {{-- PP/WO punya modul sendiri; fitur tetap mati bila flag sprint 3 off. --}}
+                            @if ($canShow('Production Planning'))
+                                @feature('production_planning')
+                                <li>
+                                    <a class="{{ Request::is('productionPlanning*') || Request::is('productionWorkOrders*') ? 'active' : '' }}" href="/productionPlanning?tab=planning">
+                                        <i class="fe fe-calendar"></i> <span>Production Planning</span></a>
+                                </li>
+                                @endfeature
                             @endif
 
                             @if ($canShow('Produksi'))

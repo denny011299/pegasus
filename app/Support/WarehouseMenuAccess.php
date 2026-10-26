@@ -16,6 +16,7 @@ class WarehouseMenuAccess
     /** Nama SubModules yang hanya boleh di gudang utama (is_main_warehouse = 1). */
     public const MAIN_ONLY_MENUS = [
         'Produksi',
+        'Production Planning',
     ];
 
     /**

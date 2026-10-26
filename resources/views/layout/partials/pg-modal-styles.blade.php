@@ -251,6 +251,20 @@
         background: #eff6ff;
         border-color: #93c5fd;
     }
+    /* Secondary Print Button in Confirm (Green) Modals -> Soft Emerald Tint */
+    .pg-modal--confirm .pg-btn-print {
+        background: #ecfdf5;
+        color: #065f46;
+        border: 1px solid #a7f3d0;
+        box-shadow: 0 1px 2px rgba(5, 150, 105, 0.06);
+    }
+    .pg-modal--confirm .pg-btn-print:hover {
+        background: #d1fae5;
+        border-color: #6ee7b7;
+        color: #047857;
+        box-shadow: 0 2px 6px rgba(5, 150, 105, 0.16);
+        transform: translateY(-1px);
+    }
     .pg-btn-confirm.btn-danger:hover,
     .pg-btn-confirm--danger:hover {
         color: #fff;
@@ -395,5 +409,142 @@
         text-align: center;
         color: #94a3b8;
         font-size: 13px;
+    }
+
+    /* ═══ SweetAlert2 PG Success Modal (.pg-swal-success) ═══ */
+    .swal2-popup.pg-swal-success {
+        border-radius: 16px !important;
+        padding: 28px 24px 24px !important;
+        box-shadow: 0 20px 45px rgba(0, 0, 0, 0.15) !important;
+        border: none !important;
+        max-width: 440px !important;
+        background: #ffffff !important;
+    }
+    .pg-swal-success .swal2-icon {
+        border: none !important;
+        background: transparent !important;
+        width: 80px !important;
+        height: 80px !important;
+        margin: 0.5rem auto 1rem !important;
+        position: relative !important;
+        overflow: visible !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+    .pg-swal-success .swal2-icon .swal2-success-ring,
+    .pg-swal-success .swal2-icon .swal2-success-line-tip,
+    .pg-swal-success .swal2-icon .swal2-success-line-long,
+    .pg-swal-success .swal2-icon .swal2-success-fix,
+    .pg-swal-success .swal2-icon::before,
+    .pg-swal-success .swal2-icon::after {
+        display: none !important;
+    }
+    .pg-swal-success .swal2-title {
+        padding: 0 10px !important;
+        font-size: 20px !important;
+        color: #0f172a !important;
+    }
+    .pg-swal-success .swal2-html-container {
+        margin: 8px 12px 18px !important;
+        color: #475569 !important;
+    }
+    .pg-swal-success .swal2-actions {
+        margin-top: 12px !important;
+        gap: 10px !important;
+    }
+    .pg-swal-success .pg-btn-confirm {
+        min-width: 120px !important;
+    }
+
+    /* SVG Icon & Draw Animation */
+    .pg-swal-success-anim {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        animation: pgSuccessScale 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+    .pg-swal-svg-check {
+        width: 72px;
+        height: 72px;
+        filter: drop-shadow(0 4px 10px rgba(22, 163, 74, 0.25));
+    }
+    .pg-swal-circle {
+        stroke-dasharray: 202;
+        stroke-dashoffset: 202;
+        animation: pgCircleDraw 0.5s ease-out forwards;
+    }
+    .pg-swal-check {
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: pgCheckDraw 0.4s 0.25s ease-out forwards;
+    }
+
+    @keyframes pgCircleDraw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+    @keyframes pgCheckDraw {
+        to {
+            stroke-dashoffset: 0;
+        }
+    }
+    @keyframes pgSuccessScale {
+        0% {
+            transform: scale(0.6);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.08);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Confetti Ringan CSS-only (8-12 partikel, hilang ~1.2s) */
+    .pg-swal-confetti-wrap {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        pointer-events: none;
+    }
+    .pg-confetti {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        border-radius: 2px;
+        opacity: 0;
+        animation: pgConfettiBurst 1.1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    .pg-confetti.p1  { background: #16a34a; --dx: -38px; --dy: -36px; animation-delay: 0.1s; }
+    .pg-confetti.p2  { background: #3b82f6; --dx:  38px; --dy: -38px; animation-delay: 0.08s; width: 7px; height: 4px; }
+    .pg-confetti.p3  { background: #f59e0b; --dx: -48px; --dy:   2px; animation-delay: 0.12s; }
+    .pg-confetti.p4  { background: #10b981; --dx:  48px; --dy:   6px; animation-delay: 0.15s; }
+    .pg-confetti.p5  { background: #22c55e; --dx: -32px; --dy:  40px; animation-delay: 0.09s; width: 5px; height: 8px; }
+    .pg-confetti.p6  { background: #6366f1; --dx:  30px; --dy:  42px; animation-delay: 0.14s; }
+    .pg-confetti.p7  { background: #ec4899; --dx: -16px; --dy: -48px; animation-delay: 0.11s; }
+    .pg-confetti.p8  { background: #eab308; --dx:  18px; --dy: -50px; animation-delay: 0.13s; }
+    .pg-confetti.p9  { background: #14b8a6; --dx: -42px; --dy: -18px; animation-delay: 0.07s; }
+    .pg-confetti.p10 { background: #84cc16; --dx:  44px; --dy: -20px; animation-delay: 0.16s; }
+
+    @keyframes pgConfettiBurst {
+        0% {
+            transform: translate(0, 0) scale(1) rotate(0deg);
+            opacity: 1;
+        }
+        70% {
+            opacity: 0.9;
+        }
+        100% {
+            transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(180deg);
+            opacity: 0;
+        }
     }
 </style>

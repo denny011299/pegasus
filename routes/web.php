@@ -14,6 +14,7 @@ use App\Http\Controllers\ExternalApiController;
 use App\Http\Controllers\GeneralController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
+use App\Http\Controllers\ProductionExecutionController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\StockController;
@@ -787,6 +788,77 @@ Route::middleware(checkLogin::class)->group(function () {
         Route::post('/declineProduction', [ProductionController::class, 'declineProduction'])->name('declineProduction');
         Route::post('/accDeleteProduction', [ProductionController::class, 'accDeleteProduction'])->name('accDeleteProduction');
         Route::post('/tolakDeleteProduction', [ProductionController::class, 'tolakDeleteProduction'])->name('tolakDeleteProduction');
+    });
+
+    // ── Production Planning / Work Orders (FEATURE_PRODUCTION_PLANNING) — sprint 3, tidak digabung ke live sprint 2 ──
+    Route::middleware(['check.access:Satuan|view', 'feature:production_planning'])->group(function () {
+        Route::get('/productionSkala', [ProductionController::class, 'productionSkala'])->name('productionSkala');
+        Route::get('/getProductionSkala', [ProductionController::class, 'getProductionSkala'])->name('getProductionSkala');
+    });
+
+    Route::middleware(['check.access:Satuan|create', 'feature:production_planning'])->group(function () {
+        Route::post('/insertProductionSkala', [ProductionController::class, 'insertProductionSkala'])->name('insertProductionSkala');
+    });
+
+    Route::middleware(['check.access:Satuan|edit', 'feature:production_planning'])->group(function () {
+        Route::post('/updateProductionSkala', [ProductionController::class, 'updateProductionSkala'])->name('updateProductionSkala');
+    });
+
+    Route::middleware(['check.access:Satuan|delete', 'feature:production_planning'])->group(function () {
+        Route::post('/deleteProductionSkala', [ProductionController::class, 'deleteProductionSkala'])->name('deleteProductionSkala');
+    });
+
+    Route::middleware(['check.access:Production Planning|view', 'feature:production_planning'])->group(function () {
+        Route::get('/productionPlanning', [ProductionController::class, 'productionPlanning'])->name('productionPlanning');
+        Route::get('/productionPlanning/view', [ProductionController::class, 'productionPlanningView'])->name('productionPlanning.view');
+        Route::get('/getPpShortageDocs', [ProductionController::class, 'shortageDocsForPlanning'])->name('getPpShortageDocs');
+        Route::get('/getProductionPlanning', [ProductionController::class, 'getProductionPlanning'])->name('getProductionPlanning');
+        Route::get('/getProductionPlanningLive', [ProductionController::class, 'getProductionPlanningLive'])->name('getProductionPlanningLive');
+        Route::get('/getProductionPlanningStageCards', [ProductionController::class, 'getProductionPlanningStageCards'])->name('getProductionPlanningStageCards');
+        Route::get('/getProductionPlanningDetail', [ProductionController::class, 'getProductionPlanningDetail'])->name('getProductionPlanningDetail');
+        Route::get('/checkProductionPlanningRelease', [ProductionController::class, 'checkProductionPlanningRelease'])->name('checkProductionPlanningRelease');
+        Route::get('/printProductionWorkOrder/{id}', [ProductionController::class, 'printProductionWorkOrder'])
+            ->whereNumber('id')
+            ->name('printProductionWorkOrder');
+        Route::get('/printProductionPlanning/{id}', [ProductionController::class, 'printProductionPlanning'])
+            ->whereNumber('id')
+            ->name('printProductionPlanning');
+        Route::get('/productionWorkOrders', [ProductionExecutionController::class, 'index'])->name('productionWorkOrders');
+        Route::get('/getProductionWorkOrders', [ProductionExecutionController::class, 'listing'])->name('getProductionWorkOrders');
+        Route::get('/productionWorkOrders/{id}', [ProductionExecutionController::class, 'detail'])
+            ->whereNumber('id')
+            ->name('productionWorkOrders.detail');
+        Route::get('/productionWorkOrders/{id}/materialRecipe', [ProductionExecutionController::class, 'materialRecipe'])
+            ->whereNumber('id')
+            ->name('productionWorkOrders.materialRecipe');
+        Route::get('/getProductionPendingMaterials', [ProductionExecutionController::class, 'pendingMaterials'])
+            ->name('getProductionPendingMaterials');
+        Route::get('/productionMaterialOptions', [ProductionExecutionController::class, 'materials'])->name('productionMaterialOptions');
+        Route::get('/printProductionDocument/{id}/{kind?}', [ProductionExecutionController::class, 'printDocument'])
+            ->whereNumber('id')
+            ->where('kind', 'form|tally')
+            ->name('printProductionDocument');
+        Route::get('/printProductionMaterialHandover/{id}', [ProductionExecutionController::class, 'printMaterialHandover'])
+            ->whereNumber('id')
+            ->name('printProductionMaterialHandover');
+    });
+
+    Route::middleware(['check.access:Production Planning|create', 'feature:production_planning'])->group(function () {
+        Route::post('/insertProductionPlanning', [ProductionController::class, 'insertProductionPlanning'])->name('insertProductionPlanning');
+    });
+
+    Route::middleware(['check.access:Production Planning|edit', 'feature:production_planning'])->group(function () {
+        Route::post('/updateProductionPlanning', [ProductionController::class, 'updateProductionPlanning'])->name('updateProductionPlanning');
+        Route::post('/approveProductionPlanning', [ProductionController::class, 'approveProductionPlanning'])->name('approveProductionPlanning');
+        Route::post('/assignProductionPlanningWorkOrder', [ProductionController::class, 'assignProductionPlanningWorkOrder'])->name('assignProductionPlanningWorkOrder');
+        Route::post('/productionExecution/{id}/{action}', [ProductionExecutionController::class, 'mutate'])
+            ->whereNumber('id')
+            ->where('action', 'report|material_issue|material_return|no_materials|cancel_material|ops|qc|hand_pallet|palletized|close')
+            ->name('productionExecution.mutate');
+    });
+
+    Route::middleware(['check.access:Production Planning|delete', 'feature:production_planning'])->group(function () {
+        Route::post('/deleteProductionPlanning', [ProductionController::class, 'deleteProductionPlanning'])->name('deleteProductionPlanning');
     });
 
     Route::middleware('check.access:Pengaturan|view')->group(function () {

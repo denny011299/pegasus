@@ -13,6 +13,10 @@
     @yield('custom_css')
     @include('layout.partials.head')
     <style>
+        {{-- Sama sumber CSS dengan mainlayout (header partial) agar View = normal --}}
+        @include('layout.partials.datatable-premium-styles')
+        @include('layout.partials.btn-action-icon-styles')
+
         body.pp-fullscreen-body {
             background: #f1f5f9;
         }
@@ -27,9 +31,16 @@
             min-height: 100vh;
             background: #f1f5f9 !important;
         }
+        /* Padding ikut datatable-premium (.content.container-fluid 24/28); full bleed lebar */
         body.pp-fullscreen-body .page-wrapper .content.container-fluid {
             max-width: 100%;
-            padding: 16px 22px 22px;
+            width: 100%;
+            padding: 24px 28px;
+        }
+        body.pp-fullscreen-body .btn-action-icon:focus,
+        body.pp-fullscreen-body .btn-action-icon:focus-visible {
+            outline: none !important;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
         }
     </style>
 </head>

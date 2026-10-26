@@ -435,21 +435,104 @@ https://cdn.jsdelivr.net/npm/toastr@2.1.4/toastr.min.js
     }
   }
 
+  /**
+   * Notifikasi SweetAlert2 bertema PG (rounded-4 + pg-btn-*) — mengganti Swal default ungu.
+   * Dipakai lintas modul; iconColor / tombol mengikuti simbol success|error|warning|info|question.
+   */
   function notifikasi(simbol, title, deskripsi) {
+    var icon = String(simbol || "info");
+    var tone = {
+      success: { color: "#16a34a", btn: "pg-btn-confirm" },
+      error: { color: "#ef4444", btn: "pg-btn-confirm pg-btn-confirm--danger" },
+      warning: { color: "#f59e0b", btn: "pg-btn-save" },
+      info: { color: "#2563eb", btn: "pg-btn-save" },
+      question: { color: "#2563eb", btn: "pg-btn-save" },
+    }[icon] || { color: "#2563eb", btn: "pg-btn-save" };
+
     Swal.fire({
-      icon: simbol,
-      title: title,
-      text: deskripsi,
+      icon: icon,
+      iconColor: tone.color,
+      title: title || "",
+      html:
+        '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;color:#475569;">' +
+        $("<div>").text(deskripsi || "").html() +
+        "</p>",
+      confirmButtonText: "OK",
+      customClass: {
+        popup: "rounded-4",
+        title: "fw-bold fs-4 text-dark",
+        confirmButton: tone.btn,
+      },
+      buttonsStyling: false,
     });
   }
 
   /**
+   * Popup sukses bertema PG (rounded-4, ikon SVG custom green check beranimasi draw + bounce,
+   * confetti halus CSS-only, tombol pg-btn-confirm hijau gradient) — dipakai lintas modul
+   * sebagai alternatif visual premium dari notifikasi("success") tanpa tombol ungu default Swal.
+   *
+   * @param {string} title Judul popup (default: "Berhasil")
+   * @param {string} message Pesan detail (opsional)
+   * @param {object} [options] Konfigurasi tambahan: { timer: 2200, confirmButtonText: "OK", ... }
+   */
+  function showPgSuccessModal(title, message, options) {
+    options = options || {};
+    var safeMsg = $("<div>").text(message || "").html();
+
+    var confettiHtml =
+      '<div class="pg-swal-confetti-wrap" aria-hidden="true">' +
+      '<span class="pg-confetti p1"></span><span class="pg-confetti p2"></span>' +
+      '<span class="pg-confetti p3"></span><span class="pg-confetti p4"></span>' +
+      '<span class="pg-confetti p5"></span><span class="pg-confetti p6"></span>' +
+      '<span class="pg-confetti p7"></span><span class="pg-confetti p8"></span>' +
+      '<span class="pg-confetti p9"></span><span class="pg-confetti p10"></span>' +
+      '</div>';
+
+    var iconHtml =
+      '<div class="pg-swal-success-anim">' +
+      confettiHtml +
+      '<svg class="pg-swal-svg-check" viewBox="0 0 72 72" width="72" height="72" fill="none">' +
+      '<circle class="pg-swal-circle" cx="36" cy="36" r="32" stroke="#16a34a" stroke-width="3.5" />' +
+      '<path class="pg-swal-check" stroke="#16a34a" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round" d="M22 37 L31 46 L51 24" />' +
+      '</svg>' +
+      '</div>';
+
+    var htmlBody = safeMsg
+      ? '<p class="text-start mb-0" style="font-size:14px;white-space:pre-wrap;color:#475569;">' +
+        safeMsg +
+        "</p>"
+      : "";
+
+    var swalConfig = {
+      icon: "success",
+      iconHtml: iconHtml,
+      title: title || "Berhasil",
+      html: htmlBody,
+      confirmButtonText: options.confirmButtonText || "OK",
+      customClass: {
+        popup: "pg-swal-success rounded-4",
+        title: "fw-bold fs-4 text-dark mb-2",
+        confirmButton: "pg-btn-confirm",
+      },
+      buttonsStyling: false,
+    };
+
+    if (options.timer) {
+      swalConfig.timer = options.timer;
+      if (typeof options.timerProgressBar !== "undefined") {
+        swalConfig.timerProgressBar = options.timerProgressBar;
+      }
+    }
+
+    return Swal.fire(swalConfig);
+  }
+
+  /**
    * Popup error bertema PG (rounded-16px, tombol pg-btn-confirm--danger, ikon merah) — dipakai
-   * lintas modul supaya konsisten dengan pg-modal--danger, alih-alih notifikasi() polos
-   * (SweetAlert2 default) yang sudah tidak sesuai desain modal sejak redesign Kanakku. Versi
-   * generik dari showSoErrorModal() di Sales_Order.js — lihat commit e90f255. `.swal2-container`
-   * sudah global z-index:2000 (pg-modal-styles.blade.php) jadi popup ini tetap tampil di depan
-   * walau dipanggil sementara modal PG lain (pg-modal--form/--confirm/--danger) masih terbuka.
+   * lintas modul supaya konsisten dengan pg-modal--danger. Versi generik dari showSoErrorModal()
+   * di Sales_Order.js — lihat commit e90f255. `.swal2-container` z-index:2000 (pg-modal-styles)
+   * supaya tetap di depan modal PG lain yang masih terbuka.
    */
   function showPgErrorModal(header, message) {
     Swal.fire({
