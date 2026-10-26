@@ -185,6 +185,30 @@ class CashOperasionalPresenterSignFlipTest extends TestCase
         $this->assertSame('(Rp 90.000)', $row['credit']);
     }
 
+    // ---- External API operasional: neto negatif tampil "- Rp …" di kolom Masuk ----
+
+    public function test_sales_api_negative_net_shows_minus_in_debit(): void
+    {
+        $row = CashOperasionalPresenter::salesRow($this->row([
+            'cs_id' => 1, 'cs_date' => '2026-10-21', 'cs_type' => 2, 'cs_transaction' => 1, 'cs_aksi' => 2,
+            'cs_nominal' => -20000, 'ref_payment_id' => 'DP1', 'ref_direction' => 1,
+        ]), null);
+
+        $this->assertSame('- Rp 20.000', $row['debit']);
+        $this->assertSame('Rp 0', $row['credit']);
+    }
+
+    public function test_armada_api_negative_net_shows_minus_in_debit(): void
+    {
+        $row = CashOperasionalPresenter::armadaRow($this->row([
+            'cr_id' => 1, 'cr_date' => '2026-10-21', 'cr_type' => 1, 'cr_aksi' => 2,
+            'cr_nominal' => -20000, 'customer_id' => 1, 'ref_payment_id' => 'DP1', 'ref_direction' => 1,
+        ]), null);
+
+        $this->assertSame('- Rp 20.000', $row['debit']);
+        $this->assertSame('Rp 0', $row['credit']);
+    }
+
     public function test_sales_pemasukan_is_unaffected_by_the_pengembalian_sign_flip(): void
     {
         $row = CashOperasionalPresenter::salesRow($this->row([

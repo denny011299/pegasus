@@ -1,4 +1,4 @@
-var mode = 1;
+﻿var mode = 1;
 var table;
 var products = [];
 var list_photo;
@@ -6,6 +6,14 @@ var revisionSoId = null;
 var revisionAutoOpened = false;
 var confirmSoId = null;
 var confirmAutoOpened = false;
+// Konfirmasi QC buta: expected item disimpan terpisah dari input hasil hitung fisik.
+var soConfirmChecks = [];
+var soConfirmStage = null;
+var soConfirmEnteredItems = [];
+// Hanya sod_id yang gagal — invalid = kosong/tidak valid; mismatch = qty/satuan tidak cocok.
+var soConfirmInvalidIds = [];
+var soConfirmMismatchIds = [];
+var soConfirmSoId = null;
 var soXhr = null;
 var soFilterState = { date_from: "", date_to: "" };
 var soFilterClearing = false;
@@ -25,6 +33,14 @@ function soHasAccess(moduleName, action) {
     );
 }
 
+/** Flag aksi dari server (RoleAccess) — fallback soHasAccess kalau field belum ada. */
+function soRowFlag(row, key, fallbackAccess) {
+    if (row && row[key] !== undefined && row[key] !== null) {
+        return row[key] === true || row[key] === 1;
+    }
+    return fallbackAccess ? soHasAccess("Pengiriman", fallbackAccess) : false;
+}
+
 autocompleteCustomer("#so_customer", "#add_sales_order .modal-content");
 autocompleteStaffSales("#sales_id", "#add_sales_order .modal-content");
 autocompleteProductVariantOnly("#so_sku", "#add_sales_order .modal-content");
@@ -37,7 +53,7 @@ function showSoAccButtons() {
     $(".btn_acc, .btn_decline").removeClass("d-none").addClass("d-inline-flex");
     setSoModalMode("confirm");
 }
-/** Approval 2 tahap QC & Gudang / Kepala Operasional ΓÇö modal detail dipakai ulang sebagai
+/** Approval 2 tahap QC & Gudang / Kepala Operasional Î“Ã‡Ã¶ modal detail dipakai ulang sebagai
  * "Konfirmasi Pengiriman" bertema hijau, sama seperti Customer_Return.js (Pengembalian), dan
  * TERPISAH dari .btn_acc/.btn_decline lama (endpoint /accSO, /declineSO) supaya tidak tabrakan. */
 function hideSoQcOpsButtons() {
@@ -151,10 +167,53 @@ function loadSalesOrderWithItems(soId, onSuccess, onError) {
     });
 }
 
+var soDetailLoadToken = 0;
+
+// SOP: modal WAJIB terbuka instan saat tombol diklik; data menyusul, selama
+// menunggu tampilkan spinner di tabel produk (jangan blokir klik sampai AJAX selesai).
+// Tema modal mengikuti intent SEJAK frame pertama (confirm = hijau) â€” tidak boleh
+// tampil sebagai modal view/form (biru) dulu lalu berubah.
+function openSalesOrderLoadingModal(intent) {
+    soDetailLoadToken++;
+    products = [];
+    mode = 3;
+    hideSoAccButtons();
+    hideSoQcOpsButtons();
+    hideSoSaveButton();
+    if (intent === "confirm") {
+        setSoModalMode("confirm");
+        $("#add_sales_order .modal-title").html("Konfirmasi Pengiriman");
+    } else {
+        setSoModalMode("form");
+        $("#add_sales_order .modal-title").html("Detail Pengiriman");
+    }
+    $("#tableSalesModal").html(
+        '<tr><td colspan="6" class="text-center py-5"><span class="spinner-border spinner-border-sm text-primary me-2" role="status"></span><span class="text-muted">Memuat data pengiriman...</span></td></tr>',
+    );
+    $("#add_sales_order").modal("show");
+    return soDetailLoadToken;
+}
+
+function loadSalesOrderIntoModal(soId, intent) {
+    var token = openSalesOrderLoadingModal(intent);
+    loadSalesOrderWithItems(
+        soId,
+        function (data) {
+            if (token !== soDetailLoadToken) return; // sudah digantikan klik lain
+            openSalesOrderDetailModal(data, intent);
+        },
+        function () {
+            if (token !== soDetailLoadToken) return;
+            $("#add_sales_order").modal("hide");
+            notifikasi("error", "Gagal", "Gagal memuat detail pengiriman.");
+        },
+    );
+}
+
 function openSalesOrderRevisionModal(data) {
     products = [];
     mode = 2;
-    // Tampilkan alasan penolakan di sini juga ΓÇö staf yang merevisi perlu tahu kenapa
+    // Tampilkan alasan penolakan di sini juga Î“Ã‡Ã¶ staf yang merevisi perlu tahu kenapa
     // ditolak sebelum mengedit ulang. updateSalesOrder() sendiri yang mengembalikan status ke
     // Pending saat disimpan, jadi banner ini otomatis tidak relevan lagi setelah submit.
     renderSoRejectBanner(data);
@@ -213,6 +272,7 @@ function openSalesOrderRevisionModal(data) {
             unit_name: e.unit_name,
             unit_id: e.unit_id,
             pr_unit: e.pr_unit,
+            confirm_units: e.confirm_units || [],
             retail_unit: e.retail_unit || 0,
             default_unit: e.default_unit || 0,
             warehouse_id:
@@ -255,7 +315,7 @@ function openSalesOrderRevisionModal(data) {
 }
 
 /**
- * Banner alasan penolakan (approval 2 tahap) di modal Detail Pengiriman ΓÇö hanya tampil kalau
+ * Banner alasan penolakan (approval 2 tahap) di modal Detail Pengiriman Î“Ã‡Ã¶ hanya tampil kalau
  * status Ditolak (3) DAN reject_reason terisi. reject_stage/reject_reason/rejected_at/
  * rejected_by_name dikirim SalesOrder::getSalesOrder() apa adanya (kolom sudah ada sejak
  * approval 2 tahap, lihat App\Support\ShipmentApproval).
@@ -287,7 +347,7 @@ function renderSoRejectBanner(data) {
             );
         }
     }
-    $("#so_reject_meta_text").text(metaParts.join(" ΓÇö "));
+    $("#so_reject_meta_text").text(metaParts.join(" Î“Ã‡Ã¶ "));
 
     $("#so_reject_banner").show();
 }
@@ -300,6 +360,14 @@ function openSalesOrderDetailModal(data, intent) {
             : [];
 
     products = [];
+    soConfirmChecks = [];
+    soConfirmStage = null;
+    // Input hitung fisik hanya dipulihkan untuk SO yang sama (reopen setelah mismatch).
+    if (parseInt(data.so_id, 10) !== parseInt(soConfirmSoId, 10)) {
+        soConfirmEnteredItems = [];
+        soConfirmInvalidIds = [];
+        soConfirmMismatchIds = [];
+    }
     mode = 3;
     $("#add_sales_order .modal-title").html("Detail Pengiriman");
     $("#add_sales_order input").empty().val("");
@@ -353,6 +421,7 @@ function openSalesOrderDetailModal(data, intent) {
             unit_name: e.unit_name,
             unit_id: e.unit_id,
             pr_unit: e.pr_unit,
+            confirm_units: e.confirm_units || [],
             retail_unit: e.retail_unit || 0,
             default_unit: e.default_unit || 0,
             warehouse_id:
@@ -380,7 +449,7 @@ function openSalesOrderDetailModal(data, intent) {
     renderSoRejectBanner(data);
 
     var soStatus = parseInt(data.status, 10);
-    // Terima true/1 ΓÇö sama pola renderSoAction() (JSON kadang kirim 1, bukan boolean true)
+    // Terima true/1 Î“Ã‡Ã¶ sama pola renderSoAction() (JSON kadang kirim 1, bukan boolean true)
     var soCanApproveQc = data.can_approve_qc === true || data.can_approve_qc === 1;
     var soCanApproveOps = data.can_approve_ops === true || data.can_approve_ops === 1;
     var qcOpsMode =
@@ -421,12 +490,186 @@ function openSalesOrderDetailModal(data, intent) {
 
     $(".is-invalid").removeClass("is-invalid");
     hideSoSaveButton();
+    if (qcOpsMode) {
+        setupShipmentQcConfirmInputs(approveType);
+    }
     $("#add_sales_order").modal("show");
     $("#add_sales_order").attr("so_id", data.so_id);
     $("#add_sales_order").attr("so_number", data.so_number);
     $("#add_sales_order").attr("so_invoice_no", data.so_invoice_no);
     $("#add_sales_order").attr("so_ref_number", data.so_ref_number || "");
 }
+
+// Mode QC buta: kosongkan qty/satuan asli, staf isi hasil hitung fisik. Expected
+// disimpan di soConfirmChecks (tidak dirender), validasi final tetap di server.
+function setupShipmentQcConfirmInputs(approveType) {
+    soConfirmStage = approveType;
+    if (approveType !== "qc") {
+        return;
+    }
+    soConfirmChecks = products.map(function (p) {
+        return { sod_id: p.sod_id, qty: p.so_qty, unit_id: p.unit_id };
+    });
+    $("#tableSalesModal tr").each(function (index) {
+        var p = products[index];
+        if (!p) return;
+        var $qty = $(this).find(".so_qty");
+        var $unit = $(this).find(".so_unit");
+        var options = '<option value="" selected>Pilih Satuan</option>';
+        // Hanya satuan rantai konversi varian ini (confirm_units dari server) â€”
+        // di luar itu konversi server pasti gagal. Fallback pr_unit bila kosong.
+        var confirmUnits =
+            p.confirm_units && p.confirm_units.length > 0 ? p.confirm_units : p.pr_unit || [];
+        confirmUnits.forEach(function (u) {
+            options += `<option value="${u.unit_id}">${escapeHtmlSo(u.unit_name)}</option>`;
+        });
+        if (confirmUnits.length === 0 && p.unit_id) {
+            options += `<option value="${p.unit_id}">${escapeHtmlSo(p.unit_name || "")}</option>`;
+        }
+        // Lebih lebar dari mode view/edit supaya placeholder & angka terbaca penuh.
+        $qty.addClass("so-confirm-qty")
+            .attr("data-sod-id", p.sod_id)
+            .removeAttr("disabled")
+            .val("")
+            .attr("placeholder", "0")
+            .css("width", "7.5rem");
+        $unit.addClass("so-confirm-unit")
+            .attr("data-sod-id", p.sod_id)
+            .removeAttr("disabled")
+            .html(options)
+            .val("")
+            .css("width", "9rem");
+        // Slot helper text error di bawah qty/satuan (hanya mode QC buta).
+        var $flex = $qty.parent();
+        if ($flex.length && !$flex.next(".so-confirm-feedback").length) {
+            $flex.after(
+                '<div class="so-confirm-feedback d-flex justify-content-center gap-1 mt-1" data-sod-id="' +
+                    p.sod_id +
+                    '">' +
+                    '<small class="so-confirm-qty-msg text-danger" style="font-size:10px;line-height:1.2;width:7.5rem;text-align:center;"></small>' +
+                    '<small class="so-confirm-unit-msg text-danger" style="font-size:10px;line-height:1.2;width:9rem;text-align:center;"></small>' +
+                    "</div>",
+            );
+        }
+    });
+    restoreShipmentQcConfirmInputs();
+}
+
+function setShipmentQcConfirmFieldError($field, msgSel, on, text) {
+    var sodId = $field.attr("data-sod-id");
+    $field.toggleClass("is-invalid", !!on);
+    var $msg = $(
+        '.so-confirm-feedback[data-sod-id="' + sodId + '"] ' + msgSel,
+    );
+    if ($msg.length) {
+        $msg.text(on ? text || "" : "");
+    }
+}
+
+function clearShipmentQcConfirmFieldError($field, msgSel) {
+    setShipmentQcConfirmFieldError($field, msgSel, false, "");
+}
+
+function restoreShipmentQcConfirmInputs() {
+    (soConfirmEnteredItems || []).forEach(function (item) {
+        var sodId = parseInt(item.sod_id, 10);
+        var $qty = $(`.so-confirm-qty[data-sod-id="${sodId}"]`);
+        var $unit = $(`.so-confirm-unit[data-sod-id="${sodId}"]`);
+        if (item.qty) $qty.val(item.qty);
+        if (item.unit_id) $unit.val(String(item.unit_id));
+        markShipmentQcConfirmInvalidFields(sodId, item);
+    });
+}
+
+/**
+ * Tandai is-invalid + helper text per field — hanya yang bermasalah.
+ * invalid: field kosong. mismatch: banding expected (soConfirmChecks) vs input staf.
+ */
+function markShipmentQcConfirmInvalidFields(sodId, entered) {
+    var $qty = $(`.so-confirm-qty[data-sod-id="${sodId}"]`);
+    var $unit = $(`.so-confirm-unit[data-sod-id="${sodId}"]`);
+    clearShipmentQcConfirmFieldError($qty, ".so-confirm-qty-msg");
+    clearShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg");
+    var id = parseInt(sodId, 10);
+    var isInvalid = (soConfirmInvalidIds || []).indexOf(id) !== -1;
+    var isMismatch = (soConfirmMismatchIds || []).indexOf(id) !== -1;
+    if (!isInvalid && !isMismatch) return;
+
+    var qtyVal = entered ? parseFloat(entered.qty) : NaN;
+    var unitVal = entered ? parseInt(entered.unit_id, 10) : 0;
+    var qtyOk = qtyVal > 0;
+    var unitOk = unitVal > 0;
+
+    if (isInvalid) {
+        if (!qtyOk) {
+            setShipmentQcConfirmFieldError($qty, ".so-confirm-qty-msg", true, "Jumlah wajib diisi");
+        }
+        if (!unitOk) {
+            setShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg", true, "Satuan wajib dipilih");
+        }
+        return;
+    }
+
+    // mismatch: tandai field yang beda dari expected; kalau ambigu (keduanya beda) → keduanya.
+    var expected = (soConfirmChecks || []).find(function (c) {
+        return parseInt(c.sod_id, 10) === id;
+    });
+    if (!expected) {
+        setShipmentQcConfirmFieldError($qty, ".so-confirm-qty-msg", true, "Jumlah tidak sesuai");
+        setShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg", true, "Satuan tidak sesuai");
+        return;
+    }
+    var unitSame = unitOk && unitVal === parseInt(expected.unit_id, 10);
+    var qtySame = qtyOk && Math.abs(qtyVal - parseFloat(expected.qty)) < 0.001;
+    if (unitSame && !qtySame) {
+        setShipmentQcConfirmFieldError($qty, ".so-confirm-qty-msg", true, "Jumlah tidak sesuai");
+    } else if (!unitSame && qtySame) {
+        setShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg", true, "Satuan tidak sesuai");
+    } else if (!unitSame && !qtySame) {
+        setShipmentQcConfirmFieldError($qty, ".so-confirm-qty-msg", true, "Jumlah tidak sesuai");
+        setShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg", true, "Satuan tidak sesuai");
+    } else {
+        // Satuan beda rantai/konversi gagal meski angka sama — tandai satuan.
+        setShipmentQcConfirmFieldError($unit, ".so-confirm-unit-msg", true, "Satuan tidak sesuai");
+    }
+}
+
+// Kumpulkan input hitung fisik; hanya field kosong yang is-invalid + helper text.
+function collectShipmentQcConfirmInputs() {
+    var items = [];
+    var ok = true;
+    $(".so-confirm-qty").each(function () {
+        var sodId = parseInt($(this).attr("data-sod-id"), 10);
+        var $qty = $(this);
+        var $unit = $(`.so-confirm-unit[data-sod-id="${sodId}"]`);
+        var qty = parseFloat($qty.val());
+        var unitId = parseInt($unit.val(), 10);
+        var qtyOk = qty > 0;
+        var unitOk = unitId > 0;
+        setShipmentQcConfirmFieldError(
+            $qty,
+            ".so-confirm-qty-msg",
+            !qtyOk,
+            "Jumlah wajib diisi",
+        );
+        setShipmentQcConfirmFieldError(
+            $unit,
+            ".so-confirm-unit-msg",
+            !unitOk,
+            "Satuan wajib dipilih",
+        );
+        if (!qtyOk || !unitOk) ok = false;
+        items.push({ sod_id: sodId, qty: qty || 0, unit_id: unitId || 0 });
+    });
+    return { ok: ok, items: items };
+}
+
+$(document).on("input", ".so-confirm-qty", function () {
+    clearShipmentQcConfirmFieldError($(this), ".so-confirm-qty-msg");
+});
+$(document).on("change", ".so-confirm-unit", function () {
+    clearShipmentQcConfirmFieldError($(this), ".so-confirm-unit-msg");
+});
 
 function initSalesOrderProductInput() {
     const $skuCol = $("#so_sku").closest(".col-lg-6, .col-md-6, .col-12");
@@ -606,7 +849,7 @@ function doScanAddSoProduct(data, qty) {
         $("#so_scan_barcode").val("").focus();
     }
 
-    // Cek stok dulu (default gudang aktif/utama). Stok kurang ΓåÆ modal rekomendasi;
+    // Cek stok dulu (default gudang aktif/utama). Stok kurang Î“Ã¥Ã† modal rekomendasi;
     // "Pakai Gudang Ini" menambah/update baris lewat pendingProduct (bukan skip cek).
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
@@ -641,7 +884,7 @@ function doScanAddSoProduct(data, qty) {
                   so_qty: checkQty,
               };
 
-    // Eceran ≠ default @ utama: skip cek (flow lama) — cek saat pilih gudang eceran.
+    // Eceran â‰  default @ utama: skip cek (flow lama) â€” cek saat pilih gudang eceran.
     var scanPendingRetail =
         !isActiveRetailWarehouse() &&
         parseInt(data.retail_unit || 0, 10) > 0 &&
@@ -839,7 +1082,7 @@ $(document).on("click", "#btn-add-product-so", function () {
         $("#so_qty_input").val(1);
     }
 
-    // Cek stok dulu (default gudang aktif/utama). Stok kurang ΓåÆ modal rekomendasi;
+    // Cek stok dulu (default gudang aktif/utama). Stok kurang Î“Ã¥Ã† modal rekomendasi;
     // "Pakai Gudang Ini" menambah/update baris lewat pendingProduct.
     var whMeta = isActiveRetailWarehouse()
         ? activeRetailWarehouseMeta()
@@ -874,7 +1117,7 @@ $(document).on("click", "#btn-add-product-so", function () {
                   so_qty: checkQty,
               };
 
-    // Eceran ≠ default @ utama: skip cek (flow lama) — cek saat pilih gudang eceran.
+    // Eceran â‰  default @ utama: skip cek (flow lama) â€” cek saat pilih gudang eceran.
     var addPendingRetail =
         !isActiveRetailWarehouse() &&
         parseInt(temp.retail_unit || 0, 10) > 0 &&
@@ -900,7 +1143,7 @@ $(document).on("click", "#btn-add-product-so", function () {
 
 /**
  * Cek stok sebelum baris masuk ke `products` (GitHub #116).
- * Stok cukup ΓåÆ onOk(); kurang + recommendations ΓåÆ showStockRecommendModal(pendingProduct).
+ * Stok cukup Î“Ã¥Ã† onOk(); kurang + recommendations Î“Ã¥Ã† showStockRecommendModal(pendingProduct).
  * pendingProduct: meta baris yang belum di-push (Tambah/Scan) agar "Pakai Gudang Ini" bisa menambah baris.
  * Submit akhir tetap tidak diblokir stok (GitHub #99).
  */
@@ -983,7 +1226,7 @@ function soMainWarehousesFromDom() {
     return list;
 }
 
-/** Gudang utama untuk setup satuan eceran ΓÇö sama logika crMainWarehouse di Pengembalian. */
+/** Gudang utama untuk setup satuan eceran Î“Ã‡Ã¶ sama logika crMainWarehouse di Pengembalian. */
 function soMainWarehouse() {
     var warehouses = soMainWarehousesFromDom();
     if (warehouses.length) {
@@ -1056,7 +1299,7 @@ function soProductDefaultUnitId(product) {
     return 0;
 }
 
-/** retail_unit === default → SKU 1 satuan (boleh gudang utama). */
+/** retail_unit === default â†’ SKU 1 satuan (boleh gudang utama). */
 function isSoRetailSameAsDefault(product) {
     var retail = parseInt((product && product.retail_unit) || 0, 10);
     var def = soProductDefaultUnitId(product);
@@ -1069,7 +1312,7 @@ function applyDefaultMainWarehouse(product) {
     }
     var retailUnit = parseInt(product.retail_unit || 0, 10);
     var unitId = parseInt(product.unit_id || 0, 10);
-    // Eceran ≠ default → jangan isi utama (flow lama: pilih eceran dulu).
+    // Eceran â‰  default â†’ jangan isi utama (flow lama: pilih eceran dulu).
     if (retailUnit > 0 && unitId === retailUnit && !isSoRetailSameAsDefault(product)) {
         return product;
     }
@@ -1435,10 +1678,10 @@ function salesOrderAjax(data, callback) {
 
 function renderSoShortageHint(row) {
     if (!row || !row.has_shortage_doc) return "";
-    // Compact warning ΓÇö dokumen BG aktif (sudah auto-jadi draft PP)
+    // Ikon segitiga peringatan saja; keterangan lewat tooltip hover.
     return (
-        '<span class="badge" style="background-color:#fef3c7;color:#b45309;border:1px solid #fde68a;padding:4px 8px;border-radius:20px;font-weight:600;font-size:11px;white-space:nowrap;">' +
-        '<i class="fe fe-alert-triangle me-1"></i>Kekurangan</span>'
+        '<span class="d-inline-flex align-items-center justify-content-center" data-bs-toggle="tooltip" data-bs-placement="top" title="Stok produk kurang â€” klik ikon printer untuk cetak Form Kekurangan Barang" style="width:22px;height:22px;border-radius:50%;background:#fef3c7;border:1px solid #fde68a;color:#b45309;cursor:help;flex-shrink:0;">' +
+        '<i class="fe fe-alert-triangle" style="font-size:12px;"></i></span>'
     );
 }
 
@@ -1460,21 +1703,20 @@ function renderSoStatus(status, row) {
         // qc_approved_by_name/ops_approved_by_name instead of a real status value.
         if (row && row.ops_approved_by_name) {
             return wrapSoStatusCell(
-                '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-inbox me-1"></i> Pending</span>' +
-                '<div class="small text-muted mt-1">Menunggu potong stok</div>',
+                '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px; white-space: nowrap;"><i class="fe fe-inbox me-1"></i> Pending</span>',
                 row
             );
         }
         if (row && row.qc_approved_by_name) {
+            // Menunggu Kepala Operasional
             return wrapSoStatusCell(
-                '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>' +
-                '<div class="small text-muted mt-1">Menunggu Kepala Operasional</div>',
+                '<span class="badge" style="background-color: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px; white-space: nowrap;"><i class="fe fe-alert-circle me-1"></i> Need Approval</span>',
                 row
             );
         }
+        // Menunggu Staf QC & Gudang â€” warna & ikon sama persis dengan Requested di Stock Transfer
         return wrapSoStatusCell(
-            '<span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #ffedd5; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-clock me-1"></i> Requested</span>' +
-            '<div class="small text-muted mt-1">Menunggu Staf QC &amp; Gudang</div>',
+            '<span class="badge" style="background-color: #eef2ff; color: #4338ca; border: 1px solid #c7d2fe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px; white-space: nowrap;"><i class="fe fe-inbox me-1"></i> Requested</span>',
             row
         );
     }
@@ -1488,7 +1730,7 @@ function renderSoStatus(status, row) {
         return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-circle me-1"></i> Ditolak</span>';
     }
     if (status === 4) {
-        // Dijadwalkan lewat External API (POST /shipments/scheduled) ΓÇö belum di-ACC, stok belum dipotong.
+        // Dijadwalkan lewat External API (POST /shipments/scheduled) Î“Ã‡Ã¶ belum di-ACC, stok belum dipotong.
         return wrapSoStatusCell(
             '<span class="badge" style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-calendar me-1"></i> Dijadwalkan</span>',
             row
@@ -1509,7 +1751,7 @@ function renderSoStatus(status, row) {
         );
     }
     if (status === 7) {
-        // Dibatalkan lewat External API (PUT /shipments/{ref}/cancel) ΓÇö stok sudah dikembalikan kalau sebelumnya Berjalan.
+        // Dibatalkan lewat External API (PUT /shipments/{ref}/cancel) Î“Ã‡Ã¶ stok sudah dikembalikan kalau sebelumnya Berjalan.
         return '<span class="badge" style="background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 12px; letter-spacing: 0.3px;"><i class="fe fe-x-octagon me-1"></i> Dibatalkan</span>';
     }
     return "-";
@@ -1520,27 +1762,19 @@ function renderSoAction(row) {
         '<div class="d-flex justify-content-center align-items-center gap-1">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
-    var canView = soHasAccess("Pengiriman", "view");
-    // Approval 2 tahap (Staf QC & Gudang -> Kepala Operasional) ΓÇö can_approve_qc/can_approve_ops
-    // dihitung SERVER-SIDE (SalesOrder::getSalesOrderDataTable()), bukan dari ability "others"
-    // lagi. Tombol Tolak muncul mengikuti tahap approve yang sama (guard sama di rejectShipment()).
-    // Terima true/1 ΓÇö sama pola Stock_Transfer.js (JSON kadang kirim 1)
-    var canApproveQc = pending && (row.can_approve_qc === true || row.can_approve_qc === 1);
-    var canApproveOps = pending && (row.can_approve_ops === true || row.can_approve_ops === 1);
-    // Satu ikon buka modal konfirmasi (Terima+Tolak ada di footernya) ΓÇö tidak ada lagi ikon
-    // Tolak terpisah di baris, mengikuti pola Customer_Return.js (Pengembalian): approve dan
-    // reject sama-sama gerbang lewat modal detail yang sama.
+    // can_view / can_delete / can_approve_* dari server (RoleAccess + actor) — mirror Stock Transfer.
+    var canView = soRowFlag(row, "can_view", "view");
+    var canApproveQc = pending && soRowFlag(row, "can_approve_qc");
+    var canApproveOps = pending && soRowFlag(row, "can_approve_ops");
+    // Satu ikon buka modal konfirmasi (Terima+Tolak di footer) — pola Pengembalian.
     var canApprove = canApproveQc || canApproveOps;
-    var canDelete = pending && soHasAccess("Pengiriman", "delete");
-    // Dijadwalkan + dokumen BG ΓåÆ cetak Form Kekurangan Barang
-    var canPrintShortage =
-        canView &&
-        !!row.has_shortage_doc &&
-        (status === 4 || status === 5 || status === 6);
+    var canDelete = pending && soRowFlag(row, "can_delete", "delete");
+    // Punya dokumen BG → cetak Form Kekurangan (print saja, tidak masuk PP)
+    var canPrintShortage = canView && !!row.has_shortage_doc;
     if (canApprove) {
         var approveLabel = canApproveQc ? "Konfirmasi (Staf QC & Gudang)" : "Konfirmasi (Kepala Operasional)";
-        // .btn-action-approve ΓÇö kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
-        // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini ΓÇö
+        // .btn-action-approve Î“Ã‡Ã¶ kelas standar (header.blade.php) yang sudah dipakai Customer_Return.js/
+        // Customer_Supply_Return.js/Stock_Transfer.js dkk. Inline style TIDAK dipakai lagi di sini Î“Ã‡Ã¶
         // aturan dasar .btn-action-icon menimpa background/color dengan !important, jadi warna
         // custom lewat inline style tidak pernah kelihatan; kelas ini sudah dibuat khusus untuk
         // menembus itu.
@@ -1558,7 +1792,7 @@ function renderSoAction(row) {
             '" href="javascript:void(0);" data-bs-toggle="tooltip" title="Lihat"><i class="fe fe-eye" style="font-size:14px;"></i></a>';
     }
     if (canPrintShortage) {
-        // Warna warning supaya beda dari Lihat ΓÇö sinyal ada Form Kekurangan
+        // Warna warning supaya beda dari Lihat Î“Ã‡Ã¶ sinyal ada Form Kekurangan
         soa +=
             '<a class="btn-action-icon btn_print_shortage" href="/shipmentShortage/' +
             row.so_id +
@@ -1566,7 +1800,7 @@ function renderSoAction(row) {
     }
     if (canDelete) {
         // btn_delete sudah punya warna sendiri dari .btn-action-icon.btn_delete di
-        // header.blade.php ΓÇö tidak diubah, sudah sesuai sebelum perubahan ini.
+        // header.blade.php Î“Ã‡Ã¶ tidak diubah, sudah sesuai sebelum perubahan ini.
         soa +=
             '<a class="btn-action-icon btn_delete" data-id="' +
             row.so_id +
@@ -1574,12 +1808,12 @@ function renderSoAction(row) {
     }
     soa += "</div>";
     if (!canApprove && !canView && !canDelete && !canPrintShortage) {
-        return '<span class="text-muted small">ΓÇö</span>';
+        return '<span class="text-muted small">Î“Ã‡Ã¶</span>';
     }
     return soa;
 }
 
-/** Alasan penolakan wajib (Tolak QC/Ops Pengiriman) ΓÇö sama pola dengan showKonfirmasiPhotoProof
+/** Alasan penolakan wajib (Tolak QC/Ops Pengiriman) Î“Ã‡Ã¶ sama pola dengan showKonfirmasiPhotoProof
  * di Stock_Transfer.js: field disuntik ke #modalKonfirmasi yang dipakai bersama banyak halaman
  * lain, jadi selalu di-reset & disembunyikan lagi setelah dipakai. */
 var soRejectReasonRequired = false;
@@ -1610,26 +1844,45 @@ $(document).on("hidden.bs.modal", "#modalKonfirmasi", function () {
     hideKonfirmasiRejectReason();
 });
 
-// Ikon baris tidak lagi langsung buka popup konfirmasi kecil ΓÇö buka modal detail
+// Ikon baris tidak lagi langsung buka popup konfirmasi kecil Î“Ã‡Ã¶ buka modal detail
 // (#add_sales_order dalam mode qcOps, lihat openSalesOrderDetailModal()) yang berisi Terima
 // dan Tolak di footernya, sama seperti Customer_Return.js (Pengembalian).
 $(document).on("click", ".btn-approve-shipment", function (e) {
     e.preventDefault();
+    // Tombol seharusnya sudah disembunyikan tanpa can_approve_*; guard ulang di klik.
+    if (!soHasAccess("Pengiriman", "view")) {
+        notifikasi("error", "Akses Ditolak", "Anda tidak memiliki akses Konfirmasi Pengiriman.");
+        return;
+    }
     var soId = parseInt($(this).attr("data-id"), 10);
     if (!soId) return;
-    loadSalesOrderWithItems(soId, function (data) {
-        openSalesOrderDetailModal(data, "confirm");
-    });
+    loadSalesOrderIntoModal(soId, "confirm");
 });
 
 // Dari dalam modal detail: Terima/Tolak menyembunyikan modal detail lalu membuka popup
-// konfirmasi kecil yang sama (#modalKonfirmasi) ΓÇö pola sama dengan Customer_Return.js
+// konfirmasi kecil yang sama (#modalKonfirmasi) Î“Ã‡Ã¶ pola sama dengan Customer_Return.js
 // processRecord().
 $(document).on("click", ".btn-so-qcops-accept", function () {
     var $btn = $(this);
     var soId = $btn.attr("so_id");
     var type = $btn.attr("data-type");
     var label = $btn.attr("data-label");
+    // QC buta: semua hasil hitung fisik wajib terisi sebelum popup konfirmasi.
+    if (type === "qc") {
+        var collected = collectShipmentQcConfirmInputs();
+        if (!collected.ok) {
+            notifikasi(
+                "error",
+                "Konfirmasi Belum Lengkap",
+                "Semua jumlah dan satuan hasil hitung fisik wajib diisi.",
+            );
+            return;
+        }
+        soConfirmEnteredItems = collected.items;
+        soConfirmInvalidIds = [];
+        soConfirmMismatchIds = [];
+        soConfirmSoId = parseInt(soId, 10);
+    }
     var confirmMsg =
         type === "ops"
             ? "Setujui Pengiriman ini (Kepala Operasional)? Stok akan dicek dan dipotong, status menjadi Diterima."
@@ -1666,12 +1919,37 @@ $(document).on("click", "#btn-approve-shipment-confirm", function () {
     $.ajax({
         url: "/approveShipment",
         method: "post",
-        data: { so_id: soId, type: type, _token: token },
+        data: {
+            so_id: soId,
+            type: type,
+            // QC buta: kirim hasil hitung fisik untuk dicocokkan server.
+            confirm_items:
+                type === "qc" ? JSON.stringify(soConfirmEnteredItems) : undefined,
+            _token: token,
+        },
         success: function (res) {
             $confirmBtn.data("busy", false);
             ResetLoadingButton($confirmBtn, '<i class="fe fe-check-circle me-1"></i>Konfirmasi');
             if (!res || res.status != 1) {
                 closeModalConfirm();
+                var invalidIds = (res.confirm_invalid_sod_ids || []).map(function (id) {
+                    return parseInt(id, 10);
+                });
+                var mismatchIds = (res.confirm_mismatch_sod_ids || []).map(function (id) {
+                    return parseInt(id, 10);
+                });
+                // Server menolak hasil hitung fisik → buka lagi modal, tandai field bermasalah saja.
+                if (type === "qc" && (invalidIds.length > 0 || mismatchIds.length > 0)) {
+                    soConfirmInvalidIds = invalidIds;
+                    soConfirmMismatchIds = mismatchIds;
+                    notifikasi(
+                        "error",
+                        "Konfirmasi Tidak Sesuai",
+                        (res && res.message) || "Hasil hitung fisik tidak sesuai.",
+                    );
+                    loadSalesOrderIntoModal(soId, "confirm");
+                    return;
+                }
                 notifikasi(
                     "error",
                     "Gagal Approve",
@@ -1679,6 +1957,10 @@ $(document).on("click", "#btn-approve-shipment-confirm", function () {
                 );
                 return;
             }
+            soConfirmEnteredItems = [];
+            soConfirmInvalidIds = [];
+            soConfirmMismatchIds = [];
+            soConfirmSoId = null;
             closeModalConfirm();
             notifikasi("success", "Berhasil", res.message || "Approval berhasil");
             refreshSalesOrder();
@@ -1788,6 +2070,9 @@ function inisialisasi() {
         ordering: true,
         order: [[4, "asc"]],
         autoWidth: false,
+        // JANGAN scrollX:true — memecah header/body jadi 2 tabel dan desync dengan
+        // wrapper .table-responsive + table-layout:fixed di blade. Standar Pengembalian:
+        // scroll ditangani wrapper blade, header menyatu dengan body.
         scrollX: false,
         searchDelay: 400,
         language: {
@@ -1810,58 +2095,55 @@ function inisialisasi() {
         columns: [
             {
                 data: "customer_name",
-                width: "14%",
+                width: "200px",
                 render: function (data) {
                     if (!data || data === "-")
                         return '<span style="color:#64748b;">-</span>';
-                    return `<div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
-                                        <i class="fe fe-truck"></i>
+                    return `<div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                                    <div style="width:28px;height:28px;border-radius:8px;background:#eff6ff;border:1px solid #bfdbfe;display:flex;align-items:center;justify-content:center;color:#2563eb;flex-shrink:0;">
+                                        <i class="fe fe-truck" style="font-size:13px;"></i>
                                     </div>
-                                    <span class="fw-semibold text-dark">${data}</span>
+                                    <span class="fw-semibold text-dark" style="line-height:1.3;min-width:0;">${data}</span>
                                 </div>`;
                 },
             },
             {
                 data: "so_date",
-                width: "12%",
+                width: "115px",
                 render: function (data) {
                     if (!data || data === "-")
                         return '<span style="color:#64748b;">-</span>';
                     var dateFmt = moment(data).format("D MMM YYYY");
-                    return `<div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:8px;background:#f8fafc;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;color:#64748b;flex-shrink:0;">
-                                        <i class="fe fe-calendar"></i>
-                                    </div>
-                                    <span class="fw-semibold text-dark">${dateFmt}</span>
-                                </div>`;
+                    // Tanpa ikon kalender; satu baris, tabel boleh scroll horizontal.
+                    return `<span class="fw-semibold text-dark" style="white-space:nowrap;">${dateFmt}</span>`;
                 },
             },
             {
                 data: "so_invoice_no",
                 defaultContent: "-",
-                width: "11%",
+                width: "105px",
                 className: "text-center",
                 render: function (data) {
                     if (!data || data === "-") return "-";
-                    return `<span class="badge" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:6px 10px;">${data}</span>`;
+                    // Tanpa kotak badge â€” teks biasa, bold sebagai penekan nomor.
+                    return `<span class="fw-bold text-dark" style="white-space:nowrap;">${data}</span>`;
                 },
             },
             {
                 data: "so_ref_number",
                 defaultContent: "-",
-                width: "14%",
+                width: "175px",
                 className: "text-center",
                 render: function (data) {
                     var raw = (data || "").toString().trim();
                     if (!raw || raw === "-") return "-";
                     var safe = $("<div>").text(raw).html();
-                    return `<span class="badge" style="background:#f8fafc;color:#475569;border:1px solid #e2e8f0;padding:6px 10px;" title="${safe}">${safe}</span>`;
+                    return `<span class="fw-bold text-dark" style="white-space:nowrap;" title="${safe}">${safe}</span>`;
                 },
             },
             {
                 data: "status",
-                width: "12%",
+                width: "205px",
                 className: "text-center",
                 render: function (data, type, row) {
                     return renderSoStatus(data, row);
@@ -1870,7 +2152,7 @@ function inisialisasi() {
             {
                 data: "created_by_name",
                 defaultContent: "-",
-                width: "14%",
+                width: "165px",
                 render: function (data, type, row) {
                     return typeof renderCreatedBySync === "function"
                         ? renderCreatedBySync(data, row)
@@ -1880,25 +2162,25 @@ function inisialisasi() {
             {
                 data: "acc_by_name",
                 defaultContent: "-",
-                width: "14%",
+                width: "165px",
                 render: function (data) {
                     if (!data || data === "-")
                         return '<span style="color:#64748b;">-</span>';
-                    return `<div style="display:flex;align-items:center;gap:10px;">
-                                    <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
-                                        <i class="fe fe-user-check"></i>
+                    return `<div style="display:flex;align-items:center;gap:8px;min-width:0;">
+                                    <div style="width:28px;height:28px;border-radius:8px;background:#ecfdf5;border:1px solid #a7f3d0;display:flex;align-items:center;justify-content:center;color:#059669;flex-shrink:0;">
+                                        <i class="fe fe-user-check" style="font-size:13px;"></i>
                                     </div>
-                                    <span class="fw-semibold text-dark">${data}</span>
+                                    <span class="fw-semibold text-dark" style="white-space:nowrap;">${data}</span>
                                 </div>`;
                 },
             },
             {
                 data: null,
                 className: "text-center align-middle",
-                // Diperlebar dari 11% ΓÇö Pending sekarang bisa menampilkan sampai 4 ikon aksi
+                // Diperlebar dari 11% Î“Ã‡Ã¶ Pending sekarang bisa menampilkan sampai 4 ikon aksi
                 // sekaligus (Setujui/Tolak/Lihat/Hapus), 11% terlalu sempit dan bikin ikon
                 // meluber keluar sel.
-                width: "15%",
+                width: "155px",
                 orderable: false,
                 searchable: false,
                 render: function (data, type, row) {
@@ -1935,7 +2217,7 @@ function refreshSalesOrder() {
 }
 
 /**
- * Sama seperti refreshSalesOrder(), tapi mengembalikan paginasi ke halaman pertama ΓÇö dipakai
+ * Sama seperti refreshSalesOrder(), tapi mengembalikan paginasi ke halaman pertama Î“Ã‡Ã¶ dipakai
  * setiap kali FILTER berubah (tanggal/status/sumber/reset), supaya operator tidak nyasar di
  * halaman lama yang isinya sudah beda dengan filter baru. refreshSalesOrder() polos (tanpa reset
  * halaman) tetap dipakai di tempat lain (mis. sesudah aksi ACC/Tolak/simpan satu baris) supaya
@@ -1958,7 +2240,7 @@ function initSalesOrderFilters() {
                 showDropdowns: true,
                 locale: {
                     format: "DD-MM-YYYY",
-                    separator: " ΓÇö ",
+                    separator: " Î“Ã‡Ã¶ ",
                     applyLabel: "Terapkan",
                     cancelLabel: "Hapus",
                     fromLabel: "Dari",
@@ -2003,7 +2285,7 @@ function initSalesOrderFilters() {
             soFilterState.date_to = picker.endDate.format("YYYY-MM-DD");
             $(this).val(
                 picker.startDate.format("DD-MM-YYYY") +
-                    " ΓÇö " +
+                    " Î“Ã‡Ã¶ " +
                     picker.endDate.format("DD-MM-YYYY")
             );
             refreshSalesOrderResetPage();
@@ -2171,7 +2453,7 @@ function initSalesOrderWarehouseSelects() {
         }
         if (typeof autocompleteWarehouse === "function") {
             var p = products[parseInt($(this).data("index"), 10)] || {};
-            // Eceran ≠ default → eceran only (lama). Eceran = default → boleh utama.
+            // Eceran â‰  default â†’ eceran only (lama). Eceran = default â†’ boleh utama.
             var retailOnly = !isSoRetailSameAsDefault(p);
             autocompleteWarehouse(selector, "#add_sales_order .modal-content", {
                 retailOnly: retailOnly,
@@ -2196,6 +2478,7 @@ function initSalesOrderWarehouseSelects() {
  */
 $(document).on("blur", ".so_qty", function () {
     const $input = $(this);
+    if ($input.hasClass("so-confirm-qty")) return; // mode QC buta: jangan mutasi products[]
     const index = $input.data("index");
     if (!products[index]) return;
 
@@ -2241,6 +2524,7 @@ $(document).on("blur", ".so_qty", function () {
 });
 
 $(document).on("change", ".so_unit", function () {
+    if ($(this).hasClass("so-confirm-unit")) return; // mode QC buta
     const index = $(this).data("index");
     let unit = parseInt($(this).val(), 10);
     if (isActiveRetailWarehouse()) {
@@ -2715,6 +2999,7 @@ function openSalesOrderEditModal(data) {
             unit_name: e.unit_name,
             unit_id: e.unit_id,
             pr_unit: e.pr_unit,
+            confirm_units: e.confirm_units || [],
             retail_unit: e.retail_unit || 0,
             default_unit: e.default_unit || 0,
             warehouse_id:
@@ -2761,20 +3046,24 @@ $(document).on("click", "#tableSalesOrder-wrap .btn_edit", function (e) {
 
 $(document).on("click", "#tableSalesOrder-wrap .btn_view", function (e) {
     e.preventDefault();
+    if (!soHasAccess("Pengiriman", "view")) {
+        notifikasi("error", "Akses Ditolak", "Anda tidak memiliki akses melihat Pengiriman.");
+        return;
+    }
     var soId = parseInt($(this).attr("data-id"), 10);
     if (!soId) return;
-    loadSalesOrderWithItems(soId, function (data) {
-        openSalesOrderDetailModal(data, "view");
-    });
+    loadSalesOrderIntoModal(soId, "view");
 });
 
 $(document).on("click", "#tableSalesOrder-wrap .btn_confirm", function (e) {
     e.preventDefault();
+    if (!soHasAccess("Pengiriman", "view")) {
+        notifikasi("error", "Akses Ditolak", "Anda tidak memiliki akses Konfirmasi Pengiriman.");
+        return;
+    }
     var soId = parseInt($(this).attr("data-id"), 10);
     if (!soId) return;
-    loadSalesOrderWithItems(soId, function (data) {
-        openSalesOrderDetailModal(data, "confirm");
-    });
+    loadSalesOrderIntoModal(soId, "confirm");
 });
 
 //delete
@@ -2925,7 +3214,7 @@ function collectRecommendWarehouses(res) {
     return opts;
 }
 
-// Popup error bertema PG (rounded-4/16px, tombol pg-btn-*) ΓÇö dipakai di alur ACC Pengiriman
+// Popup error bertema PG (rounded-4/16px, tombol pg-btn-*) Î“Ã‡Ã¶ dipakai di alur ACC Pengiriman
 // supaya konsisten dengan pg-modal--danger, dan MUNCUL DI DEPAN #modalKonfirmasi (lihat
 // .swal2-container z-index di pg-modal-styles.blade.php) alih-alih notifikasi() polos yang
 // dulu tertutup modal konfirmasi hijau yang masih terbuka di belakangnya.
@@ -2947,7 +3236,7 @@ function showSoErrorModal(header, message) {
         buttonsStyling: false,
     }).then(function () {
         // Tutup #modalKonfirmasi juga begitu popup error ditutup (tombol Tutup, klik luar,
-        // atau Esc) ΓÇö kalau tidak, user harus klik dua kali: sekali untuk popup error, sekali
+        // atau Esc) Î“Ã‡Ã¶ kalau tidak, user harus klik dua kali: sekali untuk popup error, sekali
         // lagi untuk modal konfirmasi hijau yang masih terbuka di belakangnya. Aman dipanggil
         // walau modal itu tidak sedang terbuka (mis. dipanggil dari alur tambah/update).
         $("#modalKonfirmasi").modal("hide");
@@ -2957,7 +3246,7 @@ function showSoErrorModal(header, message) {
 /**
  * @param {Object} res - response stok kurang + recommendations
  * @param {Object|null} pendingProduct - baris kandidat dari alur Tambah/Scan (belum di `products`).
- *   ACC/update/qty/warehouse-change tidak kirim ini ΓÇö baris sudah ada di `products`.
+ *   ACC/update/qty/warehouse-change tidak kirim ini Î“Ã‡Ã¶ baris sudah ada di `products`.
  */
 function showStockRecommendModal(res, pendingProduct) {
     var opts = collectRecommendWarehouses(res);
@@ -3029,7 +3318,7 @@ function showStockRecommendModal(res, pendingProduct) {
             return val;
         },
     }).then(function (result) {
-        // Sama seperti showSoErrorModal() ΓÇö tutup #modalKonfirmasi begitu popup ini ditutup,
+        // Sama seperti showSoErrorModal() Î“Ã‡Ã¶ tutup #modalKonfirmasi begitu popup ini ditutup,
         // apa pun jalan keluarnya (pilih gudang, Batal, klik luar, Esc), supaya user tidak
         // perlu klik dua kali. Aman dipanggil walau modal itu tidak sedang terbuka (mis.
         // dipanggil dari alur tambah/update, bukan ACC).
@@ -3072,7 +3361,7 @@ function showStockRecommendModal(res, pendingProduct) {
             refreshTableProduct();
             return;
         }
-        // Pending ADD (cek gagal sebelum push) ΓÇö tambah baris dengan gudang rekomendasi
+        // Pending ADD (cek gagal sebelum push) Î“Ã‡Ã¶ tambah baris dengan gudang rekomendasi
         if (pendingProduct && pendingProduct.product_variant_id) {
             var line = Object.assign({}, pendingProduct);
             line.warehouse_id = whId;

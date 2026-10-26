@@ -179,7 +179,12 @@ trait ActingAsStaff
         $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
         $this->withActiveWarehouse($mainWarehouseId);
 
-        $qc = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc']);
+        $qc = $this->post('/approveShipment', [
+            'so_id' => $soId,
+            'type' => 'qc',
+            // QC = konfirmasi buta: kirim hasil hitung fisik = data asli.
+            'confirm_items' => $this->shipmentConfirmItems($soId),
+        ]);
         $qc->assertStatus(200);
         if ((int) ($qc->json('status') ?? 0) !== 1) {
             throw new \RuntimeException('approveShipmentTwoStage: QC stage failed — '.$qc->json('message'));
@@ -190,6 +195,21 @@ trait ActingAsStaff
         if ((int) ($ops->json('status') ?? 0) !== 1) {
             throw new \RuntimeException('approveShipmentTwoStage: Ops stage failed — '.$ops->json('message'));
         }
+    }
+
+    /** Hasil hitung fisik konfirmasi QC dari data pengiriman asli (untuk approveShipment). */
+    protected function shipmentConfirmItems(int $soId): array
+    {
+        return \App\Models\SalesOrderDetail::where('so_id', $soId)
+            ->where('status', 1)
+            ->orderBy('sod_id')
+            ->get()
+            ->map(fn ($d) => [
+                'sod_id' => (int) $d->sod_id,
+                'qty' => (float) $d->sod_qty,
+                'unit_id' => (int) $d->unit_id,
+            ])
+            ->all();
     }
 
     /**

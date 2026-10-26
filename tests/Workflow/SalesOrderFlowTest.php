@@ -161,7 +161,7 @@ class SalesOrderFlowTest extends TestCase
         // completes) — QC has no stock guard at all.
         $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => \App\Support\RoleIds::DIREKSI]);
         $this->withActiveWarehouse(1);
-        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc'])->assertStatus(200)->assertJson(['status' => 1]);
+        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc', 'confirm_items' => $this->shipmentConfirmItems($soId)])->assertStatus(200)->assertJson(['status' => 1]);
 
         $opsResponse = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
         $opsResponse->assertStatus(200);

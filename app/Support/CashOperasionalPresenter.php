@@ -207,9 +207,10 @@ class CashOperasionalPresenter
         // Hanya baris External API (ref_payment_id): net signed di kolom Masuk. Manual tidak berubah.
         $isApiOperasional = ! empty($row->ref_payment_id) && (int) ($row->ref_direction ?? 0) === 1;
         if ($isApiOperasional) {
+            // Neto negatif tampil "- Rp …" (bukan "(Rp …)") supaya terbaca minus.
             $debit = $nominal >= 0
                 ? 'Rp '.self::money($nominal)
-                : '(Rp '.self::money($nominal).')';
+                : '- Rp '.self::money($nominal);
             $credit = 'Rp 0';
         }
 
@@ -273,9 +274,10 @@ class CashOperasionalPresenter
         // Hanya External API operasional: net signed di kolom Masuk. Manual tidak berubah.
         $isApiOperasional = ! empty($row->ref_payment_id) && (int) ($row->ref_direction ?? 0) === 1;
         if ($isApiOperasional) {
+            // Neto negatif tampil "- Rp …" (bukan "(Rp …)") supaya terbaca minus.
             $debit = $nominal >= 0
                 ? 'Rp '.self::money($nominal)
-                : '(Rp '.self::money($nominal).')';
+                : '- Rp '.self::money($nominal);
             $credit = 'Rp 0';
         }
 

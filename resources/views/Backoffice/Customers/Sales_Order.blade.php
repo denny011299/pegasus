@@ -102,7 +102,7 @@
         }
 
         #tableSalesOrder {
-            min-width: 1150px;
+            min-width: 1290px; /* >= total lebar kolom JS (columns.width) */
         }
 
         #tableCustomerReturn {
@@ -139,7 +139,7 @@
         #tableSalesOrder td:last-child,
         #tableSalesOrder th:last-child {
             white-space: nowrap !important;
-            width: 110px !important;
+            width: 155px !important; /* muat 4 ikon aksi @34px + gap, sama JS columns.width */
             text-align: center;
         }
 

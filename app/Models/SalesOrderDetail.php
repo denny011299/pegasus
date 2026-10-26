@@ -88,6 +88,22 @@ class SalesOrderDetail extends Model
                 ->map(fn($id) => $unitsMap->get((int) $id))
                 ->filter()
                 ->values();
+
+            // Satuan yang boleh dipilih saat konfirmasi QC buta: HANYA rantai konversi
+            // product_relations varian ini (yang bisa divalidasi server) + satuan asli
+            // baris. Di luar rantai, ProductUnitStock::convertQty() = 0 → pasti ditolak.
+            $chainUnitIds = \App\Support\ProductUnitStock::orderedUnitIds((int) $value->product_variant_id);
+            if (! in_array((int) $value->unit_id, $chainUnitIds, true)) {
+                array_unshift($chainUnitIds, (int) $value->unit_id);
+            }
+            $chainUnits = Unit::whereIn('unit_id', $chainUnitIds)->get()->keyBy('unit_id');
+            $value->confirm_units = collect($chainUnitIds)
+                ->map(function ($uid) use ($chainUnits) {
+                    $u = $chainUnits->get((int) $uid);
+                    return $u ? ['unit_id' => (int) $u->unit_id, 'unit_name' => $u->unit_name] : null;
+                })
+                ->filter()
+                ->values();
         }
 
         return $details;

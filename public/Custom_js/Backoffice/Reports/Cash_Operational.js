@@ -2,6 +2,11 @@
     var table;
     var type, list_photo;
     var items = [];
+    // Khusus record dari API (PMO): detail campuran Masuk+Keluar disimpan absolut per
+    // crd_type, jadi tampilkan bertanda (+ hijau / − merah) dan total = neto. Input
+    // manual TIDAK memakai mode ini (nominal manual sudah bertanda dari input user).
+    var armadaSignedDetail = false;
+    var salesSignedDetail = false; // sama seperti armada, khusus record API Sales
     var sisa_kas = 0;
     var dates = null;
     var cashLoadXhr = null;
@@ -653,6 +658,7 @@
             $('#jenis_input_armada').val("operasional").attr('disabled', false).trigger('change');
             autocompleteCustomer('#customer_id_armada', '#add_cash_armada .modal-body');
             autocompleteCashCategory('#cc_id', '#add_cash_armada .modal-body');
+            armadaSignedDetail = false; // input manual selalu mode lama
             $('.total_armada').html("Rp 0");
             $("#oc_date_armada").val(todayStr).attr('disabled', false);
 
@@ -683,6 +689,7 @@
             autocompleteStaffSales('#staff_id_sales', '#add_cash_sales .modal-body');
             autocompleteCashCategory('#cc_id_sales', '#add_cash_sales .modal-body');
             autocompleteRekening('#bank_account', '#add_cash_sales .modal-body');
+            salesSignedDetail = false; // input manual selalu mode lama
             $('.total_sales').html("Rp 0");
 
             $('#btn-foto-bukti-sales').show();
@@ -1280,7 +1287,7 @@
                     <td>${index+1}</td>
                     <td style="width: 25%">${e.cad_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cad_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1519,7 +1526,7 @@
                     <td>${e.customer_notes}</td>
                     <td style="width: 25%">${e.cgd_notes}</td>
                     <td class="text-end">Rp ${formatRupiahMinus(e.cgd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_gudang mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1709,11 +1716,7 @@
             }
         }
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.crd_nominal;
-        });
-        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
 
         addRowArmada();
         pgPopupTableScrollToEdge($('#tableDetailArmada').closest('.pg-popup-table-scroll'));
@@ -1722,6 +1725,20 @@
         $('#cc_id').empty(null);
         $('#crd_nominal').val("");
     })
+
+    // Total detail armada. Mode API bertanda: Masuk +, Keluar/Keluar 1 − (nominal DB
+    // absolut per crd_type) → neto sama dengan cr_nominal header. Mode manual: jumlah
+    // apa adanya seperti sebelumnya (nominal sudah bertanda dari input).
+    function armadaItemsTotal() {
+        var total = 0;
+        items.forEach(function (element) {
+            var nominal = parseInt(element.crd_nominal, 10) || 0;
+            total += armadaSignedDetail
+                ? (element.crd_type == 1 ? Math.abs(nominal) : -Math.abs(nominal))
+                : nominal;
+        });
+        return total;
+    }
 
     function addRowArmada() {
         $('#tableDetailArmada tbody').html("");
@@ -1736,13 +1753,21 @@
             else if (e.crd_type == 3) type = "Keluar 1"
             console.log(e.crd_nominal)
             console.log(formatRupiahMinus(e.crd_nominal))
+            // Mode bertanda khusus record API: Keluar tampil − merah, Masuk + hijau.
+            var nominalHtml = `Rp ${formatRupiahMinus(e.crd_nominal)}`;
+            if (armadaSignedDetail) {
+                var absNominal = Math.abs(parseInt(e.crd_nominal, 10) || 0);
+                nominalHtml = e.crd_type == 1
+                    ? `<span style="color:#059669;font-weight:600;">+ Rp ${formatRupiahMinus(absNominal)}</span>`
+                    : `<span style="color:#dc2626;font-weight:600;">- Rp ${formatRupiahMinus(absNominal)}</span>`;
+            }
             $('#tableDetailArmada tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.crd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiahMinus(e.crd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-end">${nominalHtml}</td>
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_armada mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1761,12 +1786,7 @@
 
         items.splice(index, 1);
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.crd_nominal;
-        });
-        console.log(total);
-        $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
 
         addRowArmada();
     });
@@ -1926,11 +1946,7 @@
             }
         }
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.csd_nominal;
-        });
-        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
 
         addRowSales();
         pgPopupTableScrollToEdge($('#tableDetailSales').closest('.pg-popup-table-scroll'));
@@ -1939,6 +1955,18 @@
         $('#cc_id_sales').empty(null);
         $('#csd_nominal').val("");
     })
+
+    // Total detail sales — pasangan armadaItemsTotal() untuk field csd_*.
+    function salesItemsTotal() {
+        var total = 0;
+        items.forEach(function (element) {
+            var nominal = parseInt(element.csd_nominal, 10) || 0;
+            total += salesSignedDetail
+                ? (element.csd_type == 1 ? Math.abs(nominal) : -Math.abs(nominal))
+                : nominal;
+        });
+        return total;
+    }
 
     function addRowSales() {
         $('#tableDetailSales tbody').html("");
@@ -1951,13 +1979,21 @@
             if (e.csd_type == 1) type = "Masuk"
             else if (e.csd_type == 2) type = "Keluar"
             else if (e.csd_type == 3) type = "Keluar 1"
+            // Mode bertanda khusus record API: Keluar tampil − merah, Masuk + hijau.
+            var nominalHtml = `Rp ${formatRupiahMinus(e.csd_nominal)}`;
+            if (salesSignedDetail) {
+                var absNominal = Math.abs(parseInt(e.csd_nominal, 10) || 0);
+                nominalHtml = e.csd_type == 1
+                    ? `<span style="color:#059669;font-weight:600;">+ Rp ${formatRupiahMinus(absNominal)}</span>`
+                    : `<span style="color:#dc2626;font-weight:600;">- Rp ${formatRupiahMinus(absNominal)}</span>`;
+            }
             $('#tableDetailSales tbody').append(`
                 <tr class="row-detail" data-id="${index}">
                     <td>${index+1}</td>
                     <td>${type}</td>
                     <td style="width: 25%">${e.csd_notes}</td>
-                    <td class="text-end">Rp ${formatRupiahMinus(e.csd_nominal)}</td>
-                    <td class="text-center d-flex align-items-center col-aksi">
+                    <td class="text-end">${nominalHtml}</td>
+                    <td class="text-center align-middle col-aksi">
                         ${mode === 3 ? '' : `
                         <a class="p-2 btn-action-icon btn_delete_row_sales mx-auto"  href="javascript:void(0);">
                                 <i class="fe fe-trash-2"></i>
@@ -1976,12 +2012,7 @@
 
         items.splice(index, 1);
 
-        var total = 0;
-        items.forEach(element => {
-            total += element.csd_nominal;
-        });
-        console.log(total);
-        $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+        $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
 
         addRowSales();
     });
@@ -2418,6 +2449,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        armadaSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_armada .modal-title').html("Update Aktivitas Armada");
         setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
@@ -2426,18 +2459,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
                     "crd_type" : e.crd_type
-                };
-                items.push(temp);
-                total += parseInt(e.crd_nominal);
+                });
             })
-            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
             addRowArmada();
             
             $('#oc_date_armada').val(data.cr_date).attr('disabled', false);
@@ -2485,6 +2515,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=3;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        armadaSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_armada .modal-title').html("Lihat Aktivitas Armada");
         setCashRefPaymentNumber('#add_cash_armada', data.ref_payment_number);
@@ -2493,18 +2525,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_armada').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "crd_id" : e.crd_id,
                     "crd_notes" : e.crd_notes,
                     "crd_nominal" : e.crd_nominal,
                     "crd_type" : e.crd_type
-                };
-                items.push(temp);
-                total += parseInt(e.crd_nominal);
+                });
             })
-            $('.total_armada').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_armada').html(`Rp ${formatRupiahMinus(armadaItemsTotal())}`)
             addRowArmada();
             
             $('#oc_date_armada').val(data.cr_date).attr('disabled', true);
@@ -2587,6 +2616,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=2;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        salesSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_sales .modal-title').html("Update Aktivitas Sales");
         setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
@@ -2595,18 +2626,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_sales').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "csd_id" : e.csd_id,
                     "csd_notes" : e.csd_notes,
                     "csd_nominal" : e.csd_nominal,
                     "csd_type" : e.csd_type
-                };
-                items.push(temp);
-                total += parseInt(e.csd_nominal);
+                });
             })
-            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
             addRowSales();
             
             $('.foto').show();
@@ -2653,6 +2681,8 @@
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
         mode=3;
         items = [];
+        // Kriteria API sama dengan CashOperasionalPresenter::isApiOperasional.
+        salesSignedDetail = !!data.ref_payment_id && parseInt(data.ref_direction, 10) === 1;
         console.log(data);
         $('#add_cash_sales .modal-title').html("Lihat Aktivitas Sales");
         setCashRefPaymentNumber('#add_cash_sales', data.ref_payment_number);
@@ -2661,18 +2691,15 @@
         
         if (data.detail?.length){
             $('#jenis_input_sales').val("operasional").trigger('change').attr('disabled', true);
-            let total = 0;
             data.detail.forEach(e => {
-                var temp = {
+                items.push({
                     "csd_id" : e.csd_id,
                     "csd_notes" : e.csd_notes,
                     "csd_nominal" : e.csd_nominal,
                     "csd_type" : e.csd_type
-                };
-                items.push(temp);
-                total += parseInt(e.csd_nominal);
+                });
             })
-            $('.total_sales').html(`Rp ${formatRupiahMinus(total)}`)
+            $('.total_sales').html(`Rp ${formatRupiahMinus(salesItemsTotal())}`)
             addRowSales();
             
             $('.foto').show();
@@ -2751,22 +2778,79 @@
         });
     });
 
+    // Proyeksi saldo setelah ACC — mirror rumus acceptCashSales / acceptCashArmada
+    // di ReportController (per staff / per customer, bukan agregat semua).
+    function projectedSaldoAfterAcceptSales(row) {
+        var saldo = parseInt(row.staff_saldo, 10) || 0;
+        var nominal = parseInt(row.cs_nominal, 10) || 0;
+        var csType = parseInt(row.cs_type, 10) || 0;
+        var csAksi = parseInt(row.cs_aksi, 10) || 0;
+        var csTrx = parseInt(row.cs_transaction, 10) || 0;
+        if ((csType === 1 && csAksi === 1) || (csType === 2 && csTrx === 1)) {
+            return saldo + nominal;
+        }
+        return saldo - nominal;
+    }
+
+    function projectedSaldoAfterAcceptArmada(row) {
+        var saldo = parseInt(row.customer_saldo, 10) || 0;
+        var nominal = parseInt(row.cr_nominal, 10) || 0;
+        var crType = parseInt(row.cr_type, 10) || 0;
+        if (crType === 1) return saldo + nominal;
+        if (crType >= 2) return saldo - nominal;
+        return saldo;
+    }
+
+    function bindAcceptKasAttrs(row) {
+        $('#btn-accept-kas').attr("cash_id", row.cash_id);
+        if (type == "admin") $('#btn-accept-kas').attr("ca_id", row.ca_id);
+        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", row.cg_id);
+        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", row.cr_id);
+        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", row.cs_id);
+    }
+
+    // Snapshot baris ACC — dipakai cek saldo minus di langkah 2 (modal merah).
+    var pendingAcceptCashRow = null;
+    var acceptKasNegWarnDone = false;
+
     // --------- ACC KAS OPERASIONAL ---------
+    // Alur 2 langkah: (1) modal hijau SOP → (2) bila Sales/Armada akan minus, modal merah.
     $(document).on('click', '.btn_acc', function(){
         var data = $('#tableCash').DataTable().row($(this).parents('tr')).data();//ambil data dari table
+        pendingAcceptCashRow = data;
+        acceptKasNegWarnDone = false;
         showModalKonfirmasi(
             "Apakah yakin ingin Approve pengajuan ini?",
             "btn-accept-kas"
         );
-        $('#btn-accept-kas').attr("cash_id", data.cash_id);
-        if (type == "admin") $('#btn-accept-kas').attr("ca_id", data.ca_id);
-        else if (type == "gudang") $('#btn-accept-kas').attr("cg_id", data.cg_id);
-        else if (type == "armada") $('#btn-accept-kas').attr("cr_id", data.cr_id);
-        else if (type == "sales") $('#btn-accept-kas').attr("cs_id", data.cs_id);
+        bindAcceptKasAttrs(data);
         $('#btn-accept-kas').html("Konfirmasi");
     })
 
     $(document).on('click', '#btn-accept-kas', function(){
+        // Setelah konfirmasi hijau: cek proyeksi saldo per sales / per armada.
+        if (!acceptKasNegWarnDone && pendingAcceptCashRow && (type === 'sales' || type === 'armada')) {
+            var row = pendingAcceptCashRow;
+            var willGoNegative = type === 'sales'
+                ? projectedSaldoAfterAcceptSales(row) < 0
+                : projectedSaldoAfterAcceptArmada(row) < 0;
+            if (willGoNegative) {
+                var ownerLabel = type === 'sales'
+                    ? (row.staff_name ? (' sales <b>' + row.staff_name + '</b>') : ' sales terkait')
+                    : (row.customer_notes ? (' armada <b>' + row.customer_notes + '</b>') : ' armada terkait');
+                var dangerText = 'Apakah Anda yakin ingin melanjutkan persetujuan transaksi ini? '
+                    + 'Transaksi tersebut akan mengakibatkan saldo kas' + ownerLabel + ' menjadi negatif.';
+                acceptKasNegWarnDone = true;
+                // Tunggu modal hijau tutup dulu supaya backdrop tidak dobel.
+                $('#modalKonfirmasi').one('hidden.bs.modal', function () {
+                    showModalDanger(dangerText, 'btn-accept-kas');
+                    bindAcceptKasAttrs(row);
+                });
+                closeModalConfirm();
+                return;
+            }
+        }
+
         LoadingButton(this);
         let url = "";
         if (type == "admin") {
@@ -2807,6 +2891,8 @@
             method:"post",
             success:function(e){
                 ResetLoadingButton('.btn-konfirmasi', "Konfirmasi");
+                pendingAcceptCashRow = null;
+                acceptKasNegWarnDone = false;
                 $('.modal').modal("hide");
                 if (e.status == -2){
                     notifikasi('error', e.header, e.message);

@@ -1282,11 +1282,12 @@ class CustomerReturnController extends Controller
             $productDetails = $productDetails->all();
         }
 
-        $status = 1;
-        $statuses = array_filter([
+        // array_values wajib: array_filter mempertahankan index — dokumen produk-only
+        // status 2 jadi [1=>2], lalu $statuses[0]??1 salah jadi 1 (Edit tampil di Diterima).
+        $statuses = array_values(array_filter([
             $supply ? (int) $supply->status : null,
             $product ? (int) $product->status : null,
-        ], fn ($v) => $v !== null);
+        ], fn ($v) => $v !== null));
         if (in_array(1, $statuses, true)) {
             $status = 1;
         } else {

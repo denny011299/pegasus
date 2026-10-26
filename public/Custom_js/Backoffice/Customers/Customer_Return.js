@@ -1498,6 +1498,8 @@
                     $("#cr-btn-upload-proof").addClass("d-none");
                     $("#cr-add-strip,#cr-save").addClass("d-none");
                     $("#cr-print").toggleClass("d-none", status !== 2);
+                    // Edit hanya Pending (status 1). Diterima/Ditolak: selalu sembunyikan.
+                    $("#cr-edit-toggle").addClass("d-none");
                     if (status === 1 && can("edit")) {
                         $("#cr-edit-toggle").removeClass("d-none").html('<i class="fe fe-edit me-1"></i>Edit');
                     }
@@ -2044,6 +2046,7 @@
                 return;
             }
             if (!can("edit")) return;
+            // Guard: jangan masuk edit kalau dokumen sudah Diterima/Ditolak.
             crEditReturnIntent = crMode;
             openRecord(key, "edit", true);
         });

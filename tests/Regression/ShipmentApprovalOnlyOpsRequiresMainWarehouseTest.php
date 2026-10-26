@@ -116,7 +116,7 @@ class ShipmentApprovalOnlyOpsRequiresMainWarehouseTest extends TestCase
         $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => RoleIds::DIREKSI]);
         $this->withActiveWarehouse($retailWarehouseId);
 
-        $response = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc']);
+        $response = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc', 'confirm_items' => $this->shipmentConfirmItems($soId)]);
 
         $response->assertStatus(200)->assertJson(['status' => 1]);
         $so = SalesOrder::findOrFail($soId);
@@ -131,7 +131,7 @@ class ShipmentApprovalOnlyOpsRequiresMainWarehouseTest extends TestCase
 
         $this->actingAsStaffWithOnlyPermission('Pengiriman', ['view'], ['role_id' => RoleIds::DIREKSI]);
         $this->withActiveWarehouse($retailWarehouseId);
-        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc'])->assertStatus(200)->assertJson(['status' => 1]);
+        $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'qc', 'confirm_items' => $this->shipmentConfirmItems($soId)])->assertStatus(200)->assertJson(['status' => 1]);
 
         // Masih di gudang eceran — tahap Ops harus ditolak.
         $refused = $this->post('/approveShipment', ['so_id' => $soId, 'type' => 'ops']);
