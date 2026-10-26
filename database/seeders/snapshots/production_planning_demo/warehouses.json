@@ -1,0 +1,24 @@
+[
+    {
+        "id": 1,
+        "warehouse_name": "Gudang Besar Pegasus Hikari Pegasus Group Sidoarjo",
+        "warehouse_type_id": 1,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A8 - 9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": "[\"Kategori\",\"Satuan\",\"Variasi\",\"Gudang\",\"Tipe Gudang\",\"Daftar Produk\",\"Stok Produk\",\"Daftar Bahan Mentah\",\"Stok Bahan Mentah\",\"Armada\",\"Pemasok\",\"Produk Bermasalah\",\"Peringatan Stok Produk\",\"Peringatan Stok Bahan Mentah\",\"Stok Opname Produk\",\"Stok Opname Bahan Mentah\",\"Stock Transfer\",\"Pengiriman\",\"Pembelian\",\"Tanda Terima PO\",\"Resep Bahan Mentah\",\"Produksi\",\"Bank Account\",\"Hutang\",\"Kategori Kas\",\"Kas Operasional Admin\",\"Kas Operasional Gudang\",\"Kas Operasional Armada\",\"Kas Operasional Sales\",\"Kas\",\"Pengelolaan Bahan Mentah\",\"Retur Produk\",\"Laporan Produksi\",\"Untung & Rugi\",\"Barang Masuk Keluar\",\"Laporan Stock Aging\",\"Pengguna\",\"Peran & Perizinan\",\"Profil\",\"Pengaturan\",\"Sinkronisasi\",\"Status API Eksternal\",\"Aplikasi Eksternal\",\"Dokumentasi API Eksternal\",\"Log API Eksternal\",\"Production Planning\"]",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-09-01 13:34:07"
+    },
+    {
+        "id": 2,
+        "warehouse_name": "Gudang Eceran Sidoarjo",
+        "warehouse_type_id": 2,
+        "warehouse_address": "Pergudangan Meiko Abadi 2, Blok A9, Jalan Industri, Buduran, Sidoarjo",
+        "sidebar_menus": "[\"Kategori\",\"Satuan\",\"Variasi\",\"Gudang\",\"Tipe Gudang\",\"Daftar Produk\",\"Stok Produk\",\"Daftar Bahan Mentah\",\"Stok Bahan Mentah\",\"Armada\",\"Pemasok\",\"Produk Bermasalah\",\"Peringatan Stok Produk\",\"Peringatan Stok Bahan Mentah\",\"Stok Opname Produk\",\"Stock Transfer\",\"Pengiriman\",\"Tanda Terima PO\",\"Resep Bahan Mentah\",\"Bank Account\",\"Hutang\",\"Kategori Kas\",\"Kas Operasional Admin\",\"Kas Operasional Gudang\",\"Kas Operasional Armada\",\"Kas Operasional Sales\",\"Kas\",\"Pengelolaan Bahan Mentah\",\"Retur Produk\",\"Laporan Produksi\",\"Untung & Rugi\",\"Barang Masuk Keluar\",\"Laporan Stock Aging\",\"Pengguna\",\"Peran & Perizinan\",\"Profil\",\"Pengaturan\",\"Sinkronisasi\",\"Status API Eksternal\",\"Aplikasi Eksternal\",\"Dokumentasi API Eksternal\",\"Log API Eksternal\"]",
+        "status": 1,
+        "created_by": 9,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-09-29 20:25:12"
+    }
+]

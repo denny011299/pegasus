@@ -1,0 +1,182 @@
+[
+    {
+        "unit_id": 1,
+        "ref_unit_id": null,
+        "unit_name": "Kilogram",
+        "unit_short_name": "kg",
+        "status": 1,
+        "created_at": "2025-08-27 20:00:00",
+        "updated_at": "2025-08-27 20:00:00",
+        "created_by": null
+    },
+    {
+        "unit_id": 2,
+        "ref_unit_id": 9506012026014616,
+        "unit_name": "Jerigen",
+        "unit_short_name": "Jerigen",
+        "status": 1,
+        "created_at": "2025-08-27 20:05:00",
+        "updated_at": "2026-10-23 02:35:30",
+        "created_by": null
+    },
+    {
+        "unit_id": 3,
+        "ref_unit_id": null,
+        "unit_name": "Liter",
+        "unit_short_name": "LTR",
+        "status": 1,
+        "created_at": "2025-08-27 20:10:00",
+        "updated_at": "2026-06-18 11:11:24",
+        "created_by": 15
+    },
+    {
+        "unit_id": 5,
+        "ref_unit_id": null,
+        "unit_name": "Drum",
+        "unit_short_name": "drum",
+        "status": 1,
+        "created_at": "2025-08-27 20:20:00",
+        "updated_at": "2025-08-27 20:20:00",
+        "created_by": null
+    },
+    {
+        "unit_id": 7,
+        "ref_unit_id": 9506012026014611,
+        "unit_name": "DOS",
+        "unit_short_name": "DOS",
+        "status": 1,
+        "created_at": "2025-08-27 20:30:00",
+        "updated_at": "2026-10-23 02:24:36",
+        "created_by": null
+    },
+    {
+        "unit_id": 8,
+        "ref_unit_id": 9506012026014613,
+        "unit_name": "Pack",
+        "unit_short_name": "Pack",
+        "status": 1,
+        "created_at": "2025-08-27 20:35:00",
+        "updated_at": "2026-10-23 02:17:02",
+        "created_by": null
+    },
+    {
+        "unit_id": 9,
+        "ref_unit_id": null,
+        "unit_name": "Piece",
+        "unit_short_name": "pcs",
+        "status": 1,
+        "created_at": "2025-08-27 20:40:00",
+        "updated_at": "2025-08-27 20:40:00",
+        "created_by": null
+    },
+    {
+        "unit_id": 21,
+        "ref_unit_id": 9506012026014614,
+        "unit_name": "Pail",
+        "unit_short_name": "Pail",
+        "status": 1,
+        "created_at": null,
+        "updated_at": "2026-10-23 02:17:02",
+        "created_by": null
+    },
+    {
+        "unit_id": 22,
+        "ref_unit_id": null,
+        "unit_name": "Gram",
+        "unit_short_name": "Gr",
+        "status": 1,
+        "created_at": "2025-11-24 05:36:20",
+        "updated_at": "2025-11-24 05:36:20",
+        "created_by": null
+    },
+    {
+        "unit_id": 23,
+        "ref_unit_id": null,
+        "unit_name": "testing323",
+        "unit_short_name": "TST221",
+        "status": 0,
+        "created_at": "2025-12-09 06:02:02",
+        "updated_at": "2025-12-09 06:02:21",
+        "created_by": null
+    },
+    {
+        "unit_id": 24,
+        "ref_unit_id": null,
+        "unit_name": "testing2213",
+        "unit_short_name": "TST245",
+        "status": 0,
+        "created_at": "2025-12-23 09:55:32",
+        "updated_at": "2025-12-23 09:55:45",
+        "created_by": null
+    },
+    {
+        "unit_id": 25,
+        "ref_unit_id": null,
+        "unit_name": "Sak",
+        "unit_short_name": "Sak",
+        "status": 1,
+        "created_at": "2026-04-25 07:24:59",
+        "updated_at": "2026-04-25 07:25:13",
+        "created_by": 9
+    },
+    {
+        "unit_id": 26,
+        "ref_unit_id": null,
+        "unit_name": "RIM",
+        "unit_short_name": "RIM",
+        "status": 1,
+        "created_at": "2026-06-12 00:28:50",
+        "updated_at": "2026-06-12 00:28:50",
+        "created_by": 9
+    },
+    {
+        "unit_id": 27,
+        "ref_unit_id": null,
+        "unit_name": "GRAM",
+        "unit_short_name": "GR",
+        "status": 0,
+        "created_at": "2026-06-18 11:11:40",
+        "updated_at": "2026-06-18 11:35:23",
+        "created_by": 9
+    },
+    {
+        "unit_id": 28,
+        "ref_unit_id": 9506012026014615,
+        "unit_name": "Drum",
+        "unit_short_name": "Drum",
+        "status": 1,
+        "created_at": "2026-10-15 16:22:33",
+        "updated_at": "2026-10-23 02:17:02",
+        "created_by": null
+    },
+    {
+        "unit_id": 29,
+        "ref_unit_id": 5013082026141116,
+        "unit_name": "Lusinan",
+        "unit_short_name": "Lusinan",
+        "status": 1,
+        "created_at": "2026-10-16 15:36:19",
+        "updated_at": "2026-10-23 02:17:02",
+        "created_by": null
+    },
+    {
+        "unit_id": 30,
+        "ref_unit_id": 9506012026014612,
+        "unit_name": "Pcs",
+        "unit_short_name": "Pcs",
+        "status": 1,
+        "created_at": "2026-10-16 15:36:19",
+        "updated_at": "2026-10-23 02:17:02",
+        "created_by": null
+    },
+    {
+        "unit_id": 31,
+        "ref_unit_id": null,
+        "unit_name": "Dus",
+        "unit_short_name": "Dus",
+        "status": 0,
+        "created_at": "2026-10-23 02:17:45",
+        "updated_at": "2026-10-23 02:24:36",
+        "created_by": null
+    }
+]

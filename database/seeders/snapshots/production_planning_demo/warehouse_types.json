@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "warehouse_type_name": "Gudang Besar",
+        "is_main_warehouse": 1,
+        "status": 1,
+        "created_by": null,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-08-31 23:52:37"
+    },
+    {
+        "id": 2,
+        "warehouse_type_name": "Gudang Eceran",
+        "is_main_warehouse": 0,
+        "status": 1,
+        "created_by": null,
+        "created_at": "2026-08-31 23:52:23",
+        "updated_at": "2026-08-31 23:52:23"
+    }
+]

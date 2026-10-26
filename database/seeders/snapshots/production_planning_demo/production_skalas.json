@@ -1,0 +1,90 @@
+[
+    {
+        "production_skala_id": 1,
+        "code": "1",
+        "name": "Muat Pagi",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 2,
+        "code": "2",
+        "name": "Muat Sore",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 3,
+        "code": "3",
+        "name": "Muat Besok",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 4,
+        "code": "4",
+        "name": "Stock",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 5,
+        "code": "M1",
+        "name": "Mobil 1",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 6,
+        "code": "M2",
+        "name": "Mobil 2",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 7,
+        "code": "M3",
+        "name": "Mobil 3",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    },
+    {
+        "production_skala_id": 8,
+        "code": "M4",
+        "name": "Mobil 4",
+        "combo_label": null,
+        "status": 1,
+        "created_by": null,
+        "updated_by": null,
+        "created_at": "2026-10-04 18:02:34",
+        "updated_at": "2026-10-04 18:02:34"
+    }
+]

@@ -1,0 +1,172 @@
+[
+    {
+        "variant_id": 1,
+        "variant_name": "test",
+        "variant_attribute": "[\"as\",\"c\",\"ds\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-08-12 03:48:26",
+        "updated_at": "2025-08-12 03:48:44"
+    },
+    {
+        "variant_id": 2,
+        "variant_name": "Ukuran",
+        "variant_attribute": "[\"Small\",\"Medium\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-08-19 21:52:08",
+        "updated_at": "2025-10-30 17:57:04"
+    },
+    {
+        "variant_id": 5,
+        "variant_name": "test",
+        "variant_attribute": "[\"tes\",\"test2\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-09-07 22:32:45",
+        "updated_at": "2025-09-07 22:32:49"
+    },
+    {
+        "variant_id": 6,
+        "variant_name": "Warna",
+        "variant_attribute": "[\"Merah\",\"Hijau\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 1,
+        "created_at": "2025-09-09 05:18:40",
+        "updated_at": "2025-09-09 05:18:40"
+    },
+    {
+        "variant_id": 7,
+        "variant_name": "ISI PER DOS",
+        "variant_attribute": "[\"12 x 1000 ml\",\"30 x 600 ml\",\"12 x 1500 ml\",\"20 x 400ml\",\"4 x 5 liter\",\"30X400ML\",\"30 LITER\",\"14 X 100 ML\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 1,
+        "created_at": "2025-09-13 15:49:16",
+        "updated_at": "2026-02-19 09:05:26"
+    },
+    {
+        "variant_id": 8,
+        "variant_name": "testing2",
+        "variant_attribute": "[\"test2\",\"test3\",\"test4\",\"test5\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-09-13 23:12:35",
+        "updated_at": "2025-10-30 17:56:58"
+    },
+    {
+        "variant_id": 9,
+        "variant_name": "satuan bahan mentah",
+        "variant_attribute": "[\"kg\",\"pcs\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-09-16 18:55:17",
+        "updated_at": "2025-10-30 17:57:07"
+    },
+    {
+        "variant_id": 10,
+        "variant_name": "Warna",
+        "variant_attribute": "[\"Merah\",\"Kuning\",\"Hijau\",\"Biru\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-09-22 10:43:50",
+        "updated_at": "2025-09-22 10:44:13"
+    },
+    {
+        "variant_id": 11,
+        "variant_name": "testing223",
+        "variant_attribute": "[\"testing\",\"2342\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-09-22 23:54:37",
+        "updated_at": "2025-09-22 23:55:15"
+    },
+    {
+        "variant_id": 12,
+        "variant_name": "testing223",
+        "variant_attribute": "[\"testing\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-10-01 09:21:42",
+        "updated_at": "2025-10-30 17:57:01"
+    },
+    {
+        "variant_id": 13,
+        "variant_name": "testing22323",
+        "variant_attribute": "[\"test2\",\"wree\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-10-01 09:22:13",
+        "updated_at": "2025-10-01 09:22:29"
+    },
+    {
+        "variant_id": 14,
+        "variant_name": "se",
+        "variant_attribute": "[\"f\",\"fr\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-10-06 09:48:30",
+        "updated_at": "2025-10-06 09:48:47"
+    },
+    {
+        "variant_id": 15,
+        "variant_name": "Dummy",
+        "variant_attribute": "[\"a\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-12-10 02:20:49",
+        "updated_at": "2025-12-10 02:20:52"
+    },
+    {
+        "variant_id": 16,
+        "variant_name": "testing",
+        "variant_attribute": "[\"s\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-12-10 04:31:52",
+        "updated_at": "2025-12-10 04:32:09"
+    },
+    {
+        "variant_id": 17,
+        "variant_name": "testing",
+        "variant_attribute": "[\"t\",\"a\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-12-10 04:32:26",
+        "updated_at": "2025-12-10 04:32:30"
+    },
+    {
+        "variant_id": 18,
+        "variant_name": "Dummy",
+        "variant_attribute": "[\"aaa\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-12-13 08:19:04",
+        "updated_at": "2025-12-13 08:19:08"
+    },
+    {
+        "variant_id": 19,
+        "variant_name": "testing2",
+        "variant_attribute": "[\"42\",\"6\"]",
+        "created_by": null,
+        "acc_by": null,
+        "status": 0,
+        "created_at": "2025-12-23 09:56:04",
+        "updated_at": "2025-12-23 09:56:21"
+    }
+]

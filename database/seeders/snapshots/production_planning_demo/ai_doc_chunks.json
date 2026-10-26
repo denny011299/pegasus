@@ -1,0 +1,1162 @@
+[
+    {
+        "id": 284,
+        "feature": "armada",
+        "heading": "Armada",
+        "content": "# Armada",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 285,
+        "feature": "armada",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMengelola data armada. Secara operasional Armada dan customer biasa seharusnya diperlakukan sama (menu terpisah ada karena perubahan fitur lama).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 286,
+        "feature": "armada",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Armada**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 287,
+        "feature": "armada",
+        "heading": "Alur",
+        "content": "## Alur\nTambah, ubah, dan hapus data di menu Armada. Hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 288,
+        "feature": "bank-account",
+        "heading": "Bank Account",
+        "content": "# Bank Account",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 289,
+        "feature": "bank-account",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster rekening bank perusahaan / terkait pembayaran.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 290,
+        "feature": "bank-account",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Bank Account**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 291,
+        "feature": "daftar-bahan-mentah",
+        "heading": "Daftar Bahan Mentah",
+        "content": "# Daftar Bahan Mentah",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 292,
+        "feature": "daftar-bahan-mentah",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster bahan mentah beserta varian dan satuan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 293,
+        "feature": "daftar-bahan-mentah",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Daftar Bahan Mentah**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 294,
+        "feature": "daftar-bahan-mentah",
+        "heading": "Alur",
+        "content": "## Alur\nCRUD bahan → kelola varian/satuan → hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 295,
+        "feature": "daftar-produk",
+        "heading": "Daftar Produk",
+        "content": "# Daftar Produk",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 296,
+        "feature": "daftar-produk",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMendaftarkan produk jadi beserta varian dan relasi satuan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 297,
+        "feature": "daftar-produk",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Daftar Produk**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 298,
+        "feature": "daftar-produk",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buka Produk → Daftar Produk.\n2. Buat produk (nama, kategori, dll.).\n3. Kelola varian produk dan stok per satuan.\n4. Hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 299,
+        "feature": "daftar-produk",
+        "heading": "Aturan bisnis",
+        "content": "## Aturan bisnis\nProduk wajib punya BOM aktif sebelum diproduksi. Untuk dijual, BOM tidak wajib.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 300,
+        "feature": "daftar-produk",
+        "heading": "Status",
+        "content": "## Status\nProduk/varian: Aktif atau Dihapus.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 301,
+        "feature": "gudang",
+        "heading": "Gudang & Tipe Gudang",
+        "content": "# Gudang & Tipe Gudang",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 302,
+        "feature": "gudang",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster data lokasi stok (gudang besar, gudang eceran/cabang, dll.) dan tipenya.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 303,
+        "feature": "gudang",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Gudang** / **Tipe Gudang**: view / create / edit / delete sesuai hak akses. Akses menu juga bisa dibatasi per gudang aktif staf.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 304,
+        "feature": "gudang",
+        "heading": "Alur",
+        "content": "## Alur\n1. Kelola tipe gudang (contoh: gudang utama vs eceran).\n2. Kelola daftar gudang: nama, tipe, status aktif.\n3. Staf dapat ditempatkan ke gudang; beberapa transaksi (stok, transfer, opname, kas gudang) mengikuti gudang aktif.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 305,
+        "feature": "gudang",
+        "heading": "Catatan",
+        "content": "## Catatan\nStock Transfer, Stok Produk, Stok Bahan, Opname, dan beberapa laporan selalu terikat ke gudang. Saat user bertanya stok/transfer, sebutkan juga nama gudang seperti di UI.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 306,
+        "feature": "hutang",
+        "heading": "Hutang",
+        "content": "# Hutang",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 307,
+        "feature": "hutang",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMemantau hutang terkait PO dan pembayaran.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 308,
+        "feature": "hutang",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Hutang**: view (utama).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 309,
+        "feature": "hutang",
+        "heading": "Alur",
+        "content": "## Alur\nHalaman hutang memfilter PO berdasarkan status/pembayaran. Pelunasan dicatat lewat alur Pembelian / Tanda Terima (status pembayaran PO). Transfer uang dilakukan di luar sistem; modul Hutang untuk pantau.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 310,
+        "feature": "kas-operasional",
+        "heading": "Kas Operasional (Admin / Gudang / Armada / Sales)",
+        "content": "# Kas Operasional (Admin / Gudang / Armada / Sales)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 311,
+        "feature": "kas-operasional",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nSemacam petty cash yang dibagi per role/fungsi (Admin, Gudang, Armada, Sales), dengan ACC/tolak.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 312,
+        "feature": "kas-operasional",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul terpisah (nama permission bisa lama/baru):\n- Kas Operasional Admin / Kas Admin\n- Kas Operasional Gudang / Kas Gudang\n- Kas Operasional Armada / Kas Armada\n- Kas Operasional Sales / Kas Sales\nPlus payung **Kas Operasional**. Ability: view/create/edit/delete/others.\n\nYang ACC/tolak: yang punya ability **others** di modul kas terkait.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 313,
+        "feature": "kas-operasional",
+        "heading": "Alur umum",
+        "content": "## Alur umum\n1. Buat transaksi (+ detail) → status **Menunggu**. Unggah bukti **selalu wajib**.\n2. Accept → status **Diterima** (bisa berdampak ke Kas / saldo terkait).\n3. Decline → status **Ditolak**.\n4. Hapus → status **Dihapus**.\n5. Kas Gudang yang di-ACC dapat otomatis membuat transaksi Kas Armada terkait.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 314,
+        "feature": "kas-umum",
+        "heading": "Kas (Kas Besar) & Petty Cash",
+        "content": "# Kas (Kas Besar) & Petty Cash",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 315,
+        "feature": "kas-umum",
+        "heading": "Tujuan",
+        "content": "## Tujuan\n**Kas** = kas besar (bukan petty per role). Petty cash operasional ada di menu Kas Operasional (Admin/Gudang/Armada/Sales).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 316,
+        "feature": "kas-umum",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Kas**: view / create (insert cash / petty cash).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 317,
+        "feature": "kas-umum",
+        "heading": "Unggah",
+        "content": "## Unggah\nUnggah bukti selalu wajib bila ada lampiran di form.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 318,
+        "feature": "kategori-kas",
+        "heading": "Kategori Kas",
+        "content": "# Kategori Kas",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 319,
+        "feature": "kategori-kas",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster kategori untuk transaksi kas.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 320,
+        "feature": "kategori-kas",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Kategori Kas**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 321,
+        "feature": "laporan",
+        "heading": "Laporan",
+        "content": "# Laporan",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 322,
+        "feature": "laporan",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nHalaman laporan baca saja. Semua laporan di bawah masih aktif dipakai staf.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 323,
+        "feature": "laporan",
+        "heading": "Modul",
+        "content": "## Modul\n- **Laporan Produksi**\n- **Laporan Stock Aging**\n- **Untung & Rugi**\n- **Barang Masuk Keluar**\n- Laporan terkait Kas (dari menu Kas)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 324,
+        "feature": "laporan",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nMasing-masing: view.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 325,
+        "feature": "laporan",
+        "heading": "Sumber data",
+        "content": "## Sumber data\nRekap dari produksi, stok, riwayat pergerakan stok, dan data laporan lainnya.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 326,
+        "feature": "master-kategori",
+        "heading": "Kategori",
+        "content": "# Kategori",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 327,
+        "feature": "master-kategori",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMengelola daftar kategori produk jadi (bukan bahan mentah).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 328,
+        "feature": "master-kategori",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Kategori**: view / create / edit / delete sesuai peran.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 329,
+        "feature": "master-kategori",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buka menu Master → Kategori.\n2. Tambah kategori (nama).\n3. Edit atau hapus (soft delete) bila perlu.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 330,
+        "feature": "master-kategori",
+        "heading": "Status",
+        "content": "## Status\n- aktif\n- dihapus",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 331,
+        "feature": "master-kategori",
+        "heading": "Validasi",
+        "content": "## Validasi\nNama wajib diisi di form (validasi frontend).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 332,
+        "feature": "master-satuan",
+        "heading": "Satuan",
+        "content": "# Satuan",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 333,
+        "feature": "master-satuan",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMengelola satuan hitung (pcs, kg, dus, dll.) untuk produk dan bahan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 334,
+        "feature": "master-satuan",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Satuan**: view / create / edit / delete. Siapa pun yang punya hak akses modul ini boleh mengubah satuan/konversi. Tidak ada proses wajib di luar sistem.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 335,
+        "feature": "master-satuan",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buka Master → Satuan.\n2. Tambah / edit / hapus satuan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 336,
+        "feature": "master-satuan",
+        "heading": "Status",
+        "content": "## Status\nAktif atau Dihapus.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 337,
+        "feature": "master-variasi",
+        "heading": "Variasi",
+        "content": "# Variasi",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 338,
+        "feature": "master-variasi",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster variasi (ukuran/warna/tipe) yang bisa dipasangkan ke produk atau bahan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 339,
+        "feature": "master-variasi",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Variasi**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 340,
+        "feature": "master-variasi",
+        "heading": "Alur",
+        "content": "## Alur\nCRUD di Master → Variasi.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 341,
+        "feature": "master-variasi",
+        "heading": "Status",
+        "content": "## Status\nAktif atau Dihapus.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 342,
+        "feature": "pemasok",
+        "heading": "Pemasok",
+        "content": "# Pemasok",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 343,
+        "feature": "pemasok",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMaster data supplier untuk pembelian.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 344,
+        "feature": "pemasok",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Pemasok**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 345,
+        "feature": "pemasok",
+        "heading": "Alur",
+        "content": "## Alur\nTambah, ubah, dan hapus pemasok. Hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 346,
+        "feature": "pembelian-po",
+        "heading": "Pembelian (Purchase Order)",
+        "content": "# Pembelian (Purchase Order)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 347,
+        "feature": "pembelian-po",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMemesan bahan/barang ke pemasok, invoice, dan alur pembayaran. Fitur penerimaan/delivery PO terpisah sudah tidak dipakai — jangan dijelaskan sebagai alur aktif.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 348,
+        "feature": "pembelian-po",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Pembelian**: view / create / edit / delete / others (ACC/tolak PO, invoice).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 349,
+        "feature": "pembelian-po",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buat PO + detail → status **Dibuat** (menunggu ACC).\n2. ACC PO → status **Disetujui**, stok bertambah saat ACC; invoice pending dibuat.\n3. Tolak PO → status **Ditolak** (jika sudah ACC, stok dibalik).\n4. Hapus → status **Dihapus**.\n5. Invoice PO: menunggu → disetujui / ditolak.\n6. Progress pembayaran terlihat di status pembayaran PO.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 350,
+        "feature": "pembelian-po",
+        "heading": "Cara input PO",
+        "content": "## Cara input PO\n1. Buka menu **Penjualan & Pembelian → Pembelian**, klik tombol tambah sampai muncul modal **Tambah Purchase Order**.\n2. Isi **Nama Pemasok** (wajib) dan **Tanggal** (wajib).\n3. Tambah barang ke tabel: cari produk/bahan, atau scan / ketik barcode lalu isi **Qty** dan klik tambah.\n4. Di setiap baris barang cek **Variasi**, **SKU**, **Qty**, dan **Harga Beli**. **Harga Beli wajib diisi sesuai harga pemasok** — kalau dibiarkan 0, Subtotal, total PO, Tanda Terima, invoice, dan hutang ikut Rp 0.\n5. Isi bila ada: **Tipe Diskon**, **Diskon**, **PPN**, **Biaya Pengiriman**.\n6. Isi **Keterangan** (wajib) dan lampirkan **Foto Bukti** (wajib) lewat tombol **Foto**.\n7. Klik **Tambah Pembelian**. PO tersimpan dengan status **Dibuat** dan menunggu ACC.\n8. Yang punya akses ACC membuk",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 351,
+        "feature": "pembelian-po",
+        "heading": "Cara input PO (lanjutan)",
+        "content": "a PO tersebut lalu ACC → status **Disetujui**, stok bertambah, invoice pending dibuat.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 352,
+        "feature": "pembelian-po",
+        "heading": "Tips mencegah salah input PO",
+        "content": "## Tips mencegah salah input PO\n- Jangan simpan PO dengan Harga Beli 0 kecuali barang memang bonus; kalau bonus, tulis \"bonus\" di Keterangan.\n- Pastikan pemasok dan satuan/variasi benar sebelum ACC — setelah ACC, stok sudah bertambah.\n- Harga belum pasti dari pemasok? Konfirmasi dulu sebelum membuat Tanda Terima, karena nominal TT mengikuti harga PO.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 353,
+        "feature": "pembelian-po",
+        "heading": "Status PO",
+        "content": "## Status PO\n- Created/menunggu\n- Confirmed/ACC\n- hapus\n- tolak",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 354,
+        "feature": "pembelian-po",
+        "heading": "Status Pembayaran PO",
+        "content": "## Status Pembayaran PO\n- belum dibayar\n- dalam proses / terkait TT\n- lunas\n\nTransfer/bukti pembayaran dilakukan di luar sistem; di aplikasi yang dicatat adalah status pembayaran.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 355,
+        "feature": "pengelolaan-bahan",
+        "heading": "Pengelolaan Bahan Mentah",
+        "content": "# Pengelolaan Bahan Mentah",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 356,
+        "feature": "pengelolaan-bahan",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMutasi / koreksi stok bahan di luar alur PO, retur, atau opname.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 357,
+        "feature": "pengelolaan-bahan",
+        "heading": "Kapan dipakai",
+        "content": "## Kapan dipakai\n- **Opname** = hitung fisik berkala, lalu ACC penyesuaian.\n- **Retur** = barang kembali dari armada/customer.\n- **Pengelolaan Bahan** = mutasi/koreksi lain yang tidak masuk dua di atas.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 358,
+        "feature": "pengelolaan-bahan",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Pengelolaan Bahan Mentah**: view (+ aksi terkait di controller).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 359,
+        "feature": "pengguna-peran",
+        "heading": "Pengguna & Peran",
+        "content": "# Pengguna & Peran",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 360,
+        "feature": "pengguna-peran",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMengelola akun staf dan hak akses per modul.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 361,
+        "feature": "pengguna-peran",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\n- **Pengguna**: view / create / edit / delete\n- **Peran & Perizinan**: view / create / edit / delete",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 362,
+        "feature": "pengguna-peran",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buat Role dengan daftar modul + ability (lihat, tambah, ubah, hapus, aksi lain seperti ACC/tolak).\n2. Assign role ke staff.\n3. Satu orang = satu peran (tidak multi-role).\n4. Peran Super Admin bisa mengakses semua menu.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 363,
+        "feature": "pengiriman-sales-order",
+        "heading": "Pengiriman (Sales Order)",
+        "content": "# Pengiriman (Sales Order)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 364,
+        "feature": "pengiriman-sales-order",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMencatat pesanan penjualan ke armada/customer dan pengirimannya. Pengiriman baru umumnya masuk dari PMO lewat External API (jadwal / shipped), bukan dibuat manual di halaman ini.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 365,
+        "feature": "pengiriman-sales-order",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Pengiriman**: view / create / edit / delete. ACC & tolak mengikuti tahap approval di bawah (bukan ability others lagi).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 366,
+        "feature": "pengiriman-sales-order",
+        "heading": "Alur ACC 2 tahap (berurutan, tidak bisa lompat)",
+        "content": "## Alur ACC 2 tahap (berurutan, tidak bisa lompat)\n1. **Staf QC & Gudang** — konfirmasi buta: jumlah & satuan asli TIDAK ditampilkan; staf mengisi jumlah + satuan hasil hitung fisik, lalu Terima. Sistem mencocokkan dengan data pengiriman (qty dibandingkan setelah konversi satuan rantai produk). Kosong → baris ditandai merah; tidak cocok → ditolak dengan pesan item bermasalah, approval tidak dicatat.\n2. **Kepala Operasional** — approve setelah QC. Di tahap ini stok dicek & dipotong dan status menjadi **Diterima**. Stok kurang → approval Ops batal, pengiriman tetap Pending. Tahap Ops wajib dari gudang aktif = gudang utama; tahap QC boleh dari gudang aktif mana pun.\n\nPengganti (pola sama seperti Stock Transfer): **Direksi** dan **Developer** boleh menggantikan QC atau Kepala Ops sec",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 367,
+        "feature": "pengiriman-sales-order",
+        "heading": "Alur ACC 2 tahap (berurutan, tidak bisa lompat) (lanjutan)",
+        "content": "ara berurutan. Staf yang sekaligus QC ter-assign dan kepala gudang (flag kepala cabang) bisa mengisi dua tahap sendiri. QC wajib role Staf QC & Gudang yang ter-assign ke gudang utama; Kepala Ops wajib flag kepala di gudang utama.\n\nTolak bisa di tahap QC atau Ops dengan alasan wajib; tidak ada mutasi stok.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 368,
+        "feature": "pengiriman-sales-order",
+        "heading": "Status di list Pengiriman",
+        "content": "## Status di list Pengiriman\n- **Requested** — Pending, menunggu Staf QC & Gudang.\n- **Need Approval** — sudah di-ACC QC, menunggu Kepala Operasional.\n- **Diterima** — ACC lengkap, stok sudah dipotong.\n- **Ditolak** — ditolak di tahap QC/Ops.\n- **Dijadwalkan / Belum Terkirim / Sudah Terkirim / Dibatalkan** — status dari External API (PMO).\n\nKolom status juga menampilkan ikon segitiga peringatan (⚠) bila pengiriman punya kekurangan stok.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 369,
+        "feature": "pengiriman-sales-order",
+        "heading": "Kekurangan stok & Form Kekurangan Barang",
+        "content": "## Kekurangan stok & Form Kekurangan Barang\nSaat pengiriman dari PMO terdeteksi stoknya kurang, sistem mencatat dokumen kekurangan (nomor BG-xxxx: diminta vs tersedia vs kurang per item). Di list Pengiriman, baris tersebut berikon ⚠ dan tombol printer untuk mencetak **Form Kekurangan Barang** (PDF A5). Print ini hanya mencetak form — tidak otomatis membuat Production Planning.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 370,
+        "feature": "pengiriman-sales-order",
+        "heading": "Stok",
+        "content": "## Stok\nStok produk berkurang saat ACC Kepala Operasional selesai (tahap 2), bukan saat SO dibuat dan bukan saat ACC QC.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 371,
+        "feature": "peringatan-stok",
+        "heading": "Peringatan Stok (Produk & Bahan)",
+        "content": "# Peringatan Stok (Produk & Bahan)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 372,
+        "feature": "peringatan-stok",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMenetapkan ambang batas stok minimum agar muncul peringatan di aplikasi/dashboard. Tidak ada notifikasi WA/email.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 373,
+        "feature": "peringatan-stok",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\n- **Peringatan Stok Produk**\n- **Peringatan Stok Bahan Mentah**\nMasing-masing: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 374,
+        "feature": "peringatan-stok",
+        "heading": "Alur",
+        "content": "## Alur\nAtur batas stok minimum per item. Hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 375,
+        "feature": "produksi",
+        "heading": "Produksi",
+        "content": "# Produksi",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 376,
+        "feature": "produksi",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMencatat produksi produk jadi dari resep, memotong stok bahan, menambah stok produk setelah ACC.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 377,
+        "feature": "produksi",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Produksi**: view / create / edit / delete / others (ACC / tolak / batal).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 378,
+        "feature": "produksi",
+        "heading": "Alur",
+        "content": "## Alur\n1. Produksi fisik di pabrik dilakukan dulu.\n2. Buat produksi di sistem (+ detail, foto jika ada) → status Pending.\n3. ACC → Berhasil (stok bahan turun, produk naik).\n4. Tolak → Tolak.\n5. Pembatalan setelah proses: lewat alur \"menunggu batal\" (status 4); yang boleh membatalkan = yang punya ability untuk batal (others sesuai peran).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 379,
+        "feature": "produksi",
+        "heading": "Status header",
+        "content": "## Status header\n- Pending\n- Berhasil\n- Tolak\n- Menunggu batal",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 380,
+        "feature": "profil-pengaturan",
+        "heading": "Profil & Pengaturan",
+        "content": "# Profil & Pengaturan",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 381,
+        "feature": "profil-pengaturan",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nProfil user login dan pengaturan aplikasi.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 382,
+        "feature": "profil-pengaturan",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\n**Profil** (view/edit), **Pengaturan** (view/create/edit).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 383,
+        "feature": "resep-bom",
+        "heading": "Resep Bahan Mentah (BOM)",
+        "content": "# Resep Bahan Mentah (BOM)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 384,
+        "feature": "resep-bom",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMenentukan resep bahan untuk menghasilkan produk.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 385,
+        "feature": "resep-bom",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Resep Bahan Mentah**: view / create / edit / delete.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 386,
+        "feature": "resep-bom",
+        "heading": "Alur",
+        "content": "## Alur\nTambah, ubah, dan hapus resep beserta bahan/qty/satuan. Hapus = data dinonaktifkan, tidak hilang permanen.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 387,
+        "feature": "resep-bom",
+        "heading": "Aturan bisnis",
+        "content": "## Aturan bisnis\nSatu produk hanya boleh punya satu BOM aktif.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 388,
+        "feature": "retur-produk",
+        "heading": "Retur Produk",
+        "content": "# Retur Produk",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 389,
+        "feature": "retur-produk",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMencatat retur produk dari armada/customer. Stok kembali setelah retur dicatat/di-ACC di sistem.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 390,
+        "feature": "retur-produk",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Retur Produk**: view (utama di route laporan).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 391,
+        "feature": "stok-bahan-mentah",
+        "heading": "Stok Bahan Mentah",
+        "content": "# Stok Bahan Mentah",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 392,
+        "feature": "stok-bahan-mentah",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMelihat stok bahan mentah.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 393,
+        "feature": "stok-bahan-mentah",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Stok Bahan Mentah**: view.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 394,
+        "feature": "stok-opname-bahan",
+        "heading": "Stok Opname Bahan Mentah",
+        "content": "# Stok Opname Bahan Mentah",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 395,
+        "feature": "stok-opname-bahan",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMenghitung stok fisik bahan mentah dan menyesuaikan sistem setelah disetujui.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 396,
+        "feature": "stok-opname-bahan",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Stok Opname Bahan Mentah**: view / create / edit / delete / others.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 397,
+        "feature": "stok-opname-bahan",
+        "heading": "Alur / status",
+        "content": "## Alur / status\nSama pola dengan opname produk (bisa disimpan sebagai draft; status Menunggu / Disetujui / Ditolak / Dihapus). Pakai **versi terbaru** (lines). Jika ada **stok opname freeze**, hanya satu orang yang input.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 398,
+        "feature": "stok-opname-produk",
+        "heading": "Stok Opname Produk",
+        "content": "# Stok Opname Produk",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 399,
+        "feature": "stok-opname-produk",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMenghitung stok fisik produk dan menyesuaikan sistem setelah disetujui.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 400,
+        "feature": "stok-opname-produk",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Stok Opname Produk**: view / create / edit / delete / others (ACC/tolak).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 401,
+        "feature": "stok-opname-produk",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buat dokumen (bisa disimpan sebagai draft atau langsung diajukan).\n2. Isi qty fisik per baris.\n3. Submit draft → keluar dari draft (status tetap menunggu).\n4. ACC → status **Disetujui**, stok sistem disesuaikan.\n5. Tolak → status **Ditolak**.\n6. Hapus → status **Dihapus**.\n\nOperasional memakai **versi terbaru** (lines / v2), bukan alur lama.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 402,
+        "feature": "stok-opname-produk",
+        "heading": "Aturan input",
+        "content": "## Aturan input\nYang punya akses create/others boleh terlibat. Jika di sistem ada **stok opname freeze**, hanya **satu orang** yang boleh menginput untuk dokumen tersebut.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 403,
+        "feature": "stok-opname-produk",
+        "heading": "Status",
+        "content": "## Status\n- Draft: ya/tidak (terpisah dari status)\n- Menunggu\n- Disetujui\n- Ditolak\n- hapus",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 404,
+        "feature": "stok-produk",
+        "heading": "Stok Produk",
+        "content": "# Stok Produk",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 405,
+        "feature": "stok-produk",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMelihat stok produk per varian/satuan. Halaman ini hanya baca; penyesuaian stok tidak dilakukan dari sini.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 406,
+        "feature": "stok-produk",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Stok Produk**: view.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 407,
+        "feature": "stok-produk",
+        "heading": "Alur",
+        "content": "## Alur\nBuka Produk → Stok Produk. Riwayat perubahan stok terlihat di riwayat pergerakan stok.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 408,
+        "feature": "tanda-terima-po",
+        "heading": "Tanda Terima PO",
+        "content": "# Tanda Terima PO",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 409,
+        "feature": "tanda-terima-po",
+        "heading": "Tujuan",
+        "content": "## Tujuan\nMembuat tanda terima (TT) untuk kumpulan PO yang siap ditagih/dibayar. Bukti nota terkait TT.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 410,
+        "feature": "tanda-terima-po",
+        "heading": "Siapa yang bisa",
+        "content": "## Siapa yang bisa\nModul **Tanda Terima PO**: view / create / edit / delete / others (ACC/tolak TT). Siapa pun yang punya hak akses modul ini.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 411,
+        "feature": "tanda-terima-po",
+        "heading": "Alur",
+        "content": "## Alur\n1. Buat TT dari PO yang memenuhi syarat (status pembayaran memenuhi syarat & PO belum masuk tanda terima lain). Unggah bukti wajib bila form meminta.\n2. ACC TT → TT **Disetujui**, status pembayaran PO terkait menjadi **Lunas**.\n3. Tolak TT → TT **Ditolak**, PO dilepas dari TT dan status pembayarannya kembali **Belum dibayar**.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 412,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Transfer Stok & Produk Bermasalah (dua modul terpisah)",
+        "content": "# Transfer Stok & Produk Bermasalah (dua modul terpisah)\n\nDokumen ini **wajib dibaca bersama**. Kedua menu tampak mirip (produk bergerak / stok berubah) tetapi **bukan satu alur** dan **tidak saling menggantikan**.\n\n---",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 413,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Aturan pembeda (paling penting)",
+        "content": "## Aturan pembeda (paling penting)\n\n| | Transfer Stok (Stock Transfer) | Produk Bermasalah |\n|--|-------------------------------|-------------------|\n| Menu sidebar | **Stock Transfer** (+ Laporan Stock Transfer) | **Produk Bermasalah** |\n| Kode dokumen | `ST…` (contoh ST0087) | `PI…` (contoh PI0204) |\n| Tujuan | Pindah stok **antar gudang** (asal → tujuan) | Catat produk rusak/cacat/bermasalah lalu sesuaikan stok setelah ACC |\n| Hubungan | **Tidak ada** hubungan alur dengan Produk Bermasalah | **Tidak ada** hubungan alur dengan Transfer Stok |\n\n**Wajib untuk asisten AI:**\n1. User sebut `ST…` → cari **hanya** Transfer Stok. Jangan buka Produk Bermasalah.\n2. User sebut `PI…` → cari **hanya** Produk Bermasalah. Jangan buka Transfer Stok.\n3. Jika kode tidak ada di modul yang ses",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 414,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Aturan pembeda (paling penting) (lanjutan)",
+        "content": "uai prefix-nya → jawab **tidak ditemukan**. Jangan mengalihkan ke modul lain, jangan mengarang catatan silang (“ternyata ini PI…”).\n\n---",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 415,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "A. Transfer Stok (Stock Transfer)",
+        "content": "## A. Transfer Stok (Stock Transfer)",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 416,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Tujuan",
+        "content": "### Tujuan\nMemindahkan stok produk dari satu gudang ke gudang lain (gudang besar ↔ eceran, transfer hasil produksi, dll.).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 417,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Siapa yang bisa",
+        "content": "### Siapa yang bisa\nModul **Stock Transfer**: view / create / edit / delete / others (ACC kirim, ACC terima, tolak, approval QC/Ops sesuai rute).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 418,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Alur",
+        "content": "### Alur\n1. Buat Transfer Stok (+ rincian produk/qty) → **Pending**. Stok sumber belum dipotong.\n2. Sesuai jenis rute:\n   - **Permintaan eceran → gudang utama:** approval QC lalu Kepala Ops di gudang asal; setelah lengkap otomatis **Kirim** (stok sumber dipotong).\n   - **Lainnya (produksi / eceran↔eceran, dll.):** tanpa QC/Ops; Acc/Tolak Kirim lalu Acc/Tolak Terima.\n3. **Kirim:** stok keluar dari gudang asal.\n4. **Terima (Terkirim):** stok masuk gudang tujuan.\n5. **Tolak/Batal** dari Pending → Batal (stok sumber tidak berubah).\n6. **Batal Kirim** setelah sudah Kirim → stok dikembalikan ke sumber.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 419,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Status Transfer Stok",
+        "content": "### Status Transfer Stok\n- Dihapus (dari Pending)\n- Pending\n- Kirim\n- Batal / Ditolak\n- Terkirim\n- Batal Kirim",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 420,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Yang biasa ditampilkan ke user",
+        "content": "### Yang biasa ditampilkan ke user\nNo. Transfer, tanggal, gudang asal, gudang tujuan, pengirim/penerima, item (produk, varian, qty kirim, qty diterima, satuan), status, catatan.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 421,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Stok",
+        "content": "### Stok\n- Pending: belum bergerak  \n- Kirim: stok sumber berkurang  \n- Terkirim: stok tujuan bertambah  \n- Batal Kirim: stok sumber dikembalikan  \n\n---",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 422,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "B. Produk Bermasalah",
+        "content": "## B. Produk Bermasalah",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 423,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Tujuan",
+        "content": "### Tujuan\nMencatat produk rusak/bermasalah/cacat (catatan bebas sesuai kejadian) dan menyesuaikan stok setelah ACC.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 424,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Siapa yang bisa",
+        "content": "### Siapa yang bisa\nModul **Produk Bermasalah**: view / create / edit / delete / others (ACC / decline).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 425,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Alur",
+        "content": "### Alur\n1. Buat dokumen Produk Bermasalah (+ detail item/qty) → menunggu.\n2. ACC → stok berkurang sesuai detail.\n3. Tolak / hapus → sesuai pola modul (tetap bisa tampil di daftar).",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 426,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Status Produk Bermasalah",
+        "content": "### Status Produk Bermasalah\n- Menunggu\n- Disetujui (ACC, stok turun)\n- Ditolak / Dihapus",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 427,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "Yang biasa ditampilkan ke user",
+        "content": "### Yang biasa ditampilkan ke user\nNo. Dokumen (`PI…`), tanggal, jenis masalah, tipe retur (jika ada), status, item (produk/qty/satuan), pembuat, penyetuju.\n\n---",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    },
+    {
+        "id": 428,
+        "feature": "transfer-stok-dan-produk-bermasalah",
+        "heading": "C. Cara menjawab pertanyaan user (contoh)",
+        "content": "## C. Cara menjawab pertanyaan user (contoh)\n\n- “Isi ST0087 produk apa?” → Transfer Stok ST0087 + daftar item.  \n- “ST0101 isinya apa?” → jika tidak ada: “Transfer Stok ST0101 tidak ditemukan.” **Bukan** PI0204.  \n- “PI0204 apa statusnya?” → Produk Bermasalah PI0204 saja.  \n- Jangan menulis catatan seperti “kode ST ini ternyata Produk Bermasalah …” — itu salah.",
+        "created_at": "2026-10-21 00:46:12",
+        "updated_at": "2026-10-21 00:46:12"
+    }
+]
