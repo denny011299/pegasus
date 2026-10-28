@@ -1780,13 +1780,19 @@ function renderSoAction(row) {
         '<div class="d-flex justify-content-center align-items-center gap-1">';
     var status = parseInt(row.status, 10);
     var pending = status === 1;
-    // can_view / can_delete / can_approve_* dari server (RoleAccess + actor) — mirror Stock Transfer.
-    var canView = soRowFlag(row, "can_view", "view");
-    var canApproveQc = pending && soRowFlag(row, "can_approve_qc");
-    var canApproveOps = pending && soRowFlag(row, "can_approve_ops");
+    // Server (RoleAccess + actor QC/Ops) AND client session — jangan tampilkan tombol tanpa hak.
+    var canView =
+        soRowFlag(row, "can_view", "view") && soHasAccess("Pengiriman", "view");
+    var canApproveQc =
+        pending && soRowFlag(row, "can_approve_qc") && soHasAccess("Pengiriman", "view");
+    var canApproveOps =
+        pending && soRowFlag(row, "can_approve_ops") && soHasAccess("Pengiriman", "view");
     // Satu ikon buka modal konfirmasi (Terima+Tolak di footer) — pola Pengembalian.
     var canApprove = canApproveQc || canApproveOps;
-    var canDelete = pending && soRowFlag(row, "can_delete", "delete");
+    var canDelete =
+        pending &&
+        soRowFlag(row, "can_delete", "delete") &&
+        soHasAccess("Pengiriman", "delete");
     // Punya dokumen BG → cetak Form Kekurangan (print saja, tidak masuk PP)
     var canPrintShortage = canView && !!row.has_shortage_doc;
     if (canApprove) {
@@ -3087,6 +3093,10 @@ $(document).on("click", "#tableSalesOrder-wrap .btn_confirm", function (e) {
 //delete
 $(document).on("click", "#tableSalesOrder-wrap .btn_delete", function (e) {
     e.preventDefault();
+    if (!soHasAccess("Pengiriman", "delete")) {
+        notifikasi("error", "Akses Ditolak", "Anda tidak memiliki akses Hapus Pengiriman.");
+        return;
+    }
     var soId = parseInt($(this).attr("data-id"), 10);
     if (!soId) return;
     showModalDelete(
