@@ -257,7 +257,13 @@
             font-weight: 600;
         }
 
-
+        /* QC buta: baris merah bila qty/satuan invalid atau mismatch vs API */
+        #tableSalesModal tr.so-confirm-row-error > td {
+            background-color: #fee2e2 !important;
+        }
+        #tableSalesModal tr.so-confirm-row-error:hover > td {
+            background-color: #fecaca !important;
+        }
 
         .csr-staff-icon {
             display: inline-flex;

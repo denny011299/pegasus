@@ -513,6 +513,7 @@ function setupShipmentQcConfirmInputs(approveType) {
     $("#tableSalesModal tr").each(function (index) {
         var p = products[index];
         if (!p) return;
+        $(this).removeClass("so-confirm-row-error");
         var $qty = $(this).find(".so_qty");
         var $unit = $(this).find(".so_unit");
         var options = '<option value="" selected>Pilih Satuan</option>';
@@ -555,6 +556,15 @@ function setupShipmentQcConfirmInputs(approveType) {
     restoreShipmentQcConfirmInputs();
 }
 
+function setShipmentQcConfirmRowError(sodId, on) {
+    var id = parseInt(sodId, 10);
+    if (!id) return;
+    var $qty = $(`.so-confirm-qty[data-sod-id="${id}"]`);
+    var $tr = $qty.closest("tr");
+    if (!$tr.length) return;
+    $tr.toggleClass("so-confirm-row-error", !!on);
+}
+
 function setShipmentQcConfirmFieldError($field, msgSel, on, text) {
     var sodId = $field.attr("data-sod-id");
     $field.toggleClass("is-invalid", !!on);
@@ -564,6 +574,11 @@ function setShipmentQcConfirmFieldError($field, msgSel, on, text) {
     if ($msg.length) {
         $msg.text(on ? text || "" : "");
     }
+    // Row merah kalau salah satu field di baris masih invalid.
+    var $qty = $(`.so-confirm-qty[data-sod-id="${sodId}"]`);
+    var $unit = $(`.so-confirm-unit[data-sod-id="${sodId}"]`);
+    var rowBad = $qty.hasClass("is-invalid") || $unit.hasClass("is-invalid");
+    setShipmentQcConfirmRowError(sodId, rowBad);
 }
 
 function clearShipmentQcConfirmFieldError($field, msgSel) {
@@ -582,7 +597,7 @@ function restoreShipmentQcConfirmInputs() {
 }
 
 /**
- * Tandai is-invalid + helper text per field — hanya yang bermasalah.
+ * Tandai is-invalid + helper text per field + highlight row merah.
  * invalid: field kosong. mismatch: banding expected (soConfirmChecks) vs input staf.
  */
 function markShipmentQcConfirmInvalidFields(sodId, entered) {
@@ -593,7 +608,10 @@ function markShipmentQcConfirmInvalidFields(sodId, entered) {
     var id = parseInt(sodId, 10);
     var isInvalid = (soConfirmInvalidIds || []).indexOf(id) !== -1;
     var isMismatch = (soConfirmMismatchIds || []).indexOf(id) !== -1;
-    if (!isInvalid && !isMismatch) return;
+    if (!isInvalid && !isMismatch) {
+        setShipmentQcConfirmRowError(id, false);
+        return;
+    }
 
     var qtyVal = entered ? parseFloat(entered.qty) : NaN;
     var unitVal = entered ? parseInt(entered.unit_id, 10) : 0;
