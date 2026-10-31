@@ -125,12 +125,10 @@ class ProductionController extends Controller
         return view('Backoffice.Production.Production_Planning');
     }
 
-    /** Mode View: PP mode fullscreen tanpa sidebar & navbar. */
+    /** Mode View fullscreen: Kanban Work Order (bukan tabel PP). */
     public function productionPlanningView()
     {
-        return view('Backoffice.Production.Production_Planning', [
-            'ppFullscreen' => true,
-        ]);
+        return view('Backoffice.Production.WorkOrder_Kanban');
     }
 
     // ── Master Skala ───────────────────────────────────────────────
