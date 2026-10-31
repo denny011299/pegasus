@@ -73,13 +73,14 @@ use Illuminate\Validation\Rule;
  * Dokumen retur ikut idempoten lewat idempotency_key yang diturunkan dari kunci pembayaran
  * (lihat returnIdempotencyKey()).
  *
- * ITEM CAMPURAN ARAH (revisi 2026-10-31): items[].type boleh campuran.
+ * ITEM CAMPURAN ARAH (revisi 2026-11-01): items[].type boleh campuran.
  *   - type 1+2+3 → SATU dokumen Kas Operasional (ref_direction=1),
  *     nominal net = Σ type1 − Σ type2 − Σ type3 (type 3 dihitung seperti type 2 / keluar),
- *     rincian tetap menyimpan type asli (type 3 = keterangan "Keluar 1"); ACC dompet wajib
- *     (kecuali auto_accept). Tampil di kolom Masuk bertanda (neto bisa minus).
- *   - Legacy: baris lama ref_direction=3 (Keluar 1 langsung Kas Besar) tetap bisa di-replay.
- * Kunci idempotensi baru: ref_payment_id + penerima + ref_direction=1.
+ *     rincian tetap type asli (type 3 = label "Keluar 1"); ACC wajib (kecuali auto_accept);
+ *     tampil di kolom Masuk bertanda (neto bisa minus).
+ *   - type 3 → JUGA tetap ke Kas Besar kolom Keluar 1 (cash_type=3, status aktif, tanpa ACC);
+ *     marker idempotensi ref_direction=3 (disembunyikan di list operasional).
+ * Kunci idempotensi: ref_payment_id + penerima + ref_direction (1 dan/atau 3).
  *
  * EXACTLY-ONCE untuk retry PMO (2026-10-16): PMO mengirim ulang payload identik sampai mendapat
  * jawaban. Pembanding "isi sama" adalah ref_payload_hash (sidik jari item kiriman pertama per
@@ -97,7 +98,7 @@ class CashPaymentController extends Controller
     private const TYPE_ARMADA = 1;
     private const TYPE_SALES = 2;
 
-    /** Bucket idempotensi: 1 = Kas Operasional (item type 1+2+3). 3 = legacy Keluar 1 Kas Besar. */
+    /** Bucket: 1 = Kas Operasional (semua type 1+2+3). 3 = Kas Besar Keluar 1 (hanya type 3). */
     private const DIRECTION_OPERASIONAL = 1;
     private const DIRECTION_KELUAR1 = 3;
 
@@ -109,8 +110,8 @@ class CashPaymentController extends Controller
     /**
      * POST /api/external/v1/payments/cash
      *
-     * Item boleh campuran. type 1+2+3 digabung satu dokumen operasional
-     * (type 3 = keluar seperti type 2, label tetap Keluar 1). Respons data = array pembayaran.
+     * Item boleh campuran. type 1+2+3 → dokumen operasional (type 3 mengurangi Masuk);
+     * type 3 → juga dokumen Kas Besar Keluar 1. Respons data = array pembayaran (0–2).
      */
     public function store(Request $request): JsonResponse
     {
@@ -118,8 +119,7 @@ class CashPaymentController extends Controller
         $groups = $this->directionGroups($data['items']);
 
         // --- Idempotensi -------------------------------------------------
-        // Kunci baru: ref_payment_id + penerima + bucket operasional (1).
-        // Legacy ref_direction=3 tetap dikenali lewat findExisting untuk replay.
+        // Kunci: ref_payment_id + penerima + bucket (1 operasional / 3 keluar 1).
         $existing = $this->findExisting($data);
 
         if ($conflict = $this->contentConflict($existing, $groups)) {
@@ -241,18 +241,32 @@ class CashPaymentController extends Controller
     }
 
     /**
-     * Bucket item API: semua type (1/2/3) → satu dokumen Kas Operasional (ref_direction=1).
-     * Type 3 tidak lagi dipisah ke Kas Besar; tetap tersimpan di detail sebagai type 3 (Keluar 1).
+     * Bucket item API:
+     * - operasional (ref_direction=1): SEMUA item (1+2+3) — type 3 mengurangi net Masuk, label tetap Keluar 1
+     * - keluar1 (ref_direction=3): hanya type 3 — tetap ke Kas Besar kolom Keluar 1
      *
      * @return array<int, array<int, array>>
      */
     private function directionGroups(array $items): array
     {
-        if ($items === []) {
-            return [];
+        $operasional = [];
+        $keluar1 = [];
+        foreach ($items as $item) {
+            $operasional[] = $item;
+            if ((int) $item['type'] === self::DIRECTION_KELUAR1) {
+                $keluar1[] = $item;
+            }
         }
 
-        return [self::DIRECTION_OPERASIONAL => array_values($items)];
+        $groups = [];
+        if ($operasional !== []) {
+            $groups[self::DIRECTION_OPERASIONAL] = $operasional;
+        }
+        if ($keluar1 !== []) {
+            $groups[self::DIRECTION_KELUAR1] = $keluar1;
+        }
+
+        return $groups;
     }
 
     /**
@@ -640,8 +654,8 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * type 1+2+3 → satu dokumen Kas Operasional (pending ACC).
-     * Legacy direction=3 (replay baris lama) tetap lewat createArmadaKeluar1.
+     * direction=1 → Kas Operasional (item 1+2+3, pending ACC).
+     * direction=3 → Kas Besar Keluar 1 (hanya type 3, aktif tanpa ACC).
      */
     private function createArmada(array $data, int $direction, array $items, array $photoNames): CashArmada
     {

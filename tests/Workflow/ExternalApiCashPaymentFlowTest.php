@@ -174,11 +174,11 @@ class ExternalApiCashPaymentFlowTest extends TestCase
     }
 
     /**
-     * Item campuran type 1+2+3 digabung satu dokumen Kas Operasional.
-     * Type 3 dihitung seperti type 2 (mengurangi net) tapi detail tetap type 3 (Keluar 1).
-     * Net contoh: 100000+25000 − 30000 − 20000 = 75000.
+     * Type 1+2+3 → dokumen operasional (net mengurangi type 3 seperti type 2).
+     * Type 3 → JUGA tetap Kas Besar Keluar 1.
+     * Net operasional: 100000+25000 − 30000 − 20000 = 75000; Keluar 1 Kas Besar = 20000.
      */
-    public function test_mixed_types_merge_into_one_operasional_payment_and_type3_nets_like_type2(): void
+    public function test_type3_goes_to_kas_besar_and_also_nets_in_operasional_masuk(): void
     {
         $headers = $this->externalApiHeaders();
         $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
@@ -201,32 +201,43 @@ class ExternalApiCashPaymentFlowTest extends TestCase
         $response = $this->postJson('/api/external/v1/payments/cash', $payload, $headers);
 
         $response->assertStatus(201)
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.payment_amount', 75000)
-            ->assertJsonCount(4, 'data.0.items')
-            ->assertJsonPath('data.0.items.3.type', 3)
-            ->assertJsonPath('data.0.items.3.notes', 'Tol')
+            ->assertJsonCount(2, 'data')
             ->assertJsonPath('meta.returns', []);
 
-        $rows = \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->orderBy('cr_id')->get();
-        $this->assertCount(1, $rows);
-        $this->assertSame(1, (int) $rows[0]->ref_direction);
-        $this->assertSame(75000, (int) $rows[0]->cr_nominal);
-        $this->assertSame(1, (int) $rows[0]->cr_type);
-        $this->assertSame(0, (int) $rows[0]->cash_id, 'type 3 tidak lagi buat baris Kas Besar langsung');
+        $rows = \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)
+            ->orderBy('ref_direction')
+            ->get()
+            ->keyBy(fn ($r) => (int) $r->ref_direction);
 
-        $detailTypes = \App\Models\CashArmadaDetail::where('cr_id', $rows[0]->cr_id)
+        $this->assertCount(2, $rows);
+        $this->assertTrue($rows->has(1), 'harus ada dokumen operasional');
+        $this->assertTrue($rows->has(3), 'harus ada dokumen Keluar 1 Kas Besar');
+
+        $ops = $rows[1];
+        $this->assertSame(75000, (int) $ops->cr_nominal);
+        $this->assertSame(0, (int) $ops->cash_id);
+        $this->assertSame(1, (int) $ops->status);
+        $detailTypes = \App\Models\CashArmadaDetail::where('cr_id', $ops->cr_id)
             ->orderBy('crd_id')
             ->pluck('crd_type')
             ->map(fn ($v) => (int) $v)
             ->all();
         $this->assertSame([1, 2, 1, 3], $detailTypes);
 
+        $k1 = $rows[3];
+        $this->assertSame(20000, (int) $k1->cr_nominal);
+        $this->assertGreaterThan(0, (int) $k1->cash_id, 'type 3 tetap buat baris Kas Besar');
+        $this->assertSame(2, (int) $k1->status);
+        $cash = \App\Models\Cash::find($k1->cash_id);
+        $this->assertNotNull($cash);
+        $this->assertSame(3, (int) $cash->cash_type);
+        $this->assertSame(20000, (int) $cash->cash_nominal);
+
         $this->postJson('/api/external/v1/payments/cash', $payload, $headers)
             ->assertStatus(200)
             ->assertJsonPath('meta.idempotent_replay', true)
-            ->assertJsonCount(1, 'data');
-        $this->assertSame(1, \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->count());
+            ->assertJsonCount(2, 'data');
+        $this->assertSame(2, \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->count());
     }
 
     /**
