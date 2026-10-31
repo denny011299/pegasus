@@ -73,12 +73,13 @@ use Illuminate\Validation\Rule;
  * Dokumen retur ikut idempoten lewat idempotency_key yang diturunkan dari kunci pembayaran
  * (lihat returnIdempotencyKey()).
  *
- * ITEM CAMPURAN ARAH (revisi 2026-10-16): items[].type boleh campuran.
- *   - type 1+2 → SATU dokumen Kas Operasional (ref_direction=1), nominal net = masuk−keluar,
- *     rincian tetap per type; ACC dompet wajib (kecuali auto_accept).
- *   - type 3 → langsung Kas Besar kolom Keluar 1 (cash_type=3, status aktif), tanpa ACC;
- *     marker idempotensi di cash_armadas/cash_sales ref_direction=3 (disembunyikan di list operasional).
- * Kunci idempotensi: ref_payment_id + penerima + ref_direction (1 atau 3).
+ * ITEM CAMPURAN ARAH (revisi 2026-10-31): items[].type boleh campuran.
+ *   - type 1+2+3 → SATU dokumen Kas Operasional (ref_direction=1),
+ *     nominal net = Σ type1 − Σ type2 − Σ type3 (type 3 dihitung seperti type 2 / keluar),
+ *     rincian tetap menyimpan type asli (type 3 = keterangan "Keluar 1"); ACC dompet wajib
+ *     (kecuali auto_accept). Tampil di kolom Masuk bertanda (neto bisa minus).
+ *   - Legacy: baris lama ref_direction=3 (Keluar 1 langsung Kas Besar) tetap bisa di-replay.
+ * Kunci idempotensi baru: ref_payment_id + penerima + ref_direction=1.
  *
  * EXACTLY-ONCE untuk retry PMO (2026-10-16): PMO mengirim ulang payload identik sampai mendapat
  * jawaban. Pembanding "isi sama" adalah ref_payload_hash (sidik jari item kiriman pertama per
@@ -96,7 +97,7 @@ class CashPaymentController extends Controller
     private const TYPE_ARMADA = 1;
     private const TYPE_SALES = 2;
 
-    /** Bucket idempotensi: 1 = Kas Operasional (item type 1+2), 3 = Kas Besar Keluar 1. */
+    /** Bucket idempotensi: 1 = Kas Operasional (item type 1+2+3). 3 = legacy Keluar 1 Kas Besar. */
     private const DIRECTION_OPERASIONAL = 1;
     private const DIRECTION_KELUAR1 = 3;
 
@@ -108,8 +109,8 @@ class CashPaymentController extends Controller
     /**
      * POST /api/external/v1/payments/cash
      *
-     * Item boleh campuran. type 1+2 digabung satu dokumen operasional; type 3 ke Kas Besar
-     * Keluar 1. Respons data = array pembayaran (0–2 elemen per call).
+     * Item boleh campuran. type 1+2+3 digabung satu dokumen operasional
+     * (type 3 = keluar seperti type 2, label tetap Keluar 1). Respons data = array pembayaran.
      */
     public function store(Request $request): JsonResponse
     {
@@ -117,7 +118,8 @@ class CashPaymentController extends Controller
         $groups = $this->directionGroups($data['items']);
 
         // --- Idempotensi -------------------------------------------------
-        // Kunci: ref_payment_id + penerima + bucket (1 operasional / 3 keluar 1).
+        // Kunci baru: ref_payment_id + penerima + bucket operasional (1).
+        // Legacy ref_direction=3 tetap dikenali lewat findExisting untuk replay.
         $existing = $this->findExisting($data);
 
         if ($conflict = $this->contentConflict($existing, $groups)) {
@@ -239,31 +241,18 @@ class CashPaymentController extends Controller
     }
 
     /**
-     * Bucket item API: type 1+2 → ref_direction 1 (Kas Operasional), type 3 → ref_direction 3 (Kas Besar).
+     * Bucket item API: semua type (1/2/3) → satu dokumen Kas Operasional (ref_direction=1).
+     * Type 3 tidak lagi dipisah ke Kas Besar; tetap tersimpan di detail sebagai type 3 (Keluar 1).
      *
      * @return array<int, array<int, array>>
      */
     private function directionGroups(array $items): array
     {
-        $operasional = [];
-        $keluar1 = [];
-        foreach ($items as $item) {
-            if ((int) $item['type'] === self::DIRECTION_KELUAR1) {
-                $keluar1[] = $item;
-            } else {
-                $operasional[] = $item;
-            }
+        if ($items === []) {
+            return [];
         }
 
-        $groups = [];
-        if ($operasional !== []) {
-            $groups[self::DIRECTION_OPERASIONAL] = $operasional;
-        }
-        if ($keluar1 !== []) {
-            $groups[self::DIRECTION_KELUAR1] = $keluar1;
-        }
-
-        return $groups;
+        return [self::DIRECTION_OPERASIONAL => array_values($items)];
     }
 
     /**
@@ -523,10 +512,8 @@ class CashPaymentController extends Controller
             }
 
             $refNotaId = (string) ($item['ref_nota_id'] ?? '');
-            // Bucket sama store(): type 1+2 → operasional (1), type 3 → keluar 1 (3).
-            $direction = (int) $item['type'] === self::DIRECTION_KELUAR1
-                ? self::DIRECTION_KELUAR1
-                : self::DIRECTION_OPERASIONAL;
+            // Semua type (termasuk 3) ikut dokumen operasional yang sama.
+            $direction = self::DIRECTION_OPERASIONAL;
             $key = $direction.'|'.mb_strtoupper($armadaCode).'|'.$refShipmentId;
             $groups[$key]['direction'] = $direction;
             $groups[$key]['armada_code'] = $armadaCode;
@@ -653,7 +640,8 @@ class CashPaymentController extends Controller
     /* ------------------------------------------------------------------ */
 
     /**
-     * type 1+2 → satu dokumen Kas Operasional (pending ACC); type 3 → Kas Besar Keluar 1 langsung.
+     * type 1+2+3 → satu dokumen Kas Operasional (pending ACC).
+     * Legacy direction=3 (replay baris lama) tetap lewat createArmadaKeluar1.
      */
     private function createArmada(array $data, int $direction, array $items, array $photoNames): CashArmada
     {
@@ -860,13 +848,15 @@ class CashPaymentController extends Controller
         }
     }
 
-    /** Net Kas Operasional: sum(type 1) − sum(type 2). */
+    /** Net Kas Operasional: sum(type 1) − sum(type 2) − sum(type 3). Type 3 = keluar seperti type 2. */
     private function operasionalNet(array $items): int
     {
         $net = 0;
         foreach ($items as $item) {
             $amount = (int) $item['amount'];
-            $net += (int) $item['type'] === 2 ? -$amount : $amount;
+            $type = (int) $item['type'];
+            // 2 = Keluar, 3 = Keluar 1 — keduanya mengurangi kolom Masuk (neto bisa minus).
+            $net += ($type === 2 || $type === 3) ? -$amount : $amount;
         }
 
         return $net;

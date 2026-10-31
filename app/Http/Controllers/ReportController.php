@@ -892,10 +892,11 @@ class ReportController extends Controller
         $crKeluarById = [];
         $crIds = collect($crRows)->pluck('cr_id')->map(fn ($x) => (int) $x)->all();
         if (count($crIds) > 0) {
+            // Type 2 (Keluar) + type 3 (Keluar 1) sama-sama pengeluaran operasional.
             $crKeluarRows = DB::table('cash_armada_details')
                 ->whereIn('cr_id', $crIds)
                 ->where('status', 1)
-                ->where('crd_type', 2)
+                ->whereIn('crd_type', [2, 3])
                 ->select('cr_id')
                 ->selectRaw('SUM(crd_nominal) as keluar_nominal')
                 ->groupBy('cr_id')
@@ -942,10 +943,11 @@ class ReportController extends Controller
         $csKeluarById = [];
         $csIds = collect($csRows)->pluck('cs_id')->map(fn ($x) => (int) $x)->all();
         if (count($csIds) > 0) {
+            // Type 2 (Keluar) + type 3 (Keluar 1) sama-sama pengeluaran operasional.
             $csKeluarRows = DB::table('cash_sales_details')
                 ->whereIn('cs_id', $csIds)
                 ->where('status', 1)
-                ->where('csd_type', 2)
+                ->whereIn('csd_type', [2, 3])
                 ->select('cs_id')
                 ->selectRaw('SUM(csd_nominal) as keluar_nominal')
                 ->groupBy('cs_id')

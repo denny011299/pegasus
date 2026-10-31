@@ -38,9 +38,9 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
     {
         return 'Mencatat pembayaran kas dari sistem eksternal (armada/sales). '
             .'Tunai dikirim KOTOR (gross); potongan/jerigen/diskon memakai type=2 (Keluar) amount positif — '
-            .'bukan tunai bersih (hindari potongan dobel). Type 1+2 digabung satu dokumen Kas Operasional '
-            .'(net = Σ type1 − Σ type2, perlu ACC). Type 3 langsung Kas Besar Keluar 1 tanpa ACC. '
-            .'Respons data = array (0–2 elemen). Idempoten per ref_payment_id + penerima + bucket (1 atau 3). '
+            .'bukan tunai bersih (hindari potongan dobel). Type 1+2+3 digabung satu dokumen Kas Operasional '
+            .'(net = Σ type1 − Σ type2 − Σ type3, perlu ACC). Type 3 dihitung seperti type 2 (mengurangi Masuk) '
+            .'tapi rincian tetap bertipe Keluar 1. Respons data = array. Idempoten per ref_payment_id + penerima + bucket operasional. '
             .'Potongan barang membuat dokumen Pengembalian otomatis.';
     }
 
@@ -68,7 +68,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             ['name' => 'items[].amount', 'type' => 'integer', 'required' => true,
                 'description' => 'Nominal ≥ 0 (jangan negatif). Tanda plus/minus dihitung dari type, bukan dari tanda amount.'],
             ['name' => 'items[].type', 'type' => 'integer', 'required' => true,
-                'description' => '1 = Masuk (tunai kotor), 2 = Keluar (potongan/jerigen/diskon ATAU pengeluaran kas operasional seperti Solar — bedakan lewat kind), 3 = Keluar 1 (Kas Besar langsung). Type 1+2 → satu dokumen Kas Operasional (net = Σ1 − Σ2, ACC). Type 3 → Kas Besar tanpa ACC.'],
+                'description' => '1 = Masuk (tunai kotor), 2 = Keluar (potongan/jerigen/diskon ATAU pengeluaran kas operasional seperti Solar — bedakan lewat kind), 3 = Keluar 1 (sama hitungannya dengan type 2 / mengurangi Masuk, label rincian tetap "Keluar 1"). Type 1+2+3 → satu dokumen Kas Operasional (net = Σ1 − Σ2 − Σ3, ACC).'],
             ['name' => 'items[].notes', 'type' => 'string', 'required' => false,
                 'description' => 'Keterangan rincian, maksimal 255 karakter.'],
             ['name' => 'items[].ref_nota_id', 'type' => 'string', 'required' => false,
@@ -96,7 +96,7 @@ class CashPaymentCreateDoc extends ApiEndpointDoc
             ['name' => 'photos', 'type' => 'array', 'required' => false,
                 'description' => 'Bukti transaksi sebagai data URI base64. Hanya PNG dan JPEG. Foto pertama juga dipakai sebagai bukti dokumen Pengembalian dari potongan barang.'],
             ['name' => 'auto_accept', 'type' => 'boolean', 'required' => false,
-                'description' => 'Bila true, hanya dokumen operasional (type 1+2) yang di-ACC dan saldo disesuaikan. Type 3 (Keluar 1) sudah aktif di Kas Besar dan diabaikan.'],
+                'description' => 'Bila true, dokumen operasional (type 1+2+3 digabung) di-ACC dan saldo disesuaikan.'],
         ];
     }
 

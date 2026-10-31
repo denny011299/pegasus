@@ -1701,10 +1701,12 @@
         if (items.length === 0) {
             pgPopupTableInsert(items, data);
         } else {
+            // Masuk (1) satu kategori; Keluar (2) + Keluar 1 (3) boleh campur (sama hitungan keluar).
+            var firstKeluar = firstType == 2 || firstType == 3;
+            var newKeluar = newType == 2 || newType == 3;
             if (
                 (newType == 1 && firstType == 1) ||
-                (newType == 2 && firstType == 2) ||
-                (newType == 3 && firstType == 3)
+                (newKeluar && firstKeluar)
             ) {
                 pgPopupTableInsert(items, data);
             }
@@ -1931,10 +1933,12 @@
         if (items.length === 0) {
             pgPopupTableInsert(items, data);
         } else {
+            // Masuk (1) satu kategori; Keluar (2) + Keluar 1 (3) boleh campur.
+            var firstKeluarSales = firstType == 2 || firstType == 3;
+            var newKeluarSales = newType == 2 || newType == 3;
             if (
                 (newType == 1 && firstType == 1) ||
-                (newType == 2 && firstType == 2) ||
-                (newType == 3 && firstType == 3)
+                (newKeluarSales && firstKeluarSales)
             ) {
                 pgPopupTableInsert(items, data);
             }

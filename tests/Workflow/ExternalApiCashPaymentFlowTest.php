@@ -174,10 +174,11 @@ class ExternalApiCashPaymentFlowTest extends TestCase
     }
 
     /**
-     * Item campuran arah dipecah jadi satu baris kas per type (dulu ditolak 422), seluruhnya
-     * dalam satu kiriman; kiriman ulang mengembalikan semua baris tanpa membuat yang baru.
+     * Item campuran type 1+2+3 digabung satu dokumen Kas Operasional.
+     * Type 3 dihitung seperti type 2 (mengurangi net) tapi detail tetap type 3 (Keluar 1).
+     * Net contoh: 100000+25000 − 30000 − 20000 = 75000.
      */
-    public function test_mixed_direction_items_are_split_into_one_payment_per_type(): void
+    public function test_mixed_types_merge_into_one_operasional_payment_and_type3_nets_like_type2(): void
     {
         $headers = $this->externalApiHeaders();
         $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
@@ -200,34 +201,39 @@ class ExternalApiCashPaymentFlowTest extends TestCase
         $response = $this->postJson('/api/external/v1/payments/cash', $payload, $headers);
 
         $response->assertStatus(201)
-            ->assertJsonCount(3, 'data')
-            ->assertJsonPath('data.0.payment_amount', 125000)
-            ->assertJsonCount(2, 'data.0.items')
-            ->assertJsonPath('data.0.items.1.notes', 'Setoran B')
-            ->assertJsonPath('data.1.payment_amount', 30000)
-            ->assertJsonPath('data.1.items.0.type', 2)
-            ->assertJsonPath('data.2.payment_amount', 20000)
-            ->assertJsonPath('data.2.items.0.type', 3)
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.payment_amount', 75000)
+            ->assertJsonCount(4, 'data.0.items')
+            ->assertJsonPath('data.0.items.3.type', 3)
+            ->assertJsonPath('data.0.items.3.notes', 'Tol')
             ->assertJsonPath('meta.returns', []);
 
         $rows = \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->orderBy('cr_id')->get();
-        $this->assertSame([1, 2, 3], $rows->pluck('ref_direction')->map(fn ($v) => (int) $v)->all());
+        $this->assertCount(1, $rows);
+        $this->assertSame(1, (int) $rows[0]->ref_direction);
+        $this->assertSame(75000, (int) $rows[0]->cr_nominal);
         $this->assertSame(1, (int) $rows[0]->cr_type);
-        $this->assertStringStartsWith('Setoran armada', $rows[0]->cr_notes);
-        $this->assertStringStartsWith('Pengeluaran armada', $rows[1]->cr_notes);
+        $this->assertSame(0, (int) $rows[0]->cash_id, 'type 3 tidak lagi buat baris Kas Besar langsung');
+
+        $detailTypes = \App\Models\CashArmadaDetail::where('cr_id', $rows[0]->cr_id)
+            ->orderBy('crd_id')
+            ->pluck('crd_type')
+            ->map(fn ($v) => (int) $v)
+            ->all();
+        $this->assertSame([1, 2, 1, 3], $detailTypes);
 
         $this->postJson('/api/external/v1/payments/cash', $payload, $headers)
             ->assertStatus(200)
             ->assertJsonPath('meta.idempotent_replay', true)
-            ->assertJsonCount(3, 'data');
-        $this->assertSame(3, \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->count());
+            ->assertJsonCount(1, 'data');
+        $this->assertSame(1, \App\Models\CashArmada::where('ref_payment_id', $refPaymentId)->count());
     }
 
     /**
-     * Feedback PMO: arah yang ditambahkan belakangan (Masuk sudah tersinkron, lalu Pengeluaran
-     * ditambah) dibuat, bukan ditelan sebagai replay; arah yang sudah ada tidak dibuat ulang.
+     * Item operasional digabung satu bucket: menambah/mengubah item pada ref yang sama = 409
+     * (create-only), bukan membuat dokumen kedua.
      */
-    public function test_a_direction_added_later_is_created_and_the_existing_one_is_replayed(): void
+    public function test_adding_items_later_to_same_operasional_ref_is_rejected_with_409(): void
     {
         $headers = $this->externalApiHeaders();
         $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
@@ -248,17 +254,14 @@ class ExternalApiCashPaymentFlowTest extends TestCase
             $masuk,
             ['amount' => 30000, 'type' => 2, 'notes' => 'Solar'],
         ]], $headers)
-            ->assertStatus(201)
-            ->assertJsonCount(2, 'data')
-            ->assertJsonPath('data.0.items.0.type', 1)
-            ->assertJsonPath('data.1.items.0.type', 2)
-            ->assertJsonPath('meta.replayed_types', [1]);
+            ->assertStatus(409)
+            ->assertJsonPath('error.code', 'PAYMENT_CONTENT_MISMATCH');
 
-        $this->assertSame(2, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
+        $this->assertSame(1, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
     }
 
-    /** Arah yang sudah ada dengan isi berbeda, atau yang tidak ikut dikirim lagi, ditolak 409. */
-    public function test_changed_or_missing_stored_direction_is_rejected_with_409(): void
+    /** Isi dokumen operasional yang sudah tersimpan berbeda → 409. */
+    public function test_changed_operasional_content_is_rejected_with_409(): void
     {
         $headers = $this->externalApiHeaders();
         $customer = Customer::query()->where('status', 1)->orderBy('customer_id')->firstOrFail();
@@ -288,12 +291,12 @@ class ExternalApiCashPaymentFlowTest extends TestCase
             ['amount' => 100000, 'type' => 1],
         ]], $headers)
             ->assertStatus(409)
-            ->assertJsonPath('error.details.type', 2);
+            ->assertJsonPath('error.details.type', 1);
 
-        $this->assertSame(2, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
+        $this->assertSame(1, \App\Models\CashArmada::where('ref_payment_id', $ref)->count());
     }
 
-    /** payment_amount opsional; kalau dikirim tetap harus sama dengan total item. */
+    /** payment_amount opsional; kalau dikirim tetap harus sama dengan total item (gross). Response amount = net. */
     public function test_payment_amount_is_optional_but_checked_when_sent(): void
     {
         $headers = $this->externalApiHeaders();
@@ -310,10 +313,10 @@ class ExternalApiCashPaymentFlowTest extends TestCase
         $this->postJson('/api/external/v1/payments/cash', $payload + ['payment_amount' => 99], $headers)
             ->assertStatus(422);
 
-        $this->postJson('/api/external/v1/payments/cash', $payload, $headers)
+        $this->postJson('/api/external/v1/payments/cash', $payload + ['payment_amount' => 55000], $headers)
             ->assertStatus(201)
-            ->assertJsonPath('data.0.payment_amount', 40000)
-            ->assertJsonPath('data.1.payment_amount', 15000);
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.payment_amount', 25000);
     }
 
     private function makeStaffWithExternalRef(string $externalRefId): Staff
