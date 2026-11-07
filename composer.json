@@ -10,11 +10,12 @@
   "license": "MIT",
   "require": {
     "php": "^8.2",
+    "ext-gd": "*",
     "barryvdh/laravel-dompdf": "^3.1",
     "laravel/framework": "^12.0",
+    "laravel/reverb": "^1.12",
     "laravel/tinker": "^2.10.1",
-    "milon/barcode": "^13.1",
-    "ext-gd": "*"
+    "milon/barcode": "^13.1"
   },
   "require-dev": {
     "fakerphp/faker": "^1.23",

@@ -14,7 +14,7 @@
     <div class="d-flex flex-wrap justify-content-between gap-2 mb-3">
         <div>
             <h3>Monitor Work Order</h3>
-            <p class="text-muted mb-0">Tampilan besar semua WO aktif — diperbarui tiap 30 detik</p>
+            <p class="text-muted mb-0">Tampilan besar semua WO aktif — live (Reverb)</p>
         </div>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-primary" href="{{ route('productionPlanning', ['tab'=>'job']) }}">Kembali ke Job Order</a>
@@ -36,6 +36,7 @@
 @include('components.modals.production.wo-fg-acc')
 @endsection
 @section('custom_js')
+@include('components.pp-live-echo')
 <script>window.woMonitor = true; window.woEmbed = false;</script>
 <script src="{{ asset('Custom_js/Backoffice/Production/WorkOrders.js') }}?v={{ time() }}"></script>
 @endsection

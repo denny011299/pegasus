@@ -6,8 +6,14 @@ use App\ExternalApi\ApiKeyManager;
 use App\ExternalApi\Docs\ApiDocRegistry;
 use App\ExternalApi\Logging\RequestLogger;
 use App\Models\ProductVariant;
+use App\Models\ProductionExecutionDocument;
+use App\Models\ProductionOutputReport;
+use App\Models\ProductionPlanning;
+use App\Models\ProductionPlanningItem;
+use App\Models\ProductionWorkOrder;
 use App\Models\Staff;
 use App\Models\Warehouse;
+use App\Observers\ProductionFloorObserver;
 use App\Support\RoleAccess;
 use App\Synchronization\Pmo\PmoClient;
 use App\Synchronization\SyncFlowRegistry;
@@ -47,6 +53,14 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        // Live floor PP/Kanban/WO via Reverb (1 ping/gudang per request).
+        $floorObserver = ProductionFloorObserver::class;
+        ProductionPlanning::observe($floorObserver);
+        ProductionPlanningItem::observe($floorObserver);
+        ProductionWorkOrder::observe($floorObserver);
+        ProductionExecutionDocument::observe($floorObserver);
+        ProductionOutputReport::observe($floorObserver);
+
         // AI chat: ~20 req/menit per staf (lihat docs/AI_ASSISTANT.md).
         RateLimiter::for('ai-chat', function (Request $request) {
             $user = Session::get('user');

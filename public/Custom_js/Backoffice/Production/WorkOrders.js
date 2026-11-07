@@ -1321,16 +1321,23 @@ $(function () {
                 woTable.ajax.reload();
             }
         );
-        setInterval(function () {
+        var woLiveReload = function () {
             if (
-                !document.hidden &&
-                !$("#modalWoExecution").hasClass("show") &&
-                !$("#modalWoFgAcc").hasClass("show") &&
-                woTable
+                document.hidden ||
+                $("#modalWoExecution").hasClass("show") ||
+                $("#modalWoFgAcc").hasClass("show") ||
+                !woTable
             ) {
-                woTable.ajax.reload(null, false);
+                return;
             }
-        }, 30000);
+            woTable.ajax.reload(null, false);
+        };
+        var wh = Number(window.PEGASUS_WAREHOUSE_ID) || 0;
+        var ok = window.PpLive && PpLive.subscribe(wh, woLiveReload);
+        if (!ok) {
+            console.warn("WoLive: Reverb/Echo tidak siap — fallback 30s poll");
+            setInterval(woLiveReload, 30000);
+        }
     }
 
     $("#wo-fullscreen").on("click", function () {

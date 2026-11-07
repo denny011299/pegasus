@@ -20,11 +20,16 @@ var ppViewAssignSnapshot = null;
 var ppViewAssignEditMode = false;
 var ppLoadXhr = null;
 
-/** Polling realtime ringan — skip saat modal/hover tabel/loading. */
+/**
+ * Live PP via Reverb/Echo (bukan poll). Fallback poll hanya jika WS gagal connect.
+ * Pause hanya modal / Select2 / datepicker / ketik filter — jangan hover.
+ */
 var ppLiveStamp = null;
 var ppLivePendingStamp = null;
 var ppLiveXhr = null;
 var ppLiveTimer = null;
+var ppLiveWs = false;
+var PP_LIVE_INTERVAL_MS = 2000;
 /** Soft reload: jangan skeleton penuh (hindari “lompat” halaman). */
 var ppReloadSoft = false;
 var ppLiveUiPaused = false;
@@ -693,79 +698,64 @@ function applyPpTabBadges(tabs) {
     });
 }
 
-/** Area UI yang kalau di-hover/klik → jangan auto-refresh tabel. */
-function ppLiveInteractiveSelector() {
-    return [
-        "#tablePpPlanning-wrap",
-        "#tablePpJob-wrap",
-        "#tablePpBahan-wrap",
-        "#tablePpHistori-wrap",
-        "#tablePpReleased-wrap",
-        "#tablePpWorkOrder-wrap",
-        "#tablePpProduksi-wrap",
-        "#tablePpSelesai-wrap",
-        "#pp-pane-planning .dataTables_wrapper",
-        "#pp-pane-job .dataTables_wrapper",
-        "#pp-pane-bahan .dataTables_wrapper",
-        "#pp-pane-histori .dataTables_wrapper",
-        ".pp-filter-box",
-    ].join(", ");
-}
-
+/** Pause singkat hanya saat ketik/ fokus filter atau klik aksi baris (bukan hover tabel). */
 function ppBindLiveUiPause() {
-    var sel = ppLiveInteractiveSelector();
     $(document)
         .off(".ppLivePause")
-        .on("mouseenter.ppLivePause", sel, function () {
-            if (ppLiveUiPauseTimer) {
-                clearTimeout(ppLiveUiPauseTimer);
-                ppLiveUiPauseTimer = null;
+        .on(
+            "focusin.ppLivePause input.ppLivePause",
+            ".pp-filter-box input, .pp-filter-box select, .pp-filter-box textarea",
+            function () {
+                ppLiveUiPaused = true;
+                if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
             }
-            ppLiveUiPaused = true;
-        })
-        .on("mouseleave.ppLivePause", sel, function () {
-            if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
-            // Delay kecil biar pindah ke pagination/length tidak sempat refresh
-            ppLiveUiPauseTimer = setTimeout(function () {
-                ppLiveUiPaused = false;
-                ppLiveUiPauseTimer = null;
-                // Ada perubahan tertunda saat user hover → soft reload sekarang
-                if (ppLivePendingStamp && ppLivePendingStamp !== ppLiveStamp && !ppLiveBusyUi()) {
-                    ppLiveStamp = ppLivePendingStamp;
-                    ppLivePendingStamp = null;
-                    ppLiveSoftReloadActive();
-                }
-            }, 900);
-        })
+        )
+        .on(
+            "focusout.ppLivePause",
+            ".pp-filter-box input, .pp-filter-box select, .pp-filter-box textarea",
+            function () {
+                if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
+                ppLiveUiPauseTimer = setTimeout(function () {
+                    ppLiveUiPaused = false;
+                    ppLiveUiPauseTimer = null;
+                    if (
+                        ppLivePendingStamp &&
+                        ppLivePendingStamp !== ppLiveStamp &&
+                        !ppLiveBusyUi()
+                    ) {
+                        if (ppLivePendingStamp === "ws" && ppLiveWs) {
+                            ppLivePendingStamp = null;
+                            ppLiveOnPush();
+                        } else {
+                            ppLiveStamp = ppLivePendingStamp;
+                            ppLivePendingStamp = null;
+                            ppLiveSoftReloadActive();
+                        }
+                    }
+                }, 600);
+            }
+        )
         .on(
             "mousedown.ppLivePause click.ppLivePause",
-            sel + ", .dataTables_paginate, .dataTables_length",
+            ".btn-action-icon, .dataTables_paginate a, .dataTables_length select",
             function () {
                 ppLiveUiPaused = true;
                 if (ppLiveUiPauseTimer) clearTimeout(ppLiveUiPauseTimer);
                 ppLiveUiPauseTimer = setTimeout(function () {
                     ppLiveUiPaused = false;
                     ppLiveUiPauseTimer = null;
-                }, 2500);
+                }, 1200);
             }
         );
 }
 
-/** Jangan ganggu user yang sedang interaksi / modal / ajax loading. */
+/** Pause hanya gangguan nyata — jangan block karena user lagi lihat/hover tabel. */
 function ppLiveBusyUi() {
     if (document.hidden) return true;
     if (ppLiveUiPaused) return true;
     if ($(".modal.show").length) return true;
     if ($(".select2-container--open").length) return true;
     if ($(".daterangepicker:visible").length) return true;
-    if ($(ppLiveInteractiveSelector()).filter(":hover").length) return true;
-    if ($(".dataTables_paginate:hover, .dataTables_length:hover").length) return true;
-    if (
-        $("#tablePpPlanning-wrap.is-loading, #tablePpJob-wrap.is-loading, #tablePpBahan-wrap.is-loading, #tablePpHistori-wrap.is-loading")
-            .length
-    ) {
-        return true;
-    }
     if (typeof woBusy !== "undefined" && woBusy) return true;
     return false;
 }
@@ -802,23 +792,24 @@ function ppLiveTick() {
         cache: false,
         success: function (res) {
             if (!res) return;
-            // Badge ACC Bahan dari live; KPI/list tetap dari reload tabel (ikut filter tanggal).
+            // Badge ACC Bahan + KPI dari live (tanpa tunggu reload tabel).
             if (res.tabs && res.tabs.bahan != null) {
                 applyPpTabBadges({ bahan: res.tabs.bahan });
             } else if (res.counts && res.counts.bahan_pending != null) {
                 applyPpTabBadges({ bahan: res.counts.bahan_pending });
             }
+            if (res.counts) {
+                applyPpCounts(res.counts, res.tabs);
+            }
             var stamp = res.stamp || "";
             if (ppLiveStamp === null) {
                 ppLiveStamp = stamp;
-                // First poll: pastikan stage board ikut terisi (mirror)
                 if (typeof refreshPpStageMiniTables === "function") {
                     refreshPpStageMiniTables();
                 }
                 return;
             }
             if (stamp === ppLiveStamp) return;
-            // Busy? simpan stamp, jangan anggap sudah ter-apply (biar reload jalan setelah idle)
             if (ppLiveBusyUi()) {
                 ppLivePendingStamp = stamp;
                 return;
@@ -833,15 +824,81 @@ function ppLiveTick() {
     });
 }
 
+/** Satu fetch ringan untuk badge/KPI + soft reload tabel — dipicu event WS. */
+function ppLiveOnPush() {
+    if (ppLiveBusyUi()) {
+        ppLivePendingStamp = "ws";
+        return;
+    }
+    if (ppLivePendingStamp === "ws") ppLivePendingStamp = null;
+    if (ppLiveXhr && ppLiveXhr.readyState !== 4) {
+        try {
+            ppLiveXhr.abort();
+        } catch (e) { /* ignore */ }
+    }
+    ppLiveXhr = $.ajax({
+        url: "/getProductionPlanningLive",
+        method: "get",
+        cache: false,
+        success: function (res) {
+            if (!res) {
+                ppLiveSoftReloadActive();
+                return;
+            }
+            if (res.tabs && res.tabs.bahan != null) {
+                applyPpTabBadges({ bahan: res.tabs.bahan });
+            } else if (res.counts && res.counts.bahan_pending != null) {
+                applyPpTabBadges({ bahan: res.counts.bahan_pending });
+            }
+            if (res.counts) {
+                applyPpCounts(res.counts, res.tabs);
+            }
+            if (res.stamp) ppLiveStamp = res.stamp;
+            ppLiveSoftReloadActive();
+        },
+        error: function () {
+            ppLiveSoftReloadActive();
+        },
+    });
+}
+
 function startPpLivePolling() {
     if (ppLiveTimer) return;
+    ppLiveTick();
+    ppLiveTimer = setInterval(ppLiveTick, PP_LIVE_INTERVAL_MS);
+}
+
+function startPpLive() {
     ppBindLiveUiPause();
-    // Lepas sisa is-loading dari soft-reload lama (bisa bikin tombol aksi mati)
     $(
         "#tablePpPlanning-wrap, #tablePpJob-wrap, #tablePpBahan-wrap, #tablePpHistori-wrap"
     ).removeClass("is-loading");
-    ppLiveTick();
-    ppLiveTimer = setInterval(ppLiveTick, 4000);
+
+    var wh = Number(window.PEGASUS_WAREHOUSE_ID) || 0;
+    var ok =
+        window.PpLive &&
+        PpLive.subscribe(wh, function () {
+            if (ppLiveBusyUi()) {
+                ppLivePendingStamp = "ws";
+                return;
+            }
+            ppLiveOnPush();
+        });
+
+    ppLiveWs = !!ok;
+    if (ok) {
+        // Snapshot awal badge/KPI sekali; selanjutnya hanya push WS.
+        ppLiveOnPush();
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden && ppLivePendingStamp === "ws" && !ppLiveBusyUi()) {
+                ppLiveOnPush();
+            }
+        });
+        return;
+    }
+
+    console.warn("PpLive: Reverb/Echo tidak siap — fallback poll sementara");
+    startPpLivePolling();
     document.addEventListener("visibilitychange", function () {
         if (!document.hidden) ppLiveTick();
     });
@@ -2843,9 +2900,9 @@ $(document).ready(function () {
         });
 
     try {
-        startPpLivePolling();
+        startPpLive();
     } catch (err) {
-        console.error("startPpLivePolling failed:", err);
+        console.error("startPpLive failed:", err);
     }
 
     $("#modalAddPlanning").on("shown.bs.modal", function () {

@@ -976,6 +976,7 @@
 @endsection
 
 @section('custom_js')
+@include('components.pp-live-echo')
 <script src="{{ asset('assets/plugins/moment/moment.min.js') }}"></script>
 <script src="{{ asset('assets/plugins/daterangepicker/daterangepicker.js') }}"></script>
 <script src="{{ asset('Custom_js/Backoffice/Production/WorkOrder_Kanban.js') }}?v={{ time() }}"></script>

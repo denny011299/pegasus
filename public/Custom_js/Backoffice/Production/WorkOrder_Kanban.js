@@ -634,12 +634,28 @@ function wokLoad(soft) {
         });
 }
 
-function wokStartPoll() {
+function wokStartLive() {
+    var wh = Number(window.PEGASUS_WAREHOUSE_ID) || 0;
+    var ok =
+        window.PpLive &&
+        PpLive.subscribe(wh, function () {
+            if (document.hidden) return;
+            if ($(".modal.show").length) return;
+            wokLoad(true);
+        });
+    if (ok) {
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) wokLoad(true);
+        });
+        return;
+    }
+    // Fallback hanya jika Reverb down.
     if (wokTimer) return;
+    console.warn("WokLive: Reverb/Echo tidak siap — fallback poll");
     wokTimer = setInterval(function () {
         if (document.hidden) return;
         wokLoad(true);
-    }, 15000);
+    }, 5000);
     document.addEventListener("visibilitychange", function () {
         if (!document.hidden) wokLoad(true);
     });
@@ -649,7 +665,7 @@ $(function () {
     wokSaveGroupMode(wokLoadGroupMode());
     wokInitDatePicker();
     wokLoad(false);
-    wokStartPoll();
+    wokStartLive();
 
     $(document).on("input", "#wok-search", function () {
         wokApplySearch();

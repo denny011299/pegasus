@@ -2845,6 +2845,7 @@
 @endsection
 
 @section('custom_js')
+@include('components.pp-live-echo')
 <script>
     window.ppFullscreen = @json(!empty($ppFullscreen));
     // Halaman aktif (normal ATAU view) — untuk replaceState filter, jangan campur.
