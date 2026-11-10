@@ -1,0 +1,127 @@
+{
+  "title": "Lookup Uang Sangu / Bekal Armada (Kas Gudang)",
+  "version": "v1",
+  "group": "pembayaran",
+  "method": "GET",
+  "path": "/api/external/v1/cash-gudang/armada-allowance",
+  "base_url_local": "http://127.0.0.1:8000",
+  "full_url_example": "http://127.0.0.1:8000/api/external/v1/cash-gudang/armada-allowance",
+  "auth": {
+    "type": "api_key",
+    "header": "X-API-Key",
+    "note": "Ambil key dari Integrasi → Aplikasi Eksternal"
+  },
+  "description": "Mencari nominal uang sangu/bekal armada dari Kas Gudang (penyerahan kas armada) berdasarkan No. Pengiriman (+ opsional armada). Default hanya yang sudah ACC — sebelum ACC / ditolak tidak dihitung di PMO.",
+  "query": {
+    "pengiriman_no": {
+      "type": "string",
+      "required": "salah_satu_dengan_ref_shipment_id",
+      "example": "00056/FLMNT/10/2026",
+      "description": "No. dokumen pengiriman (tersimpan di Kas Gudang sebagai catatan baris)."
+    },
+    "ref_shipment_id": {
+      "type": "string",
+      "required": "salah_satu_dengan_pengiriman_no",
+      "example": "12345",
+      "description": "Referensi pengiriman PMO. Boleh sama dengan no. dokumen."
+    },
+    "armada_code": {
+      "type": "string",
+      "required": false,
+      "example": "ARM-W1289FE",
+      "description": "Kode armada (customers.customer_code)."
+    },
+    "nomor_polisi": {
+      "type": "string",
+      "required": false,
+      "example": "W 1289 FE",
+      "description": "Nomor polisi armada (customers.customer_notes)."
+    },
+    "cash_status": {
+      "type": "string",
+      "required": false,
+      "enum": ["accepted", "pending", "any"],
+      "default": "accepted",
+      "description": "accepted (default) = sudah ACC; pending = Sedang Diajukan; any = ACC+pending. Ditolak tidak pernah keluar."
+    }
+  },
+  "request_examples": [
+    {
+      "name": "by_pengiriman_no_accepted_default",
+      "method": "GET",
+      "url": "/api/external/v1/cash-gudang/armada-allowance?pengiriman_no=00056%2FFLMNT%2F10%2F2026"
+    },
+    {
+      "name": "by_pengiriman_and_nomor_polisi",
+      "method": "GET",
+      "url": "/api/external/v1/cash-gudang/armada-allowance?pengiriman_no=00056%2FFLMNT%2F10%2F2026&nomor_polisi=W%201289%20FE"
+    },
+    {
+      "name": "include_pending",
+      "method": "GET",
+      "url": "/api/external/v1/cash-gudang/armada-allowance?pengiriman_no=00056%2FFLMNT%2F10%2F2026&cash_status=any"
+    }
+  ],
+  "response_success": {
+    "http_status": 200,
+    "body": {
+      "success": true,
+      "data": [
+        {
+          "cgd_id": 88,
+          "cg_id": 42,
+          "pengiriman_no": "00056/FLMNT/10/2026",
+          "ref_shipment_id": "12345",
+          "armada_code": "ARM-W1289FE",
+          "nomor_polisi": "W 1289 FE",
+          "nominal": 1000000,
+          "cash_date": "2026-11-10",
+          "cash_status": "accepted",
+          "cash_notes": "Penyerahan kas armada dari gudang - Okejob 1"
+        }
+      ],
+      "meta": {
+        "count": 1,
+        "nominal": 1000000
+      }
+    },
+    "notes": [
+      "Default cash_status=accepted — PMO tidak perlu kirim param untuk kasus normal.",
+      "data selalu array (bisa >1 baris).",
+      "meta.nominal = nominal baris terbaru (index 0) — kasus umum 1 pengiriman = 1 bekal.",
+      "Status Ditolak (3) tidak pernah dikembalikan."
+    ]
+  },
+  "response_errors": [
+    {
+      "http_status": 422,
+      "code": "validation_failed",
+      "message": "pengiriman_no / ref_shipment_id wajib, atau parameter tidak valid.",
+      "body_example": {
+        "success": false,
+        "error": {
+          "code": "validation_failed",
+          "message": "Wajib isi pengiriman_no atau ref_shipment_id."
+        }
+      }
+    },
+    {
+      "http_status": 404,
+      "code": "allowance_not_found",
+      "message": "Tidak ada Kas Gudang ACC untuk pengiriman/armada ini.",
+      "body_example": {
+        "success": false,
+        "error": {
+          "code": "allowance_not_found",
+          "message": "Tidak ada catatan Kas Gudang (uang sangu) untuk pengiriman/armada ini."
+        }
+      }
+    },
+    {
+      "http_status": 401,
+      "code": "platform",
+      "message": "API key invalid / missing (error platform External API)."
+    }
+  ],
+  "curl_example": "curl -G \"http://127.0.0.1:8000/api/external/v1/cash-gudang/armada-allowance\" -H \"X-API-Key: YOUR_KEY\" --data-urlencode \"pengiriman_no=00056/FLMNT/10/2026\""
+}

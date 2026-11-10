@@ -167,6 +167,7 @@ return [
         // API-005 — Pembayaran Kas
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentCreateDoc::class,
         \App\ExternalApi\Docs\Endpoints\V1\CashPaymentShowDoc::class,
+        \App\ExternalApi\Docs\Endpoints\V1\CashGudangArmadaAllowanceDoc::class,
 
         // Data Armada — modul tersendiri, bukan bagian Data Master. "Armada"
         // memakai tabel customers yang sama dengan pelanggan biasa, tapi

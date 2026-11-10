@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ExternalApi\V1\CashGudangAllowanceController;
 use App\Http\Controllers\ExternalApi\V1\CashPaymentController;
 use App\Http\Controllers\ExternalApi\V1\MasterArmadaController;
 use App\Http\Controllers\ExternalApi\V1\MasterDataController;
@@ -101,6 +102,15 @@ Route::prefix('master')->name('master.')->group(function () {
 Route::prefix('payments')->name('payments.')->group(function () {
     Route::post('/cash', [CashPaymentController::class, 'store'])->name('cashStore');
     Route::get('/cash/{ref_payment_id}', [CashPaymentController::class, 'show'])->name('cashShow');
+});
+
+/*
+ * Kas Gudang — lookup uang sangu/bekal armada per No. Pengiriman (PMO pembayaran
+ * berdasarkan pengiriman). Baca saja; data diisi lewat UI Kas Operasional.
+ */
+Route::prefix('cash-gudang')->name('cashGudang.')->group(function () {
+    Route::get('/armada-allowance', [CashGudangAllowanceController::class, 'show'])
+        ->name('armadaAllowance');
 });
 
 /*
